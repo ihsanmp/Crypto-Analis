@@ -181,6 +181,8 @@ def process(token, chat_id, text):
 
     timeout = int(os.environ.get("ANALYSIS_TIMEOUT", "900"))
 
+    print(f"[proses] kind={kind} teks={text[:60]!r}", file=sys.stderr)
+
     if kind == "analisa":
         words = text.strip().lower().split()
         coin = words[1].upper() if len(words) > 1 else None
@@ -191,11 +193,16 @@ def process(token, chat_id, text):
         send_message(token, chat_id, "💬 Sebentar ya, aku cek datanya dulu...")
         output, err = run_claude(build_chat_prompt(text), timeout, max_turns=40)
 
+    # Catat hasil ke log CI (stderr). Isi balasan tidak dicetak penuh — hanya status &
+    # potongan error — supaya log tetap informatif tanpa membanjiri / membocorkan.
     if err:
+        print(f"[proses] GAGAL: {err[:400]}", file=sys.stderr)
         send_message(token, chat_id, f"❌ {err}")
     elif not output:
+        print("[proses] output kosong dari Claude", file=sys.stderr)
         send_message(token, chat_id, "❌ Selesai tapi output kosong. Coba lagi.")
     else:
+        print(f"[proses] OK, balasan {len(output)} karakter dikirim", file=sys.stderr)
         send_message(token, chat_id, output)
 
 
