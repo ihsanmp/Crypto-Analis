@@ -1,7 +1,8 @@
 # Bot Riset Koin (Telegram + Claude Code, jalan di Cloud)
 
-Sistem riset crypto jangka menengah (daily/weekly) untuk spot & futures, jalan
-**24 jam di GitHub Actions — tanpa perlu laptop menyala**.
+Sistem riset crypto **spot** jangka menengah (daily/weekly, analisa multi-timeframe),
+jalan **24 jam di GitHub Actions — tanpa perlu laptop menyala**. Khusus spot: tidak
+memberi saran short/leverage/futures; data derivatif dipakai hanya sebagai sentimen timing.
 
 Dua cara pakai di Telegram:
 - `analisa <koin>` → analisa lengkap terstruktur (skor 0-100, fundamental+teknikal, rencana entry/stop/target)
@@ -86,7 +87,7 @@ Settings → Secrets and variables → Actions → **New repository secret**:
 |---|---|
 | `TELEGRAM_BOT_TOKEN` | token dari @BotFather — **wajib** |
 | `TELEGRAM_CHAT_ID` | chat ID kamu — **wajib**. Bot menolak jalan tanpa ini (fail-closed), supaya orang lain yang menemukan bot tidak bisa menghabiskan kuota Claude-mu |
-| `COINGLASS_API_KEY` | API key CoinGlass (boleh dikosongkan; tanpa ini metrik futures dilewati) |
+| `COINGLASS_API_KEY` | API key CoinGlass (boleh dikosongkan; tanpa ini sentimen derivatif — funding/OI — dilewati, analisa spot tetap jalan penuh) |
 | `COINMARKETCAP_API_KEY` | **Wajib** — ambil gratis di https://pro.coinmarketcap.com/signup (paket Basic gratis, ~10.000 kredit/bulan). Tanpa ini semua data pasar tidak jalan |
 | `CLAUDE_CODE_OAUTH_TOKEN` | token dari `claude setup-token` — **wajib** |
 

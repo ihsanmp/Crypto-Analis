@@ -136,7 +136,7 @@ def build_analisa_prompt(text):
         cmd = f"## Perintah user\nMode KOIN. Analisa mendalam koin: **{coin}**\n"
     else:
         cmd = ("## Perintah user\nMode SCAN. Cari 3-5 koin paling menarik saat ini "
-               "untuk spot/futures jangka menengah, lalu pilih 1-2 setup terbaik.\n")
+               "untuk akumulasi SPOT jangka menengah, lalu pilih 1-2 setup terbaik.\n")
     return f"{base}\n---\n{cmd}"
 
 
