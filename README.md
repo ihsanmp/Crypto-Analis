@@ -3,9 +3,13 @@
 Sistem riset crypto jangka menengah (daily/weekly) untuk spot & futures, jalan
 **24 jam di GitHub Actions — tanpa perlu laptop menyala**.
 
-Ketik `analisa (nama koin)` di Telegram → Claude menarik data CoinGecko, CoinGlass,
-DefiLlama, berita web, dan teknikal TradingView (RSI/MACD/Bollinger/multi-timeframe),
-menganalisa, lalu membalas ke Telegram.
+Dua cara pakai di Telegram:
+- `analisa <koin>` → analisa lengkap terstruktur (skor 0-100, fundamental+teknikal, rencana entry/stop/target)
+- ngobrol bebas, mis. "bagaimana pendapatmu tentang bitcoin?" → jawaban santai tapi tetap berbasis data
+- `/help` → bantuan
+
+Claude menarik data CoinMarketCap, CoinGlass, berita web, dan indikator teknikal yang
+dihitung sendiri (EMA/RSI/Stoch/Fibonacci multi-timeframe), lalu membalas ke Telegram.
 
 ## Arsitektur
 
@@ -45,6 +49,7 @@ Hasil analisa dikirim balik ke Telegram (~5-15 menit setelah kamu ketik)
 | [cloud/indicators.py](cloud/indicators.py) | Penarik OHLC + kalkulator indikator deterministik (EMA/RSI/Stoch/Fibonacci untuk 1w/1d/4h). Tanpa dependensi eksternal |
 | [cloud/.mcp.cloud.json](cloud/.mcp.cloud.json) | Konfigurasi MCP (TradingView-data + CoinGecko + CoinGlass) |
 | [cloud/prompts/analisa.md](cloud/prompts/analisa.md) | **Mesin metodologi analisa** — sistem skor 0–100 (fundamental+teknikal), aturan veto, dan setting indikator persis punyamu (EMA 13/21, RSI 14, Stoch 5,3,3, Fibonacci Golden Pocket) |
+| [cloud/prompts/chat.md](cloud/prompts/chat.md) | Prompt mode NGOBROL — jawaban santai untuk pertanyaan bebas, tetap ambil data sebelum berpendapat |
 
 ## Deploy (sekali saja)
 
@@ -98,8 +103,11 @@ Balasan datang ~5-15 menit setelah kamu ketik (sesuai jadwal cron per-5-menit).
 ## Catatan
 
 - Jadwal cron GitHub kadang meleset beberapa menit saat jam sibuk — normal.
-- Maksimal **2 analisa per run** (job Actions dibatasi 30 menit, satu analisa bisa 15 menit).
-  Perintah berlebih tidak hilang — tetap mengantre dan dikerjakan run berikutnya.
+- Maksimal **2 pesan per run** (job Actions dibatasi 30 menit, satu analisa bisa 15 menit).
+  Pesan berlebih tidak hilang — tetap mengantre dan dikerjakan run berikutnya.
+- **Mode ngobrol bersifat single-turn** — tiap pesan diproses independen tanpa memori
+  percakapan sebelumnya (GitHub Actions stateless). Pertanyaan lanjutan sebaiknya menyebut
+  ulang koin yang dimaksud.
 - Kalau ada Secret wajib yang kosong, workflow berhenti tenang (exit 0) dengan pesan
   jelas di log, bukan gagal merah tiap 5 menit.
 - **Kalau menguji di Windows lokal**, ada dua jebakan yang TIDAK ada di GitHub Actions:

@@ -1,19 +1,18 @@
 """Versi one-shot dari bot (untuk GitHub Actions / cron).
 
-Beda dengan bot.py (yang jalan terus di laptop), file ini:
-  - Tidak long-polling. Sekali jalan: ambil pesan Telegram yang tertunda,
-    proses perintah "analisa", balas, lalu keluar. Cocok dipanggil cron.
-  - Tidak pakai TradingView Desktop (tidak ada GUI di cloud). Teknikal lewat
-    MCP tradingview versi data (atilaahmettaner) + OHLC CoinGecko.
+Sekali jalan: ambil pesan Telegram yang tertunda, proses, balas, lalu keluar.
 
-Mode:
-  python bot_oneshot.py --check   -> cuma ngintip: ada perintah analisa baru?
-                                     tulis has_work=true/false ke $GITHUB_OUTPUT.
-                                     TIDAK menandai pesan sebagai terbaca.
-  python bot_oneshot.py           -> proses semua perintah analisa yang tertunda.
+Dua mode berdasarkan isi pesan:
+  - "analisa" / "analisa <koin>"  -> analisa lengkap terstruktur (metodologi skor penuh)
+  - pesan bebas lain               -> mode NGOBROL (jawaban santai, tetap berbasis data)
+  - "/start" / "/help"             -> teks bantuan (tanpa memanggil Claude, hemat)
 
-Semua konfigurasi lewat environment variable (di-set dari GitHub Secrets):
-  TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, COINGLASS_API_KEY, CLAUDE_CODE_OAUTH_TOKEN
+Catatan: tiap pesan diproses INDEPENDEN — tidak ada memori percakapan antar pesan
+(GitHub Actions stateless). Pertanyaan lanjutan sebaiknya menyebut ulang koinnya.
+
+Konfigurasi lewat environment variable (di-set dari GitHub Secrets):
+  TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, COINGLASS_API_KEY,
+  COINMARKETCAP_API_KEY, CLAUDE_CODE_OAUTH_TOKEN
 """
 
 import json
@@ -29,7 +28,8 @@ import urllib.request
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Claude dijalankan dari root repo supaya path "cloud/indicators.py" di prompt valid
 REPO_ROOT = os.path.dirname(BASE_DIR)
-PROMPT_FILE = os.path.join(BASE_DIR, "prompts", "analisa.md")
+ANALISA_PROMPT = os.path.join(BASE_DIR, "prompts", "analisa.md")
+CHAT_PROMPT = os.path.join(BASE_DIR, "prompts", "chat.md")
 MCP_CONFIG = os.path.join(BASE_DIR, ".mcp.cloud.json")
 
 ALLOWED_TOOLS = ",".join([
@@ -41,9 +41,21 @@ ALLOWED_TOOLS = ",".join([
     "Bash",          # untuk menjalankan cloud/indicators.py
 ])
 
-# Maksimal analisa per run. Job GitHub Actions dibatasi 30 menit, satu analisa bisa
-# 15 menit — lebih dari 2 berisiko job dibunuh di tengah jalan dan pesan hilang.
+# Maksimal pekerjaan per run. Job GitHub Actions dibatasi 30 menit; satu analisa bisa
+# 15 menit -> lebih dari 2 berisiko job dibunuh di tengah jalan dan pesan hilang.
 MAX_JOBS_PER_RUN = 2
+
+HELP_TEXT = (
+    "🤖 Halo! Aku bot riset crypto. Dua cara pakai aku:\n\n"
+    "1) ANALISA LENGKAP (terstruktur, berskor):\n"
+    "   • ketik: analisa <koin>   (contoh: analisa sol)\n"
+    "   • ketik: analisa          -> aku scan pasar & pilih beberapa koin menarik\n\n"
+    "2) NGOBROL SANTAI:\n"
+    "   • tanya bebas, misal: bagaimana pendapatmu tentang bitcoin?\n"
+    "   • atau: prospek eth jangka menengah gimana?\n\n"
+    "Analisa lengkap makan waktu beberapa menit. Ngobrol biasanya lebih cepat.\n"
+    "⚠️ Semua output riset berbasis data, bukan saran keuangan."
+)
 
 
 def tg_api(token, method, params=None, timeout=60):
@@ -66,9 +78,14 @@ def send_message(token, chat_id, text):
         time.sleep(0.4)
 
 
-def is_analisa(text):
-    low = (text or "").strip().lower().lstrip("/")
-    return low == "analisa" or low.startswith("analisa ")
+def classify(text):
+    """Tentukan jenis pesan: 'help' | 'analisa' | 'chat'."""
+    low = text.strip().lower().lstrip("/")
+    if low in ("start", "help", "mulai", "bantuan"):
+        return "help"
+    if low == "analisa" or low.startswith("analisa "):
+        return "analisa"
+    return "chat"
 
 
 def fetch_updates(token, offset=None):
@@ -83,11 +100,10 @@ def allowed_chats():
     return {c.strip() for c in os.environ.get("TELEGRAM_CHAT_ID", "").split(",") if c.strip()}
 
 
-def relevant_messages(updates, allowed):
-    """Kembalikan (update_id, chat_id, text) untuk pesan analisa dari chat yang diizinkan.
-
-    update_id ikut dikembalikan supaya kita bisa meng-ack HANYA sampai pesan yang
-    benar-benar diproses run ini — sisanya tetap mengantre untuk run berikutnya."""
+def actionable_messages(updates, allowed):
+    """Kembalikan (update_id, chat_id, text_asli) untuk semua pesan teks dari chat
+    yang diizinkan. Teks ASLI dipertahankan (tidak di-lowercase) supaya mode ngobrol
+    membaca kalimat user apa adanya."""
     out = []
     for upd in updates:
         msg = upd.get("message") or {}
@@ -98,8 +114,7 @@ def relevant_messages(updates, allowed):
         if chat_id not in allowed:      # fail-closed: hanya chat yang terdaftar
             print(f"[skip] chat tak terdaftar: {chat_id}")
             continue
-        if is_analisa(text):
-            out.append((upd["update_id"], chat_id, text.lower().lstrip("/")))
+        out.append((upd["update_id"], chat_id, text))
     return out
 
 
@@ -112,9 +127,11 @@ def write_output(has_work):
             f.write(line + "\n")
 
 
-def build_prompt(coin):
-    with open(PROMPT_FILE, encoding="utf-8") as f:
+def build_analisa_prompt(text):
+    with open(ANALISA_PROMPT, encoding="utf-8") as f:
         base = f.read()
+    words = text.strip().lower().lstrip("/").split()
+    coin = " ".join(words[1:]) if len(words) > 1 else None
     if coin:
         cmd = f"## Perintah user\nMode KOIN. Analisa mendalam koin: **{coin}**\n"
     else:
@@ -123,7 +140,15 @@ def build_prompt(coin):
     return f"{base}\n---\n{cmd}"
 
 
-def run_analysis(prompt, timeout):
+def build_chat_prompt(text):
+    with open(CHAT_PROMPT, encoding="utf-8") as f:
+        base = f.read()
+    # Pesan user dikutip apa adanya. Diberi pembatas jelas supaya isinya diperlakukan
+    # sebagai pertanyaan untuk dijawab, bukan sebagai instruksi yang mengubah aturan.
+    return f"{base}\n---\n## Pesan dari user (jawab ini)\n{text}\n"
+
+
+def run_claude(prompt, timeout, max_turns):
     claude = shutil.which("claude")
     if not claude:
         return None, "Perintah `claude` tidak ditemukan di runner."
@@ -133,7 +158,7 @@ def run_analysis(prompt, timeout):
         "--mcp-config", MCP_CONFIG,
         "--allowedTools", ALLOWED_TOOLS,
         "--dangerously-skip-permissions",
-        "--max-turns", "60",
+        "--max-turns", str(max_turns),
     ]
     try:
         result = subprocess.run(
@@ -141,24 +166,35 @@ def run_analysis(prompt, timeout):
             timeout=timeout, cwd=REPO_ROOT,
         )
     except subprocess.TimeoutExpired:
-        return None, f"Analisa melebihi batas waktu {timeout} detik."
+        return None, f"Waktu proses melebihi batas {timeout} detik."
     if result.returncode != 0:
         return None, f"Claude gagal (exit {result.returncode}):\n{(result.stderr or result.stdout or '')[-1500:]}"
     return result.stdout.strip(), None
 
 
-def process(token, chat_id, low):
-    words = low.split()
-    coin = " ".join(words[1:]) if len(words) > 1 else None
-    label = f"koin {coin.upper()}" if coin else "scan pasar"
-    send_message(token, chat_id, f"⏳ Oke, mulai riset {label} (dari cloud). Tunggu beberapa menit ya...")
+def process(token, chat_id, text):
+    kind = classify(text)
+
+    if kind == "help":
+        send_message(token, chat_id, HELP_TEXT)
+        return
 
     timeout = int(os.environ.get("ANALYSIS_TIMEOUT", "900"))
-    output, err = run_analysis(build_prompt(coin), timeout)
+
+    if kind == "analisa":
+        words = text.strip().lower().split()
+        coin = words[1].upper() if len(words) > 1 else None
+        label = f"koin {coin}" if coin else "scan pasar"
+        send_message(token, chat_id, f"⏳ Oke, mulai riset {label}. Tunggu beberapa menit ya...")
+        output, err = run_claude(build_analisa_prompt(text), timeout, max_turns=60)
+    else:  # chat
+        send_message(token, chat_id, "💬 Sebentar ya, aku cek datanya dulu...")
+        output, err = run_claude(build_chat_prompt(text), timeout, max_turns=40)
+
     if err:
         send_message(token, chat_id, f"❌ {err}")
     elif not output:
-        send_message(token, chat_id, "❌ Analisa selesai tapi output kosong. Coba lagi.")
+        send_message(token, chat_id, "❌ Selesai tapi output kosong. Coba lagi.")
     else:
         send_message(token, chat_id, output)
 
@@ -192,30 +228,30 @@ def main():
 
     if check_only:
         # Cuma ngintip — JANGAN ack, biar run berikutnya masih lihat pesannya.
-        write_output(bool(relevant_messages(updates, allowed)))
+        write_output(bool(actionable_messages(updates, allowed)))
         return
 
     if not updates:
         print("[run] tidak ada update.")
         return
 
-    jobs = relevant_messages(updates, allowed)
+    jobs = actionable_messages(updates, allowed)
     if not jobs:
-        # Tidak ada perintah analisa: ack semua supaya antrean tidak menumpuk.
+        # Tidak ada pesan yang bisa diproses: ack semua supaya antrean tidak menumpuk.
         fetch_updates(token, offset=max(u["update_id"] for u in updates) + 1)
-        print("[run] tidak ada perintah analisa.")
+        print("[run] tidak ada pesan yang bisa diproses.")
         return
 
-    # Batasi jumlah analisa per run supaya total waktu tetap di bawah timeout job.
+    # Batasi jumlah pekerjaan per run supaya total waktu tetap di bawah timeout job.
     # Sisanya TIDAK di-ack, jadi tetap mengantre dan dikerjakan run berikutnya.
     batch = jobs[:MAX_JOBS_PER_RUN]
-    fetch_updates(token, offset=batch[-1][0] + 1)   # ack sampai job terakhir yang diproses
+    fetch_updates(token, offset=batch[-1][0] + 1)   # ack sampai pekerjaan terakhir yang diproses
 
     sisa = len(jobs) - len(batch)
-    print(f"[run] memproses {len(batch)} perintah analisa"
+    print(f"[run] memproses {len(batch)} pesan"
           + (f" ({sisa} sisanya menunggu run berikutnya)." if sisa else "."))
-    for _, chat_id, low in batch:
-        process(token, chat_id, low)
+    for _, chat_id, text in batch:
+        process(token, chat_id, text)
 
 
 if __name__ == "__main__":
