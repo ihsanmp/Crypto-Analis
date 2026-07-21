@@ -1,0 +1,69 @@
+name: Bot Riset Koin (Telegram)
+
+# Jalan terjadwal tiap 5 menit. Tiap run:
+#  1) "check" — ngintip Telegram: ada perintah "analisa" baru? (cepat, ~20 detik)
+#  2) kalau ada, baru pasang Claude + MCP dan jalankan analisa.
+# Karena analisa tidak instan, balasan datang beberapa menit setelah kamu ketik.
+#
+# CATATAN BIAYA: pakai repo PUBLIC supaya menit GitHub Actions GRATIS tanpa batas.
+# Di repo private, menit dibatasi (2000/bulan) dan run tiap 5 menit bisa cepat habis.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}   # bisa dipicu manual dari tab Actions untuk tes
+
+# Cegah dua run tumpang-tindih (analisa bisa makan beberapa menit).
+concurrency:
+  group: telegram-analisa-bot
+  cancel-in-progress: false
+
+jobs:
+  bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      # Kunci API diwariskan ke server MCP lewat environment job ini.
+      # SENGAJA tidak ditulis sebagai "${...}" di .mcp.cloud.json: kalau variabelnya
+      # tidak di-set, Claude Code meneruskan teks harfiah "${NAMA}" sebagai nilai,
+      # dan server MCP menganggapnya kunci sungguhan lalu gagal dengan error auth
+      # yang membingungkan. Pewarisan environment tidak punya masalah itu.
+      COINGLASS_API_KEY: ${{ secrets.COINGLASS_API_KEY }}
+      COINMARKETCAP_API_KEY: ${{ secrets.COINMARKETCAP_API_KEY }}
+      SUBSCRIPTION_LEVEL: Basic
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cek ada perintah analisa baru?
+        id: check
+        run: python cloud/bot_oneshot.py --check
+
+      - name: Setup Node
+        if: steps.check.outputs.has_work == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # Sengaja install global, bukan "npx -y" di dalam konfigurasi MCP: npx mengunduh
+      # ulang tiap run (lambat) dan pernah gagal karena cache terkunci. Binary global
+      # membuat perintahnya deterministik.
+      - name: Install Claude Code CLI & MCP server (Node)
+        if: steps.check.outputs.has_work == 'true'
+        run: npm install -g @anthropic-ai/claude-code mcp-coinglass @shinzolabs/coinmarketcap-mcp
+
+      - name: Install TradingView MCP (versi data)
+        if: steps.check.outputs.has_work == 'true'
+        run: pip install tradingview-mcp-server
+
+      - name: Jalankan analisa & balas ke Telegram
+        if: steps.check.outputs.has_work == 'true'
+        run: python cloud/bot_oneshot.py

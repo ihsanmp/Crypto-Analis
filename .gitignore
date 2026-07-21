@@ -1,0 +1,9 @@
+# Rahasia — JANGAN pernah di-commit (semua kredensial lewat GitHub Secrets)
+.env
+
+# MCP pihak ketiga yang di-clone saat runtime oleh workflow
+vendor/
+
+# Python
+__pycache__/
+*.pyc
