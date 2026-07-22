@@ -230,14 +230,19 @@ def run_claude(prompt, timeout, max_turns):
 
 def process(token, chat_id, text):
     kind = classify(text)
+    print(f"[proses] kind={kind} teks={text[:60]!r}", file=sys.stderr)
 
     if kind == "help":
-        send_message(token, chat_id, HELP_TEXT)
+        # Dicek juga hasil kirimnya — jalur ini sempat tanpa log sama sekali,
+        # sehingga sulit membedakan "terkirim" dari "gagal diam-diam".
+        if send_message(token, chat_id, HELP_TEXT):
+            print("[proses] teks bantuan TERKIRIM ke Telegram", file=sys.stderr)
+        else:
+            print("[proses] GAGAL KIRIM teks bantuan — cek TELEGRAM_BOT_TOKEN",
+                  file=sys.stderr)
         return
 
     timeout = int(os.environ.get("ANALYSIS_TIMEOUT", "900"))
-
-    print(f"[proses] kind={kind} teks={text[:60]!r}", file=sys.stderr)
 
     if kind == "analisa":
         words = text.strip().lower().split()
