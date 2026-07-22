@@ -18,11 +18,26 @@
 
 export default {
   async fetch(request, env) {
-    // Telegram selalu POST. Selain itu balas ringan saja (berguna untuk cek hidup).
+    // Telegram selalu POST. GET dipakai untuk cek kesehatan & konfigurasi.
+    // Sengaja hanya melaporkan ADA/TIDAK-nya rahasia, tidak pernah nilainya.
     if (request.method !== "POST") {
-      return new Response("Worker hidup. Endpoint ini hanya menerima webhook Telegram.", {
-        status: 200,
-      });
+      return new Response(
+        JSON.stringify(
+          {
+            ok: true,
+            pesan: "Worker hidup. Endpoint ini hanya menerima webhook Telegram.",
+            konfigurasi: {
+              GITHUB_TOKEN: env.GITHUB_TOKEN ? "terisi" : "KOSONG",
+              TELEGRAM_SECRET: env.TELEGRAM_SECRET ? "terisi" : "KOSONG",
+              GITHUB_REPO: env.GITHUB_REPO || "KOSONG",
+              ALLOWED_CHAT_IDS: env.ALLOWED_CHAT_IDS || "KOSONG",
+            },
+          },
+          null,
+          2,
+        ),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
     }
 
     // Verifikasi bahwa permintaan benar-benar dari Telegram, bukan orang iseng.
@@ -70,11 +85,17 @@ export default {
     });
 
     if (!res.ok) {
-      // Dicatat ke log Worker (wrangler tail / dashboard) supaya kegagalan terlihat.
-      console.log("dispatch gagal:", res.status, await res.text());
+      const detail = await res.text();
+      console.log("dispatch gagal:", res.status, detail);
+      // Balas ERROR ke Telegram, jangan "ok". Dengan begini kegagalan tercatat di
+      // getWebhookInfo -> last_error_message, sehingga penyebabnya kelihatan dari luar
+      // tanpa perlu membuka log Cloudflare. (Sebelumnya kegagalan ini tertelan diam-diam.)
+      return new Response(`dispatch gagal: GitHub ${res.status} ${detail.slice(0, 200)}`, {
+        status: 502,
+      });
     }
 
-    // Selalu balas 200 ke Telegram supaya tidak mengulang kirim terus-menerus.
+    // Sukses -> balas 200 supaya Telegram tidak mengirim ulang.
     return new Response("ok");
   },
 };
