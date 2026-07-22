@@ -51,7 +51,21 @@ Kamu jalan di CLOUD (tanpa TradingView Desktop). Semua data lewat API/MCP.
      ketemu, keluarkan F7 dari perhitungan dan renormalisasi bobot — jangan mengarang.
 2. **CoinGlass MCP** (`mcp__coinglass__*`): funding rate, open interest, long/short ratio, likuidasi → metrik F12, dipakai sebagai **sentimen & timing untuk spot** (bukan sinyal futures).
 3. **TradingView MCP** (`mcp__tradingview__*`, versi data): `get_technical_analysis`, `get_multi_timeframe_analysis` sebagai **cross-check arah saja**. Setting default-nya (EMA 20/50/200) berbeda dari setting user — kalau berbeda arah dengan script indikator, **yang menang adalah angka dari script** (sumber #0), dan sebutkan perbedaannya.
-4. **DefiLlama (WebFetch, gratis)**: TVL `https://api.llama.fi/protocol/{slug}`, fees/revenue `https://api.llama.fi/summary/fees/{protocol}` → F1, F2, F9 (pengganti Token Terminal).
+4. **Script fundamental (WAJIB untuk metrik keuangan protokol).**
+   Jalankan lewat Bash SETELAH dapat market cap dari CoinMarketCap:
+   `python cloud/fundamentals.py <TICKER> --mcap <market_cap_usd>`
+   (contoh: `python cloud/fundamentals.py AAVE --mcap 1460000000`)
+   Menghasilkan "laporan keuangan" protokol dari DefiLlama, dihitung dengan kode:
+   - Revenue & fees: total 30d/TTM, rincian **12 bulan terakhir**, **8 kuartal terakhir**,
+     pertumbuhan **MoM / QoQ / YoY**, run-rate tahunan
+   - TVL: nilai kini, perubahan 30d & 90d, tren akhir-bulan 6 bulan terakhir
+   - Volume DEX (kalau protokolnya DEX)
+   - Rasio valuasi siap pakai: **MC/TVL, P/S (TTM), P/F (TTM)**
+   Pakai angka ini apa adanya untuk F1, F2, F9 dan rasio valuasi — JANGAN hitung manual.
+   Kalau `error` muncul (koin bukan protokol, mis. L1 murni atau meme), sebutkan dan
+   alihkan bobot ke metrik lain sesuai profil kategori.
+   `active_addresses` selalu `null` — DefiLlama tidak menyediakannya. Cari via WebSearch;
+   kalau tidak ketemu, keluarkan F3 dari skor dan sebutkan. Jangan mengarang.
 5. **WebSearch**: katalis, jadwal unlock, listing, exploit/hack, narasi berjalan → F6, F10, red flags.
 
 **Aturan data hilang:** metrik yang sumbernya tidak tersedia (mis. active addresses, dev activity, holder distribution, netflow on-chain) → coba cari via WebSearch/WebFetch (DefiLlama, explorer). Kalau tetap tak ada, **keluarkan dari perhitungan dan normalisasi ulang bobotnya — JANGAN mengarang angka**. Sebut metrik mana yang tidak tersedia.
@@ -200,7 +214,10 @@ $TICKER — <kategori>
 
 📊 FUNDAMENTAL
 • Mcap $x,x miliar · FDV/MC x,xx
-• <rasio menonjol lain: MC/TVL, Volume/Mcap, inflasi>
+• MC/TVL x,xx · P/S x,x · P/F x,x  (TVL $x,x miliar, 30d +x%)
+• Revenue: 30d $x,x juta · TTM $xxx juta
+• Tren revenue: MoM x% · QoQ x% · YoY x%
+• Kuartalan: Qx $xx jt → Qx $xx jt → Qx $xx jt  (4 kuartal terakhir)
 • Katalis: <singkat>
 • Risiko/flag: <unlock, regulasi, dll — kalau ada>
 • Tidak tersedia: <metrik yang datanya kosong, kalau ada>

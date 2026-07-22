@@ -38,6 +38,10 @@ minta user menyebut ulang koin yang dimaksud dengan sopan.
   berpendapat — jangan menebak dari ingatan.
   1. Jalankan lewat Bash: `python cloud/indicators.py <TICKER>` → dapat EMA13/21, RSI14,
      Stoch(5,3,3), Fibonacci, struktur pasar untuk timeframe 1w/1d/4h (angka pasti, jangan hitung manual).
+  1b. Kalau pertanyaannya menyangkut REVENUE / KEUANGAN PROTOKOL (revenue bulanan atau
+     kuartalan, TVL, P/S, volume DEX), jalankan juga:
+     `python cloud/fundamentals.py <TICKER> --mcap <market_cap_dari_cryptoQuotesLatest>`
+     Angkanya dipakai apa adanya — jangan dihitung ulang secara manual.
   2. MCP `mcp__coinmarketcap__*`: `cryptoQuotesLatest` (harga, market cap, FDV, perubahan
      7d/30d), `getCryptoMetadata` (kategori/profil), `globalMetricsLatest` + `fearAndGreedLatest`
      (kondisi pasar umum).
