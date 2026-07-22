@@ -17,6 +17,7 @@ Konfigurasi lewat environment variable (di-set dari GitHub Secrets):
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -52,8 +53,9 @@ HELP_TEXT = (
     "   • ketik: analisa <koin>   (contoh: analisa sol)\n"
     "   • ketik: analisa          -> aku scan pasar & pilih beberapa koin menarik\n\n"
     "2) CARI KOIN LEWAT NARASI/SEKTOR:\n"
-    "   • carikan koin narasi yang menarik\n"
-    "   • carikan koin narasi AI    (atau RWA, DePIN, gaming, meme, dll)\n"
+    "   • carikan koin dengan narasi privacy yang menarik\n"
+    "     (ganti privacy dengan: AI, RWA, DePIN, gaming, meme, DeFi, L2, storage, dll)\n"
+    "   • carikan koin narasi yang menarik   -> aku cari sendiri narasi yang lagi jalan\n"
     "   • narasi apa yang lagi jalan?\n\n"
     "3) NGOBROL SANTAI:\n"
     "   • tanya bebas, misal: bagaimana pendapatmu tentang bitcoin?\n"
@@ -96,6 +98,18 @@ def classify(text):
     return "chat"
 
 
+# Nama narasi/sektor yang umum dipakai. Dipakai dengan pencocokan BATAS KATA supaya
+# istilah pendek tidak salah tangkap (mis. "ai" di dalam kata "pakai").
+NARASI_TERMS = [
+    "privacy", "privasi", "ai", "rwa", "depin", "gaming", "gamefi", "meme", "memecoin",
+    "defi", "oracle", "storage", "nft", "staking", "restaking", "modular", "dex",
+    "lending", "bridge", "stablecoin", "layer 2", "layer2", "l2", "l1", "infra",
+    "perpetual", "socialfi", "wallet", "payment", "interoperability",
+]
+_NARASI_RE = re.compile(r"\b(" + "|".join(re.escape(t) for t in NARASI_TERMS) + r")\b")
+_KOIN_RE = re.compile(r"\b(koin|coin|altcoin|token)\b")
+
+
 def is_narasi(low):
     """Deteksi permintaan screening narasi/sektor.
 
@@ -103,11 +117,14 @@ def is_narasi(low):
     bahas narasi), cuma tidak sedalam pipeline screening penuh."""
     if "narasi" in low or "sektor" in low or "tema " in low:
         return True
-    # "carikan/cari/cariin koin ...", "rekomendasi koin ...", "koin apa yang lagi ..."
+    # "carikan/cari/cariin koin ...", "rekomendasi koin ...", dsb.
     if any(k in low for k in ("cari", "carikan", "cariin", "rekomendasi", "rekomen", "saran")) \
-            and any(k in low for k in ("koin", "coin", "altcoin", "token")):
+            and _KOIN_RE.search(low):
         return True
     if low.startswith(("koin apa", "coin apa", "altcoin apa", "token apa")):
+        return True
+    # Menyebut nama narasi + kata "koin/token" -> mis. "ada koin privacy yang menarik ga"
+    if _NARASI_RE.search(low) and _KOIN_RE.search(low):
         return True
     return False
 
@@ -168,9 +185,8 @@ def build_narasi_prompt(text):
     with open(NARASI_PROMPT, encoding="utf-8") as f:
         base = f.read()
     return (f"{base}\n---\n## Permintaan user (jawab ini)\n{text}\n\n"
-            "Kalau user menyebut narasi/sektor tertentu (mis. AI, RWA, DePIN, gaming, meme), "
-            "fokuskan screening ke situ. Kalau tidak menyebut apa pun, cari sendiri narasi "
-            "yang paling bergerak saat ini.\n")
+            "Tentukan dulu JALUR A (user menyebut narasi tertentu -> fokus ke situ) atau "
+            "JALUR B (tidak menyebut -> cari sendiri narasi yang paling bergerak).\n")
 
 
 def build_chat_prompt(text):

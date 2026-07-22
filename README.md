@@ -6,8 +6,11 @@ memberi saran short/leverage/futures; data derivatif dipakai hanya sebagai senti
 
 Tiga cara pakai di Telegram:
 - `analisa <koin>` → analisa lengkap terstruktur (skor 0-100, fundamental+teknikal, rencana akumulasi)
-- `carikan koin narasi yang menarik` → screening narasi/sektor: petakan narasi yang bergerak,
-  cek katalisnya, lalu pilih koin di dalamnya (bisa juga spesifik: `carikan koin narasi AI`)
+- `carikan koin dengan narasi privacy yang menarik` → screening satu narasi yang kamu sebut:
+  cari koin di dalamnya, cek katalisnya, nilai kesehatan narasinya dengan jujur
+  (ganti `privacy` dengan AI, RWA, DePIN, gaming, meme, DeFi, L2, storage, dll)
+- `carikan koin narasi yang menarik` → tanpa menyebut narasi: bot memetakan sendiri sektor
+  mana yang sedang bergerak, lalu pilih koin terbaik di dalamnya
 - ngobrol bebas, mis. "bagaimana pendapatmu tentang bitcoin?" → jawaban santai tapi tetap berbasis data
 - `/help` → bantuan
 

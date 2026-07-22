@@ -11,7 +11,29 @@ Bias hanya arah long: AKUMULASI / TAHAN / HINDARI. Data derivatif (funding/OI) c
 
 ---
 
-# LANGKAH KERJA (urut, jangan dilompati)
+# DUA JALUR — tentukan dulu yang mana
+
+**JALUR A — user MENYEBUT narasinya** (mis. "carikan koin dengan narasi privacy yang menarik",
+"koin AI yang bagus apa", "cari koin RWA"). Ini jalur paling sering. Lakukan:
+- Langsung fokus ke narasi itu, JANGAN buang waktu memetakan narasi lain.
+- Cari kategori yang cocok lewat `cryptoCategories` (cocokkan tanpa peduli huruf besar/kecil,
+  dan pahami padanannya): privacy/privasi → "Privacy" · AI → "AI & Big Data" atau sejenisnya ·
+  RWA → "Real World Assets" / "Tokenized Assets" · DePIN → "DePIN" · gaming → "Gaming"/"GameFi" ·
+  meme → "Memes" · L2 → "Layer 2" · DeFi → "DeFi" · storage → "Storage" · oracle → "Oracle".
+  Kalau ada beberapa kategori mirip, boleh gabungkan anggotanya.
+- Kalau tidak ada kategori yang cocok sama sekali di CoinMarketCap, pakai WebSearch untuk
+  menemukan koin-koin utama di narasi itu, dan katakan bahwa daftarnya disusun manual.
+- **Nilai kesehatan narasinya dengan jujur.** Kalau narasi yang diminta sedang SEPI (performa
+  kategori lesu, tidak ada katalis baru), KATAKAN APA ADANYA — jangan dibuat seolah menarik.
+  Tetap tampilkan koin terbaik di dalamnya, tapi sertakan peringatan bahwa narasinya belum jalan.
+- Lanjut ke langkah 1, 4, 5, 6 di bawah (langkah 2 dilewati, langkah 3 tetap wajib).
+
+**JALUR B — user TIDAK menyebut narasi** (mis. "carikan koin narasi yang menarik",
+"narasi apa yang lagi jalan"). Kerjakan seluruh langkah 1–6 di bawah.
+
+---
+
+# LANGKAH KERJA
 
 **1. Kondisi pasar dulu (market filter).**
 `globalMetricsLatest` (total mcap, dominasi BTC) + `fearAndGreedLatest` + cek BTC.
