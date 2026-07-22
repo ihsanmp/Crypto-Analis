@@ -17,11 +17,13 @@ Tiga cara pakai di Telegram:
 Claude menarik data CoinMarketCap, CoinGlass, berita web, dan indikator teknikal yang
 dihitung sendiri (EMA/RSI/Stoch/Fibonacci multi-timeframe), lalu membalas ke Telegram.
 
-> **Catatan penting soal hosting.** Versi GitHub Actions (cron) dipakai lebih dulu, tapi
-> GitHub **tidak menjamin jadwal**: `*/5` kenyataannya berjalan ~1 jam sekali, kadang 3 jam.
-> Karena itu bot utama sekarang jalan sebagai **daemon di server always-on** — balasan
-> hitungan detik. Workflow Actions tetap disimpan sebagai cadangan manual (cron dimatikan).
-> Lihat bagian **"Deploy ke Server"** di bawah.
+> **Catatan penting soal hosting.** Awalnya memakai cron GitHub Actions, tapi GitHub
+> **tidak menjamin jadwal**: `*/5` kenyataannya berjalan ~1 jam sekali, kadang 3 jam,
+> sehingga balasan terasa hilang. Sekarang cron dibuang dan diganti **webhook**:
+> Telegram → Cloudflare Worker → langsung memicu Actions. Tanpa server, tetap gratis,
+> balasan datang beberapa menit setelah kamu kirim. Lihat **"Deploy: Webhook + Actions"**.
+> (Alternatif tanpa Actions: jalankan `cloud/bot_daemon.py` di perangkat always-on —
+> lihat **"Alternatif: Deploy ke Server"**.)
 
 ## Arsitektur
 
@@ -64,7 +66,55 @@ Hasil analisa dikirim balik ke Telegram (~5-15 menit setelah kamu ketik)
 | [cloud/prompts/narasi.md](cloud/prompts/narasi.md) | Prompt mode NARASI — screening sektor via `cryptoCategories`, verifikasi katalis, lalu pilih koin untuk akumulasi spot |
 | [cloud/prompts/chat.md](cloud/prompts/chat.md) | Prompt mode NGOBROL — jawaban santai untuk pertanyaan bebas, tetap ambil data sebelum berpendapat |
 
-## Deploy ke Server (cara utama — balasan hitungan detik)
+## Deploy: Webhook + Actions (cara utama, gratis, tanpa server)
+
+Alur: Telegram → Cloudflare Worker (gratis) → `repository_dispatch` → workflow jalan
+**saat itu juga**. Pesannya ikut dikirim lewat payload, jadi tidak ada polling sama sekali.
+
+### 1. Buat GitHub Personal Access Token
+
+[Settings → Developer settings → Personal access tokens → Fine-grained tokens](https://github.com/settings/personal-access-tokens/new)
+- Repository access: **Only select repositories** → `Crypto-Analis`
+- Permissions → Repository permissions → **Contents: Read and write** (izin minimum
+  yang dibutuhkan untuk memicu `repository_dispatch`)
+- Salin token-nya (`github_pat_...`)
+
+### 2. Buat Cloudflare Worker
+
+1. Daftar gratis di [dash.cloudflare.com](https://dash.cloudflare.com) (tidak perlu kartu)
+2. **Compute (Workers)** → **Create** → **Start from Hello World** → beri nama, **Deploy**
+3. Klik **Edit code**, hapus isinya, tempel seluruh isi
+   [deploy/cloudflare-worker.js](deploy/cloudflare-worker.js), lalu **Deploy**
+4. Buka **Settings → Variables and Secrets**, tambahkan 4 variabel (pilih tipe **Secret**
+   untuk dua yang pertama):
+
+   | Nama | Isi |
+   |---|---|
+   | `GITHUB_TOKEN` | token dari langkah 1 |
+   | `TELEGRAM_SECRET` | string acak buatanmu (mis. hasil `openssl rand -hex 16`) — bebas, asal sulit ditebak |
+   | `GITHUB_REPO` | `ihsanmp/Crypto-Analis` |
+   | `ALLOWED_CHAT_IDS` | chat ID kamu |
+
+5. Salin URL Worker-nya (mis. `https://xxx.workers.dev`)
+
+### 3. Daftarkan webhook ke Telegram
+
+```bash
+bash deploy/set-webhook.sh https://xxx.workers.dev RAHASIA_YANG_SAMA_DENGAN_TELEGRAM_SECRET
+```
+
+Cek hasilnya: `bash deploy/set-webhook.sh --status` — kalau `"url"` sudah terisi dan
+`"pending_update_count"` kecil, berarti sudah aktif.
+
+Selesai. Kirim pesan ke bot, workflow akan langsung jalan (lihat tab **Actions**).
+
+> ⚠️ Selama webhook aktif, Telegram **menonaktifkan** `getUpdates`. Jadi mode polling
+> (`workflow_dispatch` manual) tidak akan menemukan pesan. Kalau mau kembali ke polling:
+> `bash deploy/set-webhook.sh --delete`.
+
+---
+
+## Alternatif: Deploy ke Server (balasan hitungan detik)
 
 Butuh satu VPS Linux kecil (Ubuntu/Debian). Spesifikasi minim sudah cukup: 1 vCPU / 1 GB RAM.
 Pilihan murah: Hetzner CX22 (~€4/bln), Contabo, atau Oracle Cloud Always Free kalau dapat kapasitas.

@@ -1,24 +1,22 @@
 name: Bot Riset Koin (Telegram)
 
-# Jalan terjadwal tiap 5 menit. Tiap run:
-#  1) "check" — ngintip Telegram: ada perintah "analisa" baru? (cepat, ~20 detik)
-#  2) kalau ada, baru pasang Claude + MCP dan jalankan analisa.
-# Karena analisa tidak instan, balasan datang beberapa menit setelah kamu ketik.
+# JALUR UTAMA: repository_dispatch.
+# Telegram -> Cloudflare Worker -> POST /dispatches -> workflow ini jalan SEKARANG.
+# Pesannya ikut dikirim lewat client_payload, jadi tidak perlu polling sama sekali.
 #
-# CATATAN BIAYA: pakai repo PUBLIC supaya menit GitHub Actions GRATIS tanpa batas.
-# Di repo private, menit dibatasi (2000/bulan) dan run tiap 5 menit bisa cepat habis.
+# Cron SENGAJA TIDAK DIPAKAI: GitHub tidak menjamin jadwal — "*/5" kenyataannya
+# berjalan ~1 jam sekali, kadang lebih dari 3 jam, sehingga balasan terasa hilang.
+#
+# workflow_dispatch disimpan sebagai CADANGAN manual (mode polling). Catatan: selama
+# webhook Telegram aktif, getUpdates dinonaktifkan Telegram — jalankan
+# deploy/set-webhook.sh --delete dulu kalau mau memakai mode polling.
 
-# CRON DIMATIKAN. Bot utama sekarang jalan sebagai daemon di server always-on
-# (cloud/bot_daemon.py) yang membalas dalam hitungan detik. Alasan cron dimatikan:
-#   1) GitHub tidak menjamin jadwal — "*/5" kenyataannya jalan ~1 jam sekali, kadang 3 jam.
-#   2) Kalau cron DAN daemon jalan bersamaan, keduanya berebut getUpdates Telegram
-#      sehingga pesan bisa hilang acak.
-# Workflow ini disimpan sebagai CADANGAN: bisa dipicu manual dari tab Actions kalau
-# server sedang mati. Jangan aktifkan cron selama daemon hidup.
 on:
+  repository_dispatch:
+    types: [telegram]
   workflow_dispatch: {}
 
-# Cegah dua run tumpang-tindih (analisa bisa makan beberapa menit).
+# Satu pesan diproses satu per satu. Pesan berikutnya mengantre, tidak dibatalkan.
 concurrency:
   group: telegram-analisa-bot
   cancel-in-progress: false
@@ -28,17 +26,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       # Kunci API diwariskan ke server MCP lewat environment job ini.
       # SENGAJA tidak ditulis sebagai "${...}" di .mcp.cloud.json: kalau variabelnya
       # tidak di-set, Claude Code meneruskan teks harfiah "${NAMA}" sebagai nilai,
       # dan server MCP menganggapnya kunci sungguhan lalu gagal dengan error auth
       # yang membingungkan. Pewarisan environment tidak punya masalah itu.
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       COINGLASS_API_KEY: ${{ secrets.COINGLASS_API_KEY }}
       COINMARKETCAP_API_KEY: ${{ secrets.COINMARKETCAP_API_KEY }}
       SUBSCRIPTION_LEVEL: Basic
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      # Isi hanya saat dipicu webhook; kosong saat dijalankan manual.
+      TG_CHAT_ID: ${{ github.event.client_payload.chat_id }}
+      TG_TEXT: ${{ github.event.client_payload.text }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,12 +49,15 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Cek ada perintah analisa baru?
+      # Hanya untuk jalur manual: cek dulu ada pesan menunggu atau tidak, supaya
+      # run kosong berhenti murah tanpa memasang apa pun.
+      - name: Cek pesan menunggu (mode manual)
         id: check
+        if: github.event_name == 'workflow_dispatch'
         run: python cloud/bot_oneshot.py --check
 
       - name: Setup Node
-        if: steps.check.outputs.has_work == 'true'
+        if: github.event_name == 'repository_dispatch' || steps.check.outputs.has_work == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -62,13 +66,13 @@ jobs:
       # ulang tiap run (lambat) dan pernah gagal karena cache terkunci. Binary global
       # membuat perintahnya deterministik.
       - name: Install Claude Code CLI & MCP server (Node)
-        if: steps.check.outputs.has_work == 'true'
+        if: github.event_name == 'repository_dispatch' || steps.check.outputs.has_work == 'true'
         run: npm install -g @anthropic-ai/claude-code mcp-coinglass @shinzolabs/coinmarketcap-mcp
 
       - name: Install TradingView MCP (versi data)
-        if: steps.check.outputs.has_work == 'true'
+        if: github.event_name == 'repository_dispatch' || steps.check.outputs.has_work == 'true'
         run: pip install tradingview-mcp-server
 
       - name: Jalankan analisa & balas ke Telegram
-        if: steps.check.outputs.has_work == 'true'
+        if: github.event_name == 'repository_dispatch' || steps.check.outputs.has_work == 'true'
         run: python cloud/bot_oneshot.py

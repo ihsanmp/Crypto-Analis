@@ -287,6 +287,23 @@ def main():
 
     token = os.environ["TELEGRAM_BOT_TOKEN"].strip()
     allowed = allowed_chats()
+
+    # --- Mode WEBHOOK -------------------------------------------------------
+    # Dipicu repository_dispatch dari Cloudflare Worker: pesannya sudah dikirim
+    # lewat environment, jadi tidak perlu polling sama sekali. Ini jalur utama
+    # sekarang — balasan datang beberapa menit setelah user mengetik, bukan
+    # menunggu cron GitHub yang bisa telat berjam-jam.
+    payload_chat = os.environ.get("TG_CHAT_ID", "").strip()
+    payload_text = os.environ.get("TG_TEXT", "").strip()
+    if payload_chat and payload_text:
+        if payload_chat not in allowed:      # pertahanan berlapis (Worker juga menyaring)
+            print(f"[webhook] chat tak terdaftar, diabaikan: {payload_chat}", file=sys.stderr)
+            return
+        print(f"[webhook] pesan dari {payload_chat}: {payload_text[:70]!r}", file=sys.stderr)
+        process(token, payload_chat, payload_text)
+        return
+
+    # --- Mode POLLING (cadangan manual) -------------------------------------
     updates = fetch_updates(token)
 
     if check_only:
