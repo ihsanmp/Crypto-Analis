@@ -4,8 +4,10 @@ Sistem riset crypto **spot** jangka menengah (daily/weekly, analisa multi-timefr
 jalan **24 jam di GitHub Actions — tanpa perlu laptop menyala**. Khusus spot: tidak
 memberi saran short/leverage/futures; data derivatif dipakai hanya sebagai sentimen timing.
 
-Dua cara pakai di Telegram:
-- `analisa <koin>` → analisa lengkap terstruktur (skor 0-100, fundamental+teknikal, rencana entry/stop/target)
+Tiga cara pakai di Telegram:
+- `analisa <koin>` → analisa lengkap terstruktur (skor 0-100, fundamental+teknikal, rencana akumulasi)
+- `carikan koin narasi yang menarik` → screening narasi/sektor: petakan narasi yang bergerak,
+  cek katalisnya, lalu pilih koin di dalamnya (bisa juga spesifik: `carikan koin narasi AI`)
 - ngobrol bebas, mis. "bagaimana pendapatmu tentang bitcoin?" → jawaban santai tapi tetap berbasis data
 - `/help` → bantuan
 
@@ -50,6 +52,7 @@ Hasil analisa dikirim balik ke Telegram (~5-15 menit setelah kamu ketik)
 | [cloud/indicators.py](cloud/indicators.py) | Penarik OHLC + kalkulator indikator deterministik (EMA/RSI/Stoch/Fibonacci untuk 1w/1d/4h). Tanpa dependensi eksternal |
 | [cloud/.mcp.cloud.json](cloud/.mcp.cloud.json) | Konfigurasi MCP (TradingView-data + CoinGecko + CoinGlass) |
 | [cloud/prompts/analisa.md](cloud/prompts/analisa.md) | **Mesin metodologi analisa** — sistem skor 0–100 (fundamental+teknikal), aturan veto, dan setting indikator persis punyamu (EMA 13/21, RSI 14, Stoch 5,3,3, Fibonacci Golden Pocket) |
+| [cloud/prompts/narasi.md](cloud/prompts/narasi.md) | Prompt mode NARASI — screening sektor via `cryptoCategories`, verifikasi katalis, lalu pilih koin untuk akumulasi spot |
 | [cloud/prompts/chat.md](cloud/prompts/chat.md) | Prompt mode NGOBROL — jawaban santai untuk pertanyaan bebas, tetap ambil data sebelum berpendapat |
 
 ## Deploy (sekali saja)

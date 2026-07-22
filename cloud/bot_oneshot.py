@@ -30,6 +30,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(BASE_DIR)
 ANALISA_PROMPT = os.path.join(BASE_DIR, "prompts", "analisa.md")
 CHAT_PROMPT = os.path.join(BASE_DIR, "prompts", "chat.md")
+NARASI_PROMPT = os.path.join(BASE_DIR, "prompts", "narasi.md")
 MCP_CONFIG = os.path.join(BASE_DIR, ".mcp.cloud.json")
 
 ALLOWED_TOOLS = ",".join([
@@ -50,10 +51,15 @@ HELP_TEXT = (
     "1) ANALISA LENGKAP (terstruktur, berskor):\n"
     "   • ketik: analisa <koin>   (contoh: analisa sol)\n"
     "   • ketik: analisa          -> aku scan pasar & pilih beberapa koin menarik\n\n"
-    "2) NGOBROL SANTAI:\n"
+    "2) CARI KOIN LEWAT NARASI/SEKTOR:\n"
+    "   • carikan koin narasi yang menarik\n"
+    "   • carikan koin narasi AI    (atau RWA, DePIN, gaming, meme, dll)\n"
+    "   • narasi apa yang lagi jalan?\n\n"
+    "3) NGOBROL SANTAI:\n"
     "   • tanya bebas, misal: bagaimana pendapatmu tentang bitcoin?\n"
     "   • atau: prospek eth jangka menengah gimana?\n\n"
-    "Analisa lengkap makan waktu beberapa menit. Ngobrol biasanya lebih cepat.\n"
+    "Analisa & screening narasi makan waktu beberapa menit. Ngobrol biasanya lebih cepat.\n"
+    "📌 Fokusku SPOT saja — tidak memberi saran short/leverage/futures.\n"
     "⚠️ Semua output riset berbasis data, bukan saran keuangan."
 )
 
@@ -79,13 +85,31 @@ def send_message(token, chat_id, text):
 
 
 def classify(text):
-    """Tentukan jenis pesan: 'help' | 'analisa' | 'chat'."""
+    """Tentukan jenis pesan: 'help' | 'analisa' | 'narasi' | 'chat'."""
     low = text.strip().lower().lstrip("/")
     if low in ("start", "help", "mulai", "bantuan"):
         return "help"
     if low == "analisa" or low.startswith("analisa "):
         return "analisa"
+    if is_narasi(low):
+        return "narasi"
     return "chat"
+
+
+def is_narasi(low):
+    """Deteksi permintaan screening narasi/sektor.
+
+    Sengaja longgar: kalau meleset ke mode chat pun bot tetap menjawab (chat juga bisa
+    bahas narasi), cuma tidak sedalam pipeline screening penuh."""
+    if "narasi" in low or "sektor" in low or "tema " in low:
+        return True
+    # "carikan/cari/cariin koin ...", "rekomendasi koin ...", "koin apa yang lagi ..."
+    if any(k in low for k in ("cari", "carikan", "cariin", "rekomendasi", "rekomen", "saran")) \
+            and any(k in low for k in ("koin", "coin", "altcoin", "token")):
+        return True
+    if low.startswith(("koin apa", "coin apa", "altcoin apa", "token apa")):
+        return True
+    return False
 
 
 def fetch_updates(token, offset=None):
@@ -140,6 +164,15 @@ def build_analisa_prompt(text):
     return f"{base}\n---\n{cmd}"
 
 
+def build_narasi_prompt(text):
+    with open(NARASI_PROMPT, encoding="utf-8") as f:
+        base = f.read()
+    return (f"{base}\n---\n## Permintaan user (jawab ini)\n{text}\n\n"
+            "Kalau user menyebut narasi/sektor tertentu (mis. AI, RWA, DePIN, gaming, meme), "
+            "fokuskan screening ke situ. Kalau tidak menyebut apa pun, cari sendiri narasi "
+            "yang paling bergerak saat ini.\n")
+
+
 def build_chat_prompt(text):
     with open(CHAT_PROMPT, encoding="utf-8") as f:
         base = f.read()
@@ -189,6 +222,10 @@ def process(token, chat_id, text):
         label = f"koin {coin}" if coin else "scan pasar"
         send_message(token, chat_id, f"⏳ Oke, mulai riset {label}. Tunggu beberapa menit ya...")
         output, err = run_claude(build_analisa_prompt(text), timeout, max_turns=60)
+    elif kind == "narasi":
+        send_message(token, chat_id, "🔍 Oke, aku telusuri narasi yang lagi bergerak. "
+                                     "Ini agak lama karena aku petakan sektornya dulu...")
+        output, err = run_claude(build_narasi_prompt(text), timeout, max_turns=70)
     else:  # chat
         send_message(token, chat_id, "💬 Sebentar ya, aku cek datanya dulu...")
         output, err = run_claude(build_chat_prompt(text), timeout, max_turns=40)
