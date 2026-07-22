@@ -261,12 +261,15 @@ def process(token, chat_id, text):
 
 def config_problem():
     """Cek konfigurasi wajib. Return pesan error, atau None kalau beres."""
+    # Sumber nilai: file .env (server) atau GitHub Secrets (Actions).
     if not os.environ.get("TELEGRAM_BOT_TOKEN", "").strip():
-        return "TELEGRAM_BOT_TOKEN kosong — isi GitHub Secret dengan token dari @BotFather."
+        return ("TELEGRAM_BOT_TOKEN kosong — isi di .env (server) atau GitHub Secrets "
+                "(Actions) dengan token dari @BotFather.")
     if not allowed_chats():
-        return ("TELEGRAM_CHAT_ID kosong — isi GitHub Secret dengan chat ID kamu. "
-                "Bot sengaja menolak melayani semua chat demi keamanan: tanpa daftar ini, "
-                "siapa pun yang menemukan bot bisa menghabiskan kuota Claude-mu.")
+        return ("TELEGRAM_CHAT_ID kosong — isi di .env (server) atau GitHub Secrets "
+                "(Actions) dengan chat ID kamu. Bot sengaja menolak melayani semua chat "
+                "demi keamanan: tanpa daftar ini, siapa pun yang menemukan bot bisa "
+                "menghabiskan kuota Claude-mu.")
     return None
 
 

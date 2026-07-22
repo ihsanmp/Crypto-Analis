@@ -8,10 +8,15 @@ name: Bot Riset Koin (Telegram)
 # CATATAN BIAYA: pakai repo PUBLIC supaya menit GitHub Actions GRATIS tanpa batas.
 # Di repo private, menit dibatasi (2000/bulan) dan run tiap 5 menit bisa cepat habis.
 
+# CRON DIMATIKAN. Bot utama sekarang jalan sebagai daemon di server always-on
+# (cloud/bot_daemon.py) yang membalas dalam hitungan detik. Alasan cron dimatikan:
+#   1) GitHub tidak menjamin jadwal — "*/5" kenyataannya jalan ~1 jam sekali, kadang 3 jam.
+#   2) Kalau cron DAN daemon jalan bersamaan, keduanya berebut getUpdates Telegram
+#      sehingga pesan bisa hilang acak.
+# Workflow ini disimpan sebagai CADANGAN: bisa dipicu manual dari tab Actions kalau
+# server sedang mati. Jangan aktifkan cron selama daemon hidup.
 on:
-  schedule:
-    - cron: "*/5 * * * *"
-  workflow_dispatch: {}   # bisa dipicu manual dari tab Actions untuk tes
+  workflow_dispatch: {}
 
 # Cegah dua run tumpang-tindih (analisa bisa makan beberapa menit).
 concurrency:

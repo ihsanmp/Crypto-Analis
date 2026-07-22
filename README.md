@@ -17,6 +17,12 @@ Tiga cara pakai di Telegram:
 Claude menarik data CoinMarketCap, CoinGlass, berita web, dan indikator teknikal yang
 dihitung sendiri (EMA/RSI/Stoch/Fibonacci multi-timeframe), lalu membalas ke Telegram.
 
+> **Catatan penting soal hosting.** Versi GitHub Actions (cron) dipakai lebih dulu, tapi
+> GitHub **tidak menjamin jadwal**: `*/5` kenyataannya berjalan ~1 jam sekali, kadang 3 jam.
+> Karena itu bot utama sekarang jalan sebagai **daemon di server always-on** — balasan
+> hitungan detik. Workflow Actions tetap disimpan sebagai cadangan manual (cron dimatikan).
+> Lihat bagian **"Deploy ke Server"** di bawah.
+
 ## Arsitektur
 
 ```
@@ -58,7 +64,44 @@ Hasil analisa dikirim balik ke Telegram (~5-15 menit setelah kamu ketik)
 | [cloud/prompts/narasi.md](cloud/prompts/narasi.md) | Prompt mode NARASI — screening sektor via `cryptoCategories`, verifikasi katalis, lalu pilih koin untuk akumulasi spot |
 | [cloud/prompts/chat.md](cloud/prompts/chat.md) | Prompt mode NGOBROL — jawaban santai untuk pertanyaan bebas, tetap ambil data sebelum berpendapat |
 
-## Deploy (sekali saja)
+## Deploy ke Server (cara utama — balasan hitungan detik)
+
+Butuh satu VPS Linux kecil (Ubuntu/Debian). Spesifikasi minim sudah cukup: 1 vCPU / 1 GB RAM.
+Pilihan murah: Hetzner CX22 (~€4/bln), Contabo, atau Oracle Cloud Always Free kalau dapat kapasitas.
+
+```bash
+# 1) Login ke server, ambil kodenya
+git clone https://github.com/ihsanmp/Crypto-Analis.git
+cd Crypto-Analis
+
+# 2) Pasang semua kebutuhan (Python, Node, Claude CLI, server MCP)
+bash deploy/setup-server.sh
+
+# 3) Isi kredensial
+nano .env        # isi TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
+                 # COINMARKETCAP_API_KEY, CLAUDE_CODE_OAUTH_TOKEN
+
+# 4) Uji jalan dulu di depan mata (Ctrl+C untuk berhenti)
+python3 cloud/bot_daemon.py
+
+# 5) Kalau sudah benar, jadikan service (otomatis hidup lagi kalau crash/reboot)
+bash deploy/install-service.sh
+```
+
+Perintah harian:
+```bash
+sudo journalctl -u crypto-analis -f      # lihat log langsung
+sudo systemctl restart crypto-analis     # restart
+sudo systemctl stop crypto-analis        # berhenti
+```
+
+> ⚠️ **Jangan jalankan daemon dan cron GitHub Actions bersamaan** — keduanya berebut
+> membaca pesan Telegram yang sama sehingga pesan bisa hilang acak. Cron di `bot.yml`
+> sudah dimatikan; workflow itu kini hanya bisa dipicu manual sebagai cadangan.
+
+---
+
+## Deploy ke GitHub Actions (cadangan)
 
 ### 1. Kredensial yang perlu disiapkan
 
