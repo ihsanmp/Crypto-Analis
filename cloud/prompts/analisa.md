@@ -66,6 +66,22 @@ Kamu jalan di CLOUD (tanpa TradingView Desktop). Semua data lewat API/MCP.
    alihkan bobot ke metrik lain sesuai profil kategori.
    `active_addresses` selalu `null` — DefiLlama tidak menyediakannya. Cari via WebSearch;
    kalau tidak ketemu, keluarkan F3 dari skor dan sebutkan. Jangan mengarang.
+
+5. **Script kepemilikan / whale (untuk F8 dan pertanyaan "siapa investor besarnya").**
+   `python cloud/investors.py <TICKER>` → jumlah holder, 10 pemegang teratas beserta
+   persen supply, dan konsentrasi top-10.
+   **CARA MEMBACANYA — jangan salah tafsir:**
+   - Alamat keluar TANPA LABEL. Sebelum menyimpulkan apa pun, kenali dulu alamat besar
+     lewat WebSearch (cari alamatnya). Pemegang teratas token biasanya **dompet bursa**
+     atau **kontrak protokol** (staking, treasury, vesting) — BUKAN investor perorangan.
+   - Porsi besar di kontrak staking/treasury **bukan** tanda konsentrasi berbahaya.
+     Baru sebut "terkonsentrasi" kalau ada dompet non-bursa non-kontrak yang besar.
+   - Kalau `error` muncul (koin bukan token Ethereum), sebutkan bahwa data holder
+     on-chain tidak tersedia untuk chain itu dan keluarkan F8 dari skor.
+   **Investor institusi** (VC, dana kelola, perusahaan treasury, ETF) TIDAK ada di script
+   ini — wajib dicari lewat WebSearch: putaran pendanaan & siapa investornya, kepemilikan
+   treasury perusahaan publik, aliran dana ETF, dan laporan whale. Sebutkan **nominal dan
+   tanggalnya** bila ketemu; kalau tidak ada, katakan tidak tersedia.
 5. **WebSearch**: katalis, jadwal unlock, listing, exploit/hack, narasi berjalan → F6, F10, red flags.
 
 **Aturan data hilang:** metrik yang sumbernya tidak tersedia (mis. active addresses, dev activity, holder distribution, netflow on-chain) → coba cari via WebSearch/WebFetch (DefiLlama, explorer). Kalau tetap tak ada, **keluarkan dari perhitungan dan normalisasi ulang bobotnya — JANGAN mengarang angka**. Sebut metrik mana yang tidak tersedia.
@@ -228,14 +244,21 @@ WEEKLY (arah)
 • Harga $xxx vs EMA21 $xxx → DI ATAS/DI BAWAH (x,x%)
 • EMA13 $xxx · EMA21 $xxx · <GOLDEN CROSS / DEATH CROSS / netral>
 • RSI xx · Stoch K xx / D xx
+• Volume: x,xx× rata-rata 20 periode <(breakout terkonfirmasi / belum)>
 • Fib: <zona, sebut Golden Pocket bila relevan>
 • Struktur: <HH-HL / LH-LL / dsb>
 
 DAILY (setup)
-• <format sama persis seperti Weekly>
+• <format sama persis seperti Weekly, termasuk baris Volume>
 
 4H (timing)
-• <format sama persis seperti Weekly>
+• <format sama persis seperti Weekly, termasuk baris Volume>
+
+💰 KEPEMILIKAN
+• Jumlah holder: xxx.xxx · Top-10 xx,x% supply
+• Pemegang terbesar: xx,x% — <label hasil riset: bursa / kontrak staking / dompet whale>
+• Investor institusi: <nama + nominal + tanggal, atau "tidak ditemukan">
+• <catatan konsentrasi setelah alamat bursa/kontrak dikeluarkan>
 
 🧭 RENCANA SPOT
 Entry   40% $xxx–xxx
