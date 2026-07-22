@@ -81,9 +81,16 @@ def tg_api(token, method, params=None, timeout=60):
 
 
 def send_message(token, chat_id, text):
+    """Kirim pesan (dipecah kalau melebihi batas Telegram). Return True kalau SEMUA
+    potongan benar-benar terkirim — pemanggil wajib memeriksa hasilnya, jangan
+    menganggap pengiriman pasti berhasil."""
+    terkirim = True
     for i in range(0, len(text), 3900):
-        tg_api(token, "sendMessage", {"chat_id": chat_id, "text": text[i:i + 3900]})
+        resp = tg_api(token, "sendMessage", {"chat_id": chat_id, "text": text[i:i + 3900]})
+        if not resp or not resp.get("ok"):
+            terkirim = False
         time.sleep(0.4)
+    return terkirim
 
 
 def classify(text):
@@ -248,15 +255,24 @@ def process(token, chat_id, text):
 
     # Catat hasil ke log CI (stderr). Isi balasan tidak dicetak penuh — hanya status &
     # potongan error — supaya log tetap informatif tanpa membanjiri / membocorkan.
+    # Status dicetak SETELAH pengiriman dan berdasarkan hasilnya. (Dulu dicetak lebih
+    # dulu, sehingga kegagalan kirim — mis. TELEGRAM_BOT_TOKEN kedaluwarsa/di-revoke —
+    # tetap tampak "OK" di log dan penyebabnya jadi tersamar.)
     if err:
-        print(f"[proses] GAGAL: {err[:400]}", file=sys.stderr)
-        send_message(token, chat_id, f"❌ {err}")
+        print(f"[proses] analisa GAGAL: {err[:400]}", file=sys.stderr)
+        body = f"❌ {err}"
     elif not output:
         print("[proses] output kosong dari Claude", file=sys.stderr)
-        send_message(token, chat_id, "❌ Selesai tapi output kosong. Coba lagi.")
+        body = "❌ Selesai tapi output kosong. Coba lagi."
     else:
-        print(f"[proses] OK, balasan {len(output)} karakter dikirim", file=sys.stderr)
-        send_message(token, chat_id, output)
+        body = output
+
+    if send_message(token, chat_id, body):
+        print(f"[proses] balasan {len(body)} karakter TERKIRIM ke Telegram", file=sys.stderr)
+    else:
+        print(f"[proses] GAGAL KIRIM ke Telegram ({len(body)} karakter hilang). "
+              "Penyebab tersering: TELEGRAM_BOT_TOKEN salah/kedaluwarsa/sudah di-revoke.",
+              file=sys.stderr)
 
 
 def config_problem():
