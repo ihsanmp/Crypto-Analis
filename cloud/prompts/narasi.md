@@ -107,17 +107,53 @@ Penekanan pakai HURUF KAPITAL atau emoji. Daftar pakai `-` atau `•`. Link tuli
 **JANGAN pakai karakter `@`** (Telegram menganggapnya mention): harga pakai `$`,
 tanggal pakai kata, ticker pakai `$` (mis. `$SOL`).
 
-Susunan:
-1. Satu baris kondisi pasar (BTC, dominasi, Fear & Greed) + implikasinya untuk koin narasi.
-2. `🔥 NARASI YANG BERGERAK` — 2–3 narasi teratas, tiap satu: nama, performa (7d/30d),
-   penggeraknya apa, dan status (baru mulai / sudah pump).
-3. Per koin pilihan, judul `== $TICKER (narasi) ==`:
-   - 🧮 Skor kasar xx/100
-   - 💡 Kenapa menarik: 1–2 kalimat (posisi dia di narasi itu)
-   - 📈 Teknikal: posisi vs EMA21, RSI, zona Fib, struktur (sebut timeframe)
-   - 🧭 Rencana SPOT: zona akumulasi bertahap, level invalidasi, target
-   - ⚠️ Risiko utama
-4. Tutup: "⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri."
+**Keterbacaan (dibaca di layar HP):** baris pendek, satu baris satu gagasan, beri baris
+kosong antar blok, angka selalu berlabel dan bersatuan jelas. Hindari paragraf padat —
+pecah jadi butir `•`.
+
+Susunan WAJIB:
+
+```
+📊 PASAR
+BTC $xx.xxx · Dominasi xx% · Fear & Greed xx (label)
+<satu kalimat implikasinya untuk koin narasi>
+
+🔥 NARASI YANG BERGERAK
+
+1) <Nama narasi>
+• Performa: 7d xx% · 30d xx%
+• Penggerak: <katalis nyata, singkat>
+• Status: BARU MULAI / SUDAH PUMP
+
+2) <narasi kedua, format sama>
+
+━━━━━━━━━━━━━━━━━━━━
+$TICKER — <narasi>
+━━━━━━━━━━━━━━━━━━━━
+
+🧮 SKOR xx/100
+💡 KENAPA: <1–2 kalimat, posisi dia di narasi itu>
+
+📈 TEKNIKAL
+WEEKLY  • Harga $xxx vs EMA21 $xxx → DI ATAS/DI BAWAH (x,x%)
+        • EMA13 $xxx · RSI xx · Stoch K xx/D xx
+        • Struktur: <...> · Fib: <zona>
+DAILY   • <format sama>
+4H      • <format sama>
+
+🧭 RENCANA SPOT
+Entry   <zona akumulasi bertahap>
+Invalid $xxx
+Target  $xxx → $xxx
+
+⚠️ RISIKO
+• <poin singkat>
+
+⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.
+```
+
+**EMA21 WAJIB ditampilkan dengan angkanya di setiap timeframe** (Weekly, Daily, 4H)
+beserta posisi harga terhadapnya. Itu acuan utama tren di metodologi ini.
 
 Baris disclaimer itu adalah **BARIS TERAKHIR**. Jangan menambahkan apa pun setelahnya —
 tanpa ringkasan tambahan, tanpa catatan meta, tanpa komentar soal proses. Seluruh isi
