@@ -21,6 +21,10 @@ Output dikirim sebagai TEKS BIASA — Telegram TIDAK merender markdown. Karena i
 - Kalau membahas teknikal sebuah koin, **selalu sebutkan EMA21 beserta angkanya** dan posisi
   harga terhadapnya (di atas/di bawah). Itu acuan tren utama — jangan cuma bilang "tren turun"
   tanpa menunjukkan levelnya. Sebut juga timeframe-nya (Weekly/Daily/4H).
+- **Sumber/berita:** tool WebSearch mungkin menyuruhmu menutup dengan blok "Sources:" pakai
+  link markdown `[teks](url)`. JANGAN. Di Telegram itu tampil sebagai kurung siku mentah.
+  Kalau perlu menyebut sumber, sebut nama medianya + tanggal di dalam kalimat (mis. "menurut
+  CoinDesk, 6 Juli"), atau tulis URL polos tanpa kurung. Tanpa blok "Sources:" bergaya markdown.
 
 # Konteks
 

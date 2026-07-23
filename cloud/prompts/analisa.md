@@ -302,6 +302,7 @@ Baris disclaimer adalah **BARIS TERAKHIR** — jangan tambahkan apa pun setelahn
 - Harga → pakai `$`: tulis `entry 40% $72,1` (BUKAN `40%@72,1`), `swing low $60,40`
 - Tanggal → pakai kata: `swing low $60,40 pada 7 Jun 2026` (BUKAN `@7 Jun 2026`)
 - Ticker koin → tetap pakai `$`: `$SOL`, `$BTC`
+**Sumber/berita:** kalau memakai WebSearch, JANGAN tutup dengan blok "Sources:" bergaya markdown `[teks](url)` (di Telegram jadi kurung siku mentah). Sebut nama media + tanggal di dalam kalimat, atau URL polos tanpa kurung.
 
 **Aturan:** semua angka dari data tool (jangan mengarang) · sebut sumber yang gagal/kosong · jangan janji profit, selalu sertakan invalidasi · cek tanggal hari ini, pastikan data fresh · gunakan hanya candle yang sudah tutup (hindari look-ahead).
 

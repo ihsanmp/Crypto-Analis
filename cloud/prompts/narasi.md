@@ -106,6 +106,7 @@ JANGAN pakai `**tebal**`, `*miring*`, `` `kode` ``, `#` judul, tabel, atau `[tek
 Penekanan pakai HURUF KAPITAL atau emoji. Daftar pakai `-` atau `•`. Link tulis URL polos.
 **JANGAN pakai karakter `@`** (Telegram menganggapnya mention): harga pakai `$`,
 tanggal pakai kata, ticker pakai `$` (mis. `$SOL`).
+**Sumber/berita:** kalau memakai WebSearch, JANGAN tutup dengan blok "Sources:" bergaya markdown `[teks](url)` (di Telegram jadi kurung siku mentah). Sebut nama media + tanggal di dalam kalimat, atau URL polos tanpa kurung.
 
 **Keterbacaan (dibaca di layar HP):** baris pendek, satu baris satu gagasan, beri baris
 kosong antar blok, angka selalu berlabel dan bersatuan jelas. Hindari paragraf padat —
