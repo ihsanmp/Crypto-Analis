@@ -35,6 +35,10 @@ jobs:
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       COINGLASS_API_KEY: ${{ secrets.COINGLASS_API_KEY }}
       COINMARKETCAP_API_KEY: ${{ secrets.COINMARKETCAP_API_KEY }}
+      # Untuk holder/wallet multi-chain (BSC, Base, Arbitrum, Solana, dll) via cloud/
+      # investors.py & wallet.py. GRATIS — daftar di moralis.com. Kalau kosong, chain
+      # Ethereum tetap jalan (pakai Ethplorer); chain lain akan memberi pesan jelas.
+      MORALIS_API_KEY: ${{ secrets.MORALIS_API_KEY }}
       SUBSCRIPTION_LEVEL: Basic
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
       # Isi hanya saat dipicu webhook; kosong saat dijalankan manual.

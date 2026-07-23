@@ -69,7 +69,10 @@ Kamu jalan di CLOUD (tanpa TradingView Desktop). Semua data lewat API/MCP.
 
 5. **Script kepemilikan / whale (untuk F8 dan pertanyaan "siapa investor besarnya").**
    `python cloud/investors.py <TICKER>` → jumlah holder, 10 pemegang teratas beserta
-   persen supply, **kategori otomatis tiap alamat**, dan konsentrasi.
+   persen supply, **kategori otomatis tiap alamat**, dan konsentrasi. **MULTI-CHAIN:**
+   chain terdeteksi otomatis dari CoinGecko; untuk memaksa chain pakai
+   `python cloud/investors.py <TICKER> --chain bsc|base|arbitrum|polygon|optimism|avalanche|solana`.
+   Ethereum via Ethplorer+label lokal (tanpa key); chain lain & Solana via Moralis.
    **CARA MEMBACANYA:**
    - Tiap holder punya field `kategori`: BURSA / KONTRAK-PROTOKOL / TERLABELI (dari dataset
      label gratis) atau TIDAK DIKENALI. Alamat BURSA & KONTRAK **bukan** whale perorangan —
@@ -78,8 +81,22 @@ Kamu jalan di CLOUD (tanpa TradingView Desktop). Semua data lewat API/MCP.
      bukan `top10_persen` mentah.
    - Alamat berlabel TIDAK DIKENALI yang porsinya besar (>2-3%): cek lewat WebSearch —
      bisa jadi whale, dana/VC, atau kontrak yang belum ada di dataset. Jangan mengarang.
-   - Kalau `error` muncul (koin bukan token Ethereum), sebutkan bahwa data holder
-     on-chain tidak tersedia untuk chain itu dan keluarkan F8 dari skor.
+   - Kalau `error` menyebut MORALIS_API_KEY belum di-set (chain non-ETH), sebutkan data holder
+     chain itu butuh key Moralis gratis dan keluarkan F8 dari skor; ETH tetap bisa.
+   - Kalau `error` lain (koin L1 sendiri seperti BTC), sebutkan data holder on-chain tidak
+     tersedia untuk chain itu dan keluarkan F8 dari skor.
+
+5b. **Pelacak WALLET ADDRESS (kalau user menyebут/menempel sebuah alamat dompet).**
+   `python cloud/wallet.py <ALAMAT>` (auto ETH/Solana) atau `--chain <chain>` untuk chain lain
+   → isi dompet, nilai USD tiap aset, % portofolio, nilai bersih, dan identitas alamat bila
+   dikenal (mis. "Binance 8"). Token spam sudah dibuang. Gunakan untuk menjawab "dompet ini
+   isinya apa / punya siapa / lagi ngapain". Butuh MORALIS_API_KEY (ETH label tetap jalan tanpa key).
+
+5c. **Sentimen sosial & pasar (gratis).** `python cloud/sentiment.py <TICKER>` →
+   Fear & Greed Index pasar + arahnya, dan per-koin: sentiment votes komunitas, ukuran
+   audiens (Twitter/X, Reddit, Telegram), watchlist, aktivitas developer. Ini KONTEKS
+   tambahan (bukan sinyal utama): votes bisa bias, follower = ukuran audiens bukan mood
+   real-time. Untuk narasi/hype spesifik, tetap lengkapi WebSearch.
    **Investor institusi** (VC, dana kelola, perusahaan treasury, ETF) TIDAK ada di script
    ini — wajib dicari lewat WebSearch: putaran pendanaan & siapa investornya, kepemilikan
    treasury perusahaan publik, aliran dana ETF, dan laporan whale. Sebutkan **nominal dan

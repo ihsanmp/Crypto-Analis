@@ -46,6 +46,10 @@ minta user menyebut ulang koin yang dimaksud dengan sopan.
      kuartalan, TVL, P/S, volume DEX), jalankan juga:
      `python cloud/fundamentals.py <TICKER> --mcap <market_cap_dari_cryptoQuotesLatest>`
      Angkanya dipakai apa adanya — jangan dihitung ulang secara manual.
+  1c. Kalau menyangkut HOLDER/whale/konsentrasi: `python cloud/investors.py <TICKER>`
+     (multi-chain, `--chain bsc|solana|...`). Kalau menyangkut SENTIMEN/hype:
+     `python cloud/sentiment.py <TICKER>` (Fear & Greed + sosial). Kalau user menempel
+     sebuah ALAMAT DOMPET: `python cloud/wallet.py <ALAMAT>` (isi & identitas dompet).
   2. MCP `mcp__coinmarketcap__*`: `cryptoQuotesLatest` (harga, market cap, FDV, perubahan
      7d/30d), `getCryptoMetadata` (kategori/profil), `globalMetricsLatest` + `fearAndGreedLatest`
      (kondisi pasar umum).

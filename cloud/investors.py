@@ -1,41 +1,77 @@
-"""Penarik data kepemilikan on-chain (konsentrasi holder / whale).
+"""Penarik data kepemilikan on-chain (konsentrasi holder / whale) — MULTI-CHAIN.
 
 Menjawab bagian "siapa yang memegang koin ini dan seberapa besar" dari sisi ANGKA.
-Sumber: Ethplorer (gratis, tanpa daftar, memakai apiKey=freekey).
+
+SUMBER per chain:
+  - Ethereum  -> Ethplorer (gratis, apiKey=freekey) + pelabelan lokal eth_labels.json.
+                 Jalur ini TIDAK butuh Moralis, jadi ETH tetap jalan tanpa key baru.
+  - Chain EVM lain (BSC, Base, Arbitrum, Polygon, Optimism, Avalanche) -> Moralis
+                 `/erc20/{addr}/owners` (butuh MORALIS_API_KEY gratis).
+  - Solana    -> Moralis Solana Gateway `/token/mainnet/{addr}/top-holders`
+                 (butuh MORALIS_API_KEY gratis).
+
+Alamat kontrak per chain diresolusi dari CoinGecko (`platforms`), keyless.
 
 BATASAN YANG HARUS DISAMPAIKAN APA ADANYA:
-  1. Hanya untuk token berbasis ETHEREUM. Token di chain lain (Solana, BSC, Tron,
-     atau koin L1 sendiri seperti BTC) tidak bisa diambil lewat sumber ini.
-  2. Ethplorer gratis TIDAK memberi label alamat. Yang keluar adalah alamat mentah,
-     jadi belum bisa dibedakan mana bursa, mana kontrak staking/treasury, mana whale
-     sungguhan. Pelabelan HARUS dilakukan lewat riset (WebSearch) — jangan menebak.
-  3. Alamat bursa & kontrak protokol biasanya mendominasi daftar teratas. Porsi besar
-     di kontrak staking BUKAN berarti terkonsentrasi di satu orang. Salah tafsir di
-     sini menyesatkan, jadi jangan simpulkan konsentrasi sebelum alamatnya dikenali.
-
-Untuk "investor institusi" (VC, dana kelola, perusahaan treasury, ETF) sumbernya
-BUKAN script ini melainkan riset berita — lihat arahan di prompt.
+  1. Pelabelan paling kaya hanya di Ethereum (eth_labels.json, 29 rb alamat). Di chain
+     lain label bergantung pada data Moralis (`entity`/`is_contract`) — lebih terbatas,
+     jadi alamat "TIDAK DIKENALI" WAJIB dicek lewat WebSearch sebelum disebut whale.
+  2. Porsi besar di kontrak staking/treasury/bridge BUKAN tanda konsentrasi di satu
+     orang. Jangan simpulkan konsentrasi sebelum alamatnya dikenali.
+  3. Untuk "investor institusi" (VC, dana kelola, treasury perusahaan, ETF) sumbernya
+     BUKAN script ini melainkan riset berita — lihat arahan di prompt.
 
 Pemakaian:
-    python cloud/investors.py AAVE
-    python cloud/investors.py AAVE --address 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9
+    python cloud/investors.py AAVE                     # auto-deteksi chain
+    python cloud/investors.py CAKE --chain bsc
+    python cloud/investors.py JUP  --chain solana
+    python cloud/investors.py AAVE --address 0x7Fc6...  --chain ethereum
 """
 
 import argparse
 import json
 import os
 import re
+import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 
 UA = {"User-Agent": "Mozilla/5.0 (compatible; riset-koin/1.0)"}
 TIMEOUT = 25
 ETHPLORER = "https://api.ethplorer.io"
+MORALIS_EVM = "https://deep-index.moralis.io/api/v2.2"
+MORALIS_SOL = "https://solana-gateway.moralis.io"
+CG = "https://api.coingecko.com/api/v3"
+MORALIS_KEY = os.environ.get("MORALIS_API_KEY", "").strip()
 
-# Peta label alamat Ethereum (bursa, kontrak, dana, dll) — sumber gratis:
-# github.com/brianleect/etherscan-labels (MIT). Dipakai untuk melabeli holder
-# teratas secara OTOMATIS, jadi alamat bursa/kontrak tidak salah dikira whale.
+# Registry chain: nama internal -> kunci platform CoinGecko, slug chain Moralis, tipe.
+CHAINS = {
+    "ethereum":  {"cg": "ethereum",            "moralis": "eth",       "tipe": "evm"},
+    "bsc":       {"cg": "binance-smart-chain", "moralis": "bsc",       "tipe": "evm"},
+    "polygon":   {"cg": "polygon-pos",         "moralis": "polygon",   "tipe": "evm"},
+    "arbitrum":  {"cg": "arbitrum-one",        "moralis": "arbitrum",  "tipe": "evm"},
+    "base":      {"cg": "base",                "moralis": "base",      "tipe": "evm"},
+    "optimism":  {"cg": "optimistic-ethereum", "moralis": "optimism",  "tipe": "evm"},
+    "avalanche": {"cg": "avalanche",           "moralis": "avalanche", "tipe": "evm"},
+    "solana":    {"cg": "solana",              "moralis": "mainnet",   "tipe": "solana"},
+}
+# Alias input supaya "eth", "bnb", "sol", dll tetap dikenali.
+ALIAS = {
+    "eth": "ethereum", "bnb": "bsc", "binance": "bsc", "bep20": "bsc",
+    "matic": "polygon", "poly": "polygon", "arb": "arbitrum",
+    "op": "optimism", "avax": "avalanche", "sol": "solana",
+}
+
 _LABELS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "eth_labels.json")
+
+_BURSA = ("binance", "coinbase", "kraken", "kucoin", "okx", "okex", "bybit", "gate.io",
+          "gate ", "huobi", "htx", "bitfinex", "bitget", "mexc", "crypto.com", "gemini",
+          "upbit", "bithumb", "exchange", "hot wallet", "cold wallet")
+_KONTRAK = ("contract", "staking", "stake", "vault", "pool", "router", "bridge", "treasury",
+            "vesting", "timelock", "proxy", "deployer", "token", "protocol", "dao",
+            "reserve", "foundation", "rewards", "reward", "distributor", "multisig",
+            "gnosis safe", "safe:", "governance", "locker", "escrow", "team", "airdrop")
 
 
 def load_labels():
@@ -46,18 +82,8 @@ def load_labels():
         return {}
 
 
-# Kata kunci untuk menebak KATEGORI dari teks label (biar konsentrasi tidak salah tafsir).
-_BURSA = ("binance", "coinbase", "kraken", "kucoin", "okx", "okex", "bybit", "gate.io",
-          "gate ", "huobi", "htx", "bitfinex", "bitget", "mexc", "crypto.com", "gemini",
-          "upbit", "bithumb", "exchange", "hot wallet", "cold wallet")
-_KONTRAK = ("contract", "staking", "stake", "vault", "pool", "router", "bridge", "treasury",
-            "vesting", "timelock", "proxy", "deployer", "token", "protocol", "dao",
-            "reserve", "foundation", "rewards", "reward", "distributor", "multisig",
-            "gnosis safe", "safe:", "governance", "locker", "escrow", "team", "airdrop")
-
-
 def kategori_label(teks):
-    low = teks.lower()
+    low = (teks or "").lower()
     if any(k in low for k in _BURSA):
         return "BURSA"
     if any(k in low for k in _KONTRAK):
@@ -65,117 +91,233 @@ def kategori_label(teks):
     return "TERLABELI"
 
 
-def try_json(url):
+def klasifikasi_moralis(entity, label, is_contract):
+    """Beri label + kategori untuk holder dari Moralis (chain non-Ethereum)."""
+    teks = (entity or label or "").strip()
+    if teks:
+        return teks, kategori_label(teks)
+    if is_contract:
+        return "kontrak (tak bernama)", "KONTRAK/PROTOKOL"
+    return "belum dikenali", "TIDAK DIKENALI — cek lewat WebSearch"
+
+
+def try_json(url, headers=None):
+    h = dict(UA)
+    if headers:
+        h.update(headers)
     try:
-        req = urllib.request.Request(url, headers=UA)
+        req = urllib.request.Request(url, headers=h)
         with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
             return json.loads(r.read().decode())
+    except urllib.error.HTTPError as e:
+        try:
+            body = e.read().decode()[:120]
+        except Exception:
+            body = ""
+        return {"__err": f"HTTP {e.code} {body}".strip()}
     except Exception as e:
         return {"__err": f"{type(e).__name__}: {str(e)[:90]}"}
 
 
-def resolve_address(ticker):
-    """Cari alamat kontrak Ethereum dari daftar protokol DefiLlama."""
-    data = try_json("https://api.llama.fi/protocols")
-    if not isinstance(data, list):
-        return None, "Gagal mengambil daftar protokol DefiLlama."
+def cg_platforms(ticker):
+    """Kembalikan (platforms_dict, nama_koin, error) dari CoinGecko — keyless."""
+    s = try_json(f"{CG}/search?query={urllib.parse.quote(ticker)}")
+    coins = s.get("coins") if isinstance(s, dict) else None
+    if not coins:
+        return None, None, f"Koin '{ticker}' tidak ditemukan di CoinGecko."
+    exact = [c for c in coins if (c.get("symbol") or "").upper() == ticker.upper()]
+    pick = (exact or coins)[0]
+    cid = pick.get("id")
+    d = try_json(f"{CG}/coins/{cid}?localization=false&tickers=false"
+                 "&market_data=false&community_data=false&developer_data=false")
+    if not isinstance(d, dict) or "__err" in d:
+        return None, None, "Gagal mengambil detail koin dari CoinGecko."
+    plats = {k: v for k, v in (d.get("platforms") or {}).items() if v}
+    return plats, d.get("name"), None
 
-    hits = [p for p in data
-            if (p.get("symbol") or "").upper() == ticker.upper() and p.get("address")]
-    if not hits:
-        return None, (f"Alamat kontrak untuk {ticker} tidak ada di DefiLlama. "
-                      "Kemungkinan koin ini bukan token Ethereum (mis. L1 sendiri).")
 
-    hits.sort(key=lambda p: -(p.get("tvl") or 0))
-    raw = str(hits[0]["address"])
-    # DefiLlama kadang menulis "ethereum:0x..." atau "solana:..."
-    if ":" in raw:
-        chain, _, alamat = raw.partition(":")
-        if chain.lower() not in ("ethereum", "eth"):
-            return None, (f"Token {ticker} berada di chain '{chain}', bukan Ethereum. "
-                          "Data holder on-chain tidak tersedia lewat sumber gratis ini.")
-        raw = alamat
-    if not re.fullmatch(r"0x[0-9a-fA-F]{40}", raw):
-        return None, f"Alamat '{raw[:24]}' bukan format alamat Ethereum."
-    return raw, None
+def deteksi_chain(platforms):
+    """Pilih chain default: utamakan Ethereum, lalu urutan di CHAINS yang punya alamat."""
+    cg_to_chain = {info["cg"]: name for name, info in CHAINS.items()}
+    for name in CHAINS:  # dict menjaga urutan sisip; ethereum pertama
+        cg_key = CHAINS[name]["cg"]
+        if platforms.get(cg_key):
+            return name, platforms[cg_key]
+    # Ada di chain yang tak kami dukung
+    lain = ", ".join(sorted(platforms.keys()))
+    return None, lain
+
+
+def is_valid_evm(addr):
+    return bool(re.fullmatch(r"0x[0-9a-fA-F]{40}", addr or ""))
+
+
+# ---- Pengambil holder per sumber ---------------------------------------------
+
+def ethplorer_holders(address, limit):
+    labels = load_labels()
+    info = try_json(f"{ETHPLORER}/getTokenInfo/{address}?apiKey=freekey")
+    token = {}
+    if "__err" not in info:
+        token = {"nama": info.get("name"), "symbol": info.get("symbol"),
+                 "jumlah_holder": info.get("holdersCount")}
+    top = try_json(f"{ETHPLORER}/getTopTokenHolders/{address}?apiKey=freekey&limit={limit}")
+    if "__err" in top:
+        return None, token, f"Gagal mengambil daftar holder: {top['__err']}"
+    daftar = []
+    for h in (top.get("holders") or []):
+        share = h.get("share")
+        addr = h.get("address") or ""
+        teks = labels.get(addr.lower())
+        if teks:
+            nm, kat = teks, kategori_label(teks)
+        else:
+            nm, kat = "belum dikenali", "TIDAK DIKENALI — cek lewat WebSearch"
+        daftar.append({"alamat": addr,
+                       "persen_supply": round(float(share), 2) if share is not None else None,
+                       "label": nm, "kategori": kat})
+    return daftar, token, None
+
+
+def moralis_evm_holders(address, chain_slug, limit):
+    if not MORALIS_KEY:
+        return None, {}, "MORALIS_API_KEY belum di-set (perlu untuk chain selain Ethereum)."
+    url = (f"{MORALIS_EVM}/erc20/{address}/owners"
+           f"?chain={chain_slug}&order=DESC&limit={min(limit, 100)}")
+    data = try_json(url, headers={"X-API-Key": MORALIS_KEY, "accept": "application/json"})
+    if "__err" in data:
+        return None, {}, f"Moralis gagal: {data['__err']}"
+    daftar = []
+    for h in (data.get("result") or []):
+        pct = h.get("percentage_relative_to_total_supply")
+        nm, kat = klasifikasi_moralis(h.get("entity"),
+                                      h.get("owner_address_label") or h.get("label"),
+                                      bool(h.get("is_contract")))
+        daftar.append({"alamat": h.get("owner_address"),
+                       "persen_supply": round(float(pct), 2) if pct is not None else None,
+                       "label": nm, "kategori": kat})
+    return daftar, {}, None
+
+
+def moralis_solana_holders(address, limit):
+    if not MORALIS_KEY:
+        return None, {}, "MORALIS_API_KEY belum di-set (perlu untuk Solana)."
+    url = f"{MORALIS_SOL}/token/mainnet/{address}/top-holders?limit={min(limit, 100)}"
+    data = try_json(url, headers={"X-API-Key": MORALIS_KEY, "accept": "application/json"})
+    if "__err" in data:
+        return None, {}, f"Moralis Solana gagal: {data['__err']}"
+    rows = data.get("result") if isinstance(data, dict) else data
+    daftar = []
+    for h in (rows or []):
+        pct = (h.get("percentageRelativeToTotalSupply")
+               or h.get("percentage_relative_to_total_supply"))
+        addr = h.get("ownerAddress") or h.get("owner_address") or h.get("address")
+        nm, kat = klasifikasi_moralis(None,
+                                      h.get("label") or h.get("ownerAddressLabel"),
+                                      bool(h.get("isContract") or h.get("is_contract")))
+        daftar.append({"alamat": addr,
+                       "persen_supply": round(float(pct), 2) if pct is not None else None,
+                       "label": nm, "kategori": kat})
+    return daftar, {}, None
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("ticker")
-    ap.add_argument("--address", default=None, help="alamat kontrak Ethereum (kalau otomatis meleset)")
+    ap.add_argument("--chain", default=None,
+                    help="ethereum|bsc|polygon|arbitrum|base|optimism|avalanche|solana (default: auto)")
+    ap.add_argument("--address", default=None, help="alamat kontrak (kalau resolusi otomatis meleset)")
     ap.add_argument("--limit", type=int, default=10, help="jumlah holder teratas (maks 100)")
     args = ap.parse_args()
     ticker = args.ticker.upper().replace("$", "")
+    limit = max(1, min(args.limit, 100))
+
+    chain = args.chain.lower().strip() if args.chain else None
+    chain = ALIAS.get(chain, chain)
 
     hasil = {
         "symbol": ticker,
         "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
-        "sumber": "Ethplorer (gratis) + DefiLlama untuk resolusi alamat",
         "peringatan": [
-            "Sebagian alamat sudah DILABELI OTOMATIS (sumber gratis etherscan-labels): "
-            "cek field 'kategori' tiap holder — BURSA & KONTRAK/PROTOKOL bukan whale perorangan.",
-            "Alamat 'TIDAK DIKENALI' yang porsinya besar TETAP dicek lewat WebSearch sebelum "
-            "disebut whale — dataset label tidak mencakup semua kontrak/alamat.",
-            "Porsi besar di kontrak staking/treasury BUKAN tanda konsentrasi berbahaya.",
+            "Alamat BURSA & KONTRAK/PROTOKOL bukan whale perorangan — jangan dihitung "
+            "sebagai konsentrasi di satu tangan.",
+            "Alamat 'TIDAK DIKENALI' yang porsinya besar WAJIB dicek lewat WebSearch "
+            "sebelum disebut whale — data label tidak mencakup semua alamat.",
+            "Porsi besar di kontrak staking/treasury/bridge BUKAN tanda konsentrasi berbahaya.",
         ],
     }
 
     address = args.address
-    if not address:
-        address, err = resolve_address(ticker)
+    # Resolusi alamat + (kalau perlu) auto-deteksi chain lewat CoinGecko.
+    if not address or not chain:
+        plats, nama, err = cg_platforms(ticker)
         if err:
             hasil["error"] = err
-            hasil["saran"] = ("Untuk koin non-Ethereum, cari data kepemilikan lewat WebSearch "
-                              "(mis. explorer chain terkait) dan sebutkan keterbatasannya.")
+            hasil["saran"] = ("Koin L1 sendiri (BTC, dsb.) atau tak terdaftar: cari kepemilikan "
+                              "lewat WebSearch di explorer terkait, sebutkan keterbatasannya.")
             print(json.dumps(hasil, indent=2, ensure_ascii=False))
             return
+        hasil["nama"] = nama
+        if not chain:
+            chain, alamat_auto = deteksi_chain(plats)
+            if not chain:
+                hasil["error"] = (f"{ticker} tidak ada di chain yang didukung. "
+                                  f"Platform terdeteksi: {alamat_auto or 'tidak ada'}.")
+                hasil["chain_didukung"] = list(CHAINS.keys())
+                print(json.dumps(hasil, indent=2, ensure_ascii=False))
+                return
+            if not address:
+                address = alamat_auto
+        if not address:  # chain dipaksa user, ambil alamat untuk chain itu
+            if chain not in CHAINS:
+                hasil["error"] = f"Chain '{chain}' tidak dikenal. Pilihan: {list(CHAINS.keys())}"
+                print(json.dumps(hasil, indent=2, ensure_ascii=False))
+                return
+            address = plats.get(CHAINS[chain]["cg"])
+            if not address:
+                hasil["error"] = (f"{ticker} tidak punya kontrak di chain '{chain}' menurut CoinGecko. "
+                                  f"Platform yang ada: {', '.join(plats.keys()) or 'tidak ada'}.")
+                print(json.dumps(hasil, indent=2, ensure_ascii=False))
+                return
 
-    hasil["kontrak"] = address
-    labels = load_labels()
-    hasil["label_terpakai"] = len(labels) > 0
-
-    info = try_json(f"{ETHPLORER}/getTokenInfo/{address}?apiKey=freekey")
-    if "__err" not in info:
-        hasil["token"] = {
-            "nama": info.get("name"),
-            "symbol": info.get("symbol"),
-            "jumlah_holder": info.get("holdersCount"),
-        }
-    else:
-        hasil["token"] = {"catatan": f"info token gagal diambil ({info['__err']})"}
-
-    limit = max(1, min(args.limit, 100))
-    top = try_json(f"{ETHPLORER}/getTopTokenHolders/{address}?apiKey=freekey&limit={limit}")
-    if "__err" in top:
-        hasil["error"] = f"Gagal mengambil daftar holder: {top['__err']}"
+    if chain not in CHAINS:
+        hasil["error"] = f"Chain '{chain}' tidak dikenal. Pilihan: {list(CHAINS.keys())}"
         print(json.dumps(hasil, indent=2, ensure_ascii=False))
         return
 
-    holders = top.get("holders") or []
-    daftar = []
-    for h in holders:
-        share = h.get("share")
-        addr = (h.get("address") or "")
-        label_teks = labels.get(addr.lower())
-        if label_teks:
-            entry_label = label_teks
-            kategori = kategori_label(label_teks)
-        else:
-            entry_label = "belum dikenali"
-            kategori = "TIDAK DIKENALI — cek lewat WebSearch"
-        daftar.append({
-            "alamat": addr,
-            "persen_supply": round(float(share), 2) if share is not None else None,
-            "label": entry_label,
-            "kategori": kategori,
-        })
-    hasil["holder_teratas"] = daftar
+    tipe = CHAINS[chain]["tipe"]
+    if tipe == "evm" and not is_valid_evm(address):
+        hasil["error"] = f"Alamat '{str(address)[:24]}' bukan format EVM (0x + 40 hex) untuk chain {chain}."
+        print(json.dumps(hasil, indent=2, ensure_ascii=False))
+        return
 
+    hasil["chain"] = chain
+    hasil["kontrak"] = address
+
+    # Rute ke sumber sesuai chain.
+    if chain == "ethereum":
+        daftar, token, err = ethplorer_holders(address, limit)
+        hasil["sumber"] = "Ethplorer (gratis) + label lokal etherscan-labels + CoinGecko (resolusi)"
+    elif tipe == "solana":
+        daftar, token, err = moralis_solana_holders(address, limit)
+        hasil["sumber"] = "Moralis Solana Gateway (gratis) + CoinGecko (resolusi)"
+    else:
+        daftar, token, err = moralis_evm_holders(address, CHAINS[chain]["moralis"], limit)
+        hasil["sumber"] = f"Moralis ({chain}) (gratis) + CoinGecko (resolusi)"
+
+    if token:
+        hasil["token"] = token
+    if err:
+        hasil["error"] = err
+        if "MORALIS_API_KEY" in err:
+            hasil["saran"] = ("Daftar gratis di moralis.com, salin API key, simpan sebagai GitHub "
+                              "Secret MORALIS_API_KEY. Chain Ethereum tetap jalan tanpa key ini.")
+        print(json.dumps(hasil, indent=2, ensure_ascii=False))
+        return
+
+    hasil["holder_teratas"] = daftar
     persen = [d["persen_supply"] for d in daftar if d["persen_supply"] is not None]
     if persen:
-        # Konsentrasi "riil" = supply di tangan holder yang BUKAN bursa/kontrak
-        # (perkiraan; alamat yang belum dikenali dianggap mungkin whale).
         non_entitas = sum(d["persen_supply"] for d in daftar
                           if d["persen_supply"] is not None
                           and d["kategori"] not in ("BURSA", "KONTRAK/PROTOKOL"))
@@ -183,7 +325,7 @@ def main():
             "top10_persen": round(sum(persen[:10]), 2),
             "terbesar_persen": persen[0],
             "top10_non_bursa_kontrak_persen": round(non_entitas, 2),
-            "acuan_penilaian": ("Pakai angka non-bursa/kontrak untuk menilai konsentrasi RIIL: "
+            "acuan_penilaian": ("Pakai angka non-bursa/kontrak untuk konsentrasi RIIL: "
                                 "<20% sangat tersebar · 20-35% sehat · 35-50% sedang · "
                                 "50-70% terkonsentrasi · >70% sangat terkonsentrasi. "
                                 "Alamat 'TIDAK DIKENALI' yang besar tetap cek lewat WebSearch."),

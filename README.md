@@ -64,7 +64,9 @@ Hasil analisa dikirim balik ke Telegram (~5-15 menit setelah kamu ketik)
 | [cloud/bot_oneshot.py](cloud/bot_oneshot.py) | Bot "sekali jalan": ambil pesan tertunda, proses, balas, keluar |
 | [cloud/indicators.py](cloud/indicators.py) | Penarik OHLC + kalkulator indikator deterministik (EMA/RSI/Stoch/Fibonacci untuk 1w/1d/4h). Tanpa dependensi eksternal |
 | [cloud/fundamentals.py](cloud/fundamentals.py) | "Laporan keuangan" protokol dari DefiLlama: revenue & fees per **bulan** dan **kuartal**, pertumbuhan MoM/QoQ/YoY, TVL, volume DEX, rasio MC/TVL & P/S & P/F |
-| [cloud/investors.py](cloud/investors.py) | Kepemilikan on-chain (Ethplorer, gratis): jumlah holder + 10 teratas, **dilabeli otomatis** (bursa/kontrak/dana) via dataset gratis, dan konsentrasi riil non-bursa/kontrak |
+| [cloud/investors.py](cloud/investors.py) | Kepemilikan on-chain **multi-chain**: 10 holder teratas + kategori otomatis (bursa/kontrak/dana) + konsentrasi riil. **Ethereum** via Ethplorer + label lokal (tanpa key); **BSC/Base/Arbitrum/Polygon/Optimism/Avalanche/Solana** via Moralis (butuh `MORALIS_API_KEY` gratis). Chain auto-deteksi dari CoinGecko, atau `--chain <nama>` |
+| [cloud/wallet.py](cloud/wallet.py) | **Pelacak wallet address** (ala Arkham, gratis): isi dompet + nilai USD tiap aset + % portofolio + nilai bersih + identitas alamat bila dikenal (mis. "Binance 8"). Multi-chain via Moralis; token spam dibuang |
+| [cloud/sentiment.py](cloud/sentiment.py) | **Sentimen sosial & pasar** (gratis, keyless): Fear & Greed Index + arah, dan per-koin sentiment votes komunitas, ukuran audiens (X/Reddit/Telegram), watchlist, aktivitas developer (pengganti LunarCrush yang kini berbayar) |
 | [cloud/whaleflow.py](cloud/whaleflow.py) | Aliran whale pasar (Deep Blue Alpha, gratis, tanpa key): Whale Sentiment Index 0–100 + top-10 token dengan arah AKUMULASI/DISTRIBUSI whale 24h. Hanya ETH, atribusi CC-BY-4.0 |
 | [cloud/.mcp.cloud.json](cloud/.mcp.cloud.json) | Konfigurasi MCP (TradingView-data + CoinGecko + CoinGlass) |
 | [cloud/prompts/analisa.md](cloud/prompts/analisa.md) | **Mesin metodologi analisa** — sistem skor 0–100 (fundamental+teknikal), aturan veto, dan setting indikator persis punyamu (EMA 13/21, RSI 14, Stoch 5,3,3, Fibonacci Golden Pocket) |
@@ -193,6 +195,7 @@ Settings → Secrets and variables → Actions → **New repository secret**:
 | `TELEGRAM_CHAT_ID` | chat ID kamu — **wajib**. Bot menolak jalan tanpa ini (fail-closed), supaya orang lain yang menemukan bot tidak bisa menghabiskan kuota Claude-mu |
 | `COINGLASS_API_KEY` | API key CoinGlass (boleh dikosongkan; tanpa ini sentimen derivatif — funding/OI — dilewati, analisa spot tetap jalan penuh) |
 | `COINMARKETCAP_API_KEY` | **Wajib** — ambil gratis di https://pro.coinmarketcap.com/signup (paket Basic gratis, ~10.000 kredit/bulan). Tanpa ini semua data pasar tidak jalan |
+| `MORALIS_API_KEY` | Opsional — ambil gratis di https://moralis.com (40.000 CU/hari). Dibutuhkan untuk holder/wallet **selain Ethereum** (BSC, Base, Arbitrum, Polygon, Optimism, Avalanche, Solana). Tanpa ini, chain Ethereum tetap jalan (Ethplorer); chain lain memberi pesan jelas |
 | `CLAUDE_CODE_OAUTH_TOKEN` | token dari `claude setup-token` — **wajib** |
 
 ### 4. Aktifkan & pakai
