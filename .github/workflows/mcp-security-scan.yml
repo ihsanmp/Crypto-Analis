@@ -1,0 +1,56 @@
+name: Audit Keamanan MCP (MCPScan)
+
+# Memindai KEAMANAN tiga server MCP pihak ketiga yang dipercaya bot ini.
+# Bot menjalankan MCP-MCP itu dengan --dangerously-skip-permissions, jadi kalau
+# salah satunya punya deskripsi tool jahat / perintah tersembunyi / command
+# injection, Claude bisa dimanipulasi. MCPScan (antgroup/MCPScan) memindainya.
+#
+# Hanya Stage 1 (Semgrep static taint scan) — GRATIS, tanpa API key.
+# Stage 2 & 3 (LLM DeepSeek) sengaja dimatikan (--no-monitor-desc --no-monitor-code)
+# supaya tidak butuh DEEPSEEK_API_KEY.
+#
+# Ini AUDIT, bukan bagian pipeline analisa koin. Dipicu manual atau bulanan.
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "0 3 1 * *"   # tiap tanggal 1, 03:00 UTC
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Pasang Semgrep + MCPScan
+        run: |
+          pip install semgrep
+          git clone --depth 1 https://github.com/antgroup/MCPScan.git /tmp/mcpscan
+          pip install -e /tmp/mcpscan
+          mcpscan --version
+
+      - name: Pindai 3 MCP crypto (static-only)
+        continue-on-error: true   # temuan tidak menggagalkan job; ini laporan
+        run: |
+          mkdir -p reports
+          scan () {
+            echo "=================================================="
+            echo ">> MEMINDAI: $2  ($1)"
+            echo "=================================================="
+            mcpscan scan "$1" --no-monitor-desc --no-monitor-code --save 2>&1 | tee "reports/$2.txt" || true
+          }
+          scan "https://github.com/GPSxtreme/mcp-coinglass.git"          coinglass
+          scan "https://github.com/shinzo-labs/coinmarketcap-mcp.git"    coinmarketcap
+          scan "https://github.com/atilaahmettaner/tradingview-mcp.git"  tradingview
+
+      - name: Simpan hasil sebagai artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcpscan-reports
+          path: reports/
+          if-no-files-found: warn
