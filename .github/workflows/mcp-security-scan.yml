@@ -1,15 +1,14 @@
-name: Audit Keamanan MCP (MCPScan)
+name: Audit Keamanan MCP (aturan MCPScan)
 
 # Memindai KEAMANAN tiga server MCP pihak ketiga yang dipercaya bot ini.
 # Bot menjalankan MCP-MCP itu dengan --dangerously-skip-permissions, jadi kalau
-# salah satunya punya deskripsi tool jahat / perintah tersembunyi / command
-# injection, Claude bisa dimanipulasi. MCPScan (antgroup/MCPScan) memindainya.
+# salah satunya punya command injection / baca file + kirim ke jaringan (jalur
+# eksfiltrasi/prompt-injection), Claude bisa dimanipulasi.
 #
-# Hanya Stage 1 (Semgrep static taint scan) — GRATIS, tanpa API key.
-# Stage 2 & 3 (LLM DeepSeek) sengaja dimatikan (--no-monitor-desc --no-monitor-code)
-# supaya tidak butuh DEEPSEEK_API_KEY.
-#
-# Ini AUDIT, bukan bagian pipeline analisa koin. Dipicu manual atau bulanan.
+# Memakai ATURAN SEMGREP milik antgroup/MCPScan langsung (deteksi taint: sumber
+# baca-file/HTTP -> sink), MELEWATI CLI mcpscan yang di v0.1.0 crash pada mode
+# static-only (UnboundLocalError). Gratis, tanpa API key. Ini AUDIT terpisah,
+# bukan bagian pipeline analisa.
 
 on:
   workflow_dispatch: {}
@@ -20,37 +19,44 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    env:
-      # MCPScan MEMAKSA variabel ini ada bahkan untuk `--version`, padahal Stage 1
-      # (Semgrep static) tidak memanggil API DeepSeek sama sekali. Nilai dummy cukup
-      # untuk melewati pengecekan startup; LLM stage tetap dimatikan lewat flag.
-      DEEPSEEK_API_KEY: "dummy-not-used-static-scan-only"
     steps:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Pasang Semgrep + MCPScan
+      - name: Pasang Semgrep + ambil aturan MCPScan
         run: |
           pip install semgrep
           git clone --depth 1 https://github.com/antgroup/MCPScan.git /tmp/mcpscan
-          pip install -e /tmp/mcpscan
-          mcpscan --version
+          ls /tmp/mcpscan/src/mcpscan/rules/
 
-      - name: Pindai 3 MCP crypto (static-only)
-        continue-on-error: true   # temuan tidak menggagalkan job; ini laporan
+      - name: Pindai 3 MCP crypto
         run: |
           mkdir -p reports
-          scan () {
-            echo "=================================================="
-            echo ">> MEMINDAI: $2  ($1)"
-            echo "=================================================="
-            mcpscan scan "$1" --no-monitor-desc --no-monitor-code --save 2>&1 | tee "reports/$2.txt" || true
+          JS=/tmp/mcpscan/src/mcpscan/rules/semgrep-security-js.yml
+          PY=/tmp/mcpscan/src/mcpscan/rules/semgrep-security-py.yml
+          summary=reports/RINGKASAN.txt
+          : > "$summary"
+
+          scan () {   # $1 url · $2 nama · $3 file-aturan
+            echo ">> $2 ($1)"
+            git clone --depth 1 "$1" "/tmp/src_$2" 2>/dev/null
+            # exit code semgrep: 0=bersih, 1=ada temuan, >1=error. Jangan gagalkan job.
+            semgrep --config "$3" "/tmp/src_$2" --json --output "reports/$2.json" --quiet || true
+            n=$(python -c "import json;print(len(json.load(open('reports/$2.json')).get('results',[])))" 2>/dev/null || echo "?")
+            echo "  temuan: $n"
+            echo "$2: $n temuan" >> "$summary"
+            # versi mudah dibaca
+            semgrep --config "$3" "/tmp/src_$2" --quiet 2>&1 | tail -60 > "reports/$2.txt" || true
           }
-          scan "https://github.com/GPSxtreme/mcp-coinglass.git"          coinglass
-          scan "https://github.com/shinzo-labs/coinmarketcap-mcp.git"    coinmarketcap
-          scan "https://github.com/atilaahmettaner/tradingview-mcp.git"  tradingview
+
+          scan "https://github.com/GPSxtreme/mcp-coinglass.git"          coinglass     "$JS"
+          scan "https://github.com/shinzo-labs/coinmarketcap-mcp.git"    coinmarketcap "$JS"
+          scan "https://github.com/atilaahmettaner/tradingview-mcp.git"  tradingview   "$PY"
+
+          echo "================= RINGKASAN ================="
+          cat "$summary"
 
       - name: Simpan hasil sebagai artifact
         if: always()
