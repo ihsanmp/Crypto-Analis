@@ -62,6 +62,7 @@ Hasil analisa dikirim balik ke Telegram (~5-15 menit setelah kamu ketik)
 | [cloud/bot_oneshot.py](cloud/bot_oneshot.py) | Bot "sekali jalan": ambil pesan tertunda, proses, balas, keluar |
 | [cloud/indicators.py](cloud/indicators.py) | Penarik OHLC + kalkulator indikator deterministik (EMA/RSI/Stoch/Fibonacci untuk 1w/1d/4h). Tanpa dependensi eksternal |
 | [cloud/fundamentals.py](cloud/fundamentals.py) | "Laporan keuangan" protokol dari DefiLlama: revenue & fees per **bulan** dan **kuartal**, pertumbuhan MoM/QoQ/YoY, TVL, volume DEX, rasio MC/TVL & P/S & P/F |
+| [cloud/investors.py](cloud/investors.py) | Kepemilikan on-chain (Ethplorer, gratis): jumlah holder + 10 teratas, **dilabeli otomatis** (bursa/kontrak/dana) via dataset gratis, dan konsentrasi riil non-bursa/kontrak |
 | [cloud/.mcp.cloud.json](cloud/.mcp.cloud.json) | Konfigurasi MCP (TradingView-data + CoinGecko + CoinGlass) |
 | [cloud/prompts/analisa.md](cloud/prompts/analisa.md) | **Mesin metodologi analisa** — sistem skor 0–100 (fundamental+teknikal), aturan veto, dan setting indikator persis punyamu (EMA 13/21, RSI 14, Stoch 5,3,3, Fibonacci Golden Pocket) |
 | [cloud/prompts/narasi.md](cloud/prompts/narasi.md) | Prompt mode NARASI — screening sektor via `cryptoCategories`, verifikasi katalis, lalu pilih koin untuk akumulasi spot |

@@ -69,13 +69,15 @@ Kamu jalan di CLOUD (tanpa TradingView Desktop). Semua data lewat API/MCP.
 
 5. **Script kepemilikan / whale (untuk F8 dan pertanyaan "siapa investor besarnya").**
    `python cloud/investors.py <TICKER>` → jumlah holder, 10 pemegang teratas beserta
-   persen supply, dan konsentrasi top-10.
-   **CARA MEMBACANYA — jangan salah tafsir:**
-   - Alamat keluar TANPA LABEL. Sebelum menyimpulkan apa pun, kenali dulu alamat besar
-     lewat WebSearch (cari alamatnya). Pemegang teratas token biasanya **dompet bursa**
-     atau **kontrak protokol** (staking, treasury, vesting) — BUKAN investor perorangan.
-   - Porsi besar di kontrak staking/treasury **bukan** tanda konsentrasi berbahaya.
-     Baru sebut "terkonsentrasi" kalau ada dompet non-bursa non-kontrak yang besar.
+   persen supply, **kategori otomatis tiap alamat**, dan konsentrasi.
+   **CARA MEMBACANYA:**
+   - Tiap holder punya field `kategori`: BURSA / KONTRAK-PROTOKOL / TERLABELI (dari dataset
+     label gratis) atau TIDAK DIKENALI. Alamat BURSA & KONTRAK **bukan** whale perorangan —
+     porsi besar di situ (mis. kontrak staking, treasury) BUKAN tanda konsentrasi berbahaya.
+   - Pakai `konsentrasi.top10_non_bursa_kontrak_persen` untuk menilai konsentrasi RIIL,
+     bukan `top10_persen` mentah.
+   - Alamat berlabel TIDAK DIKENALI yang porsinya besar (>2-3%): cek lewat WebSearch —
+     bisa jadi whale, dana/VC, atau kontrak yang belum ada di dataset. Jangan mengarang.
    - Kalau `error` muncul (koin bukan token Ethereum), sebutkan bahwa data holder
      on-chain tidak tersedia untuk chain itu dan keluarkan F8 dari skor.
    **Investor institusi** (VC, dana kelola, perusahaan treasury, ETF) TIDAK ada di script

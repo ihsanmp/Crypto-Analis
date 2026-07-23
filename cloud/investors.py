@@ -23,6 +23,7 @@ Pemakaian:
 
 import argparse
 import json
+import os
 import re
 import urllib.request
 from datetime import datetime, timezone
@@ -30,6 +31,38 @@ from datetime import datetime, timezone
 UA = {"User-Agent": "Mozilla/5.0 (compatible; riset-koin/1.0)"}
 TIMEOUT = 25
 ETHPLORER = "https://api.ethplorer.io"
+
+# Peta label alamat Ethereum (bursa, kontrak, dana, dll) — sumber gratis:
+# github.com/brianleect/etherscan-labels (MIT). Dipakai untuk melabeli holder
+# teratas secara OTOMATIS, jadi alamat bursa/kontrak tidak salah dikira whale.
+_LABELS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "eth_labels.json")
+
+
+def load_labels():
+    try:
+        with open(_LABELS_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+# Kata kunci untuk menebak KATEGORI dari teks label (biar konsentrasi tidak salah tafsir).
+_BURSA = ("binance", "coinbase", "kraken", "kucoin", "okx", "okex", "bybit", "gate.io",
+          "gate ", "huobi", "htx", "bitfinex", "bitget", "mexc", "crypto.com", "gemini",
+          "upbit", "bithumb", "exchange", "hot wallet", "cold wallet")
+_KONTRAK = ("contract", "staking", "stake", "vault", "pool", "router", "bridge", "treasury",
+            "vesting", "timelock", "proxy", "deployer", "token", "protocol", "dao",
+            "reserve", "foundation", "rewards", "reward", "distributor", "multisig",
+            "gnosis safe", "safe:", "governance", "locker", "escrow", "team", "airdrop")
+
+
+def kategori_label(teks):
+    low = teks.lower()
+    if any(k in low for k in _BURSA):
+        return "BURSA"
+    if any(k in low for k in _KONTRAK):
+        return "KONTRAK/PROTOKOL"
+    return "TERLABELI"
 
 
 def try_json(url):
@@ -80,10 +113,11 @@ def main():
         "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
         "sumber": "Ethplorer (gratis) + DefiLlama untuk resolusi alamat",
         "peringatan": [
-            "Alamat di bawah TANPA LABEL. Sebelum menyimpulkan konsentrasi, kenali dulu "
-            "tiap alamat lewat WebSearch — mayoritas pemegang teratas biasanya dompet BURSA "
-            "atau KONTRAK protokol (staking/treasury/vesting), bukan investor perorangan.",
-            "Porsi besar di kontrak staking BUKAN tanda konsentrasi berbahaya.",
+            "Sebagian alamat sudah DILABELI OTOMATIS (sumber gratis etherscan-labels): "
+            "cek field 'kategori' tiap holder — BURSA & KONTRAK/PROTOKOL bukan whale perorangan.",
+            "Alamat 'TIDAK DIKENALI' yang porsinya besar TETAP dicek lewat WebSearch sebelum "
+            "disebut whale — dataset label tidak mencakup semua kontrak/alamat.",
+            "Porsi besar di kontrak staking/treasury BUKAN tanda konsentrasi berbahaya.",
         ],
     }
 
@@ -98,6 +132,8 @@ def main():
             return
 
     hasil["kontrak"] = address
+    labels = load_labels()
+    hasil["label_terpakai"] = len(labels) > 0
 
     info = try_json(f"{ETHPLORER}/getTokenInfo/{address}?apiKey=freekey")
     if "__err" not in info:
@@ -120,21 +156,37 @@ def main():
     daftar = []
     for h in holders:
         share = h.get("share")
+        addr = (h.get("address") or "")
+        label_teks = labels.get(addr.lower())
+        if label_teks:
+            entry_label = label_teks
+            kategori = kategori_label(label_teks)
+        else:
+            entry_label = "belum dikenali"
+            kategori = "TIDAK DIKENALI — cek lewat WebSearch"
         daftar.append({
-            "alamat": h.get("address"),
+            "alamat": addr,
             "persen_supply": round(float(share), 2) if share is not None else None,
-            "label": "BELUM DIKENALI — cari tahu lewat WebSearch",
+            "label": entry_label,
+            "kategori": kategori,
         })
     hasil["holder_teratas"] = daftar
 
     persen = [d["persen_supply"] for d in daftar if d["persen_supply"] is not None]
     if persen:
+        # Konsentrasi "riil" = supply di tangan holder yang BUKAN bursa/kontrak
+        # (perkiraan; alamat yang belum dikenali dianggap mungkin whale).
+        non_entitas = sum(d["persen_supply"] for d in daftar
+                          if d["persen_supply"] is not None
+                          and d["kategori"] not in ("BURSA", "KONTRAK/PROTOKOL"))
         hasil["konsentrasi"] = {
             "top10_persen": round(sum(persen[:10]), 2),
             "terbesar_persen": persen[0],
-            "acuan_penilaian": ("top10 <20% sangat tersebar · 20-35% sehat · 35-50% sedang · "
+            "top10_non_bursa_kontrak_persen": round(non_entitas, 2),
+            "acuan_penilaian": ("Pakai angka non-bursa/kontrak untuk menilai konsentrasi RIIL: "
+                                "<20% sangat tersebar · 20-35% sehat · 35-50% sedang · "
                                 "50-70% terkonsentrasi · >70% sangat terkonsentrasi. "
-                                "Nilai ini HANYA berarti setelah alamat bursa/kontrak dikeluarkan."),
+                                "Alamat 'TIDAK DIKENALI' yang besar tetap cek lewat WebSearch."),
         }
 
     hasil["investor_institusi"] = None
