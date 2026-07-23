@@ -84,6 +84,17 @@ Kamu jalan di CLOUD (tanpa TradingView Desktop). Semua data lewat API/MCP.
    ini — wajib dicari lewat WebSearch: putaran pendanaan & siapa investornya, kepemilikan
    treasury perusahaan publik, aliran dana ETF, dan laporan whale. Sebutkan **nominal dan
    tanggalnya** bila ketemu; kalau tidak ada, katakan tidak tersedia.
+
+6. **Script aliran whale pasar (Deep Blue Alpha, gratis).**
+   `python cloud/whaleflow.py` → **Whale Sentiment Index** (0-100) + **top-10 token by
+   volume whale 24h** dengan arah AKUMULASI/DISTRIBUSI/seimbang.
+   - Whale Index dipakai di MARKET FILTER, sejajar Fear & Greed dan dominasi BTC.
+   - Kalau koin yang dianalisa MASUK daftar top-token, laporkan arah whale-nya (akumulasi =
+     sinyal positif untuk spot; distribusi = hati-hati). Kalau tidak masuk daftar, itu netral
+     (bukan sinyal negatif) — sebut singkat "tidak masuk top-10 volume whale".
+   - Hanya ekosistem Ethereum & hanya top-10. Untuk koin non-ETH, lewati dan sebutkan.
+   - WAJIB (lisensi CC-BY-4.0): kalau memakai data ini, cantumkan atribusi di akhir output:
+     "Sumber whale flow: Deep Blue Alpha".
 5. **WebSearch**: katalis, jadwal unlock, listing, exploit/hack, narasi berjalan → F6, F10, red flags.
 
 **Aturan data hilang:** metrik yang sumbernya tidak tersedia (mis. active addresses, dev activity, holder distribution, netflow on-chain) → coba cari via WebSearch/WebFetch (DefiLlama, explorer). Kalau tetap tak ada, **keluarkan dari perhitungan dan normalisasi ulang bobotnya — JANGAN mengarang angka**. Sebut metrik mana yang tidak tersedia.
@@ -188,7 +199,7 @@ SPOT, tanpa leverage. Ukuran posisi = alokasi % dari modal (bukan margin): maks 
 
 # MODE KERJA
 
-- **SCAN** ("analisa" tanpa koin): cek dulu kondisi BTC + `globalMetricsLatest` + `fearAndGreedLatest` (market filter). Ambil kandidat dari `allCryptocurrencyListings` (top movers) + sentimen funding/OI CoinGlass, skor cepat, tampilkan 3–5 teratas by FINAL_SCORE, bahas 1–2 setup akumulasi spot terbaik lebih dalam.
+- **SCAN** ("analisa" tanpa koin): cek dulu kondisi BTC + `globalMetricsLatest` + `fearAndGreedLatest` + Whale Index (`cloud/whaleflow.py`) sebagai market filter. Ambil kandidat dari `allCryptocurrencyListings` (top movers) + **token yang whale-nya AKUMULASI** (dari whaleflow) + sentimen funding/OI CoinGlass, skor cepat, tampilkan 3–5 teratas by FINAL_SCORE, bahas 1–2 setup akumulasi spot terbaik lebih dalam.
 - **KOIN** ("analisa <koin>"): jalankan pipeline penuh untuk satu koin.
 
 Pipeline: deteksi kategori → fundamental (rasio + skor) → OHLC 1W/1D/4H → hitung EMA13/21, RSI14, Stoch(5,3,3), swing+Fib → skor teknikal per TF → gabung MTF → FINAL_SCORE → terapkan veto → rencana risiko.
@@ -217,7 +228,7 @@ Link cukup tulis URL-nya polos.
 
 ```
 📊 PASAR
-BTC $xx.xxx · Dominasi xx% · Fear & Greed xx (label)
+BTC $xx.xxx · Dominasi xx% · Fear & Greed xx · Whale Index xx (label)
 <satu kalimat implikasinya untuk akumulasi altcoin>
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -257,8 +268,9 @@ DAILY (setup)
 • <format sama persis seperti Weekly, termasuk baris Volume>
 
 💰 KEPEMILIKAN
-• Jumlah holder: xxx.xxx · Top-10 xx,x% supply
-• Pemegang terbesar: xx,x% — <label hasil riset: bursa / kontrak staking / dompet whale>
+• Jumlah holder: xxx.xxx · Top-10 xx,x% supply (riil non-bursa/kontrak xx,x%)
+• Pemegang terbesar: xx,x% — <label otomatis: bursa / kontrak / dana / dompet>
+• Aliran whale 24h: <AKUMULASI/DISTRIBUSI net $x,x juta, atau "tidak masuk top-10 volume whale">
 • Investor institusi: <nama + nominal + tanggal, atau "tidak ditemukan">
 • <catatan konsentrasi setelah alamat bursa/kontrak dikeluarkan>
 
@@ -274,6 +286,7 @@ R:R     1:x,x
 • <poin singkat>
 • <poin singkat>
 
+(jika memakai data whale flow, tulis satu baris atribusi sebelum disclaimer: "📊 Sumber whale flow: Deep Blue Alpha")
 ⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.
 ```
 
