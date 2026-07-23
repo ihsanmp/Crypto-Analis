@@ -20,6 +20,11 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      # MCPScan MEMAKSA variabel ini ada bahkan untuk `--version`, padahal Stage 1
+      # (Semgrep static) tidak memanggil API DeepSeek sama sekali. Nilai dummy cukup
+      # untuk melewati pengecekan startup; LLM stage tetap dimatikan lewat flag.
+      DEEPSEEK_API_KEY: "dummy-not-used-static-scan-only"
     steps:
       - name: Setup Python
         uses: actions/setup-python@v5
