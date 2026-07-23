@@ -47,6 +47,13 @@ ALLOWED_TOOLS = ",".join([
 # 15 menit -> lebih dari 2 berisiko job dibunuh di tengah jalan dan pesan hilang.
 MAX_JOBS_PER_RUN = 2
 
+# --- Penjenjangan model (model tiering) ---------------------------------------
+# Analisa KOIN dipecah 2 tahap: model MURAH/CEPAT mengumpulkan data (jalankan
+# script + MCP + web — bagian terberat & terbanyak round-trip), model PINTAR
+# menafsirkan & menyusun laporan dari data itu. Hemat kuota + lebih cepat.
+MODEL_GATHER = os.environ.get("MODEL_GATHER", "claude-haiku-4-5")   # petugas pengumpul data
+MODEL_SYNTH = os.environ.get("MODEL_SYNTH", "claude-opus-4-8")      # analis (sintesis akhir)
+
 HELP_TEXT = (
     "🤖 Halo! Aku bot riset crypto. Dua cara pakai aku:\n\n"
     "1) ANALISA LENGKAP (terstruktur, berskor):\n"
@@ -204,7 +211,55 @@ def build_chat_prompt(text):
     return f"{base}\n---\n## Pesan dari user (jawab ini)\n{text}\n"
 
 
-def run_claude(prompt, timeout, max_turns):
+def build_gather_prompt(coin):
+    """Instruksi TAHAP 1 untuk model murah: kumpulkan data mentah, JANGAN analisa."""
+    return (
+        f"Kamu PETUGAS PENGUMPUL DATA (bukan analis). Kumpulkan data mentah untuk koin "
+        f"{coin} untuk analisa SPOT. JANGAN menganalisa, memberi skor, atau menyimpulkan — "
+        f"cukup jalankan tiap langkah dan TEMPEL hasil angkanya. Sebut jelas yang gagal/kosong.\n\n"
+        f"1. Bash: `python cloud/indicators.py {coin}` → untuk TIAP timeframe (1w/1d/4h) tempel: "
+        f"close, ema13, ema21, ema_signal, ema_cross_valid, rsi14, rsi_divergence, stoch k/d/signal/"
+        f"cycle_bottom, fib zone + level penting, structure, volume ratio, source, quality.\n"
+        f"2. MCP coinmarketcap `cryptoQuotesLatest` untuk {coin} → harga, market cap, FDV, FDV/MC, "
+        f"volume 24h, perubahan 24h/7d/30d, circulating/total supply. Lalu `getCryptoMetadata` → "
+        f"kategori + tautan repo GitHub (kalau ada).\n"
+        f"3. Bash: `python cloud/fundamentals.py {coin} --mcap <market_cap_dari_langkah_2>` → revenue "
+        f"30d/TTM, MoM/QoQ/YoY, kuartalan, TVL, MC/TVL, P/S, P/F, volume DEX. Kalau error, tulis "
+        f"'bukan protokol DefiLlama'.\n"
+        f"4. Bash: `python cloud/investors.py {coin}` → jumlah holder, top10%, "
+        f"top10_non_bursa_kontrak%, 5 holder teratas (persen + kategori + label). Kalau error, "
+        f"tulis 'bukan token Ethereum'.\n"
+        f"5. Bash: `python cloud/whaleflow.py` → Whale Index (skor+label) + apakah {coin} masuk "
+        f"top-token whale & arahnya (AKUMULASI/DISTRIBUSI/seimbang).\n"
+        f"6. MCP coinglass (kalau tersedia) → funding rate, open interest, long/short {coin}. "
+        f"Kalau gagal/no key, tulis 'derivatif tidak tersedia'.\n"
+        f"7. MCP coinmarketcap `globalMetricsLatest` + `fearAndGreedLatest` → dominasi BTC, "
+        f"Fear & Greed. Sebut juga harga BTC terkini.\n"
+        f"8. WebSearch → 2-4 katalis/berita/unlock terbaru untuk {coin} (dengan tanggal). "
+        f"Untuk institusi/whale sebut nama media + tanggal, bukan link markdown.\n\n"
+        f"OUTPUT: satu 'DATA BRIEF' terstruktur berlabel per bagian ([PASAR], [HARGA/VALUASI], "
+        f"[TEKNIKAL 1W/1D/4H], [FUNDAMENTAL], [KEPEMILIKAN], [DERIVATIF], [KATALIS], [TIDAK TERSEDIA]). "
+        f"Angka apa adanya, tanpa interpretasi/skor/rekomendasi."
+    )
+
+
+def build_synth_prompt(coin, brief):
+    """Instruksi TAHAP 2 untuk model pintar: analisa dari DATA BRIEF, tanpa tool lagi."""
+    with open(ANALISA_PROMPT, encoding="utf-8") as f:
+        base = f.read()
+    return (
+        f"{base}\n---\n"
+        f"## DATA BRIEF (hasil pengumpulan tahap 1 — SEMUA data ada di sini)\n"
+        f"JANGAN memanggil tool apa pun lagi; seluruh data yang kamu perlukan ada di bawah. "
+        f"Kalau ada metrik yang TIDAK ADA di brief, perlakukan sebagai tidak tersedia "
+        f"(keluarkan dari skor, renormalisasi) — JANGAN mengarang.\n\n"
+        f"{brief}\n\n---\n"
+        f"## Perintah user\nMode KOIN. Analisa mendalam koin: **{coin}** berdasarkan DATA BRIEF "
+        f"di atas. Terapkan metodologi skoring & format output Telegram sepenuhnya."
+    )
+
+
+def run_claude(prompt, timeout, max_turns, model=None, with_tools=True):
     claude = shutil.which("claude")
     if not claude:
         return None, "Perintah `claude` tidak ditemukan di runner."
@@ -212,10 +267,13 @@ def run_claude(prompt, timeout, max_turns):
         claude, "-p", prompt,
         "--output-format", "text",
         "--mcp-config", MCP_CONFIG,
-        "--allowedTools", ALLOWED_TOOLS,
+        # Tahap sintesis tidak butuh tool (data sudah di brief) -> allowlist kosong.
+        "--allowedTools", ALLOWED_TOOLS if with_tools else "",
         "--dangerously-skip-permissions",
         "--max-turns", str(max_turns),
     ]
+    if model:
+        cmd += ["--model", model]
     try:
         result = subprocess.run(
             cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
@@ -247,16 +305,38 @@ def process(token, chat_id, text):
     if kind == "analisa":
         words = text.strip().lower().split()
         coin = words[1].upper() if len(words) > 1 else None
-        label = f"koin {coin}" if coin else "scan pasar"
-        send_message(token, chat_id, f"⏳ Oke, mulai riset {label}. Tunggu beberapa menit ya...")
-        output, err = run_claude(build_analisa_prompt(text), timeout, max_turns=60)
+        if coin:
+            # DUA TAHAP (model tiering): Haiku kumpulkan data -> Opus menganalisa.
+            send_message(token, chat_id, f"⏳ Oke, riset koin {coin}. Tahap 1: kumpulkan data...")
+            t_gather = min(timeout, 600)
+            brief, err = run_claude(build_gather_prompt(coin), t_gather, max_turns=45,
+                                    model=MODEL_GATHER, with_tools=True)
+            if err:
+                print(f"[proses] tahap-1 (gather, {MODEL_GATHER}) GAGAL: {err[:300]}", file=sys.stderr)
+                output = None
+            elif not brief:
+                print("[proses] tahap-1 brief kosong", file=sys.stderr)
+                output, err = None, "Pengumpulan data kosong. Coba lagi."
+            else:
+                print(f"[proses] tahap-1 OK ({MODEL_GATHER}), brief {len(brief)} karakter -> "
+                      f"tahap-2 ({MODEL_SYNTH})", file=sys.stderr)
+                send_message(token, chat_id, "🧠 Tahap 2: analisa & susun laporan...")
+                output, err = run_claude(build_synth_prompt(coin, brief), min(timeout, 420),
+                                         max_turns=12, model=MODEL_SYNTH, with_tools=False)
+        else:
+            # SCAN (tanpa koin) butuh penemuan kandidat -> satu model pintar saja.
+            send_message(token, chat_id, "⏳ Oke, scan pasar. Tunggu beberapa menit ya...")
+            output, err = run_claude(build_analisa_prompt(text), timeout, max_turns=60,
+                                     model=MODEL_SYNTH)
     elif kind == "narasi":
         send_message(token, chat_id, "🔍 Oke, aku telusuri narasi yang lagi bergerak. "
                                      "Ini agak lama karena aku petakan sektornya dulu...")
-        output, err = run_claude(build_narasi_prompt(text), timeout, max_turns=70)
+        output, err = run_claude(build_narasi_prompt(text), timeout, max_turns=70,
+                                 model=MODEL_SYNTH)
     else:  # chat
         send_message(token, chat_id, "💬 Sebentar ya, aku cek datanya dulu...")
-        output, err = run_claude(build_chat_prompt(text), timeout, max_turns=40)
+        output, err = run_claude(build_chat_prompt(text), timeout, max_turns=40,
+                                 model=MODEL_SYNTH)
 
     # Catat hasil ke log CI (stderr). Isi balasan tidak dicetak penuh — hanya status &
     # potongan error — supaya log tetap informatif tanpa membanjiri / membocorkan.

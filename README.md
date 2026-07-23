@@ -213,6 +213,12 @@ Balasan datang ~5-15 menit setelah kamu ketik (sesuai jadwal cron per-5-menit).
   ulang koin yang dimaksud.
 - Kalau ada Secret wajib yang kosong, workflow berhenti tenang (exit 0) dengan pesan
   jelas di log, bukan gagal merah tiap 5 menit.
+- **Penjenjangan model (model tiering).** Analisa satu koin dipecah dua tahap: model
+  murah/cepat (`claude-haiku-4-5`) mengumpulkan data (jalankan semua script + MCP + web —
+  bagian terberat & terbanyak round-trip), lalu model pintar (`claude-opus-4-8`) menafsirkan
+  & menyusun laporan dari data itu. Hemat kuota + lebih cepat, kualitas setara. Bisa diatur
+  lewat env `MODEL_GATHER` / `MODEL_SYNTH`. Mode scan/narasi/ngobrol tetap satu model pintar
+  (butuh penemuan/penilaian, bukan sekadar pengumpulan).
 - **Kalau menguji di Windows lokal**, ada dua jebakan yang TIDAK ada di GitHub Actions:
   1. `python` sering mengarah ke alias Microsoft Store — Claude Code tidak bisa
      menjalankannya sebagai server MCP (MCP-nya diam-diam tidak muncul, tanpa error).
