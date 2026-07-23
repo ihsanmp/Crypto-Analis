@@ -12,6 +12,8 @@ Tiga cara pakai di Telegram:
 - `carikan koin narasi yang menarik` → tanpa menyebut narasi: bot memetakan sendiri sektor
   mana yang sedang bergerak, lalu pilih koin terbaik di dalamnya
 - ngobrol bebas, mis. "bagaimana pendapatmu tentang bitcoin?" → jawaban santai tapi tetap berbasis data
+- **kirim FOTO/screenshot** (chart, data, pengumuman) + caption → mode analis visual: bot
+  membaca gambar, mencari kaitannya dengan koin/project, menggali info, dan memberi rekomendasi
 - `/help` → bantuan
 
 Claude menarik data CoinMarketCap, CoinGlass, berita web, dan indikator teknikal yang

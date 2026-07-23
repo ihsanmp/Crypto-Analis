@@ -2,8 +2,11 @@
 
 Sekali jalan: ambil pesan Telegram yang tertunda, proses, balas, lalu keluar.
 
-Dua mode berdasarkan isi pesan:
+Mode berdasarkan isi pesan:
   - "analisa" / "analisa <koin>"  -> analisa lengkap terstruktur (metodologi skor penuh)
+  - permintaan narasi/sektor       -> screening narasi
+  - FOTO (dengan/atau caption)     -> mode ANALIS VISUAL: baca gambar, cari kaitan koin/
+                                      project, gali info, beri rekomendasi tindakan
   - pesan bebas lain               -> mode NGOBROL (jawaban santai, tetap berbasis data)
   - "/start" / "/help"             -> teks bantuan (tanpa memanggil Claude, hemat)
 
@@ -21,6 +24,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.parse
@@ -32,6 +36,7 @@ REPO_ROOT = os.path.dirname(BASE_DIR)
 ANALISA_PROMPT = os.path.join(BASE_DIR, "prompts", "analisa.md")
 CHAT_PROMPT = os.path.join(BASE_DIR, "prompts", "chat.md")
 NARASI_PROMPT = os.path.join(BASE_DIR, "prompts", "narasi.md")
+FOTO_PROMPT = os.path.join(BASE_DIR, "prompts", "foto.md")
 MCP_CONFIG = os.path.join(BASE_DIR, ".mcp.cloud.json")
 
 ALLOWED_TOOLS = ",".join([
@@ -42,6 +47,8 @@ ALLOWED_TOOLS = ",".join([
     "WebFetch",
     "Bash",          # untuk menjalankan cloud/indicators.py
 ])
+# Mode foto butuh tool Read (untuk "melihat" gambar yang diunduh).
+ALLOWED_TOOLS_VISION = ALLOWED_TOOLS + ",Read"
 
 # Maksimal pekerjaan per run. Job GitHub Actions dibatasi 30 menit; satu analisa bisa
 # 15 menit -> lebih dari 2 berisiko job dibunuh di tengah jalan dan pesan hilang.
@@ -67,6 +74,10 @@ HELP_TEXT = (
     "3) NGOBROL SANTAI:\n"
     "   • tanya bebas, misal: bagaimana pendapatmu tentang bitcoin?\n"
     "   • atau: prospek eth jangka menengah gimana?\n\n"
+    "4) KIRIM FOTO/SCREENSHOT:\n"
+    "   • kirim gambar (chart, data, pengumuman) + caption pertanyaanmu\n"
+    "   • aku baca isinya, cari kaitannya dengan koin/project, dan kasih rekomendasi\n"
+    "   • caption boleh pendek atau kosong — aku tetap coba pahami\n\n"
     "Analisa & screening narasi makan waktu beberapa menit. Ngobrol biasanya lebih cepat.\n"
     "📌 Fokusku SPOT saja — tidak memberi saran short/leverage/futures.\n"
     "⚠️ Semua output riset berbasis data, bukan saran keuangan."
@@ -156,20 +167,23 @@ def allowed_chats():
 
 
 def actionable_messages(updates, allowed):
-    """Kembalikan (update_id, chat_id, text_asli) untuk semua pesan teks dari chat
-    yang diizinkan. Teks ASLI dipertahankan (tidak di-lowercase) supaya mode ngobrol
-    membaca kalimat user apa adanya."""
+    """Kembalikan (update_id, chat_id, text_asli, photo_file_id) untuk semua pesan
+    teks ATAU foto dari chat yang diizinkan. Untuk foto, text = caption (boleh kosong)
+    dan photo_file_id = file_id foto resolusi terbesar."""
     out = []
     for upd in updates:
         msg = upd.get("message") or {}
         chat_id = str(msg.get("chat", {}).get("id", ""))
-        text = (msg.get("text") or "").strip()
-        if not chat_id or not text:
+        photos = msg.get("photo") or []
+        photo_id = photos[-1]["file_id"] if photos else None      # resolusi terbesar
+        text = (msg.get("caption") if photo_id else msg.get("text")) or ""
+        text = text.strip()
+        if not chat_id or (not text and not photo_id):
             continue
         if chat_id not in allowed:      # fail-closed: hanya chat yang terdaftar
             print(f"[skip] chat tak terdaftar: {chat_id}")
             continue
-        out.append((upd["update_id"], chat_id, text))
+        out.append((upd["update_id"], chat_id, text, photo_id))
     return out
 
 
@@ -209,6 +223,40 @@ def build_chat_prompt(text):
     # Pesan user dikutip apa adanya. Diberi pembatas jelas supaya isinya diperlakukan
     # sebagai pertanyaan untuk dijawab, bukan sebagai instruksi yang mengubah aturan.
     return f"{base}\n---\n## Pesan dari user (jawab ini)\n{text}\n"
+
+
+def download_photo(token, file_id):
+    """Unduh foto Telegram ke file sementara. Return path absolut atau None."""
+    r = tg_api(token, "getFile", {"file_id": file_id})
+    if not r or not r.get("ok"):
+        return None
+    remote = r["result"].get("file_path")
+    if not remote:
+        return None
+    url = f"https://api.telegram.org/file/bot{token}/{remote}"
+    ext = os.path.splitext(remote)[1] or ".jpg"
+    dest = os.path.join(tempfile.gettempdir(), f"tg_foto_{int(time.time())}{ext}")
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "riset-koin/1.0"})
+        with urllib.request.urlopen(req, timeout=60) as resp, open(dest, "wb") as f:
+            f.write(resp.read())
+        return dest
+    except Exception as e:
+        print(f"[foto] gagal unduh: {type(e).__name__}: {e}", file=sys.stderr)
+        return None
+
+
+def build_photo_prompt(caption, image_path):
+    with open(FOTO_PROMPT, encoding="utf-8") as f:
+        base = f.read()
+    instruksi = (caption.strip() if caption and caption.strip()
+                 else "(tidak ada caption — pakai default: identifikasi keterkaitan dengan "
+                      "koin/project, cari info terkait, beri rekomendasi tindakan)")
+    return (f"{base}\n---\n"
+            f"## Gambar dari user\n"
+            f"Gambar tersimpan di path: {image_path}\n"
+            f"WAJIB baca dulu dengan tool Read (bisa melihat gambar), lalu kerjakan.\n\n"
+            f"## Caption / pertanyaan user\n{instruksi}\n")
 
 
 def build_gather_prompt(coin):
@@ -259,16 +307,21 @@ def build_synth_prompt(coin, brief):
     )
 
 
-def run_claude(prompt, timeout, max_turns, model=None, with_tools=True):
+def run_claude(prompt, timeout, max_turns, model=None, with_tools=True, tools_override=None):
     claude = shutil.which("claude")
     if not claude:
         return None, "Perintah `claude` tidak ditemukan di runner."
+    if tools_override is not None:
+        tools = tools_override
+    elif with_tools:
+        tools = ALLOWED_TOOLS
+    else:
+        tools = ""   # tahap sintesis tidak butuh tool (data sudah di brief)
     cmd = [
         claude, "-p", prompt,
         "--output-format", "text",
         "--mcp-config", MCP_CONFIG,
-        # Tahap sintesis tidak butuh tool (data sudah di brief) -> allowlist kosong.
-        "--allowedTools", ALLOWED_TOOLS if with_tools else "",
+        "--allowedTools", tools,
         "--dangerously-skip-permissions",
         "--max-turns", str(max_turns),
     ]
@@ -286,7 +339,36 @@ def run_claude(prompt, timeout, max_turns, model=None, with_tools=True):
     return result.stdout.strip(), None
 
 
-def process(token, chat_id, text):
+def process(token, chat_id, text, photo_file_id=None):
+    # --- Mode FOTO (analis visual) -----------------------------------------
+    if photo_file_id:
+        print(f"[proses] kind=foto caption={text[:60]!r}", file=sys.stderr)
+        send_message(token, chat_id, "🖼️ Oke, aku baca gambarnya dan cari kaitannya...")
+        img = download_photo(token, photo_file_id)
+        if not img:
+            send_message(token, chat_id, "❌ Gagal mengunduh gambarnya. Coba kirim ulang ya.")
+            return
+        timeout = int(os.environ.get("ANALYSIS_TIMEOUT", "900"))
+        # Model pintar (vision + penalaran); Read diizinkan untuk 'melihat' gambar.
+        output, err = run_claude(build_photo_prompt(text, img), timeout, max_turns=45,
+                                 model=MODEL_SYNTH, tools_override=ALLOWED_TOOLS_VISION)
+        try:
+            os.remove(img)
+        except OSError:
+            pass
+        if err:
+            print(f"[proses] foto GAGAL: {err[:300]}", file=sys.stderr)
+            body = f"❌ {err}"
+        elif not output:
+            body = "❌ Selesai tapi output kosong. Coba lagi."
+        else:
+            body = output
+        if send_message(token, chat_id, body):
+            print(f"[proses] balasan foto {len(body)} karakter TERKIRIM", file=sys.stderr)
+        else:
+            print("[proses] GAGAL KIRIM balasan foto — cek TELEGRAM_BOT_TOKEN", file=sys.stderr)
+        return
+
     kind = classify(text)
     print(f"[proses] kind={kind} teks={text[:60]!r}", file=sys.stderr)
 
@@ -396,12 +478,14 @@ def main():
     # menunggu cron GitHub yang bisa telat berjam-jam.
     payload_chat = os.environ.get("TG_CHAT_ID", "").strip()
     payload_text = os.environ.get("TG_TEXT", "").strip()
-    if payload_chat and payload_text:
+    payload_photo = os.environ.get("TG_PHOTO_FILE_ID", "").strip() or None
+    if payload_chat and (payload_text or payload_photo):
         if payload_chat not in allowed:      # pertahanan berlapis (Worker juga menyaring)
             print(f"[webhook] chat tak terdaftar, diabaikan: {payload_chat}", file=sys.stderr)
             return
-        print(f"[webhook] pesan dari {payload_chat}: {payload_text[:70]!r}", file=sys.stderr)
-        process(token, payload_chat, payload_text)
+        jenis = "foto" if payload_photo else "teks"
+        print(f"[webhook] {jenis} dari {payload_chat}: {payload_text[:70]!r}", file=sys.stderr)
+        process(token, payload_chat, payload_text, payload_photo)
         return
 
     # --- Mode POLLING (cadangan manual) -------------------------------------
@@ -431,8 +515,8 @@ def main():
     sisa = len(jobs) - len(batch)
     print(f"[run] memproses {len(batch)} pesan"
           + (f" ({sisa} sisanya menunggu run berikutnya)." if sisa else "."))
-    for _, chat_id, text in batch:
-        process(token, chat_id, text)
+    for _, chat_id, text, photo_id in batch:
+        process(token, chat_id, text, photo_id)
 
 
 if __name__ == "__main__":

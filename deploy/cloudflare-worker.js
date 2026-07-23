@@ -54,11 +54,17 @@ export default {
     }
 
     const msg = update.message || update.edited_message;
-    const text = msg && typeof msg.text === "string" ? msg.text.trim() : "";
     const chatId = msg && msg.chat ? String(msg.chat.id) : "";
+    // Foto: message.photo adalah array ukuran; ambil resolusi terbesar (elemen terakhir).
+    // Caption foto dikirim sebagai text (jadi instruksi/pertanyaan untuk gambar).
+    const photos = msg && Array.isArray(msg.photo) ? msg.photo : [];
+    const photoFileId = photos.length ? photos[photos.length - 1].file_id : "";
+    const text = msg && typeof (photoFileId ? msg.caption : msg.text) === "string"
+      ? (photoFileId ? msg.caption : msg.text).trim()
+      : "";
 
-    // Bukan pesan teks (sticker, foto, dll) -> abaikan dengan tenang.
-    if (!text || !chatId) return new Response("ok");
+    // Tidak ada chat, atau bukan teks maupun foto (sticker/voice/dll) -> abaikan.
+    if (!chatId || (!text && !photoFileId)) return new Response("ok");
 
     // Penyaringan chat di sisi Worker (bot juga menyaring lagi — pertahanan berlapis).
     const allowed = (env.ALLOWED_CHAT_IDS || "")
@@ -80,7 +86,11 @@ export default {
       },
       body: JSON.stringify({
         event_type: "telegram",
-        client_payload: { chat_id: chatId, text: text.slice(0, 2000) },
+        client_payload: {
+          chat_id: chatId,
+          text: text.slice(0, 2000),
+          photo_file_id: photoFileId,   // "" kalau bukan foto
+        },
       }),
     });
 

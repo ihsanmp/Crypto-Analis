@@ -40,6 +40,7 @@ jobs:
       # Isi hanya saat dipicu webhook; kosong saat dijalankan manual.
       TG_CHAT_ID: ${{ github.event.client_payload.chat_id }}
       TG_TEXT: ${{ github.event.client_payload.text }}
+      TG_PHOTO_FILE_ID: ${{ github.event.client_payload.photo_file_id }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
