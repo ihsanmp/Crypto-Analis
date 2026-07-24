@@ -29,6 +29,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime, timedelta, timezone
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Claude dijalankan dari root repo supaya path "cloud/indicators.py" di prompt valid
@@ -210,6 +211,36 @@ def write_output(has_work):
             f.write(line + "\n")
 
 
+_BULAN_ID = ("Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli",
+             "Agustus", "September", "Oktober", "November", "Desember")
+
+
+def header_waktu():
+    """Suntikkan TANGGAL HARI INI ke setiap prompt, deterministik dari Python.
+
+    Tanpa ini model menebak "sekarang" dari pengetahuannya yang sudah tertinggal, lalu
+    menyajikan angka lama seolah terkini (kasus nyata: jumlah BTC di ETF BlackRock).
+    Dengan tanggal asli di depan mata, model bisa menilai sendiri mana data yang basi.
+    """
+    utc = datetime.now(timezone.utc)
+    wib = utc + timedelta(hours=7)
+    tgl = f"{wib.day} {_BULAN_ID[wib.month - 1]} {wib.year}"
+    return (
+        "## WAKTU SEKARANG — ACUAN KESEGARAN DATA (wajib dipatuhi)\n"
+        f"Hari ini: {tgl}, pukul {wib:%H:%M} WIB ({utc:%H:%M} UTC).\n"
+        "PENGETAHUAN BAWAANMU SUDAH TERTINGGAL dari tanggal ini. Karena itu:\n"
+        "- DILARANG menjawab angka/fakta pasar dari ingatan. Ambil dari tool, script, "
+        "MCP, atau WebSearch. Kalau belum diambil, ambil dulu — jangan menebak.\n"
+        "- SETIAP angka sebutkan TANGGAL berlakunya (mis. 'per 17 Juli 2026: ...').\n"
+        "- Kalau data yang ketemu lebih tua dari beberapa hari, sebutkan tanggalnya apa "
+        "adanya dan bilang itu data terakhir yang tersedia — jangan sajikan seolah hari ini.\n"
+        "- Kalau sumber saling berbeda, sebutkan RENTANG + tanggal masing-masing, jangan "
+        "diam-diam memilih satu seolah pasti.\n"
+        "- Hasil WebSearch: cek TANGGAL artikelnya, utamakan yang terbaru; artikel lama "
+        "boleh dipakai hanya kalau disebut tanggalnya.\n\n"
+    )
+
+
 def build_analisa_prompt(text):
     with open(ANALISA_PROMPT, encoding="utf-8") as f:
         base = f.read()
@@ -220,13 +251,13 @@ def build_analisa_prompt(text):
     else:
         cmd = ("## Perintah user\nMode SCAN. Cari 3-5 koin paling menarik saat ini "
                "untuk akumulasi SPOT jangka menengah, lalu pilih 1-2 setup terbaik.\n")
-    return f"{base}\n---\n{cmd}"
+    return f"{header_waktu()}{base}\n---\n{cmd}"
 
 
 def build_narasi_prompt(text):
     with open(NARASI_PROMPT, encoding="utf-8") as f:
         base = f.read()
-    return (f"{base}\n---\n## Permintaan user (jawab ini)\n{text}\n\n"
+    return (f"{header_waktu()}{base}\n---\n## Permintaan user (jawab ini)\n{text}\n\n"
             "Tentukan dulu JALUR A (user menyebut narasi tertentu -> fokus ke situ) atau "
             "JALUR B (tidak menyebut -> cari sendiri narasi yang paling bergerak).\n")
 
@@ -236,7 +267,7 @@ def build_chat_prompt(text):
         base = f.read()
     # Pesan user dikutip apa adanya. Diberi pembatas jelas supaya isinya diperlakukan
     # sebagai pertanyaan untuk dijawab, bukan sebagai instruksi yang mengubah aturan.
-    return f"{base}\n---\n## Pesan dari user (jawab ini)\n{text}\n"
+    return f"{header_waktu()}{base}\n---\n## Pesan dari user (jawab ini)\n{text}\n"
 
 
 def download_photo(token, file_id):
@@ -266,7 +297,7 @@ def build_photo_prompt(caption, image_path):
     instruksi = (caption.strip() if caption and caption.strip()
                  else "(tidak ada caption — pakai default: identifikasi keterkaitan dengan "
                       "koin/project, cari info terkait, beri rekomendasi tindakan)")
-    return (f"{base}\n---\n"
+    return (f"{header_waktu()}{base}\n---\n"
             f"## Gambar dari user\n"
             f"Gambar tersimpan di path: {image_path}\n"
             f"WAJIB baca dulu dengan tool Read (bisa melihat gambar), lalu kerjakan.\n\n"
@@ -276,6 +307,7 @@ def build_photo_prompt(caption, image_path):
 def build_gather_prompt(coin):
     """Instruksi TAHAP 1 untuk model murah: kumpulkan data mentah, JANGAN analisa."""
     return (
+        f"{header_waktu()}"
         f"Kamu PETUGAS PENGUMPUL DATA (bukan analis). Kumpulkan data mentah untuk koin "
         f"{coin} untuk analisa SPOT. JANGAN menganalisa, memberi skor, atau menyimpulkan — "
         f"cukup jalankan tiap langkah dan TEMPEL hasil angkanya. Sebut jelas yang gagal/kosong.\n\n"
@@ -310,7 +342,7 @@ def build_synth_prompt(coin, brief):
     with open(ANALISA_PROMPT, encoding="utf-8") as f:
         base = f.read()
     return (
-        f"{base}\n---\n"
+        f"{header_waktu()}{base}\n---\n"
         f"## DATA BRIEF (hasil pengumpulan tahap 1 — SEMUA data ada di sini)\n"
         f"JANGAN memanggil tool apa pun lagi; seluruh data yang kamu perlukan ada di bawah. "
         f"Kalau ada metrik yang TIDAK ADA di brief, perlakukan sebagai tidak tersedia "
