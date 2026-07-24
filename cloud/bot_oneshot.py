@@ -136,6 +136,13 @@ NARASI_TERMS = [
 ]
 _NARASI_RE = re.compile(r"\b(" + "|".join(re.escape(t) for t in NARASI_TERMS) + r")\b")
 _KOIN_RE = re.compile(r"\b(koin|coin|altcoin|token)\b")
+# Kata yang menandakan MINTA REKOMENDASI (bukan pertanyaan faktual). Dipakai untuk
+# membedakan "koin apa yang menarik?" (screening) dari "koin apa saja yang di-hold
+# BlackRock?" (pertanyaan fakta -> harus ke mode chat, bukan pipeline screening).
+_MINAT_RE = re.compile(
+    r"\b(menarik|bagus|prospek|potensi|potensial|worth|layak|rekomendasi|rekomen|saran|"
+    r"cuan|murah|undervalued|trending|hype|meledak|naik daun|lagi jalan|lagi rame|"
+    r"patut|sebaiknya)\b")
 
 
 def is_narasi(low):
@@ -149,7 +156,11 @@ def is_narasi(low):
     if any(k in low for k in ("cari", "carikan", "cariin", "rekomendasi", "rekomen", "saran")) \
             and _KOIN_RE.search(low):
         return True
-    if low.startswith(("koin apa", "coin apa", "altcoin apa", "token apa")):
+    # "koin apa yang menarik?" -> screening narasi. TAPI pertanyaan FAKTUAL yang kebetulan
+    # diawali sama ("koin apa saja yang di-hold BlackRock", "token apa yang dipakai untuk
+    # gas") BUKAN screening — biarkan jatuh ke mode chat supaya dijawab dengan riset.
+    if low.startswith(("koin apa", "coin apa", "altcoin apa", "token apa")) \
+            and (_MINAT_RE.search(low) or _NARASI_RE.search(low)):
         return True
     # Menyebut nama narasi + kata "koin/token" -> mis. "ada koin privacy yang menarik ga"
     if _NARASI_RE.search(low) and _KOIN_RE.search(low):
