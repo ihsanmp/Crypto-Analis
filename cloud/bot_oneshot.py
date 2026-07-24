@@ -482,10 +482,34 @@ def process(token, chat_id, text, photo_file_id=None):
 
     if send_message(token, chat_id, body):
         print(f"[proses] balasan {len(body)} karakter TERKIRIM ke Telegram", file=sys.stderr)
+        print(f"[audit] {audit_kesegaran(body)}", file=sys.stderr)
     else:
         print(f"[proses] GAGAL KIRIM ke Telegram ({len(body)} karakter hilang). "
               "Penyebab tersering: TELEGRAM_BOT_TOKEN salah/kedaluwarsa/sudah di-revoke.",
               file=sys.stderr)
+
+
+_TGL_RE = re.compile(
+    r"\b\d{1,2}\s+(" + "|".join(_BULAN_ID) + r")\s+\d{4}\b|"   # 17 Juli 2026
+    r"\b(" + "|".join(_BULAN_ID) + r")\s+\d{4}\b|"             # Juli 2026
+    r"\b\d{4}-\d{2}-\d{2}\b",                                  # 2026-07-17
+    re.IGNORECASE)
+
+
+def audit_kesegaran(teks):
+    """Ukur apakah balasan MENANGGALI angkanya — tanpa menuliskan isi balasan ke log.
+
+    Dipakai sebagai sinyal mutu: jawaban berisi angka pasar tapi tanpa satu pun tanggal
+    biasanya berarti model menjawab dari ingatan, bukan dari data yang baru diambil.
+    """
+    tanggal = len(set(m.group(0) for m in _TGL_RE.finditer(teks)))
+    angka_besar = len(re.findall(r"\b\d[\d.,]{3,}\b", teks))
+    if tanggal == 0 and angka_besar > 0:
+        return (f"kesegaran: BURUK — {angka_besar} angka TANPA satu pun tanggal "
+                "(indikasi jawaban dari ingatan, bukan data baru)")
+    if tanggal == 0:
+        return "kesegaran: tidak ada angka & tidak ada tanggal (jawaban naratif)"
+    return f"kesegaran: OK — {tanggal} tanggal berbeda disebut, {angka_besar} angka"
 
 
 def config_problem():
