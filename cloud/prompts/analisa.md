@@ -24,7 +24,7 @@ Kamu jalan di CLOUD (tanpa TradingView Desktop). Semua data lewat API/MCP.
    Jalankan lewat Bash: `python cloud/indicators.py <TICKER>` (contoh: `python cloud/indicators.py TRX`).
    Cukup ticker-nya saja — script meresolusi sendiri id yang diperlukan untuk sumber cadangan.
    Script ini menarik OHLC (mencoba Binance → Kraken → Coinbase → OKX → CoinGecko) dan
-   menghitung EMA 12/21/33/50/100/200, RSI14, Stoch(5,3,3), Bollinger+MidBand(EMA20),
+   menghitung EMA 13/21/33/50/100/200, RSI14, Stoch(5,3,3), Bollinger+MidBand(EMA20),
    ATR14, SuperTrend, Pivot standar, swing+Fibonacci, struktur pasar, volume
    untuk timeframe **1w / 1d / 4h** — candle mingguan dibangun eksak dari candle harian.
    **JANGAN menghitung indikator secara manual.** Pakai angka dari script ini apa adanya.
@@ -199,11 +199,11 @@ Label: 80–100 Strong Buy · 65–79 Buy (DCA) · 45–64 Neutral/Hold · 30–
 
 # TEKNIKAL (skor tiap komponen dinormalisasi ke −2..+2)
 
-Semua angka (ema.ema12/ema21/ema33/ema50/ema100/ema200, ema_stack, bollinger, atr14, supertrend, pivot_standar, ema_signal/ema_cross_valid, rsi14, rsi_divergence, stoch.k/d/signal/
+Semua angka (ema.ema13/ema21/ema33/ema50/ema100/ema200, ema_stack, bollinger, atr14, supertrend, pivot_standar, ema_signal/ema_cross_valid, rsi14, rsi_divergence, stoch.k/d/signal/
 cycle_bottom, fib.levels/zone, structure, volume.ratio) **diambil dari output script indikator**
 (sumber #0). Tugasmu di sini adalah **menilai dan menafsirkan**, bukan menghitung ulang.
 
-**EMA 12/21 (pemicu):** GOLDEN_CROSS(12 potong 21 ke atas)→+2 · DEATH_CROSS→−2 · price>12>21 (uptrend)→+1.5 · price<12<21 (downtrend)→−1.5 · di antara→0. Filter anti-whipsaw: cross valid jika `|12−21|/price>0.5%` + volume>SMA20 + candle sudah tutup. Pullback ke EMA21 dalam uptrend = area beli; EMA21 = trailing stop (keluar bila close di bawahnya).
+**EMA 13/21 (pemicu):** GOLDEN_CROSS(13 potong 21 ke atas)→+2 · DEATH_CROSS→−2 · price>13>21 (uptrend)→+1.5 · price<13<21 (downtrend)→−1.5 · di antara→0. Filter anti-whipsaw: cross valid jika `|13−21|/price>0.5%` + volume>SMA20 + candle sudah tutup. Pullback ke EMA21 dalam uptrend = area beli; EMA21 = trailing stop (keluar bila close di bawahnya).
 **EMA 33/50/100/200 (konteks tren besar):** pakai `ema_stack.status`. BULLISH PENUH (semua tersusun naik & harga di atasnya)→+1 tambahan · BEARISH PENUH→−1 · campur aduk→0. EMA200 = garis pemisah bull/bear jangka panjang: harga di bawahnya menuntut kehati-hatian ekstra untuk akumulasi. EMA50 sering jadi support/resisten dinamis menengah.
 **Bollinger + Mid Band (EMA20, mult 2 & 1):** harga menempel band atas + bandwidth melebar = tren kuat (jangan kejar) · harga di band bawah + RSI oversold = area pantulan · `squeeze: true` (bandwidth <10%) = volatilitas terkompresi, sering mendahului pergerakan besar → siapkan rencana dua arah, jangan menebak arah.
 **ATR / SuperTrend / Pivot:** ATR% menentukan lebar zona entry & jarak invalidasi (jangan pasang invalidasi lebih rapat dari 1×ATR — pasti kena noise). SuperTrend arah 'naik' → level jadi trailing stop; 'turun' → resistensi. Pivot standar (P/R1-R3/S1-S3) sebagai level konfluensi bersama Fibonacci. **Kalau ada field `indikator_rentang` bertuliskan TIDAK TERSEDIA, JANGAN memakai ATR/SuperTrend/Pivot untuk timeframe itu** — sumbernya hanya memberi harga penutupan.
@@ -226,7 +226,7 @@ cycle_bottom, fib.levels/zone, structure, volume.ratio) **diambil dari output sc
 
 **Setup Beli Kelas A (semua terpenuhi):** FUND≥65 · Weekly harga di/atas uji EMA21, tren makro utuh · harga di Golden Pocket · Stoch cross-up dari <20 · RSI bullish-divergence atau pantul 40–50 (bull regime) · volume beli naik + netflow outflow. Entry bertahap: 40% di level 0.5, 35% di level 0.618, 25% di level 0.786. Stop 2–3% di bawah 0.786/swing low. Target 0.236→0, lalu ext 1.618 & 2.618.
 
-**Setup Jual/Ambil Profit (menjual aset spot yang dipegang, BUKAN buka short):** RSI>75 weekly + bearish-divergence · Stoch cross-down dari >80 · harga di ext 1.618/2.618 · EMA12 cross-down EMA21 daily · inflow bursa melonjak + funding ekstrem positif · fundamental melemah (revenue −30% QoQ, TVL turun, unlock mendekat). → kurangi/lepas posisi bertahap, jangan short.
+**Setup Jual/Ambil Profit (menjual aset spot yang dipegang, BUKAN buka short):** RSI>75 weekly + bearish-divergence · Stoch cross-down dari >80 · harga di ext 1.618/2.618 · EMA13 cross-down EMA21 daily · inflow bursa melonjak + funding ekstrem positif · fundamental melemah (revenue −30% QoQ, TVL turun, unlock mendekat). → kurangi/lepas posisi bertahap, jangan short.
 
 **Matriks (semua keputusan long-only spot):** Fund kuat+Tek kuat→akumulasi agresif · kuat+lemah→DCA/akumulasi bertahap (kandidat terbaik) · lemah+kuat→beli cepat porsi kecil, target dekat, jangan hold lama · lemah+lemah→hindari total (jangan beli).
 
@@ -243,7 +243,7 @@ SPOT, tanpa leverage. Ukuran posisi = alokasi % dari modal (bukan margin): maks 
 - **SCAN** ("analisa" tanpa koin): cek dulu kondisi BTC + `globalMetricsLatest` + `fearAndGreedLatest` + Whale Index (`cloud/whaleflow.py`) sebagai market filter. Ambil kandidat dari `allCryptocurrencyListings` (top movers) + **token yang whale-nya AKUMULASI** (dari whaleflow) + sentimen funding/OI CoinGlass, skor cepat, tampilkan 3–5 teratas by FINAL_SCORE, bahas 1–2 setup akumulasi spot terbaik lebih dalam.
 - **KOIN** ("analisa <koin>"): jalankan pipeline penuh untuk satu koin.
 
-Pipeline: deteksi kategori → fundamental (rasio + skor) → OHLC 1W/1D/4H → hitung EMA set 12/21/33/50/100/200, RSI14, Stoch(5,3,3), BB+MidBand, ATR, SuperTrend, Pivot, swing+Fib → skor teknikal per TF → gabung MTF → FINAL_SCORE → terapkan veto → rencana risiko.
+Pipeline: deteksi kategori → fundamental (rasio + skor) → OHLC 1W/1D/4H → hitung EMA set 13/21/33/50/100/200, RSI14, Stoch(5,3,3), BB+MidBand, ATR, SuperTrend, Pivot, swing+Fib → skor teknikal per TF → gabung MTF → FINAL_SCORE → terapkan veto → rencana risiko.
 
 ---
 
@@ -298,7 +298,7 @@ $TICKER — <kategori>
 
 WEEKLY (arah)
 • Harga $xxx vs EMA21 $xxx → DI ATAS/DI BAWAH (x,x%)
-• EMA12 $xxx · EMA21 $xxx · <GOLDEN CROSS / DEATH CROSS / netral>
+• EMA13 $xxx · EMA21 $xxx · <GOLDEN CROSS / DEATH CROSS / netral>
 • EMA33 $xxx · EMA50 $xxx · EMA100 $xxx · EMA200 $xxx  <tulis "n/a" bila datanya kurang>
 • Susunan EMA: <isi ema_stack.status>
 • BB: basis $xxx · atas $xxx · bawah $xxx · <posisi harga> <(SQUEEZE bila true)>
@@ -347,7 +347,7 @@ Pantau      : <1-2 hal paling menentukan pekan ini>
 **EMA21 WAJIB DITAMPILKAN** dengan angkanya di SETIAP timeframe (Weekly, Daily, 4H),
 lengkap dengan posisi harga terhadapnya (di atas/di bawah + selisih persen). EMA21 adalah
 acuan utama tren dan trailing stop di metodologi ini — jangan pernah dilewati, meskipun
-sinyal lain terlihat lebih menarik. Sertakan EMA12 juga agar status cross terbaca, dan
+sinyal lain terlihat lebih menarik. Sertakan EMA13 juga agar status cross terbaca, dan
 EMA50/100/200 sebagai konteks tren besar (tulis "n/a" kalau datanya memang kurang —
 jangan mengarang angka).
 

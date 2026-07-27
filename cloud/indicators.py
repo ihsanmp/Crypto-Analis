@@ -16,7 +16,7 @@ Pemakaian:
     python indicators.py TRX
     python indicators.py BTC --cg-id bitcoin
 
-Output: JSON ringkas berisi EMA 12/21/33/50/100/200, RSI14, Stoch(5,3,3),
+Output: JSON ringkas berisi EMA 13/21/33/50/100/200, RSI14, Stoch(5,3,3),
         BB+MidBand(EMA20), ATR14, SuperTrend, Pivot standar, swing+Fibonacci,
 struktur pasar, dan volume untuk timeframe 1w / 1d / 4h.
 Hanya memakai pustaka standar Python (tanpa numpy/pandas) agar jalan di mana saja.
@@ -503,7 +503,7 @@ def pivot_standard(highs, lows, closes):
 
 
 # Set EMA sesuai konfigurasi TradingView user.
-EMA_SET = (12, 21, 33, 50, 100, 200)
+EMA_SET = (13, 21, 33, 50, 100, 200)
 SMA_SET = (20, 50, 200)
 
 
@@ -546,14 +546,14 @@ def analyze(candles, drop_unclosed=True):
     c_ = [c[4] for c in candles]
     v = [c[5] for c in candles]
 
-    # EMA cepat (12/21) tetap jadi pemicu cross; sisanya konteks tren besar.
-    e12 = ema(c_, 12)
+    # EMA cepat (13/21) tetap jadi pemicu cross; sisanya konteks tren besar.
+    e13 = ema(c_, 13)
     e21 = ema(c_, 21)
     r = rsi_wilder(c_, 14)
     k, d = stochastic(h, l, c_)
     fib = fib_from_swing(h, l, c_)
 
-    if len(e12) < 2 or len(e21) < 2 or len(k) < 2 or len(d) < 2 or not r:
+    if len(e13) < 2 or len(e21) < 2 or len(k) < 2 or len(d) < 2 or not r:
         return {"error": "data tidak cukup untuk indikator"}
 
     price = c_[-1]
@@ -564,9 +564,9 @@ def analyze(candles, drop_unclosed=True):
         "last_candle_utc": datetime.fromtimestamp(ts[-1] / 1000, tz=timezone.utc)
                                    .strftime("%Y-%m-%d %H:%M"),
         "close": round(price, 8),
-        "ema_signal": ema_signal(price, e12[-1], e21[-1], e12[-2], e21[-2]),
-        "ema_gap_pct": round(abs(e12[-1] - e21[-1]) / price * 100, 3),
-        "ema_cross_valid": abs(e12[-1] - e21[-1]) / price > 0.005,
+        "ema_signal": ema_signal(price, e13[-1], e21[-1], e13[-2], e21[-2]),
+        "ema_gap_pct": round(abs(e13[-1] - e21[-1]) / price * 100, 3),
+        "ema_cross_valid": abs(e13[-1] - e21[-1]) / price > 0.005,
         "rsi14": round(r[-1], 2),
         "rsi_divergence": detect_divergence(c_, r, len(c_) - len(r)),
         "stoch": {
@@ -583,7 +583,7 @@ def analyze(candles, drop_unclosed=True):
         },
     }
 
-    # --- EMA set lengkap (12/21/33/50/100/200) ---------------------------------
+    # --- EMA set lengkap (13/21/33/50/100/200) ---------------------------------
     # EMA panjang butuh banyak candle; kalau data kurang diberi None (bukan diarang),
     # supaya tidak ada angka palsu. Weekly sering tidak punya 200 periode.
     emas = {}
@@ -649,7 +649,7 @@ def main():
     result = {
         "symbol": ticker,
         "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
-        "indicator_settings": ("EMA 12/21/33/50/100/200 (cross 12x21), RSI 14 (Wilder), Stoch 5-3-3, BB+MidBand EMA 20 (mult 2 & 1), ATR 14 + trailing 3x, SuperTrend 10x3, Pivot standar, Fib 0/.236/.382/.5/.618/.786/1.618/2.618"),
+        "indicator_settings": ("EMA 13/21/33/50/100/200 (cross 13x21), RSI 14 (Wilder), Stoch 5-3-3, BB+MidBand EMA 20 (mult 2 & 1), ATR 14 + trailing 3x, SuperTrend 10x3, Pivot standar, Fib 0/.236/.382/.5/.618/.786/1.618/2.618"),
         "note": "candle berjalan dibuang (hanya candle tertutup) untuk hindari look-ahead",
         "timeframes": {},
     }

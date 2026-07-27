@@ -316,7 +316,7 @@ def build_gather_prompt(coin):
         f"diverifikasi (dengan vonis kesegaran). Tempel apa adanya ke bagian [INGATAN]; "
         f"kalau kosong tulis 'belum ada ingatan'. JANGAN menilai — tahap berikutnya yang menilai.\n"
         f"1. Bash: `python cloud/indicators.py {coin}` → untuk TIAP timeframe (1w/1d/4h) tempel: "
-        f"close, SELURUH isi ema (ema12/21/33/50/100/200 — tulis n/a bila None), ema_stack.status, "
+        f"close, SELURUH isi ema (ema13/21/33/50/100/200 — tulis n/a bila None), ema_stack.status, "
         f"ema_signal, ema_cross_valid, bollinger (basis/atas/bawah/posisi/squeeze), atr14, atr_pct, "
         f"supertrend (arah+level), pivot_standar (P/R1/S1), indikator_rentang bila ada, "
         f"rsi14, rsi_divergence, stoch k/d/signal/"
