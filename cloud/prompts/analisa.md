@@ -96,9 +96,13 @@ Kamu jalan di CLOUD (tanpa TradingView Desktop). Semua data lewat API/MCP.
 5f. **Aliran dana alamat tertentu (MCP `mcp__blockscout__*`, gratis tanpa key).**
    WAJIB panggil `__unlock_blockchain_analysis__` dulu. Lalu `get_token_transfers_by_address`
    / `get_transactions_by_address` untuk melihat pergerakan masuk-keluar sebuah alamat
-   (~100 chain EVM). Masuk ke alamat BURSA = tekanan jual; keluar dari bursa = akumulasi —
-   kenali alamat bursa lewat label di wallet.py, jangan menebak. Bukan feed otomatis:
-   perlu alamat spesifik. Tidak mencakup Solana.
+   (~100 chain EVM). CEK DULU alamatnya milik siapa (label via wallet.py):
+   dompet PRIBADI -> masuk ke bursa = tekanan jual, keluar dari bursa = akumulasi;
+   tapi kalau alamatnya MILIK BURSA sendiri, arahnya terbalik (masuk = setoran nasabah,
+   keluar = penarikan) dan itu dana banyak orang — BUKAN akumulasi/distribusi satu pemain.
+   Kontrak protokol = mekanisme, bukan sinyal. Tool ini memberi POTONGAN transaksi terakhir,
+   bukan agregat: untuk alamat sibuk jangan disimpulkan sebagai net flow. Bukan feed
+   otomatis (perlu alamat spesifik). Tidak mencakup Solana.
 
 5e. **Riset dari X (Twitter).** Untuk katalis/aliran dana/temuan on-chain yang sering
    muncul lebih dulu di X: WebSearch dengan `allowed_domains: ["x.com","twitter.com"]`.

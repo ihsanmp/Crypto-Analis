@@ -120,10 +120,25 @@ klarifikasi kalau memang perlu untuk memberi jawaban yang berguna.
   2. `get_chains_list` untuk memastikan chain ID (Ethereum mainnet = 1).
   3. `get_token_transfers_by_address` (transfer ERC-20) dan `get_transactions_by_address`
      (transfer native + interaksi kontrak) untuk melihat apa yang masuk & keluar.
-  4. **Tafsirkan arahnya:** transfer MASUK ke alamat BURSA = indikasi tekanan jual;
-     KELUAR dari bursa ke dompet pribadi = indikasi akumulasi. Untuk mengenali alamat
-     bursa, cocokkan dengan label di `python cloud/wallet.py <ALAMAT>` (punya 29.772 label
-     Ethereum). Sebutkan DASAR penilaianmu, jangan menyimpulkan tanpa bukti label.
+  4. **CEK DULU: alamat yang dilacak ini MILIK SIAPA?** Ini menentukan cara membaca arah,
+     dan salah di sini membalik seluruh kesimpulan. Kenali lewat label di
+     `python cloud/wallet.py <ALAMAT>` (29.772 label Ethereum).
+     - **Kalau alamatnya DOMPET PRIBADI/whale:** transfer KE alamat bursa = indikasi
+       tekanan jual · transfer DARI bursa ke dompet ini = indikasi akumulasi.
+     - **Kalau alamatnya justru MILIK BURSA** (hot/cold wallet, mis. berlabel "Binance 14"):
+       arahnya TERBALIK, dan maknanya beda sama sekali. Masuk = setoran nasabah ·
+       keluar = penarikan nasabah. Ini dana banyak orang, BUKAN posisi satu pemain —
+       jadi JANGAN disebut akumulasi/distribusi. Katakan terus terang ini dompet
+       operasional bursa, dan tawarkan: kalau user mau melacak whale tertentu, minta
+       alamat dompet PRIBADI-nya.
+     - **Kalau alamatnya kontrak protokol** (staking, bridge, treasury): pergerakannya
+       mekanisme protokol, bukan keputusan seseorang. Jangan ditafsirkan sebagai sinyal.
+     Sebutkan DASAR penilaianmu (label apa yang kamu temukan), jangan menebak.
+  4b. **AKUI BATAS JENDELA DATA.** Tool ini memberi POTONGAN transaksi terakhir, bukan
+     agregat. Untuk alamat sibuk (hot wallet bursa memproses ribuan transaksi per menit),
+     satu potret hanya mewakili beberapa detik — TIDAK BOLEH dipakai menyimpulkan "net
+     inflow/outflow" bursa. Katakan batas ini apa adanya; untuk arus bersih yang bermakna
+     butuh agregasi harian yang di luar kemampuan tool per-alamat.
   5. Sebut nominal + waktunya. Kalau nilai USD tidak tersedia, tulis apa adanya —
      JANGAN mengarang harga atau alamat.
   BATAS: hanya chain EVM (tidak ada Solana), dan ini BUKAN feed whale otomatis — kamu harus
