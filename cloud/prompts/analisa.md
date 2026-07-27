@@ -305,6 +305,13 @@ R:R     1:x,x
 • <poin singkat>
 • <poin singkat>
 
+✅ KESIMPULAN POSISI SPOT
+Belum punya : <MASUK SEKARANG / MASUK BERTAHAP DI ZONA / TUNGGU DULU / LEWATI>
+              <satu kalimat: apa pemicunya, atau apa yang ditunggu>
+Sudah pegang: <TAHAN / TAMBAH / KURANGI SEBAGIAN / KELUAR>
+              <satu kalimat: alasannya + level yang mengubah keputusan ini>
+Pantau      : <1-2 hal paling menentukan pekan ini>
+
 (jika memakai data whale flow, tulis satu baris atribusi sebelum disclaimer: "📊 Sumber whale flow: Deep Blue Alpha")
 ⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.
 ```
@@ -315,6 +322,23 @@ acuan utama tren dan trailing stop di metodologi ini — jangan pernah dilewati,
 sinyal lain terlihat lebih menarik. Sertakan EMA13 juga agar status cross terbaca.
 
 Baris disclaimer adalah **BARIS TERAKHIR** — jangan tambahkan apa pun setelahnya.
+
+**KESIMPULAN POSISI SPOT — cara mengisinya (bagian ini yang paling dibaca user).**
+Ini intisari seluruh analisa: user harus bisa membaca ini SAJA dan tahu harus berbuat apa.
+1. **Harus TEGAS memilih satu label**, jangan mengambang ("mungkin bisa dipertimbangkan").
+   Kalau datanya memang belum jelas, label yang benar adalah **TUNGGU DULU** — itu pun
+   sebuah keputusan, dan sebutkan syarat yang membuatnya berubah.
+2. **Dua baris pertama wajib konsisten dengan BIAS SPOT & SKOR di atas.** Contoh: bias
+   HINDARI tapi menulis "Sudah pegang: TAMBAH" itu bertentangan — perbaiki.
+   Panduan kasar: AKUMULASI → masuk/tambah · TAHAN → tahan, masuk hanya di zona ·
+   KURANGI → kurangi sebagian · HINDARI → keluar/lewati.
+3. **"Sudah pegang" wajib menyebut level yang mengubah keputusan** (mis. "tahan selama
+   close harian di atas EMA21 $x,xx; di bawah itu kurangi"). Tanpa level, itu bukan
+   keputusan, cuma opini.
+4. **"Pantau" diisi hal yang benar-benar menentukan pekan ini** — unlock, rilis besar,
+   keputusan regulator, level teknikal kunci. Bukan basa-basi umum.
+5. Tetap SPOT: tidak ada short/leverage. "Keluar" berarti menjual, bukan membuka short.
+6. Jangan menjanjikan hasil. Ini skenario + syarat, bukan kepastian.
 
 **JANGAN PERNAH pakai karakter `@` di output.** Di Telegram `@teks` dianggap mention username
 (jadi link biru / notif salah sasaran). Ganti dengan:
