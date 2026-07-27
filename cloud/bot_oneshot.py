@@ -402,6 +402,10 @@ def run_claude(prompt, timeout, max_turns, model=None, with_tools=True, tools_ov
 
 
 def process(token, chat_id, text, photo_file_id=None):
+    brief = None          # DATA BRIEF tahap-1 (hanya terisi di analisa koin); dipakai
+                          # audit keterlacakan angka. Dideklarasikan di sini supaya
+                          # SELALU terdefinisi di semua cabang, termasuk mode foto.
+
     # --- Mode FOTO (analis visual) -----------------------------------------
     if photo_file_id:
         print(f"[proses] kind=foto caption={text[:60]!r}", file=sys.stderr)
@@ -428,9 +432,6 @@ def process(token, chat_id, text, photo_file_id=None):
         if send_message(token, chat_id, body):
             print(f"[proses] balasan foto {len(body)} karakter TERKIRIM", file=sys.stderr)
             print(f"[audit] {audit_kesegaran(body)}", file=sys.stderr)
-        jejak = audit_angka(brief, body)
-        if jejak:
-            print(f"[audit] {jejak}", file=sys.stderr)
         else:
             print("[proses] GAGAL KIRIM balasan foto — cek TELEGRAM_BOT_TOKEN", file=sys.stderr)
         return
@@ -449,7 +450,6 @@ def process(token, chat_id, text, photo_file_id=None):
         return
 
     timeout = int(os.environ.get("ANALYSIS_TIMEOUT", "900"))
-    brief = None          # DATA BRIEF tahap-1; dipakai audit keterlacakan angka
 
     if kind == "analisa":
         words = text.strip().lower().split()
@@ -505,6 +505,9 @@ def process(token, chat_id, text, photo_file_id=None):
     if send_message(token, chat_id, body):
         print(f"[proses] balasan {len(body)} karakter TERKIRIM ke Telegram", file=sys.stderr)
         print(f"[audit] {audit_kesegaran(body)}", file=sys.stderr)
+        jejak = audit_angka(brief, body)
+        if jejak:
+            print(f"[audit] {jejak}", file=sys.stderr)
     else:
         print(f"[proses] GAGAL KIRIM ke Telegram ({len(body)} karakter hilang). "
               "Penyebab tersering: TELEGRAM_BOT_TOKEN salah/kedaluwarsa/sudah di-revoke.",
