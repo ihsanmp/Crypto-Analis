@@ -16,7 +16,8 @@ Pemakaian:
     python indicators.py TRX
     python indicators.py BTC --cg-id bitcoin
 
-Output: JSON ringkas berisi EMA13/21, RSI14, Stoch(5,3,3), swing+Fibonacci,
+Output: JSON ringkas berisi EMA 12/21/33/50/100/200, RSI14, Stoch(5,3,3),
+        BB+MidBand(EMA20), ATR14, SuperTrend, Pivot standar, swing+Fibonacci,
 struktur pasar, dan volume untuk timeframe 1w / 1d / 4h.
 Hanya memakai pustaka standar Python (tanpa numpy/pandas) agar jalan di mana saja.
 """
@@ -395,6 +396,142 @@ def stoch_signal(k, d, kp, dp):
     return "NEUTRAL"
 
 
+def stdev(values, n):
+    """Standar deviasi POPULASI n periode terakhir (sama seperti TradingView)."""
+    if len(values) < n:
+        return None
+    seg = values[-n:]
+    m = sum(seg) / n
+    return (sum((x - m) ** 2 for x in seg) / n) ** 0.5
+
+
+def bollinger(closes, n=20, mult=2.0, mult2=1.0):
+    """Bollinger Band + Mid Band pakai EMA — sesuai indikator 'BB + MB' milik user
+    (Panjang 20, Sumber Penutupan, Mult 2, Mult2 1). Basis memakai EMA, bukan SMA."""
+    if len(closes) < n:
+        return None
+    e = ema(closes, n)
+    sd = stdev(closes, n)
+    if not e or sd is None or not e[-1]:
+        return None
+    basis, price = e[-1], closes[-1]
+    atas, bawah = basis + mult * sd, basis - mult * sd
+    atas2, bawah2 = basis + mult2 * sd, basis - mult2 * sd
+    lebar = (atas - bawah)
+    if price > atas:
+        posisi = "DI ATAS band atas (overextended)"
+    elif price < bawah:
+        posisi = "DI BAWAH band bawah (oversold ekstrem)"
+    elif price > basis:
+        posisi = "antara basis dan band atas"
+    else:
+        posisi = "antara band bawah dan basis"
+    return {
+        "basis_ema20": round(basis, 8),
+        "atas_2sd": round(atas, 8), "bawah_2sd": round(bawah, 8),
+        "atas_1sd": round(atas2, 8), "bawah_1sd": round(bawah2, 8),
+        "posisi_harga": posisi,
+        "persen_b": round((price - bawah) / lebar, 3) if lebar else None,
+        "bandwidth_pct": round(lebar / basis * 100, 2),
+        "squeeze": (lebar / basis * 100) < 10,   # band sempit -> sering mendahului ledakan
+    }
+
+
+def atr_series(highs, lows, closes, n=14):
+    """ATR dengan pemulusan Wilder. Return list (sejajar indeks mulai dari n)."""
+    if len(closes) < n + 1:
+        return []
+    trs = []
+    for i in range(1, len(closes)):
+        trs.append(max(highs[i] - lows[i],
+                       abs(highs[i] - closes[i - 1]),
+                       abs(lows[i] - closes[i - 1])))
+    if len(trs) < n:
+        return []
+    nilai = sum(trs[:n]) / n
+    keluar = [nilai]
+    for t in trs[n:]:
+        nilai = (nilai * (n - 1) + t) / n
+        keluar.append(nilai)
+    return keluar
+
+
+def supertrend(highs, lows, closes, n=10, mult=3.0):
+    """SuperTrend klasik (ATR n, pengali mult). Dipakai sebagai trailing stop tren."""
+    a = atr_series(highs, lows, closes, n)
+    if not a:
+        return None
+    mulai = len(closes) - len(a)
+    arah, st = None, None
+    ub_prev = lb_prev = None
+    for idx, atr in enumerate(a):
+        i = mulai + idx
+        mid = (highs[i] + lows[i]) / 2
+        ub, lb = mid + mult * atr, mid - mult * atr
+        if ub_prev is not None:
+            ub = ub if (ub < ub_prev or closes[i - 1] > ub_prev) else ub_prev
+            lb = lb if (lb > lb_prev or closes[i - 1] < lb_prev) else lb_prev
+        if arah is None:
+            arah = "naik" if closes[i] > ub else "turun"
+        elif arah == "naik" and closes[i] < lb:
+            arah = "turun"
+        elif arah == "turun" and closes[i] > ub:
+            arah = "naik"
+        st = lb if arah == "naik" else ub
+        ub_prev, lb_prev = ub, lb
+    price = closes[-1]
+    return {
+        "arah": arah,
+        "level": round(st, 8),
+        "jarak_pct": round(abs(price - st) / price * 100, 2),
+        "acuan": "arah naik = level jadi trailing stop di bawah harga; turun = resistensi di atas",
+    }
+
+
+def pivot_standard(highs, lows, closes):
+    """Pivot Point standar/klasik dari candle SEBELUMNYA (bukan yang berjalan)."""
+    if len(closes) < 2:
+        return None
+    h, l, c = highs[-2], lows[-2], closes[-2]
+    p = (h + l + c) / 3
+    return {
+        "P": round(p, 8),
+        "R1": round(2 * p - l, 8), "S1": round(2 * p - h, 8),
+        "R2": round(p + (h - l), 8), "S2": round(p - (h - l), 8),
+        "R3": round(h + 2 * (p - l), 8), "S3": round(l - 2 * (h - p), 8),
+    }
+
+
+# Set EMA sesuai konfigurasi TradingView user.
+EMA_SET = (12, 21, 33, 50, 100, 200)
+SMA_SET = (20, 50, 200)
+
+
+def ema_stack(price, emas):
+    """Nilai keselarasan tren dari susunan EMA. Makin selaras, makin kuat trennya."""
+    ada = [emas[f"ema{n}"] for n in EMA_SET if emas.get(f"ema{n}") is not None]
+    if len(ada) < 3:
+        return {"status": "data tidak cukup", "selaras": None}
+    naik = all(ada[i] >= ada[i + 1] for i in range(len(ada) - 1))   # cepat > lambat
+    turun = all(ada[i] <= ada[i + 1] for i in range(len(ada) - 1))
+    if naik and price > ada[0]:
+        status = "BULLISH PENUH — semua EMA tersusun naik & harga di atasnya"
+    elif turun and price < ada[0]:
+        status = "BEARISH PENUH — semua EMA tersusun turun & harga di bawahnya"
+    elif naik:
+        status = "susunan bullish, tapi harga di bawah EMA tercepat (koreksi)"
+    elif turun:
+        status = "susunan bearish, tapi harga di atas EMA tercepat (pantulan)"
+    else:
+        status = "campur aduk — tren belum jelas (EMA saling silang)"
+    di_atas = sum(1 for x in ada if price > x)
+    return {
+        "status": status,
+        "selaras": naik or turun,
+        "harga_di_atas": f"{di_atas} dari {len(ada)} EMA",
+    }
+
+
 def analyze(candles, drop_unclosed=True):
     """Hitung semua indikator untuk satu timeframe."""
     if drop_unclosed and len(candles) > 1:
@@ -409,13 +546,14 @@ def analyze(candles, drop_unclosed=True):
     c_ = [c[4] for c in candles]
     v = [c[5] for c in candles]
 
-    e13 = ema(c_, 13)
+    # EMA cepat (12/21) tetap jadi pemicu cross; sisanya konteks tren besar.
+    e12 = ema(c_, 12)
     e21 = ema(c_, 21)
     r = rsi_wilder(c_, 14)
     k, d = stochastic(h, l, c_)
     fib = fib_from_swing(h, l, c_)
 
-    if len(e13) < 2 or len(e21) < 2 or len(k) < 2 or len(d) < 2 or not r:
+    if len(e12) < 2 or len(e21) < 2 or len(k) < 2 or len(d) < 2 or not r:
         return {"error": "data tidak cukup untuk indikator"}
 
     price = c_[-1]
@@ -426,11 +564,9 @@ def analyze(candles, drop_unclosed=True):
         "last_candle_utc": datetime.fromtimestamp(ts[-1] / 1000, tz=timezone.utc)
                                    .strftime("%Y-%m-%d %H:%M"),
         "close": round(price, 8),
-        "ema13": round(e13[-1], 8),
-        "ema21": round(e21[-1], 8),
-        "ema_signal": ema_signal(price, e13[-1], e21[-1], e13[-2], e21[-2]),
-        "ema_gap_pct": round(abs(e13[-1] - e21[-1]) / price * 100, 3),
-        "ema_cross_valid": abs(e13[-1] - e21[-1]) / price > 0.005,
+        "ema_signal": ema_signal(price, e12[-1], e21[-1], e12[-2], e21[-2]),
+        "ema_gap_pct": round(abs(e12[-1] - e21[-1]) / price * 100, 3),
+        "ema_cross_valid": abs(e12[-1] - e21[-1]) / price > 0.005,
         "rsi14": round(r[-1], 2),
         "rsi_divergence": detect_divergence(c_, r, len(c_) - len(r)),
         "stoch": {
@@ -446,6 +582,51 @@ def analyze(candles, drop_unclosed=True):
             "breakout_valid": (v[-1] / vol_sma20 > 1.5) if vol_sma20 else None,
         },
     }
+
+    # --- EMA set lengkap (12/21/33/50/100/200) ---------------------------------
+    # EMA panjang butuh banyak candle; kalau data kurang diberi None (bukan diarang),
+    # supaya tidak ada angka palsu. Weekly sering tidak punya 200 periode.
+    emas = {}
+    for n in EMA_SET:
+        seri = ema(c_, n) if len(c_) >= n else []
+        emas[f"ema{n}"] = round(seri[-1], 8) if seri else None
+    out["ema"] = emas
+    out["ema_kurang_data"] = [f"ema{n}" for n in EMA_SET if emas[f"ema{n}"] is None]
+    out["ema_stack"] = ema_stack(price, emas)
+
+    smas = {}
+    for n in SMA_SET:
+        seri = sma(c_, n) if len(c_) >= n else []
+        smas[f"sma{n}"] = round(seri[-1], 8) if seri else None
+    out["sma"] = smas
+
+    bb = bollinger(c_)
+    if bb:
+        out["bollinger"] = bb
+
+    # Indikator berbasis RENTANG (ATR/SuperTrend/Pivot) hanya sahih kalau high & low
+    # asli tersedia. Pada fallback close-only (O=H=L=C) hasilnya menyesatkan — mis.
+    # pivot jadi R1=S1=P. Deteksi dan tandai, jangan disajikan seolah valid.
+    sampel = min(30, len(c_))
+    punya_range = any(h[i] > l[i] for i in range(-sampel, 0))
+    if punya_range:
+        a = atr_series(h, l, c_, 14)
+        if a:
+            out["atr14"] = round(a[-1], 8)
+            out["atr_pct"] = round(a[-1] / price * 100, 2)
+            # Trailing stop berbasis ATR (setara ATR Trailing Stop): 3x ATR dari harga.
+            out["atr_trailing_stop"] = round(price - 3 * a[-1], 8)
+        st = supertrend(h, l, c_)
+        if st:
+            out["supertrend"] = st
+        pv = pivot_standard(h, l, c_)
+        if pv:
+            out["pivot_standar"] = pv
+    else:
+        out["indikator_rentang"] = (
+            "TIDAK TERSEDIA — sumber hanya memberi harga penutupan (tanpa high/low asli), "
+            "sehingga ATR, SuperTrend, dan Pivot tidak bisa dihitung dengan benar. "
+            "JANGAN memakai level rentang untuk timeframe ini.")
 
     if fib:
         fib["swing_high_utc"] = datetime.fromtimestamp(ts[fib.pop("_hi_i")] / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
@@ -468,7 +649,7 @@ def main():
     result = {
         "symbol": ticker,
         "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
-        "indicator_settings": "EMA 13/21, RSI 14 (Wilder), Stoch 5-3-3, Fib 0/.236/.382/.5/.618/.786/1.618/2.618",
+        "indicator_settings": ("EMA 12/21/33/50/100/200 (cross 12x21), RSI 14 (Wilder), Stoch 5-3-3, BB+MidBand EMA 20 (mult 2 & 1), ATR 14 + trailing 3x, SuperTrend 10x3, Pivot standar, Fib 0/.236/.382/.5/.618/.786/1.618/2.618"),
         "note": "candle berjalan dibuang (hanya candle tertutup) untuk hindari look-ahead",
         "timeframes": {},
     }

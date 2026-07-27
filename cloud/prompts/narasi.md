@@ -68,7 +68,8 @@ Saring cepat, buang yang:
 **5. Analisa teknikal finalis.**
 Untuk **2–3 koin finalis saja** (biar hemat waktu), jalankan lewat Bash:
 `python cloud/indicators.py <TICKER>`
-→ EMA13/21, RSI14, Stoch(5,3,3), Fibonacci, struktur, untuk 1w/1d/4h.
+→ EMA 12/21/33/50/100/200, RSI14, Stoch(5,3,3), BB+MidBand, ATR, SuperTrend, Pivot,
+   Fibonacci, struktur, untuk 1w/1d/4h.
 Yang dicari untuk akumulasi spot: harga belum jauh dari support, idealnya di area Golden Pocket
 (0.5–0.618) atau pullback sehat ke EMA21 — BUKAN yang baru saja terbang vertikal.
 Baca juga `source` & `quality`; kalau `approx_close_only`, sebutkan keterbatasannya.
@@ -137,7 +138,7 @@ $TICKER — <narasi>
 
 📈 TEKNIKAL
 WEEKLY  • Harga $xxx vs EMA21 $xxx → DI ATAS/DI BAWAH (x,x%)
-        • EMA13 $xxx · RSI xx · Stoch K xx/D xx
+        • EMA12 $xxx · EMA21 $xxx · RSI xx · Stoch K xx/D xx
         • Struktur: <...> · Fib: <zona>
 DAILY   • <format sama>
 4H      • <format sama>

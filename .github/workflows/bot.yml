@@ -45,6 +45,9 @@ jobs:
       # investors.py & wallet.py. GRATIS — daftar di moralis.com. Kalau kosong, chain
       # Ethereum tetap jalan (pakai Ethplorer); chain lain akan memberi pesan jelas.
       MORALIS_API_KEY: ${{ secrets.MORALIS_API_KEY }}
+      # On-chain lanjutan (MVRV, SOPR, exchange flow) via MCP CryptoQuant.
+      # Opsional: tanpa key, server MCP-nya sekadar tidak menghasilkan data.
+      CRYPTOQUANT_API_KEY: ${{ secrets.CRYPTOQUANT_API_KEY }}
       SUBSCRIPTION_LEVEL: Basic
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
       # Isi hanya saat dipicu webhook; kosong saat dijalankan manual.
