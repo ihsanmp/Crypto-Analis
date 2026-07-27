@@ -311,6 +311,9 @@ def build_gather_prompt(coin):
         f"Kamu PETUGAS PENGUMPUL DATA (bukan analis). Kumpulkan data mentah untuk koin "
         f"{coin} untuk analisa SPOT. JANGAN menganalisa, memberi skor, atau menyimpulkan — "
         f"cukup jalankan tiap langkah dan TEMPEL hasil angkanya. Sebut jelas yang gagal/kosong.\n\n"
+        f"0. Bash: `python cloud/memori.py cari {coin}` → ingatan fakta yang PERNAH "
+        f"diverifikasi (dengan vonis kesegaran). Tempel apa adanya ke bagian [INGATAN]; "
+        f"kalau kosong tulis 'belum ada ingatan'. JANGAN menilai — tahap berikutnya yang menilai.\n"
         f"1. Bash: `python cloud/indicators.py {coin}` → untuk TIAP timeframe (1w/1d/4h) tempel: "
         f"close, ema13, ema21, ema_signal, ema_cross_valid, rsi14, rsi_divergence, stoch k/d/signal/"
         f"cycle_bottom, fib zone + level penting, structure, volume ratio, source, quality.\n"
@@ -339,10 +342,10 @@ def build_gather_prompt(coin):
         f"- Tiap katalis/berita dari WebSearch WAJIB bertanggal + nama media. Yang tidak "
         f"jelas tanggalnya, TULIS 'tanggal tidak jelas' — jangan dikarang.\n"
         f"- Data fundamental sebut PERIODENYA (bulan/kuartal apa), bukan cuma '30d'.\n\n"
-        f"OUTPUT: satu 'DATA BRIEF' terstruktur berlabel per bagian ([WAKTU DATA], [PASAR], "
-        f"[HARGA/VALUASI], [TEKNIKAL 1W/1D/4H], [FUNDAMENTAL], [KEPEMILIKAN], [DERIVATIF], "
-        f"[KATALIS], [TIDAK TERSEDIA]). Bagian [WAKTU DATA] berisi semua generated_utc + "
-        f"source/quality. Angka apa adanya, tanpa interpretasi/skor/rekomendasi."
+        f"OUTPUT: satu 'DATA BRIEF' terstruktur berlabel per bagian ([WAKTU DATA], [INGATAN], "
+        f"[PASAR], [HARGA/VALUASI], [TEKNIKAL 1W/1D/4H], [FUNDAMENTAL], [KEPEMILIKAN], "
+        f"[DERIVATIF], [KATALIS], [TIDAK TERSEDIA]). Bagian [WAKTU DATA] berisi semua "
+        f"generated_utc + source/quality. Angka apa adanya, tanpa interpretasi/skor/rekomendasi."
     )
 
 

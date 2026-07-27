@@ -21,6 +21,12 @@ concurrency:
   group: telegram-analisa-bot
   cancel-in-progress: false
 
+# Perlu menulis: ingatan terverifikasi (cloud/data/memori.jsonl) di-commit balik ke repo
+# supaya bertahan antar-run. Tiap run adalah mesin baru, jadi tanpa ini bot tidak ingat
+# apa pun. Concurrency di atas membuat run berurutan, sehingga tidak saling tabrakan.
+permissions:
+  contents: write
+
 jobs:
   bot:
     runs-on: ubuntu-latest
@@ -81,3 +87,25 @@ jobs:
       - name: Jalankan analisa & balas ke Telegram
         if: github.event_name == 'repository_dispatch' || steps.check.outputs.has_work == 'true'
         run: python cloud/bot_oneshot.py
+
+      # Simpan ingatan terverifikasi. Sengaja `always()`: balasan sudah dikirim ke user,
+      # jadi fakta yang sempat diverifikasi tetap layak disimpan walau langkah di atas
+      # berakhir tidak mulus. Hanya file memori yang di-commit — tidak menyentuh kode.
+      - name: Simpan ingatan terverifikasi
+        if: always() && (github.event_name == 'repository_dispatch' || steps.check.outputs.has_work == 'true')
+        run: |
+          if [ -z "$(git status --porcelain cloud/data/memori.jsonl)" ]; then
+            echo "tidak ada ingatan baru — lewati commit"
+            exit 0
+          fi
+          git config user.name "crypto-analis-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add cloud/data/memori.jsonl
+          git commit -m "Ingatan: fakta terverifikasi dari run ${GITHUB_RUN_ID}"
+          # Run lain bisa menambah commit lebih dulu; rebase supaya tidak saling menimpa.
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin HEAD:main && exit 0
+            echo "percobaan $i gagal, ulangi..."
+            sleep 3
+          done
+          echo "::warning::Ingatan gagal disimpan setelah 3 percobaan (balasan tetap terkirim)."
