@@ -16,6 +16,12 @@
  *   ALLOWED_CHAT_IDS  : chat ID yang boleh dilayani, pisahkan koma
  */
 
+// Penanda versi. Worker berjalan TERPISAH dari repo — `git push` TIDAK memperbaruinya,
+// harus ditempel ulang manual di dashboard Cloudflare. Versi ini muncul di respons GET
+// supaya bisa dipastikan versi mana yang benar-benar aktif (dulu foto hilang diam-diam
+// karena Worker masih versi lama, dan tidak ada cara memeriksanya dari luar).
+const WORKER_VERSION = "2026-07-27-foto";
+
 export default {
   async fetch(request, env) {
     // Telegram selalu POST. GET dipakai untuk cek kesehatan & konfigurasi.
@@ -26,6 +32,8 @@ export default {
           {
             ok: true,
             pesan: "Worker hidup. Endpoint ini hanya menerima webhook Telegram.",
+            versi: WORKER_VERSION,
+            dukung_foto: true,
             konfigurasi: {
               GITHUB_TOKEN: env.GITHUB_TOKEN ? "terisi" : "KOSONG",
               TELEGRAM_SECRET: env.TELEGRAM_SECRET ? "terisi" : "KOSONG",
@@ -56,15 +64,33 @@ export default {
     const msg = update.message || update.edited_message;
     const chatId = msg && msg.chat ? String(msg.chat.id) : "";
     // Foto: message.photo adalah array ukuran; ambil resolusi terbesar (elemen terakhir).
-    // Caption foto dikirim sebagai text (jadi instruksi/pertanyaan untuk gambar).
     const photos = msg && Array.isArray(msg.photo) ? msg.photo : [];
-    const photoFileId = photos.length ? photos[photos.length - 1].file_id : "";
+    let photoFileId = photos.length ? photos[photos.length - 1].file_id : "";
+    // Gambar yang dikirim sebagai FILE (tombol "Send as file", umum dari desktop) tidak
+    // masuk message.photo melainkan message.document. Tanpa cabang ini gambar itu hilang.
+    if (!photoFileId && msg && msg.document &&
+        String(msg.document.mime_type || "").startsWith("image/")) {
+      photoFileId = msg.document.file_id;
+    }
+    // Caption gambar dipakai sebagai teks (jadi instruksi/pertanyaan untuk gambar itu).
     const text = msg && typeof (photoFileId ? msg.caption : msg.text) === "string"
       ? (photoFileId ? msg.caption : msg.text).trim()
       : "";
 
-    // Tidak ada chat, atau bukan teks maupun foto (sticker/voice/dll) -> abaikan.
-    if (!chatId || (!text && !photoFileId)) return new Response("ok");
+    // Tidak ada chat -> abaikan.
+    if (!chatId) return new Response("ok");
+
+    // Media yang BELUM didukung (dokumen/video/voice/sticker). Dulu ini dibuang diam-diam
+    // sehingga user mengira bot rusak. Sekarang dicatat supaya kelihatan di log Cloudflare.
+    if (!text && !photoFileId) {
+      const jenis = msg
+        ? Object.keys(msg).find((k) =>
+            ["document", "video", "voice", "audio", "sticker", "animation"].includes(k),
+          )
+        : null;
+      if (jenis) console.log(`diabaikan: jenis '${jenis}' belum didukung`);
+      return new Response("ok");
+    }
 
     // Penyaringan chat di sisi Worker (bot juga menyaring lagi — pertahanan berlapis).
     const allowed = (env.ALLOWED_CHAT_IDS || "")

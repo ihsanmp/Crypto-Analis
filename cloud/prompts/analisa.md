@@ -244,6 +244,8 @@ Link cukup tulis URL-nya polos.
 ## Susunan WAJIB (ikuti persis)
 
 ```
+🕒 Data per <tgl> <jam> WIB · sumber harga <exchange> (<quality>)
+
 📊 PASAR
 BTC $xx.xxx · Dominasi xx% · Fear & Greed xx · Whale Index xx (label)
 <satu kalimat implikasinya untuk akumulasi altcoin>
@@ -321,7 +323,21 @@ Baris disclaimer adalah **BARIS TERAKHIR** — jangan tambahkan apa pun setelahn
 - Ticker koin → tetap pakai `$`: `$SOL`, `$BTC`
 **Sumber/berita:** kalau memakai WebSearch, JANGAN tutup dengan blok "Sources:" bergaya markdown `[teks](url)` (di Telegram jadi kurung siku mentah). Sebut nama media + tanggal di dalam kalimat, atau URL polos tanpa kurung.
 
-**Aturan:** semua angka dari data tool (jangan mengarang) · sebut sumber yang gagal/kosong · jangan janji profit, selalu sertakan invalidasi · cek tanggal hari ini, pastikan data fresh · gunakan hanya candle yang sudah tutup (hindari look-ahead).
+**Aturan:** semua angka dari data tool (jangan mengarang) · sebut sumber yang gagal/kosong · jangan janji profit, selalu sertakan invalidasi · gunakan hanya candle yang sudah tutup (hindari look-ahead).
+
+**WAJIB — PENANGGALAN DATA (jangan sajikan angka tanpa waktu).**
+Pembaca tidak bisa tahu angka ini seumur jam atau sebulan lalu. Karena itu:
+1. **Baris `🕒 Data per ...` WAJIB ada di paling atas**, diisi dari `generated_utc` yang
+   dikeluarkan script (konversi ke WIB = UTC+7), plus `source` & `quality` dari indicators.
+2. **Setiap KATALIS/BERITA wajib bertanggal**: "listing Binance 14 Jul 2026", bukan
+   "baru-baru ini" / "belum lama". Tanpa tanggal, jangan ditulis.
+3. **Data fundamental yang periodik sebut periodenya**: "revenue Juni 2026", "Q2 2026" —
+   bukan sekadar "30d" tanpa acuan kapan.
+4. **Angka kepemilikan institusi/ETF WAJIB bertanggal + sebut sumbernya** (mis. "per 17 Jul
+   2026 menurut filing"). Kalau di brief tidak ada tanggalnya, tulis "tanggal tidak tersedia"
+   — JANGAN mengarang tanggal, dan jangan menyajikannya seolah berlaku hari ini.
+5. Kalau ada data yang jelas lebih tua (mis. revenue bulan lalu), katakan apa adanya:
+   "data terakhir yang tersedia: Juni 2026".
 
 **WAJIB — periksa satuan sebelum menulis angka besar.** Kesalahan "juta vs miliar" sudah
 pernah terjadi (mcap & TVL ditulis juta padahal miliar). Sebelum menulis:

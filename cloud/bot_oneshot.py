@@ -331,9 +331,18 @@ def build_gather_prompt(coin):
         f"Fear & Greed. Sebut juga harga BTC terkini.\n"
         f"8. WebSearch → 2-4 katalis/berita/unlock terbaru untuk {coin} (dengan tanggal). "
         f"Untuk institusi/whale sebut nama media + tanggal, bukan link markdown.\n\n"
-        f"OUTPUT: satu 'DATA BRIEF' terstruktur berlabel per bagian ([PASAR], [HARGA/VALUASI], "
-        f"[TEKNIKAL 1W/1D/4H], [FUNDAMENTAL], [KEPEMILIKAN], [DERIVATIF], [KATALIS], [TIDAK TERSEDIA]). "
-        f"Angka apa adanya, tanpa interpretasi/skor/rekomendasi."
+        f"WAJIB — STEMPEL WAKTU. Tahap berikutnya TIDAK BISA memanggil tool, jadi kalau kamu "
+        f"tidak membawa waktunya, angka itu jadi tak bertanggal dan menyesatkan. Karena itu:\n"
+        f"- Tempel `generated_utc` dari SETIAP script yang kamu jalankan (indicators, "
+        f"fundamentals, investors, whaleflow) apa adanya.\n"
+        f"- Untuk indicators sebut juga `source` (bursa asal harga) dan `quality`.\n"
+        f"- Tiap katalis/berita dari WebSearch WAJIB bertanggal + nama media. Yang tidak "
+        f"jelas tanggalnya, TULIS 'tanggal tidak jelas' — jangan dikarang.\n"
+        f"- Data fundamental sebut PERIODENYA (bulan/kuartal apa), bukan cuma '30d'.\n\n"
+        f"OUTPUT: satu 'DATA BRIEF' terstruktur berlabel per bagian ([WAKTU DATA], [PASAR], "
+        f"[HARGA/VALUASI], [TEKNIKAL 1W/1D/4H], [FUNDAMENTAL], [KEPEMILIKAN], [DERIVATIF], "
+        f"[KATALIS], [TIDAK TERSEDIA]). Bagian [WAKTU DATA] berisi semua generated_utc + "
+        f"source/quality. Angka apa adanya, tanpa interpretasi/skor/rekomendasi."
     )
 
 
