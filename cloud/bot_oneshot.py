@@ -42,7 +42,6 @@ MCP_CONFIG = os.path.join(BASE_DIR, ".mcp.cloud.json")
 
 ALLOWED_TOOLS = ",".join([
     "mcp__coinglass__*",
-    "mcp__cryptoquant__*",
     "mcp__coinmarketcap__*",
     "mcp__tradingview__*",
     "WebSearch",
@@ -497,6 +496,7 @@ def process(token, chat_id, text, photo_file_id=None):
     else:
         body = output
 
+    body = pastikan_bertanggal(body)
     if send_message(token, chat_id, body):
         print(f"[proses] balasan {len(body)} karakter TERKIRIM ke Telegram", file=sys.stderr)
         print(f"[audit] {audit_kesegaran(body)}", file=sys.stderr)
@@ -511,6 +511,21 @@ _TGL_RE = re.compile(
     r"\b(" + "|".join(_BULAN_ID) + r")\s+\d{4}\b|"             # Juli 2026
     r"\b\d{4}-\d{2}-\d{2}\b",                                  # 2026-07-17
     re.IGNORECASE)
+
+
+def pastikan_bertanggal(teks):
+    """Sisipkan stempel waktu data kalau balasan sama sekali tidak memuat tanggal.
+
+    Format output MEWAJIBKAN baris "🕒 Data per ...", tapi kepatuhan model tidak bisa
+    diandalkan — pernah hilang begitu daftar indikator bertambah panjang. Angka pasar
+    tanpa waktu itu menyesatkan (pembaca tak tahu ini seumur jam atau sebulan), jadi
+    dijamin di sini lewat kode. Data memang ditarik saat run ini, sehingga stempelnya sahih.
+    """
+    if _TGL_RE.search(teks):
+        return teks
+    wib = datetime.now(timezone.utc) + timedelta(hours=7)
+    stempel = f"🕒 Data per {wib.day} {_BULAN_ID[wib.month - 1]} {wib.year}, {wib:%H:%M} WIB"
+    return f"{stempel}\n\n{teks}"
 
 
 def audit_kesegaran(teks):

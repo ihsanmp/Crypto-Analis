@@ -11,13 +11,6 @@
     "tradingview": {
       "command": "tradingview-mcp",
       "args": []
-    },
-    "cryptoquant": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "cryptoquant-mcp"
-      ]
     }
   }
 }

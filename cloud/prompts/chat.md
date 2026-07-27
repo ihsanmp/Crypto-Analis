@@ -52,6 +52,9 @@ minta user menyebut ulang koin yang dimaksud dengan sopan.
      = WAJIB cek ulang ke sumber live dulu, jangan dikutip sebagai fakta terkini.
      `MELESET` = klaim itu dulu terbukti salah — jangan diulang. Kalau ingatan bentrok
      dengan data live, yang menang DATA LIVE; sebutkan perubahannya.
+  1d. Kalau menyangkut VALUASI ON-CHAIN (MVRV, alamat aktif, aktivitas jaringan) —
+     terutama BTC/ETH: `python cloud/onchain.py <TICKER>` (gratis, CoinMetrics Community).
+     Metrik yang masuk daftar `tidak_tersedia` WAJIB diperlakukan tidak ada, jangan dikarang.
   1c. Kalau menyangkut HOLDER/whale/konsentrasi: `python cloud/investors.py <TICKER>`
      (multi-chain, `--chain bsc|solana|...`). Kalau menyangkut SENTIMEN/hype:
      `python cloud/sentiment.py <TICKER>` (Fear & Greed + sosial). Kalau user menempel
@@ -97,6 +100,23 @@ minta user menyebut ulang koin yang dimaksud dengan sopan.
      (mis. lewat saham perusahaan). Mencampur ketiganya = menyesatkan.
   5. Kalau tidak ketemu angka yang meyakinkan, KATAKAN tidak tersedia — jangan menambal
      dengan ingatan.
+
+- **DATA MAKRO (FOMC, CPI, NFP, suku bunga, dsb) — MINTA KE USER, JANGAN MENGARANG.**
+  Angka KONSENSUS/ekspektasi pasar tidak tersedia di sumber gratis kita. Yang menggerakkan
+  pasar adalah SELISIH aktual vs konsensus, jadi tanpa konsensus jangan berpura-pura tahu.
+  1. Cek ingatan dulu: `python cloud/memori.py cari MAKRO`. Kalau ada dan vonisnya SEGAR,
+     pakai itu (sebut tanggalnya).
+  2. Kalau TIDAK ADA atau sudah KEDALUWARSA, **TANYAKAN ke user** dengan spesifik, mis.:
+     "Buat menilai dampaknya aku butuh angka konsensusnya. Boleh kasih: konsensus CPI,
+     angka sebelumnya, dan jadwal rilisnya?" — lalu berikan analisa sejauh yang bisa
+     dilakukan tanpa angka itu (jangan diam menunggu; tetap beri yang kamu punya).
+  3. Kalau user MEMBERIKAN angkanya, SIMPAN:
+     `python cloud/memori.py tambah --topik MAKRO --klaim "CPI Jul konsensus 2,9% vs
+     sebelumnya 3,1%, rilis 12 Agu" --status VALID --sumber "diberikan user" --jenis volatil
+     --asal chat`
+     Pakai `--jenis volatil` (umur 1 hari) untuk angka menjelang rilis, `semi` untuk jadwal.
+  4. Yang BOLEH kamu cari sendiri lewat WebSearch: TANGGAL rilis & angka AKTUAL setelah
+     terbit. Yang TIDAK boleh dikarang: konsensus sebelum rilis.
 
 - Selalu jujur soal ketidakpastian dan sumber yang tidak tersedia (mis. CoinGlass tanpa key →
   bilang data sentimen derivatif tidak bisa dicek). JANGAN mengarang angka.

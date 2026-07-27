@@ -93,6 +93,12 @@ Kamu jalan di CLOUD (tanpa TradingView Desktop). Semua data lewat API/MCP.
    dikenal (mis. "Binance 8"). Token spam sudah dibuang. Gunakan untuk menjawab "dompet ini
    isinya apa / punya siapa / lagi ngapain". Butuh MORALIS_API_KEY (ETH label tetap jalan tanpa key).
 
+5d. **Valuasi on-chain (gratis, tanpa key).** `python cloud/onchain.py <TICKER>` →
+   MVRV + zona penilaiannya, alamat aktif, jumlah transaksi, tren 30 hari (CoinMetrics
+   Community). Paling lengkap untuk BTC & ETH; altcoin kecil sering tidak tercakup —
+   kalau `error`, sebutkan tidak tersedia dan lanjutkan. Metrik dalam `tidak_tersedia`
+   JANGAN dikarang. MVRV dipakai sebagai konteks valuasi siklus, bukan pemicu entry.
+
 5c. **Sentimen sosial & pasar (gratis).** `python cloud/sentiment.py <TICKER>` →
    Fear & Greed Index pasar + arahnya, dan per-koin: sentiment votes komunitas, ukuran
    audiens (Twitter/X, Reddit, Telegram), watchlist, aktivitas developer. Ini KONTEKS
