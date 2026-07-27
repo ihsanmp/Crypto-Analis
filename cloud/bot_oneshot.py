@@ -562,8 +562,15 @@ def audit_angka(brief, balasan):
     if not ref:
         return None
 
+    # Bagian RENCANA & KESIMPULAN berisi level TURUNAN (zona entry, target, invalidasi)
+    # yang memang dihitung dari Fibonacci/support — wajar tidak ada persis di brief.
+    # Bagian itu dikecualikan supaya sinyal ini tajam: yang tersisa adalah klaim FAKTUAL
+    # (harga, indikator, fundamental, kepemilikan) — di situlah karangan benar-benar bahaya.
+    potong = re.split(r"🧭\s*RENCANA SPOT|✅\s*KESIMPULAN", balasan)
+    faktual = potong[0] if len(potong) > 1 else balasan
+
     dicek, tak_terlacak = 0, []
-    for m in _ANGKA_RE.finditer(balasan):
+    for m in _ANGKA_RE.finditer(faktual):
         d = _digit(m.group(0))
         if len(d) < 3:          # angka 1-2 digit terlalu umum untuk dinilai
             continue
@@ -581,8 +588,8 @@ def audit_angka(brief, balasan):
         vonis = "PERIKSA"
     else:
         vonis = "MENCURIGAKAN"
-    return (f"keterlacakan angka: {vonis} — {dicek - len(tak_terlacak)}/{dicek} angka "
-            f"terlacak ke DATA BRIEF ({persen}% tidak terlacak"
+    return (f"keterlacakan angka (bagian faktual): {vonis} — {dicek - len(tak_terlacak)}/{dicek} "
+            f"angka terlacak ke DATA BRIEF ({persen}% tidak terlacak"
             + (f"; contoh: {contoh}" if tak_terlacak else "") + ")")
 
 
