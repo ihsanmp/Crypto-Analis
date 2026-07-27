@@ -93,6 +93,13 @@ Kamu jalan di CLOUD (tanpa TradingView Desktop). Semua data lewat API/MCP.
    dikenal (mis. "Binance 8"). Token spam sudah dibuang. Gunakan untuk menjawab "dompet ini
    isinya apa / punya siapa / lagi ngapain". Butuh MORALIS_API_KEY (ETH label tetap jalan tanpa key).
 
+5e. **Riset dari X (Twitter).** Untuk katalis/aliran dana/temuan on-chain yang sering
+   muncul lebih dulu di X: WebSearch dengan `allowed_domains: ["x.com","twitter.com"]`.
+   Akun berbasis data: Lookonchain, Galaxy Research, Darkfost, DeItaone, SoSoValue.
+   WAJIB sebut nama akun + tanggal, dan VERIFIKASI angka pentingnya ke sumber lain sebelum
+   masuk skor. Postingan X = klaim, bukan fakta. Ini pencarian mesin, bukan akses langsung —
+   tidak bisa menghitung mention/skor sentimen agregat.
+
 5d. **Valuasi on-chain (gratis, tanpa key).** `python cloud/onchain.py <TICKER>` →
    MVRV + zona penilaiannya, alamat aktif, jumlah transaksi, tren 30 hari (CoinMetrics
    Community). Paling lengkap untuk BTC & ETH; altcoin kecil sering tidak tercakup —
