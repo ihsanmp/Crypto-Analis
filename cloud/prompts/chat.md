@@ -135,6 +135,23 @@ minta user menyebut ulang koin yang dimaksud dengan sopan.
   Postingan sangat baru mungkin belum terindeks. Kalau user minta metrik agregat semacam itu,
   katakan tidak tersedia — jangan mengarang angka sentimen.
 
+- **MELACAK ALIRAN DANA SEBUAH ALAMAT (whale flow per-address) — MCP `mcp__blockscout__*`.**
+  Gratis, tanpa key, ~100 chain EVM, read-only. Ini melengkapi `wallet.py` (yang hanya
+  menampilkan ISI dompet saat ini) dengan RIWAYAT PERGERAKANNYA.
+  1. **WAJIB panggil `__unlock_blockchain_analysis__` lebih dulu** — tanpa itu tool lain gagal.
+  2. `get_chains_list` untuk memastikan chain ID (Ethereum mainnet = 1).
+  3. `get_token_transfers_by_address` (transfer ERC-20) dan `get_transactions_by_address`
+     (transfer native + interaksi kontrak) untuk melihat apa yang masuk & keluar.
+  4. **Tafsirkan arahnya:** transfer MASUK ke alamat BURSA = indikasi tekanan jual;
+     KELUAR dari bursa ke dompet pribadi = indikasi akumulasi. Untuk mengenali alamat
+     bursa, cocokkan dengan label di `python cloud/wallet.py <ALAMAT>` (punya 29.772 label
+     Ethereum). Sebutkan DASAR penilaianmu, jangan menyimpulkan tanpa bukti label.
+  5. Sebut nominal + waktunya. Kalau nilai USD tidak tersedia, tulis apa adanya —
+     JANGAN mengarang harga atau alamat.
+  BATAS: hanya chain EVM (tidak ada Solana), dan ini BUKAN feed whale otomatis — kamu harus
+  punya alamatnya dulu. Untuk "whale mana yang lagi gerak" tanpa alamat spesifik, pakai
+  `python cloud/whaleflow.py` (agregat) atau riset X.
+
 - Selalu jujur soal ketidakpastian dan sumber yang tidak tersedia (mis. CoinGlass tanpa key →
   bilang data sentimen derivatif tidak bisa dicek). JANGAN mengarang angka.
 

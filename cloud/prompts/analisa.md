@@ -93,6 +93,13 @@ Kamu jalan di CLOUD (tanpa TradingView Desktop). Semua data lewat API/MCP.
    dikenal (mis. "Binance 8"). Token spam sudah dibuang. Gunakan untuk menjawab "dompet ini
    isinya apa / punya siapa / lagi ngapain". Butuh MORALIS_API_KEY (ETH label tetap jalan tanpa key).
 
+5f. **Aliran dana alamat tertentu (MCP `mcp__blockscout__*`, gratis tanpa key).**
+   WAJIB panggil `__unlock_blockchain_analysis__` dulu. Lalu `get_token_transfers_by_address`
+   / `get_transactions_by_address` untuk melihat pergerakan masuk-keluar sebuah alamat
+   (~100 chain EVM). Masuk ke alamat BURSA = tekanan jual; keluar dari bursa = akumulasi —
+   kenali alamat bursa lewat label di wallet.py, jangan menebak. Bukan feed otomatis:
+   perlu alamat spesifik. Tidak mencakup Solana.
+
 5e. **Riset dari X (Twitter).** Untuk katalis/aliran dana/temuan on-chain yang sering
    muncul lebih dulu di X: WebSearch dengan `allowed_domains: ["x.com","twitter.com"]`.
    Akun berbasis data: Lookonchain, Galaxy Research, Darkfost, DeItaone, SoSoValue.

@@ -42,6 +42,7 @@ MCP_CONFIG = os.path.join(BASE_DIR, ".mcp.cloud.json")
 
 ALLOWED_TOOLS = ",".join([
     "mcp__coinglass__*",
+    "mcp__blockscout__*",
     "mcp__coinmarketcap__*",
     "mcp__tradingview__*",
     "WebSearch",
