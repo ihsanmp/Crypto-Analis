@@ -428,6 +428,9 @@ def process(token, chat_id, text, photo_file_id=None):
         if send_message(token, chat_id, body):
             print(f"[proses] balasan foto {len(body)} karakter TERKIRIM", file=sys.stderr)
             print(f"[audit] {audit_kesegaran(body)}", file=sys.stderr)
+        jejak = audit_angka(brief, body)
+        if jejak:
+            print(f"[audit] {jejak}", file=sys.stderr)
         else:
             print("[proses] GAGAL KIRIM balasan foto — cek TELEGRAM_BOT_TOKEN", file=sys.stderr)
         return
@@ -446,6 +449,7 @@ def process(token, chat_id, text, photo_file_id=None):
         return
 
     timeout = int(os.environ.get("ANALYSIS_TIMEOUT", "900"))
+    brief = None          # DATA BRIEF tahap-1; dipakai audit keterlacakan angka
 
     if kind == "analisa":
         words = text.strip().lower().split()
@@ -527,6 +531,56 @@ def pastikan_bertanggal(teks):
     wib = datetime.now(timezone.utc) + timedelta(hours=7)
     stempel = f"🕒 Data per {wib.day} {_BULAN_ID[wib.month - 1]} {wib.year}, {wib:%H:%M} WIB"
     return f"{stempel}\n\n{teks}"
+
+
+_ANGKA_RE = re.compile(r"\d[\d.,]*")
+
+
+def _digit(s):
+    """Sisakan digitnya saja: '1.864,32' dan '1864.32194' sama-sama jadi '186432...'."""
+    return re.sub(r"\D", "", s).lstrip("0")
+
+
+def audit_angka(brief, balasan):
+    """Periksa apakah angka di balasan BISA DILACAK ke data mentah (DATA BRIEF).
+
+    Ini penangkal karangan yang bekerja di level KODE, bukan sekadar imbauan di prompt:
+    kalau model menyebut angka yang tidak ada di brief, angka itu bukan berasal dari data.
+
+    Pencocokan sengaja LONGGAR (prefiks digit) supaya pembulatan tetap terhitung cocok —
+    '1.864' cocok dengan '1864.32194406'. Karena itu angka yang TIDAK cocok patut dicurigai.
+    Turunan yang sah (persentase, rasio, selisih) juga bisa ikut tak cocok, jadi hasilnya
+    dilaporkan sebagai SINYAL untuk ditelusuri, bukan vonis otomatis.
+    """
+    if not brief:
+        return None
+    ref = {_digit(m.group(0)) for m in _ANGKA_RE.finditer(brief)}
+    ref = {d for d in ref if len(d) >= 2}
+    if not ref:
+        return None
+
+    dicek, tak_terlacak = 0, []
+    for m in _ANGKA_RE.finditer(balasan):
+        d = _digit(m.group(0))
+        if len(d) < 3:          # angka 1-2 digit terlalu umum untuk dinilai
+            continue
+        dicek += 1
+        if not any(r.startswith(d) or d.startswith(r) for r in ref):
+            tak_terlacak.append(m.group(0))
+    if not dicek:
+        return None
+
+    persen = round(len(tak_terlacak) / dicek * 100)
+    contoh = ", ".join(tak_terlacak[:6])
+    if persen <= 15:
+        vonis = "BAIK"
+    elif persen <= 35:
+        vonis = "PERIKSA"
+    else:
+        vonis = "MENCURIGAKAN"
+    return (f"keterlacakan angka: {vonis} — {dicek - len(tak_terlacak)}/{dicek} angka "
+            f"terlacak ke DATA BRIEF ({persen}% tidak terlacak"
+            + (f"; contoh: {contoh}" if tak_terlacak else "") + ")")
 
 
 def audit_kesegaran(teks):
