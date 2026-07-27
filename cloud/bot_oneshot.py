@@ -420,6 +420,7 @@ def process(token, chat_id, text, photo_file_id=None):
             body = output
         if send_message(token, chat_id, body):
             print(f"[proses] balasan foto {len(body)} karakter TERKIRIM", file=sys.stderr)
+            print(f"[audit] {audit_kesegaran(body)}", file=sys.stderr)
         else:
             print("[proses] GAGAL KIRIM balasan foto — cek TELEGRAM_BOT_TOKEN", file=sys.stderr)
         return
