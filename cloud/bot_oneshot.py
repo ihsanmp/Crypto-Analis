@@ -579,6 +579,24 @@ def _digit(s):
     return re.sub(r"\D", "", s).lstrip("0")
 
 
+def _cocok_angka(d, r):
+    """Apakah digit d (dari balasan) berasal dari digit r (dari data mentah)?
+
+    Prefiks menangani PEMOTONGAN (35853160 -> "358"), tapi penulis laporan lazimnya
+    MEMBULATKAN: 35.853.160 ditulis "35,9 juta" -> "359". Tanpa penanganan ini angka
+    yang sebenarnya sah ikut tertandai dan menutupi karangan yang asli.
+    """
+    if r.startswith(d) or d.startswith(r):
+        return True
+    if len(r) > len(d) and d.isdigit():
+        potong = r[:len(d)]
+        if int(r[len(d)]) >= 5:                     # dibulatkan ke atas
+            naik = str(int(potong) + 1)
+            if len(naik) == len(potong) and d == naik:
+                return True
+    return False
+
+
 def audit_angka(brief, balasan):
     """Periksa apakah angka di balasan BISA DILACAK ke data mentah (DATA BRIEF).
 
@@ -613,7 +631,7 @@ def audit_angka(brief, balasan):
         if len(d) < 3:          # angka 1-2 digit terlalu umum untuk dinilai
             continue
         dicek += 1
-        if not any(r.startswith(d) or d.startswith(r) for r in ref):
+        if not any(_cocok_angka(d, r) for r in ref):
             tak_terlacak.append(m.group(0))
     if not dicek:
         return None
