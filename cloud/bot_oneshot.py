@@ -508,6 +508,9 @@ def process(token, chat_id, text, photo_file_id=None):
         jejak = audit_angka(brief, body)
         if jejak:
             print(f"[audit] {jejak}", file=sys.stderr)
+        asal = audit_sumber(brief)
+        if asal:
+            print(f"[audit] {asal}", file=sys.stderr)
     else:
         print(f"[proses] GAGAL KIRIM ke Telegram ({len(body)} karakter hilang). "
               "Penyebab tersering: TELEGRAM_BOT_TOKEN salah/kedaluwarsa/sudah di-revoke.",
@@ -534,6 +537,36 @@ def pastikan_bertanggal(teks):
     wib = datetime.now(timezone.utc) + timedelta(hours=7)
     stempel = f"🕒 Data per {wib.day} {_BULAN_ID[wib.month - 1]} {wib.year}, {wib:%H:%M} WIB"
     return f"{stempel}\n\n{teks}"
+
+
+_SUMBER_RE = re.compile(r'"source"\s*:\s*"([^"]+)"')
+_KUALITAS_RE = re.compile(r'"quality"\s*:\s*"([^"]+)"')
+_CANDLE_RE = re.compile(r'"last_candle_utc"\s*:\s*"([^"]+)"')
+
+
+def audit_sumber(brief):
+    """Catat DARI MANA data OHLC berasal dan seberapa segar candle terakhirnya.
+
+    Tanpa ini mustahil memeriksa apakah sebuah analisa memakai data terbaru atau jatuh ke
+    sumber cadangan yang lebih miskin. Kualitas 'approx_close_only' berarti hanya harga
+    penutupan (tanpa high/low asli) — indikator berbasis rentang jadi tidak sahih.
+    """
+    if not brief:
+        return None
+    sumber = sorted(set(_SUMBER_RE.findall(brief)))
+    kualitas = sorted(set(_KUALITAS_RE.findall(brief)))
+    candle = sorted(set(_CANDLE_RE.findall(brief)))
+    if not (sumber or kualitas or candle):
+        return None
+    bagian = []
+    if sumber:
+        bagian.append("sumber=" + ",".join(sumber))
+    if kualitas:
+        bagian.append("kualitas=" + ",".join(kualitas))
+    if candle:
+        bagian.append("candle terakhir=" + max(candle) + " UTC")
+    tanda = " ⚠️ ADA DATA CLOSE-ONLY" if "approx_close_only" in kualitas else ""
+    return "data OHLC: " + " · ".join(bagian) + tanda
 
 
 _ANGKA_RE = re.compile(r"\d[\d.,]*")

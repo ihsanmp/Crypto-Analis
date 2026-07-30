@@ -299,24 +299,13 @@ $TICKER — <kategori>
 • Tidak tersedia: <metrik yang datanya kosong, kalau ada>
 
 📈 TEKNIKAL
+Weekly (arah)  : <BULLISH/BEARISH/NETRAL> — <alasan singkat, maks 1 baris>
+Daily (setup)  : <BULLISH/BEARISH/NETRAL> — <alasan singkat, maks 1 baris>
+4H (timing)    : <BULLISH/BEARISH/NETRAL> — <alasan singkat, maks 1 baris>
 
-WEEKLY (arah)
-• Harga $xxx vs EMA21 $xxx → DI ATAS/DI BAWAH (x,x%)
-• EMA13 $xxx · EMA21 $xxx · <GOLDEN CROSS / DEATH CROSS / netral>
-• EMA33 $xxx · EMA50 $xxx · EMA100 $xxx · EMA200 $xxx  <tulis "n/a" bila datanya kurang>
-• Susunan EMA: <isi ema_stack.status>
-• BB: basis $xxx · atas $xxx · bawah $xxx · <posisi harga> <(SQUEEZE bila true)>
-• ATR xx (x,x%) · SuperTrend <naik/turun> $xxx · Pivot P $xxx (R1 $xxx · S1 $xxx)
-• RSI xx · Stoch K xx / D xx
-• Volume: x,xx× rata-rata 20 periode <(breakout terkonfirmasi / belum)>
-• Fib: <zona, sebut Golden Pocket bila relevan>
-• Struktur: <HH-HL / LH-LL / dsb>
-
-DAILY (setup)
-• <format sama persis seperti Weekly, termasuk baris Volume>
-
-4H (timing)
-• <format sama persis seperti Weekly, termasuk baris Volume>
+Harga $xxx · EMA21 harian $xxx (<di atas/di bawah> x,x%) · RSI harian xx
+Level kunci: support $xxx · resisten $xxx
+<1-2 baris: HANYA hal teknikal yang benar-benar menentukan keputusan sekarang>
 
 💰 KEPEMILIKAN
 • Jumlah holder: xxx.xxx · Top-10 xx,x% supply (riil non-bursa/kontrak xx,x%)
@@ -348,12 +337,23 @@ Pantau      : <1-2 hal paling menentukan pekan ini>
 ⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.
 ```
 
-**EMA21 WAJIB DITAMPILKAN** dengan angkanya di SETIAP timeframe (Weekly, Daily, 4H),
-lengkap dengan posisi harga terhadapnya (di atas/di bawah + selisih persen). EMA21 adalah
-acuan utama tren dan trailing stop di metodologi ini — jangan pernah dilewati, meskipun
-sinyal lain terlihat lebih menarik. Sertakan EMA13 juga agar status cross terbaca, dan
-EMA50/100/200 sebagai konteks tren besar (tulis "n/a" kalau datanya memang kurang —
-jangan mengarang angka).
+**HEMAT DI OUTPUT, LENGKAP DI ANALISA.** Seluruh indikator (EMA 13/21/33/50/100/200,
+ema_stack, Bollinger, ATR, SuperTrend, Pivot, Fibonacci, Stochastic, volume, struktur) tetap
+WAJIB dipakai untuk menilai — itu dasar skornya. Tapi JANGAN menuangkan semuanya ke teks
+Telegram: pembacanya di layar HP, dan dinding angka justru menyembunyikan kesimpulannya.
+
+Aturan penyebutan angka teknikal:
+- **Selalu ada:** harga, EMA21 harian + posisi harga terhadapnya, RSI harian, dan level
+  support/resisten kunci. Ini tulang punggung keputusan, jangan pernah dilewati.
+- **Sebut HANYA bila menentukan:** indikator lain disebut kalau benar-benar mengubah
+  penilaian — mis. "BB squeeze, volatilitas terkompresi", "SuperTrend baru berbalik naik
+  di $x", "harga tepat di Golden Pocket $x", "EMA200 di atas harga jadi tutup jalan".
+  Kalau sekadar netral/biasa saja, TIDAK usah ditulis.
+- **Dilarang:** mendaftar semua EMA, semua level Pivot, atau semua angka BB di tiap
+  timeframe hanya demi kelengkapan. Maksimal 2 angka indikator tambahan per timeframe.
+- Yang tidak ditulis BUKAN berarti tidak dipakai — tetap masuk ke skor dan kesimpulan.
+- Tetap berlaku: jangan mengarang angka; yang datanya kurang tulis "n/a" bila memang perlu
+  disebut.
 
 Baris disclaimer adalah **BARIS TERAKHIR** — jangan tambahkan apa pun setelahnya.
 
