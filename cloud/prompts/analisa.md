@@ -289,11 +289,10 @@ $TICKER — <kategori>
 <satu kalimat penjelasan singkat>
 
 📊 FUNDAMENTAL
-• Mcap $x,x miliar · FDV/MC x,xx
-• MC/TVL x,xx · P/S x,x · P/F x,x  (TVL $x,x miliar, 30d +x%)
-• Revenue: 30d $x,x juta · TTM $xxx juta
-• Tren revenue: MoM x% · QoQ x% · YoY x%
-• Kuartalan: Qx $xx jt → Qx $xx jt → Qx $xx jt  (4 kuartal terakhir)
+• Mcap $x,x miliar (24j +x,x% · 7h +x,x% · 30h +x,x%) · FDV/MC x,xx
+• TVL $x,x miliar (30h +x,x% · 90h +x,x%) · MC/TVL x,xx · P/S x,x · P/F x,x
+• Revenue 30h $x,x juta (MoM +x,x%) · TTM $xxx juta (YoY +x,x%)
+• Kuartalan: Qx $xx jt (+x%) → Qx $xx jt (−x%) → Qx $xx jt (−x%) → Qx $xx jt (−x%)
 • Katalis: <singkat>
 • Risiko/flag: <unlock, regulasi, dll — kalau ada>
 • Tidak tersedia: <metrik yang datanya kosong, kalau ada>
@@ -336,6 +335,19 @@ Pantau      : <1-2 hal paling menentukan pekan ini>
 (jika memakai data whale flow, tulis satu baris atribusi sebelum disclaimer: "📊 Sumber whale flow: Deep Blue Alpha")
 ⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.
 ```
+
+**WAJIB — SERTAKAN PERUBAHANNYA, BUKAN CUMA NILAINYA.** Angka tunggal tidak memberi tahu
+apa pun tentang arah. Tiap metrik utama disajikan bersama perubahannya:
+- **Mcap** → perubahan 24 jam / 7 hari / 30 hari dari `cryptoQuotesLatest`
+  (`percent_change_24h`, `percent_change_7d`, `percent_change_30d`).
+- **TVL** → `tvl.perubahan_30d_persen` dan `tvl.perubahan_90d_persen`.
+- **Revenue** → 30 hari dengan MoM, dan TTM dengan YoY (`pertumbuhan_persen`).
+- **Kuartalan** → tiap kuartal DISERTAI `perubahan_persen`-nya sendiri (sudah dihitung
+  script), jadi arah tiap kuartal terbaca, bukan sekadar deretan nominal.
+Selalu pakai tanda + atau − eksplisit. Kalau sebuah perubahan tidak tersedia di data,
+tulis "n/a" — JANGAN menghitung sendiri dari angka mentah dan JANGAN mengarang.
+Kalau tren revenue turun beberapa kuartal beruntun, itu sinyal penting: sebutkan
+terus terang di penilaian, jangan tenggelam di antara angka lain.
 
 **HEMAT DI OUTPUT, LENGKAP DI ANALISA.** Seluruh indikator (EMA 13/21/33/50/100/200,
 ema_stack, Bollinger, ATR, SuperTrend, Pivot, Fibonacci, Stochastic, volume, struktur) tetap

@@ -146,8 +146,16 @@ def ringkas_deret(chart, label_sekarang):
     return {
         "berjalan": {"periode": kini_bulan, "usd": round(bulanan.get(kini_bulan, 0.0), 2),
                      "catatan": f"{label_sekarang} bulan berjalan, belum lengkap"},
-        "bulanan_12_terakhir": [{"bulan": k, "usd": round(v, 2)} for k, v in bl[-12:]],
-        "kuartalan_8_terakhir": [{"kuartal": k, "usd": round(v, 2)} for k, v in kl[-8:]],
+        # Tiap periode dilengkapi perubahan terhadap periode sebelumnya, supaya output
+        # tidak sekadar deretan angka — arah & besar pertumbuhannya langsung terbaca.
+        "bulanan_12_terakhir": [
+            {"bulan": k, "usd": round(v, 2),
+             "perubahan_persen": (tumbuh(v, bl[i - 1][1]) if i > 0 else None)}
+            for i, (k, v) in enumerate(bl)][-12:],
+        "kuartalan_8_terakhir": [
+            {"kuartal": k, "usd": round(v, 2),
+             "perubahan_persen": (tumbuh(v, kl[i - 1][1]) if i > 0 else None)}
+            for i, (k, v) in enumerate(kl)][-8:],
         "pertumbuhan_persen": {
             "mom": tumbuh(bl[-1][1], bl[-2][1]) if len(bl) >= 2 else None,
             "qoq": tumbuh(kl[-1][1], kl[-2][1]) if len(kl) >= 2 else None,
