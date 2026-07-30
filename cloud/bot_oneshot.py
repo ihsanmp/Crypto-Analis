@@ -541,9 +541,9 @@ def pastikan_bertanggal(teks):
     return f"{stempel}\n\n{teks}"
 
 
-_SUMBER_RE = re.compile(r'"source"\s*:\s*"([^"]+)"')
-_KUALITAS_RE = re.compile(r'"quality"\s*:\s*"([^"]+)"')
-_CANDLE_RE = re.compile(r'"last_candle_utc"\s*:\s*"([^"]+)"')
+_SUMBER_RE = re.compile(r'\bsource\b"?\s*[:=]\s*"?([A-Za-z][\w .()-]{2,40})', re.I)
+_KUALITAS_RE = re.compile(r'\bquality\b"?\s*[:=]\s*"?(\w+)', re.I)
+_CANDLE_RE = re.compile(r'\blast_candle_utc\b"?\s*[:=]\s*"?([\d-]{10}[ T][\d:]{5})', re.I)
 
 
 def audit_sumber(brief):
@@ -603,6 +603,9 @@ def audit_angka(brief, balasan):
     # (harga, indikator, fundamental, kepemilikan) — di situlah karangan benar-benar bahaya.
     potong = re.split(r"🧭\s*RENCANA SPOT|✅\s*KESIMPULAN", balasan)
     faktual = potong[0] if len(potong) > 1 else balasan
+    # Baris "Level kunci: support/resisten" juga berisi level TURUNAN (dihitung dari
+    # swing/Fibonacci), bukan angka mentah dari sumber — buang agar tidak jadi derau.
+    faktual = re.sub(r"(?im)^.*\b(level kunci|support|resisten|resistance)\b.*$", "", faktual)
 
     dicek, tak_terlacak = 0, []
     for m in _ANGKA_RE.finditer(faktual):
