@@ -348,6 +348,10 @@ def build_gather_prompt(coin):
         f"- Tiap katalis/berita dari WebSearch WAJIB bertanggal + nama media. Yang tidak "
         f"jelas tanggalnya, TULIS 'tanggal tidak jelas' — jangan dikarang.\n"
         f"- Data fundamental sebut PERIODENYA (bulan/kuartal apa), bukan cuma '30d'.\n\n"
+        f"Di bagian [WAKTU DATA], untuk TIAP timeframe tulis SATU baris berformat PERSIS "
+        f"ini (dibaca pemeriksa otomatis — jangan ubah kata kuncinya):\n"
+        f"  <tf> source=<isi source> quality=<isi quality> last_candle_utc=<isi last_candle_utc>\n"
+        f"Contoh: 1d source=kraken quality=native last_candle_utc=2026-07-27 08:00\n\n"
         f"OUTPUT: satu 'DATA BRIEF' terstruktur berlabel per bagian ([WAKTU DATA], [INGATAN], "
         f"[PASAR], [HARGA/VALUASI], [TEKNIKAL 1W/1D/4H], [FUNDAMENTAL], [KEPEMILIKAN], "
         f"[DERIVATIF], [KATALIS], [TIDAK TERSEDIA]). Bagian [WAKTU DATA] berisi semua "
@@ -541,9 +545,9 @@ def pastikan_bertanggal(teks):
     return f"{stempel}\n\n{teks}"
 
 
-_SUMBER_RE = re.compile(r'\bsource\b"?\s*[:=]\s*"?([A-Za-z][\w .()-]{2,40})', re.I)
+_SUMBER_RE = re.compile(r'\b(?:source|sumber)\b"?\s*[:=]\s*"?([A-Za-z][\w .()>-]{2,40})', re.I)
 _KUALITAS_RE = re.compile(r'\bquality\b"?\s*[:=]\s*"?(\w+)', re.I)
-_CANDLE_RE = re.compile(r'\blast_candle_utc\b"?\s*[:=]\s*"?([\d-]{10}[ T][\d:]{5})', re.I)
+_CANDLE_RE = re.compile(r'\b(?:last_candle_utc|candle[ _]terakhir)\b"?\s*[:=]\s*"?([\d-]{10}[ T][\d:]{5})', re.I)
 
 
 def audit_sumber(brief):
@@ -555,7 +559,13 @@ def audit_sumber(brief):
     """
     if not brief:
         return None
-    sumber = sorted(set(_SUMBER_RE.findall(brief)))
+    # Nama sumber boleh mengandung spasi ("coingecko (agregasi harian->mingguan)"), jadi
+    # polanya longgar dan bisa terlanjur menelan kata kunci berikutnya pada penulisan
+    # sebaris ("source=kraken quality=native"). Potong di kata kunci tersebut.
+    def bersih(x):
+        return re.split(r"\s+(?:quality|kualitas|last_candle|candle)\b", x, 1)[0].strip(" |,;")
+
+    sumber = sorted({bersih(x) for x in _SUMBER_RE.findall(brief) if bersih(x)})
     kualitas = sorted(set(_KUALITAS_RE.findall(brief)))
     candle = sorted(set(_CANDLE_RE.findall(brief)))
     if not (sumber or kualitas or candle):
