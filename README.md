@@ -1,6 +1,6 @@
 # Bot Riset Koin (Telegram + Claude Code, jalan di Cloud)
 
-Sistem riset crypto **spot** jangka menengah (daily/weekly, analisa multi-timeframe),
+Sistem riset **crypto (spot, jangka menengah) + perkembangan AI**, analisa multi-timeframe,
 jalan **24 jam di GitHub Actions — tanpa perlu laptop menyala**. Khusus spot: tidak
 memberi saran short/leverage/futures; data derivatif dipakai hanya sebagai sentimen timing.
 
