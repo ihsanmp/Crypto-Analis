@@ -314,9 +314,64 @@ def build_narasi_prompt(text):
             "JALUR B (tidak menyebut -> cari sendiri narasi yang paling bergerak).\n")
 
 
+# Kosakata pasar umum. Dipakai sebagai PENGAMAN: kalau pesan jelas menyangkut pasar tapi
+# tidak ada satu pun blok yang cocok, seluruh blok dimuat. Prinsipnya ragu = muat, karena
+# kehilangan aturan jauh lebih merugikan daripada boros token.
+_PASAR_UMUM = re.compile(
+    r"\b(harga|beli|jual|akumulasi|prospek|pasar|market|tren|trend|level|support|resisten|"
+    r"chart|grafik|analisa|analisis|invest|portofolio|posisi|entry|target|koin|coin|token|"
+    r"saham|stock|forex|emas|gold|bursa|rally|koreksi|bullish|bearish|cuan|rugi|profit|"
+    r"dompet|wallet|alamat|address|holder|whale|on-chain|onchain|tvl|saldo|supply|mcap|"
+    r"volume|funding|likuidasi|unlock|listing|airdrop|staking|narasi|sektor|etf|institusi|"
+    r"suku bunga|inflasi|makro|fed|cpi|nfp|yield|dolar|rupiah)\b",
+    re.IGNORECASE)
+_BLOK_RE = re.compile(
+    r"<!-- BLOK: ([\w-]+) \| pemicu: ([^>]*?) -->\n(.*?)\n<!-- /BLOK -->\n?",
+    re.DOTALL)
+
+
+def rakit_chat(teks_prompt, pesan):
+    """Rakit prompt NGOBROL: bagian inti selalu ikut, blok domain hanya bila relevan.
+
+    chat.md dikirim UTUH tiap pesan (23 rb karakter) padahal blok khusus jarang relevan
+    bersamaan — untuk "apa itu RAG?" aturan gold/X/institusi tidak terpakai sama sekali.
+    Blok bertanda dimuat hanya bila pemicunya cocok.
+
+    GAGAL-AMAN: kalau pesan menyinggung kosakata pasar tapi tak ada blok yang cocok, SEMUA
+    blok dimuat. Lebih baik boros sedikit daripada menjawab tanpa aturan yang seharusnya ada.
+    """
+    low = (pesan or "").lower()
+    blok = _BLOK_RE.findall(teks_prompt)
+    if not blok:
+        return teks_prompt
+
+    dipakai = set()
+    for nama, pemicu, _ in blok:
+        for kata in pemicu.split(","):
+            kata = kata.strip().lower()
+            if kata and kata in low:
+                dipakai.add(nama)
+                break
+
+    # GAGAL-AMAN diperketat: begitu pesan menyinggung kosakata pasar, SEMUA blok dimuat —
+    # tidak peduli sudah ada blok lain yang cocok. Versi sebelumnya hanya memuat penuh bila
+    # TIDAK ADA yang cocok, sehingga satu pemicu lemah bisa mematikannya: "menurutmu pasar
+    # gimana" cuma memuat blok data-konten karena kata "menurutmu" kebetulan cocok, padahal
+    # pertanyaannya soal pasar. Penghematan tetap besar karena datang dari pertanyaan
+    # konseptual & sapaan — di situlah aturan domain memang tidak terpakai.
+    if _PASAR_UMUM.search(low):
+        dipakai = {nama for nama, _, _ in blok}
+
+    def ganti(m):
+        nama, _, isi = m.group(1), m.group(2), m.group(3)
+        return (isi + "\n\n") if nama in dipakai else ""
+
+    return _BLOK_RE.sub(ganti, teks_prompt)
+
+
 def build_chat_prompt(text):
     with open(CHAT_PROMPT, encoding="utf-8") as f:
-        base = f.read()
+        base = rakit_chat(f.read(), text)
     # Pesan user dikutip apa adanya. Diberi pembatas jelas supaya isinya diperlakukan
     # sebagai pertanyaan untuk dijawab, bukan sebagai instruksi yang mengubah aturan.
     return f"{header_waktu()}{base}\n---\n## Pesan dari user (jawab ini)\n{text}\n"
