@@ -702,11 +702,29 @@ def analyze(candles, drop_unclosed=True):
 
 # ----------------------------------------------------------------------- main
 
+# Field yang isinya PANDUAN STATIS, bukan angka. Dibuang saat --ringkas karena ikut
+# ditempel ke DATA BRIEF lalu dikirim ULANG ke model penganalisa — dibayar dua kali.
+# Peringatan AKTIF (sampel kecil, tidak tersedia, close-only) SENGAJA tidak termasuk:
+# itu pengaman mutu, bukan hiasan.
+_PANDUAN_STATIS = ("acuan", "cara_pakai", "arti", "cara_baca", "acuan_penilaian")
+
+
+def ringkas(obj):
+    """Buang panduan statis secara rekursif. Peringatan aktif tetap dipertahankan."""
+    if isinstance(obj, dict):
+        return {k: ringkas(v) for k, v in obj.items() if k not in _PANDUAN_STATIS}
+    if isinstance(obj, list):
+        return [ringkas(v) for v in obj]
+    return obj
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("ticker", help="simbol koin, mis. TRX / BTC / SOL")
     ap.add_argument("--cg-id", default=None,
                     help="id CoinGecko (mis. tron) untuk fallback terakhir")
+    ap.add_argument("--ringkas", action="store_true",
+                    help="buang panduan statis (hemat token saat dipakai bot)")
     args = ap.parse_args()
     ticker = args.ticker.upper().replace("$", "")
     cg_id = args.cg_id or resolve_cg_id(ticker)   # fallback tetap hidup walau lupa --cg-id
@@ -745,7 +763,7 @@ def main():
             "range close (bukan high/low asli) sehingga kurang presisi. WAJIB disebutkan "
             "di output analisa.")
 
-    print(json.dumps(result, indent=2, ensure_ascii=False))
+    print(json.dumps(ringkas(result) if args.ringkas else result, indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":

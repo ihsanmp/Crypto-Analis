@@ -36,6 +36,9 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Claude dijalankan dari root repo supaya path "cloud/indicators.py" di prompt valid
 REPO_ROOT = os.path.dirname(BASE_DIR)
 ANALISA_PROMPT = os.path.join(BASE_DIR, "prompts", "analisa.md")
+# Instruksi cara memanggil script/MCP. HANYA untuk tahap yang punya tool (mode SCAN);
+# tahap sintesis dijalankan with_tools=False sehingga isinya mustahil dipakai di sana.
+SUMBER_PROMPT = os.path.join(BASE_DIR, "prompts", "analisa_sumber.md")
 CHAT_PROMPT = os.path.join(BASE_DIR, "prompts", "chat.md")
 NARASI_PROMPT = os.path.join(BASE_DIR, "prompts", "narasi.md")
 PASAR_PROMPT = os.path.join(BASE_DIR, "prompts", "analisa_pasar.md")
@@ -288,8 +291,11 @@ def header_waktu():
 
 
 def build_analisa_prompt(text):
+    # Mode SCAN memanggil tool sendiri, jadi instruksi sumber data WAJIB ikut.
+    with open(SUMBER_PROMPT, encoding="utf-8") as f:
+        sumber = f.read()
     with open(ANALISA_PROMPT, encoding="utf-8") as f:
-        base = f.read()
+        base = sumber + "\n---\n" + f.read()
     words = text.strip().lower().lstrip("/").split()
     coin = " ".join(words[1:]) if len(words) > 1 else None
     if coin:
@@ -392,7 +398,7 @@ def build_gather_pasar(simbol, jenis):
         f"2. Bash: `python cloud/memori.py cari {simbol}` → ingatan terverifikasi. Tempel apa "
         f"adanya; kalau kosong tulis 'belum ada ingatan'.\n"
         f"{khusus}"
-        f"6. Bash: `python cloud/backtest.py {simbol} --pasar" + (" --makro" if jenis == "forex" else "") + "` "
+        f"6. Bash: `python cloud/backtest.py {simbol} --ringkas --pasar" + (" --makro" if jenis == "forex" else "") + "` "
         f"→ uji balik sinyal terhadap riwayat aset INI SENDIRI + tolok ukur beli-dan-tahan. Untuk forex/komoditas ada uji makro: besar gerakan pada hari rilis terjadwal (NFP/CPI/Kamis Claims) dibanding hari biasa. Tempel apa adanya, TERMASUK peringatan sampel kecil.\n"
         f"\nWAJIB — STEMPEL WAKTU. Tempel generated_utc dan last_candle_utc apa adanya, plus "
         f"source & quality tiap timeframe. Di bagian [WAKTU DATA] tulis SATU baris berformat "
@@ -414,7 +420,7 @@ def build_gather_prompt(coin):
         f"0. Bash: `python cloud/memori.py cari {coin}` → ingatan fakta yang PERNAH "
         f"diverifikasi (dengan vonis kesegaran). Tempel apa adanya ke bagian [INGATAN]; "
         f"kalau kosong tulis 'belum ada ingatan'. JANGAN menilai — tahap berikutnya yang menilai.\n"
-        f"1. Bash: `python cloud/indicators.py {coin}` → untuk TIAP timeframe (1w/1d/4h) tempel: "
+        f"1. Bash: `python cloud/indicators.py {coin} --ringkas` → untuk TIAP timeframe (1w/1d/4h) tempel: "
         f"close, SELURUH isi ema (ema13/21/33/50/100/200 — tulis n/a bila None), ema_stack.status, "
         f"ema_signal, ema_cross_valid, bollinger (basis/atas/bawah/posisi/squeeze), atr14, atr_pct, "
         f"supertrend (arah+level), pivot_standar (P/R1/S1), kondisi_pasar (status + keandalan_sinyal_ema + sebaran_ema_persen), indikator_rentang bila ada, "
@@ -431,7 +437,7 @@ def build_gather_prompt(coin):
         f"4. Bash: `python cloud/investors.py {coin}` → jumlah holder, top10%, "
         f"top10_non_bursa_kontrak%, 5 holder teratas (persen + kategori + label). Kalau error, "
         f"tulis 'bukan token Ethereum'.\n"
-        f"4b. Bash: `python cloud/backtest.py {coin}` → uji balik sinyal terhadap "
+        f"4b. Bash: `python cloud/backtest.py {coin} --ringkas` → uji balik sinyal terhadap "
         f"riwayat koin INI SENDIRI: golden/death cross, RSI ekstrem, pullback EMA21 "
         f"— tiap sinyal dengan jumlah kejadian, menang_persen, return rata2, dan "
         f"nyeri_maks. Tempel juga tolok_ukur (beli_dan_tahan_persen & "

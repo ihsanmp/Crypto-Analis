@@ -83,10 +83,28 @@ def tren(seri):
             "dari": round(awal, 4), "ke": round(akhir, 4)}
 
 
+# Field yang isinya PANDUAN STATIS, bukan angka. Dibuang saat --ringkas karena ikut
+# ditempel ke DATA BRIEF lalu dikirim ULANG ke model penganalisa — dibayar dua kali.
+# Peringatan AKTIF (sampel kecil, tidak tersedia, close-only) SENGAJA tidak termasuk:
+# itu pengaman mutu, bukan hiasan.
+_PANDUAN_STATIS = ("acuan", "cara_pakai", "arti", "cara_baca", "acuan_penilaian")
+
+
+def ringkas(obj):
+    """Buang panduan statis secara rekursif. Peringatan aktif tetap dipertahankan."""
+    if isinstance(obj, dict):
+        return {k: ringkas(v) for k, v in obj.items() if k not in _PANDUAN_STATIS}
+    if isinstance(obj, list):
+        return [ringkas(v) for v in obj]
+    return obj
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("ticker")
     ap.add_argument("--hari", type=int, default=35, help="rentang riwayat (default 35 hari)")
+    ap.add_argument("--ringkas", action="store_true",
+                    help="buang panduan statis (hemat token saat dipakai bot)")
     args = ap.parse_args()
     aset = args.ticker.lower().replace("$", "")
 
@@ -122,7 +140,7 @@ def main():
             hasil["error"] = f"Tidak ada metrik on-chain untuk '{aset}' di tier Community."
             hasil["saran"] = ("Cakupan paling lengkap untuk BTC & ETH; banyak altcoin kecil "
                               "tidak tercakup. Untuk altcoin pakai fundamentals.py & investors.py.")
-            print(json.dumps(hasil, indent=2, ensure_ascii=False))
+            print(json.dumps(ringkas(hasil) if args.ringkas else hasil, indent=2, ensure_ascii=False))
             return
         d = {"data": [gabung[k] for k in sorted(gabung)]}
 
@@ -130,7 +148,7 @@ def main():
     if not baris:
         hasil["error"] = f"Tidak ada data on-chain untuk '{aset}' di CoinMetrics Community."
         hasil["saran"] = "Coba BTC atau ETH; altcoin kecil sering tidak tercakup."
-        print(json.dumps(hasil, indent=2, ensure_ascii=False))
+        print(json.dumps(ringkas(hasil) if args.ringkas else hasil, indent=2, ensure_ascii=False))
         return
 
     hasil["periode"] = {"dari": baris[0].get("time", "")[:10], "sampai": baris[-1].get("time", "")[:10]}
@@ -174,7 +192,7 @@ def main():
                                    "peringatan": "Acuan historis, BUKAN jaminan. Selalu gabungkan "
                                                  "dengan teknikal & kondisi makro."}
 
-    print(json.dumps(hasil, indent=2, ensure_ascii=False))
+    print(json.dumps(ringkas(hasil) if args.ringkas else hasil, indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":

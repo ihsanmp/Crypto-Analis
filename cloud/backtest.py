@@ -204,12 +204,30 @@ def uji_makro(candles):
     return keluar
 
 
+# Field yang isinya PANDUAN STATIS, bukan angka. Dibuang saat --ringkas karena ikut
+# ditempel ke DATA BRIEF lalu dikirim ULANG ke model penganalisa — dibayar dua kali.
+# Peringatan AKTIF (sampel kecil, tidak tersedia, close-only) SENGAJA tidak termasuk:
+# itu pengaman mutu, bukan hiasan.
+_PANDUAN_STATIS = ("acuan", "cara_pakai", "arti", "cara_baca", "acuan_penilaian")
+
+
+def ringkas(obj):
+    """Buang panduan statis secara rekursif. Peringatan aktif tetap dipertahankan."""
+    if isinstance(obj, dict):
+        return {k: ringkas(v) for k, v in obj.items() if k not in _PANDUAN_STATIS}
+    if isinstance(obj, list):
+        return [ringkas(v) for v in obj]
+    return obj
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("simbol")
     ap.add_argument("--pasar", action="store_true", help="saham/forex/komoditas (via market.py)")
     ap.add_argument("--makro", action="store_true", help="uji juga hari rilis terjadwal")
     ap.add_argument("--depan", type=int, default=20, help="berapa candle ke depan diukur")
+    ap.add_argument("--ringkas", action="store_true",
+                    help="buang panduan statis (hemat token saat dipakai bot)")
     args = ap.parse_args()
     simbol = args.simbol.upper().replace("$", "")
 
@@ -229,7 +247,7 @@ def main():
     candles, dipakai, err = ambil_candle(simbol, args.pasar)
     if err or not candles:
         hasil["error"] = f"Gagal mengambil riwayat harga: {err or 'kosong'}"
-        print(json.dumps(hasil, indent=2, ensure_ascii=False))
+        print(json.dumps(ringkas(hasil) if args.ringkas else hasil, indent=2, ensure_ascii=False))
         return
 
     hasil["simbol_dipakai"] = dipakai
@@ -275,7 +293,7 @@ def main():
         "apa adanya, jangan dipoles.",
         "Selalu sebut jumlah kejadian saat mengutip angka ini.",
     ]
-    print(json.dumps(hasil, indent=2, ensure_ascii=False))
+    print(json.dumps(ringkas(hasil) if args.ringkas else hasil, indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":
