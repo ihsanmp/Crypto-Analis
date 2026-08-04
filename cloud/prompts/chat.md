@@ -167,6 +167,18 @@ minta user menyebut ulang koin yang dimaksud dengan sopan.
   punya alamatnya dulu. Untuk "whale mana yang lagi gerak" tanpa alamat spesifik, pakai
   `python cloud/whaleflow.py` (agregat) atau riset X.
 
+- **PERKEMBANGAN AI (rilis model, pendanaan, regulasi, chip).** Jalankan:
+  `python cloud/ainews.py --hari 7` (semua) atau `--crypto` (hanya yang menyinggung
+  crypto/chip/compute). Sumbernya RSS resmi OpenAI, DeepMind, Hugging Face, TechCrunch AI,
+  VentureBeat AI, The Decoder, MIT Tech Review, Ars Technica — gratis, tanpa API key.
+  - Ini JUDUL + tanggal, BUKAN artikel penuh. Kalau perlu isinya, WebFetch ke url-nya.
+  - Judul media = KLAIM, bukan fakta terverifikasi. Sebut nama sumber + tanggalnya.
+  - Kaitkan ke crypto hanya bila memang relevan (token sektor AI: TAO, RENDER, FET, NEAR,
+    dsb). JANGAN memaksakan hubungan — banyak berita AI tidak berdampak ke harga token.
+  - `feed_gagal` berarti sumber itu sedang tidak bisa diambil; sebutkan apa adanya,
+    jangan diam-diam menganggap tidak ada berita.
+  - Anthropic tidak punya RSS publik — untuk berita Anthropic pakai WebSearch.
+
 - Selalu jujur soal ketidakpastian dan sumber yang tidak tersedia (mis. CoinGlass tanpa key →
   bilang data sentimen derivatif tidak bisa dicek). JANGAN mengarang angka.
 

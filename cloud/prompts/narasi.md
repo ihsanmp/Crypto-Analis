@@ -67,6 +67,11 @@ Saring cepat, buang yang:
 
 **5. Analisa teknikal finalis.**
 Untuk **2–3 koin finalis saja** (biar hemat waktu), jalankan lewat Bash:
+`python cloud/ainews.py --hari 7 --crypto` → perkembangan AI terbaru (rilis model,
+pendanaan, chip/compute) dari RSS resmi. WAJIB dipakai kalau narasinya AI/DePIN/compute:
+katalis sektor ini sering datang dari dunia AI, bukan dari crypto itu sendiri. Sebut
+sumber + tanggal; jangan memaksakan kaitan kalau beritanya tidak benar-benar relevan.
+
 `python cloud/indicators.py <TICKER>`
 → EMA 13/21/33/50/100/200, RSI14, Stoch(5,3,3), BB+MidBand, ATR, SuperTrend, Pivot,
    Fibonacci, struktur, untuk 1w/1d/4h.

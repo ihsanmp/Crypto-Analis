@@ -104,6 +104,12 @@ Kamu jalan di CLOUD (tanpa TradingView Desktop). Semua data lewat API/MCP.
    bukan agregat: untuk alamat sibuk jangan disimpulkan sebagai net flow. Bukan feed
    otomatis (perlu alamat spesifik). Tidak mencakup Solana.
 
+5g. **Perkembangan AI (khusus koin sektor AI/DePIN/compute).**
+   `python cloud/ainews.py --hari 7 --crypto` → rilis model, pendanaan, chip, regulasi dari
+   RSS resmi lab AI & media teknologi. Katalis token sektor AI sering lahir di dunia AI,
+   bukan di crypto. Sebut sumber + tanggal. Hanya pakai bila koinnya memang sektor AI —
+   jangan memaksakan kaitan untuk koin di luar sektor itu.
+
 5e. **Riset dari X (Twitter).** Untuk katalis/aliran dana/temuan on-chain yang sering
    muncul lebih dulu di X: WebSearch dengan `allowed_domains: ["x.com","twitter.com"]`.
    Akun berbasis data: Lookonchain, Galaxy Research, Darkfost, DeItaone, SoSoValue.
