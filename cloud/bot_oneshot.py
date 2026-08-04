@@ -64,7 +64,8 @@ MODEL_GATHER = os.environ.get("MODEL_GATHER", "claude-haiku-4-5")   # petugas pe
 MODEL_SYNTH = os.environ.get("MODEL_SYNTH", "claude-opus-4-8")      # analis (sintesis akhir)
 
 HELP_TEXT = (
-    "🤖 Halo! Aku bot riset CRYPTO & PERKEMBANGAN AI. Cara pakai aku:\n\n"
+    "🤖 Halo! Aku bot riset PASAR (crypto/saham/forex) & PERKEMBANGAN AI.\n"
+    "Cara pakai aku:\n\n"
     "1) ANALISA LENGKAP (terstruktur, berskor):\n"
     "   • ketik: analisa <koin>   (contoh: analisa sol)\n"
     "   • ketik: analisa          -> aku scan pasar & pilih beberapa koin menarik\n\n"
