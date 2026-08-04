@@ -47,6 +47,36 @@ jobs:
               n = len(ev) if ev else 0
               print(f"HASIL MCP: {n} event")
               if ev:
+                  print("  KUNCI:", sorted(ev[0].keys()))
+                  us = [e for e in ev if str(e.get("country","")).lower() in ("united states","us","usa")]
+                  print(f"  event AS: {len(us)}")
+                  print("  10 CONTOH MENTAH event AS:")
+                  for e in us[:10]:
+                      print("   ", e)
+                  semua_kunci = set()
+                  for e in ev:
+                      semua_kunci |= set(e.keys())
+                  print("  GABUNGAN semua kunci di 476 event:", sorted(semua_kunci))
+          except Exception as e:
+                  print(f"  percobaan {i+1}: GAGAL {type(e).__name__}: {str(e)[:90]}")
+              time.sleep(2)
+          print(f"HASIL LANGSUNG: {ok}/4 berhasil")
+          EOF
+
+      - name: Pasang paket MCP & uji kliennya
+        run: |
+          pip install -q trading-economics-calendar-mcp
+          python - <<'EOF'
+          import json
+          try:
+              from trading_economics_calendar.client import get_week_events
+              h = get_week_events()
+              if isinstance(h, str):
+                  h = json.loads(h)
+              ev = h.get("events") if isinstance(h, dict) else h
+              n = len(ev) if ev else 0
+              print(f"HASIL MCP: {n} event")
+              if ev:
                   print("  kunci tersedia:", sorted(ev[0].keys()))
                   us = [e for e in ev if str(e.get("country","")).lower() in
                         ("united states","us","usa")]
