@@ -172,6 +172,13 @@ _ALIAS_FX = {"GOLD": "GC=F", "EMAS": "GC=F", "XAUUSD": "GC=F", "XAU": "GC=F",
              "SILVER": "SI=F", "PERAK": "SI=F", "XAGUSD": "SI=F", "XAG": "SI=F"}
 
 
+# Kata pengantar yang lazim diketik sebelum nama aset ("analisa KOIN pump"). Bukan nama
+# aset, jadi harus dilewati. "saham"/"forex" TIDAK di sini — keduanya penanda jenis yang
+# punya penanganan tersendiri di bawah.
+_KATA_PENGANTAR = ("koin", "coin", "kripto", "crypto", "token", "aset", "asset",
+                   "harga", "chart", "grafik", "si", "untuk", "tentang", "soal", "the")
+
+
 def jenis_aset(sisa):
     """Tentukan (jenis, simbol) dari teks setelah kata 'analisa'.
 
@@ -181,6 +188,18 @@ def jenis_aset(sisa):
     kata = sisa.split()
     if not kata:
         return "crypto", None
+
+    # Buang kata pengantar di depan. Tanpa ini "analisa koin pump" terbaca sebagai koin
+    # bernama KOIN — kejadian nyata, dan menyesatkan justru karena ADA koin bernama PUMP
+    # sehingga tidak ketahuan sebagai salah ketik. Hanya dibuang bila masih ada kata
+    # sesudahnya, supaya "analisa token" tidak berubah jadi perintah kosong.
+    while len(kata) > 1 and kata[0].lower() in _KATA_PENGANTAR:
+        kata = kata[1:]
+    # "analisa koin" / "analisa token" tanpa nama aset = permintaan SCAN, bukan koin
+    # bernama "KOIN". Kembalikan tanpa simbol supaya jatuh ke mode scan pasar.
+    if kata[0].lower() in _KATA_PENGANTAR:
+        return "crypto", None
+
     depan = kata[0].lower()
     if depan in ("saham", "stock", "stocks") and len(kata) > 1:
         return "saham", kata[1].upper().replace("$", "")
