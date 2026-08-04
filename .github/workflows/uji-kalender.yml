@@ -1,0 +1,57 @@
+name: Uji Kalender Ekonomi (sementara)
+
+# Workflow SEMENTARA untuk menjawab satu pertanyaan: apakah Trading Economics bisa diakses
+# dari runner GitHub Actions (datacenter AS)? Dari ISP Indonesia hanya berhasil 1 dari 4.
+# Dihapus setelah hasilnya diketahui.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  uji:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Akses langsung ke tradingeconomics.com (4 kali)
+        run: |
+          python - <<'EOF'
+          import urllib.request, time
+          ok = 0
+          for i in range(4):
+              try:
+                  with urllib.request.urlopen("https://tradingeconomics.com/calendar", timeout=20) as r:
+                      n = len(r.read())
+                  ok += 1
+                  print(f"  percobaan {i+1}: OK ({n} byte)")
+              except Exception as e:
+                  print(f"  percobaan {i+1}: GAGAL {type(e).__name__}: {str(e)[:90]}")
+              time.sleep(2)
+          print(f"HASIL LANGSUNG: {ok}/4 berhasil")
+          EOF
+
+      - name: Pasang paket MCP & uji kliennya
+        run: |
+          pip install -q trading-economics-calendar-mcp
+          python - <<'EOF'
+          import json
+          try:
+              from trading_economics_calendar.client import get_week_events
+              h = get_week_events()
+              if isinstance(h, str):
+                  h = json.loads(h)
+              ev = h.get("events") if isinstance(h, dict) else h
+              n = len(ev) if ev else 0
+              print(f"HASIL MCP: {n} event")
+              if ev:
+                  punya = sum(1 for e in ev if e.get("forecast"))
+                  print(f"  punya forecast: {punya}/{n}")
+                  for e in ev[:3]:
+                      print("  ", {k: e.get(k) for k in
+                                   ("date", "country", "event", "actual", "forecast", "previous")})
+          except Exception as e:
+              print(f"HASIL MCP: GAGAL {type(e).__name__}: {str(e)[:150]}")
+          EOF
