@@ -572,13 +572,26 @@ def audit_sumber(brief):
         return None
     bagian = []
     if sumber:
-        bagian.append("sumber=" + ",".join(sumber))
+        bagian.append("sumber=" + ", ".join(sumber))
     if kualitas:
-        bagian.append("kualitas=" + ",".join(kualitas))
+        bagian.append("kualitas OHLC=" + ",".join(kualitas))
+
+    # Umur candle diperiksa terhadap waktu run. Analisa yang datanya tertinggal berhari-hari
+    # menyesatkan meski sumbernya benar, jadi keterlambatan harus terlihat — bukan diasumsikan
+    # segar hanya karena sumbernya bursa asli.
+    tanda = " ⚠️ ADA DATA CLOSE-ONLY (ATR/SuperTrend/Pivot tidak sahih)" if "approx_close_only" in kualitas else ""
     if candle:
-        bagian.append("candle terakhir=" + max(candle) + " UTC")
-    tanda = " ⚠️ ADA DATA CLOSE-ONLY" if "approx_close_only" in kualitas else ""
-    return "data OHLC: " + " · ".join(bagian) + tanda
+        terbaru = max(candle)
+        bagian.append("candle terakhir=" + terbaru + " UTC")
+        try:
+            t = datetime.strptime(terbaru.replace("T", " ")[:16], "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+            umur_jam = (datetime.now(timezone.utc) - t).total_seconds() / 3600
+            bagian.append(f"umur={umur_jam:.1f} jam")
+            if umur_jam > 48:
+                tanda += " ⚠️ DATA BASI (>48 jam)"
+        except Exception:
+            pass
+    return "sumber data: " + " · ".join(bagian) + tanda
 
 
 _ANGKA_RE = re.compile(r"\d[\d.,]*")
