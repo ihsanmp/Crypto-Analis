@@ -90,6 +90,23 @@ Angka dari `market.py`, dihitung dengan kode — **jangan hitung manual**.
 - Kalau ada field `indikator_rentang: TIDAK TERSEDIA`, JANGAN pakai ATR/SuperTrend/Pivot
   untuk timeframe itu.
 
+**KEANDALAN SINYAL EMA BERGANTUNG KONDISI PASAR — WAJIB dicek sebelum memakai cross.**
+Field `kondisi_pasar` tiap timeframe memberi vonis TRENDING / TRANSISI / MENYAMPING / CHOPPY
+beserta `keandalan_sinyal_ema`. EMA paling akurat saat pasar TRENDING dan paling sering
+memberi sinyal PALSU saat menyamping atau choppy.
+- `keandalan TINGGI` → cross EMA boleh dipakai penuh sesuai bobotnya.
+- `keandalan SEDANG` → turunkan bobot sinyal cross, tuntut konfirmasi tambahan.
+- `keandalan RENDAH` (menyamping/choppy) → **JANGAN jadikan cross EMA sebagai alasan utama**.
+  Sebutkan terus terang bahwa timeframe itu sedang tanpa tren, lalu bersandar pada level
+  (support/resisten, Fibonacci, Pivot) dan tunggu breakout terkonfirmasi volume.
+- Sering terjadi Weekly TRENDING sementara 4H MENYAMPING — itu normal. Artinya arah besar
+  jelas tapi timing belum matang: sampaikan begitu, jangan dipaksakan jadi sinyal masuk.
+
+**BOBOT EMA PER TIMEFRAME.** EMA pendek (13/21) menentukan di timeframe cepat; EMA panjang
+(50/100/200) menentukan di timeframe besar. Untuk analisa jangka menengah ini:
+Weekly & Daily → utamakan EMA 50/100/200 dan `ema_stack` · 4H → EMA 13/21 untuk timing saja.
+Jangan menilai tren besar dari cross 13/21 di 4H.
+
 **Struktur keputusan:** Weekly menentukan ARAH · Daily menentukan SETUP · 4H menentukan TIMING.
 
 ---

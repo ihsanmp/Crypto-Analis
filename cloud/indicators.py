@@ -532,6 +532,64 @@ def ema_stack(price, emas):
     }
 
 
+def kondisi_pasar(closes, emas, price, bb):
+    """Nilai apakah pasar TRENDING, MENYAMPING, atau CHOPPY.
+
+    Kenapa penting: EMA paling andal saat pasar TRENDING, dan paling sering memberi sinyal
+    palsu saat menyamping atau choppy. Tanpa penilaian ini, cross EMA di pasar sempit
+    diperlakukan sama meyakinkannya dengan cross di tren kuat — itu sumber whipsaw.
+
+    Tiga pengukuran, semuanya dari data yang sudah ada:
+      1. SEBARAN EMA — jarak EMA tercepat ke terlambat relatif harga. Rapat = tidak ada tren.
+      2. KESELARASAN — apakah EMA tersusun rapi (dari ema_stack).
+      3. PERSILANGAN — berapa kali harga memotong EMA21 dalam 20 candle terakhir.
+         Sering memotong = harga bolak-balik menembus rata-ratanya sendiri = choppy.
+    """
+    nilai = [v for v in (emas.get(f"ema{n}") for n in EMA_SET) if v is not None]
+    if len(nilai) < 3 or not price:
+        return None
+    sebaran = (max(nilai) - min(nilai)) / price * 100
+
+    e21 = ema(closes, 21)
+    silang = 0
+    if len(e21) >= 20:
+        potong = closes[-len(e21):]
+        for i in range(len(e21) - 20, len(e21)):
+            if i < 1:
+                continue
+            atas_kini = potong[i] > e21[i]
+            atas_lalu = potong[i - 1] > e21[i - 1]
+            if atas_kini != atas_lalu:
+                silang += 1
+
+    lebar_bb = (bb or {}).get("bandwidth_pct")
+    selaras = (emas.get("_selaras") if isinstance(emas.get("_selaras"), bool) else None)
+
+    if silang >= 6:
+        status = "CHOPPY — harga bolak-balik menembus EMA21"
+        keandalan = "RENDAH"
+    elif sebaran < 1.5:
+        status = "MENYAMPING — EMA saling rapat, belum ada tren"
+        keandalan = "RENDAH"
+    elif sebaran < 3 or silang >= 4:
+        status = "TRANSISI — tren mulai terbentuk tapi belum mantap"
+        keandalan = "SEDANG"
+    else:
+        status = "TRENDING — EMA merenggang, tren jelas"
+        keandalan = "TINGGI"
+
+    return {
+        "status": status,
+        "keandalan_sinyal_ema": keandalan,
+        "sebaran_ema_persen": round(sebaran, 2),
+        "silang_ema21_20candle": silang,
+        "bandwidth_bb_persen": lebar_bb,
+        "acuan": ("Keandalan RENDAH artinya sinyal cross EMA rawan palsu — turunkan bobotnya "
+                  "dan tunggu konfirmasi (breakout terkonfirmasi volume atau struktur berubah). "
+                  "EMA paling akurat saat TRENDING; paling buruk saat menyamping/choppy."),
+    }
+
+
 def analyze(candles, drop_unclosed=True):
     """Hitung semua indikator untuk satu timeframe."""
     if drop_unclosed and len(candles) > 1:
@@ -603,6 +661,13 @@ def analyze(candles, drop_unclosed=True):
     bb = bollinger(c_)
     if bb:
         out["bollinger"] = bb
+
+    # Keandalan sinyal EMA bergantung kondisi pasar — dihitung SETELAH ema & bb tersedia.
+    emas_plus = dict(emas)
+    emas_plus["_selaras"] = out.get("ema_stack", {}).get("selaras")
+    kp = kondisi_pasar(c_, emas_plus, price, bb)
+    if kp:
+        out["kondisi_pasar"] = kp
 
     # Indikator berbasis RENTANG (ATR/SuperTrend/Pivot) hanya sahih kalau high & low
     # asli tersedia. Pada fallback close-only (O=H=L=C) hasilnya menyesatkan — mis.

@@ -355,6 +355,23 @@ tulis "n/a" — JANGAN menghitung sendiri dari angka mentah dan JANGAN mengarang
 Kalau tren revenue turun beberapa kuartal beruntun, itu sinyal penting: sebutkan
 terus terang di penilaian, jangan tenggelam di antara angka lain.
 
+**KEANDALAN SINYAL EMA BERGANTUNG KONDISI PASAR — WAJIB dicek sebelum memakai cross.**
+Field `kondisi_pasar` tiap timeframe memberi vonis TRENDING / TRANSISI / MENYAMPING / CHOPPY
+beserta `keandalan_sinyal_ema`. EMA paling akurat saat pasar TRENDING dan paling sering
+memberi sinyal PALSU saat menyamping atau choppy.
+- `keandalan TINGGI` → cross EMA boleh dipakai penuh sesuai bobotnya.
+- `keandalan SEDANG` → turunkan bobot sinyal cross, tuntut konfirmasi tambahan.
+- `keandalan RENDAH` (menyamping/choppy) → **JANGAN jadikan cross EMA sebagai alasan utama**.
+  Sebutkan terus terang bahwa timeframe itu sedang tanpa tren, lalu bersandar pada level
+  (support/resisten, Fibonacci, Pivot) dan tunggu breakout terkonfirmasi volume.
+- Sering terjadi Weekly TRENDING sementara 4H MENYAMPING — itu normal. Artinya arah besar
+  jelas tapi timing belum matang: sampaikan begitu, jangan dipaksakan jadi sinyal masuk.
+
+**BOBOT EMA PER TIMEFRAME.** EMA pendek (13/21) menentukan di timeframe cepat; EMA panjang
+(50/100/200) menentukan di timeframe besar. Untuk analisa jangka menengah ini:
+Weekly & Daily → utamakan EMA 50/100/200 dan `ema_stack` · 4H → EMA 13/21 untuk timing saja.
+Jangan menilai tren besar dari cross 13/21 di 4H.
+
 **HEMAT DI OUTPUT, LENGKAP DI ANALISA.** Seluruh indikator (EMA 13/21/33/50/100/200,
 ema_stack, Bollinger, ATR, SuperTrend, Pivot, Fibonacci, Stochastic, volume, struktur) tetap
 WAJIB dipakai untuk menilai — itu dasar skornya. Tapi JANGAN menuangkan semuanya ke teks
