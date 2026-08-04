@@ -161,7 +161,11 @@ _MINAT_RE = re.compile(
 # whale untuk sebuah SAHAM — hasilnya kosong atau menyesatkan.
 _PASANGAN_FX = re.compile(
     r"^(XAU|XAG|EUR|GBP|USD|AUD|NZD|CAD|CHF|JPY)(USD|JPY|EUR|GBP|CHF|CAD|AUD|NZD)$", re.I)
-_ALIAS_FX = {"GOLD": "XAUUSD", "EMAS": "XAUUSD", "SILVER": "XAGUSD", "PERAK": "XAGUSD"}
+# Emas & perak dipetakan ke kontrak berjangka COMEX — "XAUUSD=X" TIDAK ADA di Yahoo (404).
+# JEBAKAN PENTING: ticker "GOLD" di NYSE adalah Barrick Gold Corp (perusahaan TAMBANG),
+# bukan logamnya. Tanpa pemetaan ini, "analisa gold" bisa menganalisa saham yang salah.
+_ALIAS_FX = {"GOLD": "GC=F", "EMAS": "GC=F", "XAUUSD": "GC=F", "XAU": "GC=F",
+             "SILVER": "SI=F", "PERAK": "SI=F", "XAGUSD": "SI=F", "XAG": "SI=F"}
 
 
 def jenis_aset(sisa):

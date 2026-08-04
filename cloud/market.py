@@ -102,9 +102,16 @@ def main():
     args = ap.parse_args()
 
     simbol = args.simbol.upper().replace("$", "")
-    if args.forex and not simbol.endswith("=X"):
+    # Komoditas dipetakan ke kontrak berjangka; "XAUUSD=X" tidak ada di Yahoo (404).
+    # "GOLD" di NYSE adalah Barrick Gold Corp (saham tambang), BUKAN logamnya.
+    KOMODITAS = {"GOLD": "GC=F", "EMAS": "GC=F", "XAUUSD": "GC=F", "XAU": "GC=F",
+                 "SILVER": "SI=F", "PERAK": "SI=F", "XAGUSD": "SI=F", "XAG": "SI=F",
+                 "OIL": "CL=F", "MINYAK": "CL=F", "WTI": "CL=F"}
+    if simbol in KOMODITAS:
+        simbol = KOMODITAS[simbol]
+    elif args.forex and not simbol.endswith(("=X", "=F")):
         simbol += "=X"
-    jenis = "forex" if simbol.endswith("=X") else "saham"
+    jenis = "komoditas" if simbol.endswith("=F") else ("forex" if simbol.endswith("=X") else "saham")
 
     hasil = {
         "simbol": simbol,
@@ -118,7 +125,7 @@ def main():
             "4H dibangun dari candle 1 jam (Yahoo tidak menyediakan 4H).",
         ],
     }
-    if jenis == "forex":
+    if jenis in ("forex", "komoditas"):
         hasil["peringatan"].append(
             "Volume forex dari Yahoo umumnya nol — JANGAN menilai breakout dari volume.")
 
