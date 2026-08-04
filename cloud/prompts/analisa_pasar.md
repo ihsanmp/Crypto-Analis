@@ -71,6 +71,14 @@ brief). Inti yang wajib dipegang:
 4. **Peringkat dampak:** Federal Funds Rate > NFP = CPI = Core PCE > sisanya. Jangan
    menyamakan bobot rilis kecil dengan FOMC.
 
+**Karakter hari (kecenderungan longgar, JANGAN jadi alasan utama):** Senin volatilitas
+rendah · Selasa breakout · Rabu kelanjutan tren · Kamis pembalikan · Jumat fake-out.
+Yang sebenarnya menggerakkan adalah JADWAL RILIS, bukan nama harinya — Kamis sering
+berbalik karena Unemployment Claims rilis tiap Kamis, Jumat rawan fake-out karena NFP dan
+penutupan posisi. **Sebut hari & rilis terjadwalnya sebagai KEWASPADAAN**, mis. "hari ini
+Jumat NFP, rawan fake-out — tunggu konfirmasi close candle". Kalau pola hari bertentangan
+dengan teknikal + makro, yang menang teknikal + makro.
+
 **Untuk pasangan mata uang lain:** bandingkan arah kebijakan kedua bank sentralnya.
 Mata uang dengan bank sentral lebih hawkish cenderung menguat terhadap yang lebih dovish.
 

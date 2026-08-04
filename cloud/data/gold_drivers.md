@@ -98,6 +98,29 @@ berarti ekonomi MELEMAH, sehingga efeknya terbalik (naik = dovish = **gold naik*
 
 ---
 
+## Karakter hari dalam sepekan (kecenderungan, BUKAN aturan)
+
+Pengamatan umum trader XAUUSD:
+
+| Hari | Kecenderungan | Sebab yang masuk akal |
+|---|---|---|
+| **Senin** | Volatilitas rendah | Pasar mencerna akhir pekan; jarang ada rilis data AS |
+| **Selasa** | Breakout | Rilis data mulai masuk; posisi pekan baru terbentuk |
+| **Rabu** | Kelanjutan tren | Arah pekan biasanya sudah terbaca; sering ada FOMC/minutes |
+| **Kamis** | Pembalikan | **Unemployment Claims rilis SETIAP Kamis** — pemicu terjadwal |
+| **Jumat** | Fake-out | **NFP di Jumat pertama**; sisanya penutupan posisi jelang akhir pekan |
+
+**CARA MEMAKAINYA — penting:**
+- Ini **kecenderungan statistik longgar**, bukan hukum. Jangan dijadikan alasan utama
+  masuk atau keluar posisi. Banyak pekan tidak mengikuti pola ini sama sekali.
+- **Yang sebenarnya menggerakkan adalah JADWAL RILIS, bukan nama harinya.** Kamis terasa
+  sering berbalik karena Unemployment Claims memang rilis tiap Kamis; Jumat terasa banyak
+  fake-out karena NFP dan penutupan posisi. Jadi periksa kalender dulu — kalau pekan itu
+  Kamisnya tidak ada rilis penting, jangan mengharapkan pembalikan.
+- Pakai sebagai **kewaspadaan**, bukan sinyal: mis. "hari ini Jumat NFP, rawan fake-out —
+  tunggu konfirmasi close candle sebelum menyimpulkan arah".
+- Kalau pola hari **bertentangan** dengan teknikal dan makro, yang menang teknikal + makro.
+
 ## Catatan penting cara membaca
 
 - **Arti "Core"** — versi tanpa harga makanan & energi. Di era inflasi energi 2026,
