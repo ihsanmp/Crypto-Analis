@@ -54,6 +54,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # WAJIB ref: main. Secara bawaan checkout mengambil commit SAAT EVENT DIBUAT,
+          # bukan commit terbaru. Untuk dispatch ganda (dua event dibuat pada detik yang
+          # sama) itu fatal: run kedua sudah mengantre dengan benar, tapi tetap checkout
+          # versi repo SEBELUM run pertama menyimpan jejak pesan — sehingga pencegah
+          # duplikat tidak pernah melihat catatannya. Terbukti pada run 30918498339 &
+          # 30918500749: keduanya membalas pesan yang sama.
+          ref: main
 
       - name: Setup Python
         uses: actions/setup-python@v5
