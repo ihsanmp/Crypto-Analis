@@ -37,6 +37,7 @@ REPO_ROOT = os.path.dirname(BASE_DIR)
 ANALISA_PROMPT = os.path.join(BASE_DIR, "prompts", "analisa.md")
 CHAT_PROMPT = os.path.join(BASE_DIR, "prompts", "chat.md")
 NARASI_PROMPT = os.path.join(BASE_DIR, "prompts", "narasi.md")
+PASAR_PROMPT = os.path.join(BASE_DIR, "prompts", "analisa_pasar.md")
 FOTO_PROMPT = os.path.join(BASE_DIR, "prompts", "foto.md")
 MCP_CONFIG = os.path.join(BASE_DIR, ".mcp.cloud.json")
 
@@ -69,22 +70,26 @@ HELP_TEXT = (
     "1) ANALISA LENGKAP (terstruktur, berskor):\n"
     "   • ketik: analisa <koin>   (contoh: analisa sol)\n"
     "   • ketik: analisa          -> aku scan pasar & pilih beberapa koin menarik\n\n"
-    "2) CARI KOIN LEWAT NARASI/SEKTOR:\n"
+    "2) ANALISA SAHAM & FOREX:\n"
+    "   • analisa saham nvda   (saham luar negeri: NVDA, AAPL, MSFT)\n"
+    "   • analisa gold / analisa xauusd / analisa eurusd\n"
+    "   • sebut 'saham' di depan supaya tidak tertukar dengan koin\n\n"
+    "3) CARI KOIN LEWAT NARASI/SEKTOR:\n"
     "   • carikan koin dengan narasi privacy yang menarik\n"
     "     (ganti privacy dengan: AI, RWA, DePIN, gaming, meme, DeFi, L2, storage, dll)\n"
     "   • carikan koin narasi yang menarik   -> aku cari sendiri narasi yang lagi jalan\n"
     "   • narasi apa yang lagi jalan?\n\n"
-    "3) NGOBROL SANTAI:\n"
+    "4) NGOBROL SANTAI:\n"
     "   • tanya bebas, misal: bagaimana pendapatmu tentang bitcoin?\n"
     "   • atau: prospek eth jangka menengah gimana?\n\n"
-    "4) KIRIM FOTO/SCREENSHOT:\n"
+    "5) KIRIM FOTO/SCREENSHOT:\n"
     "   • kirim gambar (chart, data, pengumuman) + caption pertanyaanmu\n"
     "   • aku baca isinya, cari kaitannya dengan koin/project, dan kasih rekomendasi\n"
     "   • caption boleh pendek atau kosong — aku tetap coba pahami\n\n"
-    "5) CEK DOMPET / HOLDER (multi-chain: ETH, BSC, Base, Arbitrum, Solana, dll):\n"
+    "6) CEK DOMPET / HOLDER (multi-chain: ETH, BSC, Base, Arbitrum, Solana, dll):\n"
     "   • tempel alamat dompet + tanya, misal: dompet ini isinya apa 0x...\n"
     "   • atau: siapa holder terbesar sol / konsentrasi holder cake di bsc\n\n"
-    "6) PERKEMBANGAN AI:\n"
+    "7) PERKEMBANGAN AI:\n"
     "   • tanya: perkembangan ai terbaru apa? / rilis model ai terbaru\n"
     "   • aku tarik dari RSS resmi OpenAI, DeepMind, Hugging Face, TechCrunch, dll\n\n"
     "Analisa & screening narasi makan waktu beberapa menit. Ngobrol biasanya lebih cepat.\n"
@@ -149,6 +154,37 @@ _MINAT_RE = re.compile(
     r"\b(menarik|bagus|prospek|potensi|potensial|worth|layak|rekomendasi|rekomen|saran|"
     r"cuan|murah|undervalued|trending|hype|meledak|naik daun|lagi jalan|lagi rame|"
     r"patut|sebaiknya)\b")
+
+
+# --- Deteksi jenis aset untuk perintah "analisa" -----------------------------
+# Tanpa ini, "analisa nvda" masuk jalur crypto dan memanggil DefiLlama/holder Ethereum/
+# whale untuk sebuah SAHAM — hasilnya kosong atau menyesatkan.
+_PASANGAN_FX = re.compile(
+    r"^(XAU|XAG|EUR|GBP|USD|AUD|NZD|CAD|CHF|JPY)(USD|JPY|EUR|GBP|CHF|CAD|AUD|NZD)$", re.I)
+_ALIAS_FX = {"GOLD": "XAUUSD", "EMAS": "XAUUSD", "SILVER": "XAGUSD", "PERAK": "XAGUSD"}
+
+
+def jenis_aset(sisa):
+    """Tentukan (jenis, simbol) dari teks setelah kata 'analisa'.
+
+    Urutan: kata kunci eksplisit -> alias emas/perak -> pola pasangan forex -> default crypto.
+    Default sengaja CRYPTO supaya perintah lama tetap berperilaku sama.
+    """
+    kata = sisa.split()
+    if not kata:
+        return "crypto", None
+    depan = kata[0].lower()
+    if depan in ("saham", "stock", "stocks") and len(kata) > 1:
+        return "saham", kata[1].upper().replace("$", "")
+    if depan in ("forex", "fx", "mata") and len(kata) > 1:
+        s = kata[1].upper().replace("$", "")
+        return "forex", _ALIAS_FX.get(s, s)
+    simbol = kata[0].upper().replace("$", "")
+    if simbol in _ALIAS_FX:
+        return "forex", _ALIAS_FX[simbol]
+    if _PASANGAN_FX.match(simbol):
+        return "forex", simbol
+    return "crypto", simbol
 
 
 def is_narasi(low):
@@ -309,6 +345,58 @@ def build_photo_prompt(caption, image_path):
             f"## Caption / pertanyaan user\n{instruksi}\n")
 
 
+def build_gather_pasar(simbol, jenis):
+    """TAHAP 1 untuk SAHAM & FOREX. Sengaja terpisah dari jalur crypto: DefiLlama, holder
+    Ethereum, dan whale flow sama sekali tidak berlaku di sini, dan memanggilnya hanya
+    menghasilkan error atau angka yang tidak nyambung."""
+    if jenis == "forex":
+        perintah = f"python cloud/market.py {simbol} --forex"
+        khusus = (
+            f"3. Kalau simbolnya XAUUSD/XAGUSD (emas/perak): WAJIB baca acuan makro dengan "
+            f"Bash `cat cloud/data/gold_drivers.md` dan TEMPEL bagian yang relevan — daftar "
+            f"data ekonomi penggerak, arah dampaknya, dan peringkat kekuatannya.\n"
+            f"4. WebSearch: rilis data ekonomi AS TERBARU yang sudah keluar (CPI, NFP, Core PCE, "
+            f"keputusan FOMC) beserta TANGGAL dan angkanya. Tempel apa adanya. Kalau ada rilis "
+            f"besar yang akan datang, sebut tanggalnya.\n"
+            f"5. JANGAN mengarang angka forecast/konsensus — kalau tidak ketemu, tulis "
+            f"'konsensus tidak tersedia'.\n")
+    else:
+        perintah = f"python cloud/market.py {simbol}"
+        khusus = (
+            f"3. Bash: `python cloud/stockfund.py {simbol} --price <harga_dari_langkah_1>` → "
+            f"revenue, laba bersih, EPS, margin, aset/liabilitas/ekuitas, arus kas, P/E, P/S, "
+            f"kuartalan & tahunan BESERTA perubahan_persen tiap periode. Kalau sebuah "
+            f"perubahan_persen bernilai null dengan catatan, TEMPEL catatannya juga — jangan "
+            f"dihitung sendiri. Kalau emitennya tidak ada di SEC, tulis 'bukan emiten bursa AS'.\n"
+            f"4. WebSearch: berita/katalis terbaru untuk {simbol} (earnings, panduan manajemen, "
+            f"regulasi, produk) dengan TANGGAL + nama media.\n")
+
+    return (
+        f"{header_waktu()}"
+        f"Kamu PETUGAS PENGUMPUL DATA (bukan analis) untuk {jenis.upper()} {simbol}. "
+        f"JANGAN menganalisa atau menyimpulkan — jalankan tiap langkah dan TEMPEL hasilnya. "
+        f"Sebut jelas yang gagal/kosong.\n\n"
+        f"PENTING: ini BUKAN crypto. JANGAN menjalankan fundamentals.py, investors.py, "
+        f"whaleflow.py, onchain.py, atau MCP coinmarketcap/coinglass/blockscout — semuanya "
+        f"khusus crypto dan tidak berlaku di sini.\n\n"
+        f"1. Bash: `{perintah}` → untuk TIAP timeframe (1w/1d/4h) tempel: close, SELURUH isi "
+        f"ema (ema13/21/33/50/100/200, tulis n/a bila None), ema_stack.status, ema_signal, "
+        f"bollinger, atr14, atr_pct, supertrend, pivot_standar, rsi14, stoch, fib, structure, "
+        f"volume, source, quality, last_candle_utc. Tempel juga bagian 'profil' (bursa, mata "
+        f"uang, harga terakhir) dan seluruh 'peringatan'.\n"
+        f"2. Bash: `python cloud/memori.py cari {simbol}` → ingatan terverifikasi. Tempel apa "
+        f"adanya; kalau kosong tulis 'belum ada ingatan'.\n"
+        f"{khusus}"
+        f"\nWAJIB — STEMPEL WAKTU. Tempel generated_utc dan last_candle_utc apa adanya, plus "
+        f"source & quality tiap timeframe. Di bagian [WAKTU DATA] tulis SATU baris berformat "
+        f"PERSIS ini per timeframe (dibaca pemeriksa otomatis):\n"
+        f"  <tf> source=<isi source> quality=<isi quality> last_candle_utc=<isi last_candle_utc>\n\n"
+        f"OUTPUT: satu 'DATA BRIEF' berlabel per bagian ([WAKTU DATA], [INGATAN], [PROFIL], "
+        f"[TEKNIKAL 1W/1D/4H], [FUNDAMENTAL] atau [MAKRO], [KATALIS], [TIDAK TERSEDIA]). "
+        f"Angka apa adanya, tanpa interpretasi/skor/rekomendasi."
+    )
+
+
 def build_gather_prompt(coin):
     """Instruksi TAHAP 1 untuk model murah: kumpulkan data mentah, JANGAN analisa."""
     return (
@@ -360,6 +448,23 @@ def build_gather_prompt(coin):
         f"[PASAR], [HARGA/VALUASI], [TEKNIKAL 1W/1D/4H], [FUNDAMENTAL], [KEPEMILIKAN], "
         f"[DERIVATIF], [KATALIS], [TIDAK TERSEDIA]). Bagian [WAKTU DATA] berisi semua "
         f"generated_utc + source/quality. Angka apa adanya, tanpa interpretasi/skor/rekomendasi."
+    )
+
+
+def build_synth_pasar(simbol, jenis, brief):
+    """TAHAP 2 untuk saham/forex. Memakai analisa_pasar.md — memakai analisa.md (crypto)
+    di sini akan menuntut TVL/holder/whale yang tidak ada padanannya."""
+    with open(PASAR_PROMPT, encoding="utf-8") as f:
+        base = f.read()
+    return (
+        f"{header_waktu()}{base}\n---\n"
+        f"## DATA BRIEF (hasil pengumpulan tahap 1 — SEMUA data ada di sini)\n"
+        f"JANGAN memanggil tool apa pun lagi. Kalau ada metrik yang TIDAK ADA di brief, "
+        f"perlakukan sebagai tidak tersedia (keluarkan dari penilaian, sebutkan) — "
+        f"JANGAN mengarang.\n\n"
+        f"{brief}\n\n---\n"
+        f"## Perintah user\nAnalisa {jenis.upper()}: **{simbol}** berdasarkan DATA "
+        f"BRIEF di atas. Terapkan metodologi & format output di atas sepenuhnya."
     )
 
 
@@ -463,8 +568,27 @@ def process(token, chat_id, text, photo_file_id=None):
 
     if kind == "analisa":
         words = text.strip().lower().split()
-        coin = words[1].upper() if len(words) > 1 else None
-        if coin:
+        jenis, simbol = jenis_aset(" ".join(words[1:]))
+        if simbol and jenis != "crypto":
+            # SAHAM / FOREX: jalur terpisah. Script crypto (DefiLlama, holder Ethereum,
+            # whale) tidak berlaku dan hanya menghasilkan error atau angka tak nyambung.
+            label = "saham" if jenis == "saham" else "forex"
+            send_message(token, chat_id,
+                         f"⏳ Oke, riset {label} {simbol}. Tahap 1: kumpulkan data...")
+            brief, err = run_claude(build_gather_pasar(simbol, jenis), min(timeout, 600),
+                                    max_turns=40, model=MODEL_GATHER, with_tools=True)
+            if err or not brief:
+                print(f"[proses] tahap-1 {label} GAGAL: {str(err)[:200]}", file=sys.stderr)
+                output = None
+            else:
+                print(f"[proses] tahap-1 {label} OK, brief {len(brief)} karakter -> tahap-2",
+                      file=sys.stderr)
+                send_message(token, chat_id, "🧠 Tahap 2: analisa & susun laporan...")
+                output, err = run_claude(build_synth_pasar(simbol, jenis, brief),
+                                         min(timeout, 420), max_turns=12,
+                                         model=MODEL_SYNTH, with_tools=False)
+        elif simbol:
+            coin = simbol
             # DUA TAHAP (model tiering): Haiku kumpulkan data -> Opus menganalisa.
             send_message(token, chat_id, f"⏳ Oke, riset koin {coin}. Tahap 1: kumpulkan data...")
             t_gather = min(timeout, 600)
