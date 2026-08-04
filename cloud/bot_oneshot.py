@@ -18,6 +18,7 @@ Konfigurasi lewat environment variable (di-set dari GitHub Secrets):
   COINMARKETCAP_API_KEY, CLAUDE_CODE_OAUTH_TOKEN
 """
 
+import hashlib
 import json
 import os
 import re
@@ -527,7 +528,67 @@ def run_claude(prompt, timeout, max_turns, model=None, with_tools=True, tools_ov
     return result.stdout.strip(), None
 
 
+JEJAK_PATH = os.path.join(BASE_DIR, "data", "diproses.json")
+JEDA_DUPLIKAT = 180        # detik
+
+
+def _sidik(chat_id, text, photo_file_id):
+    """Sidik pesan yang STABIL antar-proses.
+
+    WAJIB hashlib, bukan hash() bawaan: hash() string diacak ulang tiap proses Python
+    (PYTHONHASHSEED), sehingga pesan yang sama menghasilkan sidik berbeda di run berbeda
+    dan pencegahan duplikat sama sekali tidak bekerja.
+    """
+    inti = f"{chat_id}|{(text or '').strip().lower()}|{photo_file_id or ''}"
+    return hashlib.sha256(inti.encode("utf-8")).hexdigest()[:16]
+
+
+def sudah_diproses(chat_id, text, photo_file_id):
+    """Cegah satu pesan diproses dua kali.
+
+    Telegram/Cloudflare kadang mengirim dispatch GANDA untuk satu pesan — terpantau pada
+    4 Agustus 2026: dua run terpicu pada 14:12:28 dan 14:12:29 untuk pesan "analisa gold"
+    yang sama. Akibatnya user menerima DUA balasan berbeda (yang satu datanya gagal ditarik)
+    dan kuota Claude terpakai dua kali.
+
+    Aman dilakukan di sisi bot karena workflow memakai concurrency group: run kedua baru
+    mulai setelah run pertama selesai DAN commit jejaknya, sehingga run kedua pasti melihat
+    catatan itu saat checkout.
+
+    Jendela sengaja pendek (3 menit): duplikat nyata datang dalam hitungan detik, sedangkan
+    user yang benar-benar ingin mengulang perintah yang sama biasanya berjarak lebih lama.
+    """
+    sidik = _sidik(chat_id, text, photo_file_id)
+    sekarang = time.time()
+    try:
+        with open(JEJAK_PATH, encoding="utf-8") as f:
+            jejak = json.load(f)
+    except Exception:
+        jejak = []
+
+    for j in jejak:
+        if j.get("sidik") == sidik and sekarang - j.get("waktu", 0) < JEDA_DUPLIKAT:
+            umur = int(sekarang - j["waktu"])
+            print(f"[proses] DILEWATI — pesan sama sudah diproses {umur} detik lalu "
+                  f"(pencegah dispatch ganda)", file=sys.stderr)
+            return True
+
+    jejak = [j for j in jejak if sekarang - j.get("waktu", 0) < 3600][-50:]
+    jejak.append({"sidik": sidik, "waktu": sekarang,
+                  "waktu_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")})
+    try:
+        os.makedirs(os.path.dirname(JEJAK_PATH), exist_ok=True)
+        with open(JEJAK_PATH, "w", encoding="utf-8") as f:
+            json.dump(jejak, f, indent=1)
+    except Exception as e:
+        print(f"[proses] gagal menulis jejak duplikat: {e}", file=sys.stderr)
+    return False
+
+
 def process(token, chat_id, text, photo_file_id=None):
+    if sudah_diproses(chat_id, text, photo_file_id):
+        return
+
     brief = None          # DATA BRIEF tahap-1 (hanya terisi di analisa koin); dipakai
                           # audit keterlacakan angka. Dideklarasikan di sini supaya
                           # SELALU terdefinisi di semua cabang, termasuk mode foto.
