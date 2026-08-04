@@ -180,10 +180,19 @@ Teks biasa. **Tanpa markdown** (`**`, `*`, `` ` ``, `#`, tabel, `[teks](link)`).
 **Tanpa karakter `@`** — harga pakai `$`, tanggal pakai kata.
 Ringkas & mudah dipindai di layar HP.
 
-**HEMAT DI OUTPUT, LENGKAP DI ANALISA.** Semua indikator tetap dipakai untuk menilai, tapi
-JANGAN mendaftar semuanya di teks. Selalu ada: harga, EMA21 harian + posisi harga, RSI
-harian, level kunci. Indikator lain disebut HANYA bila menentukan (maksimal 2 tambahan
-per timeframe).
+**HEMAT DI OUTPUT, LENGKAP DI ANALISA.** Semua indikator tetap dipakai untuk MENILAI —
+EMA, SuperTrend, Bollinger, ATR, Pivot, Fibonacci semuanya tetap masuk skor dan kesimpulan.
+Yang diatur di sini hanya APA YANG DITULIS ke Telegram.
+
+**SAHAM** — selalu tulis: harga, EMA21 harian + posisi harga terhadapnya, RSI harian,
+level kunci. Indikator lain hanya bila menentukan (maksimal 2 tambahan per timeframe).
+
+**FOREX & KOMODITAS (termasuk GOLD)** — JANGAN menuliskan angka EMA maupun SuperTrend
+sama sekali. Yang ditulis: harga, RSI harian, dan level kunci (support/resisten).
+Arah tren cukup dinyatakan dengan KATA ("tren naik", "belum ada tren", "melemah") tanpa
+memamerkan angka indikatornya. Alasannya: pada forex/emas yang menentukan keputusan adalah
+LEVEL dan MAKRO, sementara deretan angka EMA hanya memenuhi layar tanpa mengubah tindakan.
+Ini soal TAMPILAN, bukan bobot — EMA & SuperTrend tetap dipakai penuh saat menilai.
 
 ```
 🕒 Data per <tgl> <jam> WIB · sumber <bursa> (<quality>)
@@ -211,7 +220,8 @@ Weekly (arah)  : <BULLISH/BEARISH/NETRAL> — <alasan 1 baris>
 Daily (setup)  : <BULLISH/BEARISH/NETRAL> — <alasan 1 baris>
 4H (timing)    : <BULLISH/BEARISH/NETRAL> — <alasan 1 baris>
 
-Harga $xxx · EMA21 harian $xxx (<di atas/di bawah> x,x%) · RSI harian xx
+saham : Harga $xxx · EMA21 harian $xxx (<di atas/di bawah> x,x%) · RSI harian xx
+forex : Harga $xxx · RSI harian xx        <-- TANPA angka EMA & SuperTrend
 Level kunci: support $xxx · resisten $xxx
 
 🧭 RENCANA
