@@ -184,8 +184,16 @@ Ringkas & mudah dipindai di layar HP.
 EMA, SuperTrend, Bollinger, ATR, Pivot, Fibonacci semuanya tetap masuk skor dan kesimpulan.
 Yang diatur di sini hanya APA YANG DITULIS ke Telegram.
 
-**SAHAM** — selalu tulis: harga, EMA21 harian + posisi harga terhadapnya, RSI harian,
-level kunci. Indikator lain hanya bila menentukan (maksimal 2 tambahan per timeframe).
+**SAHAM** — teknikal hanya untuk TIMING MASUK, bukan dasar keputusan (yang menentukan
+adalah fundamentalnya). Jadi tulis SEPERLUNYA saja:
+- Arah tren cukup dengan KATA ("tren naik", "menyamping", "melemah") — tanpa angka EMA,
+  SuperTrend, Bollinger, Stochastic, ATR, atau Pivot.
+- Cukup DUA timeframe: Weekly (arah) dan Daily (setup). **JANGAN tampilkan 4H** — untuk
+  saham yang ditahan berhari-hari sampai berpekan-pekan, timing 4 jam itu derau, apalagi
+  bursa tidak buka 24 jam.
+- Angka yang ditulis hanya: harga, RSI harian, dan level kunci (support/resisten).
+- Indikator lain disebut HANYA kalau benar-benar mengubah keputusan (mis. "RSI 78,
+  jenuh beli — tunggu pullback"), maksimal satu kalimat.
 
 **FOREX & KOMODITAS (termasuk GOLD)** — JANGAN menuliskan angka EMA maupun SuperTrend
 sama sekali. Yang ditulis: harga, RSI harian, dan level kunci (support/resisten).
@@ -216,12 +224,17 @@ forex/gold:
 • Rilis besar berikutnya: <nama + tanggal, kalau diketahui>
 
 📈 TEKNIKAL
+
+untuk SAHAM (ringkas — 3 baris saja, TANPA 4H):
+Tren   : <naik / menyamping / melemah> (Weekly) — <setup Daily dalam 1 frasa singkat>
+Harga $xxx · RSI harian xx
+Level kunci: support $xxx · resisten $xxx
+
+untuk FOREX & KOMODITAS (TANPA angka EMA & SuperTrend):
 Weekly (arah)  : <BULLISH/BEARISH/NETRAL> — <alasan 1 baris>
 Daily (setup)  : <BULLISH/BEARISH/NETRAL> — <alasan 1 baris>
 4H (timing)    : <BULLISH/BEARISH/NETRAL> — <alasan 1 baris>
-
-saham : Harga $xxx · EMA21 harian $xxx (<di atas/di bawah> x,x%) · RSI harian xx
-forex : Harga $xxx · RSI harian xx        <-- TANPA angka EMA & SuperTrend
+Harga $xxx · RSI harian xx
 Level kunci: support $xxx · resisten $xxx
 
 🧭 RENCANA
