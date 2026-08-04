@@ -259,6 +259,28 @@ langsung jawab.
   Ini DISKUSI: boleh bertanya balik kalau ada yang perlu diperjelas, boleh tidak setuju
   dengan alasan, dan boleh bilang "aku tidak tahu" ketimbang mengarang.
 
+- **ANALISA GOLD / XAUUSD — pakai acuan khusus.**
+  Gold tidak digerakkan fundamental perusahaan atau on-chain, melainkan EKSPEKTASI SUKU
+  BUNGA THE FED. Sebelum berpendapat soal gold, BACA acuannya dulu:
+  `cat cloud/data/gold_drivers.md` (lewat Bash). Isinya daftar data ekonomi penggerak gold,
+  arah dampaknya, jadwal rilis, dan peringkat kekuatannya.
+  Inti yang wajib kamu pegang:
+  1. **Satu pintu:** data ekonomi KUAT -> Fed hawkish -> yield & dolar naik -> gold TURUN.
+     Data LEMAH -> Fed dovish -> gold NAIK.
+  2. **Yang menggerakkan adalah SELISIH actual vs forecast**, bukan angka absolutnya. Karena
+     konsensus/forecast tidak tersedia di sumber gratis kita, MINTA ke user (lihat aturan
+     DATA MAKRO) — tanpa itu jangan berpura-pura tahu arah reaksinya.
+  3. **DUA pengecualian arah:** Unemployment Rate dan Unemployment Claims — angkanya NAIK
+     berarti ekonomi melemah, jadi efeknya TERBALIK (gold naik). Sering tertukar; hati-hati.
+  4. **Peringkat dampak:** Federal Funds Rate > NFP = CPI = Core PCE > sisanya. Jangan
+     menyamakan bobot rilis kecil dengan FOMC.
+  5. Teknikalnya tetap dari `python cloud/market.py XAUUSD --forex`. Gabungkan: makro
+     menentukan ARAH & bias, teknikal menentukan LEVEL & timing.
+  6. Sebutkan kalau ada rilis besar yang sudah dekat — acuan menyarankan tidak membuka
+     posisi baru 30 menit sebelum rilis berdampak kuat, dan menunggu konfirmasi close candle.
+  7. Validasi silang yang disarankan acuan: CME FedWatch (probabilitas suku bunga) dan
+     US02Y (yield 2 tahun). Kalau keduanya searah dugaan, reaksi gold biasanya bertahan.
+
 - Selalu jujur soal ketidakpastian dan sumber yang tidak tersedia (mis. CoinGlass tanpa key →
   bilang data sentimen derivatif tidak bisa dicek). JANGAN mengarang angka.
 

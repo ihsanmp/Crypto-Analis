@@ -1,0 +1,113 @@
+# Acuan Analisa GOLD (XAUUSD) — Data Ekonomi Penggerak
+
+Materi acuan milik user, disusun 18 Juli 2026. Dipakai bot saat menganalisa gold/XAUUSD.
+
+**Cara membaca kolom dampak:** arah yang tertulis berlaku bila **actual LEBIH TINGGI dari
+forecast**. Kalau actual lebih rendah, arah dampaknya **kebalikannya**.
+
+**Jam rilis (WIB):** mayoritas data 19.30–21.00 (08.30–10.00 pagi waktu AS).
+Keputusan FOMC pukul 01.00 dini hari.
+
+---
+
+## Mekanisme utama — satu pintu yang sama
+
+Hampir semua data bekerja lewat satu pertanyaan:
+
+> **Apakah ini membuat The Fed lebih HAWKISH (galak) atau DOVISH (lunak)?**
+
+Data ekonomi KUAT → Fed hawkish → yield & dolar naik → **gold turun**
+Data ekonomi LEMAH → Fed dovish → yield & dolar turun → **gold naik**
+
+**Yang menggerakkan pasar adalah SELISIHNYA** — bukan angka absolutnya, melainkan
+selisih *actual vs forecast* di kalender ekonomi.
+
+---
+
+## Peringkat kekuatan dampak
+
+```
+Federal Funds Rate  >  NFP = CPI = Core PCE  >  sisanya
+```
+
+---
+
+## INFLASI
+
+| Data | Apa yang diukur | Jadwal rutin | Jika actual > forecast |
+|---|---|---|---|
+| **CPI m/m** | Perubahan harga konsumen vs bulan lalu; inflasi paling ditunggu pasar | Tgl 10–15 tiap bulan (data bulan sebelumnya) | **Gold turun (kuat)** |
+| CPI y/y | Inflasi setahun terakhir; untuk konteks tren | Bersamaan CPI m/m | Gold turun |
+| **Core CPI m/m** | CPI tanpa makanan & energi; inflasi "murni" yang diperhatikan Fed | Bersamaan CPI m/m | **Gold turun (kuat)** |
+| PPI m/m | Inflasi tingkat produsen; sering jadi "bocoran" arah CPI berikutnya | 1–3 hari setelah CPI (tgl 11–17) | Gold turun |
+| Core PPI m/m | PPI tanpa makanan & energi | Bersamaan PPI m/m | Gold turun |
+| **Core PCE Price Index m/m** | Ukuran inflasi RESMI yang dipakai Fed untuk target 2% | Akhir bulan, tgl 26–31 | **Gold turun (kuat)** |
+
+---
+
+## TENAGA KERJA
+
+| Data | Apa yang diukur | Jadwal rutin | Jika actual > forecast |
+|---|---|---|---|
+| **Non-Farm Payroll (NFP)** | Pekerjaan baru di luar pertanian; data terbesar awal bulan | Jumat pertama tiap bulan | **Gold turun (kuat)** |
+| **Unemployment Rate** | Persentase pengangguran | Bersamaan NFP | ⚠️ **Gold NAIK (arah terbalik)** |
+| Average Hourly Earnings m/m | Pertumbuhan upah; upah naik = tekanan inflasi tambahan | Bersamaan NFP | Gold turun |
+| ADP Non-Farm Employment | Versi swasta NFP; dipakai pasar "menebak" NFP | Rabu sebelum NFP | Gold turun |
+| **Unemployment Claims** (mingguan) | Klaim tunjangan pengangguran baru | Setiap Kamis | ⚠️ **Gold NAIK (arah terbalik)** |
+| JOLTS Job Openings | Lowongan kerja terbuka; pelengkap gambaran tenaga kerja | Awal bulan tgl 1–5 (data 2 bulan lalu) | Gold turun |
+
+⚠️ **DUA PENGECUALIAN ARAH:** Unemployment Rate dan Unemployment Claims — angkanya NAIK
+berarti ekonomi MELEMAH, sehingga efeknya terbalik (naik = dovish = **gold naik**).
+
+---
+
+## THE FED
+
+| Data | Apa yang diukur | Jadwal rutin | Jika actual > forecast |
+|---|---|---|---|
+| **Federal Funds Rate (FOMC)** | Keputusan suku bunga; event TERBESAR | 8x setahun (~tiap 6 pekan) | **Gold turun (sangat kuat)** |
+| FOMC Meeting Minutes | Notulen rapat | 3 pekan setelah tiap rapat | Hawkish → gold turun |
+| Pidato Ketua/Pejabat Fed | "Fed Chair Speaks" dsb; satu kalimat bisa setara dampak CPI | Sporadis, hampir tiap pekan | Hawkish → gold turun |
+
+**Jadwal FOMC 2026:** 27–28 Jan · 17–18 Mar · 28–29 Apr · 16–17 Jun · 28–29 Jul ·
+15–16 Sep · 27–28 Okt · 8–9 Des
+
+---
+
+## AKTIVITAS EKONOMI & KONSUMEN
+
+| Data | Apa yang diukur | Jadwal rutin | Jika actual > forecast |
+|---|---|---|---|
+| ISM Manufacturing PMI | Survei manajer pembelian pabrik; >50 ekspansi, <50 kontraksi | Hari kerja pertama (tgl 1–3) | Gold turun |
+| ISM Services PMI | Survei sektor jasa, porsi terbesar ekonomi AS | Hari kerja ke-3 (tgl 3–5) | Gold turun |
+| Retail Sales m/m | Belanja konsumen (~70% ekonomi AS); ada versi Core tanpa mobil | Pertengahan bulan (tgl 14–17) | Gold turun |
+| Advance GDP q/q | Pertumbuhan ekonomi kuartalan; versi "Advance" paling berdampak | Akhir Jan/Apr/Jul/Okt | Gold turun |
+| Flash Manufacturing & Services PMI | Versi awal PMI dari S&P Global, sinyal lebih dini dari ISM | Tgl 21–24 tiap bulan | Gold turun |
+| Prelim UoM Consumer Sentiment | Keyakinan konsumen University of Michigan | Jumat tgl 10–15 (final akhir bulan) | Gold turun |
+| **UoM Inflation Expectations** | Ekspektasi inflasi masyarakat; sangat dipantau Fed di era inflasi energi 2026 | Bersamaan UoM Sentiment | **Gold turun (kuat)** |
+| CB Consumer Confidence | Keyakinan konsumen versi Conference Board | Selasa terakhir (tgl 25–30) | Gold turun |
+
+---
+
+## KONTEKS KHUSUS 2026
+
+| Data | Keterangan | Jadwal | Dampak |
+|---|---|---|---|
+| EIA Crude Oil Inventories | Stok minyak mentah AS; relevan karena inflasi saat ini didorong energi/Hormuz | Setiap Rabu malam WIB | Stok turun → gold ikut bergerak via jalur inflasi |
+| Headline Iran / geopolitik | Bukan data terjadwal; negosiasi atau eskalasi Selat Hormuz menggerakkan minyak lalu gold | Kapan saja | De-eskalasi → dukungan gold via Fed melunak |
+
+---
+
+## Catatan penting cara membaca
+
+- **Arti "Core"** — versi tanpa harga makanan & energi. Di era inflasi energi 2026,
+  **selisih headline vs core adalah cerita utamanya** — baca keduanya saat rilis CPI.
+- **m/m vs y/y** — m/m (vs bulan lalu) lebih sensitif dan lebih menggerakkan pasar;
+  y/y untuk konteks tren.
+- **Timing eksekusi** — untuk event berdampak kuat: hindari membuka posisi baru
+  **30 menit sebelum rilis**; masuk setelah arah jelas (konfirmasi close candle).
+- **Validasi silang** — setelah rilis besar, cek **CME FedWatch** (probabilitas suku bunga)
+  dan **US02Y** (yield 2 tahun). Kalau keduanya bergerak searah dugaan, reaksi gold
+  biasanya bertahan.
+
+⚠️ Materi belajar, bukan nasihat keuangan. Keputusan trading dan risikonya milik pembaca.
