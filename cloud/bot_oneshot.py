@@ -529,7 +529,12 @@ def run_claude(prompt, timeout, max_turns, model=None, with_tools=True, tools_ov
 
 
 JEJAK_PATH = os.path.join(BASE_DIR, "data", "diproses.json")
-JEDA_DUPLIKAT = 180        # detik
+JEDA_DUPLIKAT = 180        # detik — batas dianggap duplikat
+JEDA_SENYAP = 25           # di bawah ini dilewati diam-diam (dispatch ganda asli)
+
+
+def token_aktif():
+    return os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
 
 
 def _sidik(chat_id, text, photo_file_id):
@@ -571,6 +576,17 @@ def sudah_diproses(chat_id, text, photo_file_id):
             umur = int(sekarang - j["waktu"])
             print(f"[proses] DILEWATI — pesan sama sudah diproses {umur} detik lalu "
                   f"(pencegah dispatch ganda)", file=sys.stderr)
+            # Duplikat NYATA datang dalam hitungan detik — itu dilewati diam-diam supaya
+            # user tidak menerima pesan tambahan untuk sesuatu yang cuma ia kirim sekali.
+            # Tapi kalau jaraknya sudah puluhan detik, kemungkinan besar user memang
+            # SENGAJA mengulang. Diam saja di situ membuatnya mengira bot rusak, jadi
+            # beri kabar singkat + cara mengulangnya.
+            if umur >= JEDA_SENYAP:
+                send_message(token_aktif(), chat_id,
+                             f"↩️ Perintah yang sama baru saja diproses ({umur} detik lalu), "
+                             "jadi tidak aku ulang otomatis.\n"
+                             "Kalau memang ingin diulang, tunggu sebentar atau ubah sedikit "
+                             "perintahnya (mis. tambahkan kata 'lagi').")
             return True
 
     jejak = [j for j in jejak if sekarang - j.get("waktu", 0) < 3600][-50:]
