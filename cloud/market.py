@@ -153,6 +153,17 @@ def main():
     tf["1d"]["quality"] = "native"
 
     mingguan = aggregate_weekly(harian)
+    # Buang pekan yang MASIH BERJALAN. Penyaringan harian hanya membuang candle bertanggal
+    # hari ini, sehingga pekan berjalan tetap terbentuk — dan pada hari Selasa isinya baru
+    # SATU hari (Senin). Memakainya berarti menilai "Weekly" dari data satu hari.
+    # Contoh nyata: AAPL pada Selasa 4 Agu 2026 menghasilkan candle mingguan berisi Senin saja.
+    if mingguan:
+        senin_ini = datetime.now(timezone.utc).toordinal() - datetime.now(timezone.utc).weekday()
+        akhir = datetime.fromtimestamp(mingguan[-1][0] / 1000, tz=timezone.utc)
+        senin_terakhir = akhir.toordinal() - akhir.weekday()
+        if senin_terakhir >= senin_ini:
+            mingguan = mingguan[:-1]
+
     if len(mingguan) >= 40:
         tf["1w"] = analyze(mingguan, drop_unclosed=False)
         tf["1w"]["source"] = "yahoo finance (agregasi harian->mingguan)"
