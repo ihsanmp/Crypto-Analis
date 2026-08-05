@@ -178,6 +178,12 @@ _ALIAS_FX = {"GOLD": "GC=F", "EMAS": "GC=F", "XAUUSD": "GC=F", "XAU": "GC=F",
 _KATA_PENGANTAR = ("koin", "coin", "kripto", "crypto", "token", "aset", "asset",
                    "harga", "chart", "grafik", "si", "untuk", "tentang", "soal", "the")
 
+# Kata yang, bila BERDIRI SENDIRI, berarti permintaan SCAN — bukan nama aset.
+# Sengaja jauh lebih sempit dari _KATA_PENGANTAR: sebagian kata di atas ADALAH ticker
+# sungguhan (THE = Thena, SI = kontrak perak), jadi "analisa the" harus tetap dibaca
+# sebagai koin THE. Kata di sini dipilih yang hampir mustahil jadi ticker yang dimaksud.
+_GENERIK_SCAN = ("koin", "coin", "kripto", "crypto", "aset", "asset")
+
 
 def jenis_aset(sisa):
     """Tentukan (jenis, simbol) dari teks setelah kata 'analisa'.
@@ -195,9 +201,11 @@ def jenis_aset(sisa):
     # sesudahnya, supaya "analisa token" tidak berubah jadi perintah kosong.
     while len(kata) > 1 and kata[0].lower() in _KATA_PENGANTAR:
         kata = kata[1:]
-    # "analisa koin" / "analisa token" tanpa nama aset = permintaan SCAN, bukan koin
-    # bernama "KOIN". Kembalikan tanpa simbol supaya jatuh ke mode scan pasar.
-    if kata[0].lower() in _KATA_PENGANTAR:
+    # Kata generik yang berdiri sendiri = permintaan SCAN, bukan koin bernama "KOIN".
+    # Dicek terhadap _GENERIK_SCAN yang sempit, BUKAN _KATA_PENGANTAR — sebagian kata
+    # pengantar adalah ticker sungguhan (THE = Thena), dan "analisa the" harus tetap
+    # dibaca sebagai koin THE.
+    if kata[0].lower() in _GENERIK_SCAN:
         return "crypto", None
 
     depan = kata[0].lower()
