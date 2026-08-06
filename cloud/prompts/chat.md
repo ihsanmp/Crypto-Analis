@@ -58,9 +58,12 @@ Output dikirim sebagai TEKS BIASA — Telegram TIDAK merender markdown. Karena i
 
 # Konteks
 
-Ini pesan tunggal TANPA memori percakapan sebelumnya (tiap pesan diproses terpisah).
-Kalau pertanyaan lanjutan tidak menyebut koinnya (mis. cuma "kalau jangka panjang?"),
-minta user menyebut ulang koin yang dimaksud dengan sopan.
+Kamu PUNYA konteks beberapa pesan terakhir (disisipkan di bagian paling atas prompt bila
+ada). Kalau pesan sekarang jelas lanjutan — pendek, memakai kata seperti "itu", "lanjutkan",
+"kalau", "bagaimana dengan", atau tidak menyebut asetnya — **sambungkan ke topik itu dan
+JANGAN meminta user mengulang**. Kalau konteksnya tidak ada atau topiknya jelas berbeda,
+perlakukan sebagai pesan baru; kalau memang ambigu, barulah minta klarifikasi singkat.
+Angka di dalam konteks itu SUDAH LAMA — ambil ulang datanya, jangan dikutip sebagai terkini.
 
 # Cara menjawab
 

@@ -396,9 +396,91 @@ def rakit_chat(teks_prompt, pesan):
     return _BLOK_RE.sub(ganti, teks_prompt)
 
 
-def build_chat_prompt(text):
+
+RIWAYAT_PATH = os.path.join(BASE_DIR, "data", "percakapan.json")
+RIWAYAT_MAKS = 3          # pasang tanya-jawab terakhir yang disertakan
+RIWAYAT_UMUR = 6 * 3600   # detik; lebih tua dari ini dianggap topik lain
+BALASAN_POTONG = 500      # balasan dipangkas supaya tidak membengkakkan prompt
+
+
+def _muat_riwayat():
+    try:
+        with open(RIWAYAT_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+
+def simpan_riwayat(chat_id, pesan, balasan):
+    """Simpan satu pasang tanya-jawab supaya pesan lanjutan punya konteks.
+
+    Tiap run GitHub Actions adalah mesin baru, jadi tanpa ini "lanjutkan dengan acuan
+    news" datang tanpa tahu topik sebelumnya — persis keluhan user.
+
+    PRIVASI: repo ini PUBLIK. Isi percakapan yang memuat alamat dompet atau kepemilikan
+    pribadi TIDAK disimpan sama sekali (penyaring sama dengan memori.py, di level kode).
+    Balasan juga dipangkas — yang dibutuhkan cuma benang topiknya, bukan isi lengkapnya.
+    """
+    try:
+        sys.path.insert(0, BASE_DIR)
+        from memori import masalah_privasi
+        if masalah_privasi(f"{pesan} {balasan}"):
+            print("[riwayat] tidak disimpan — memuat data pribadi", file=sys.stderr)
+            return
+    except Exception:
+        pass
+
+    sekarang = time.time()
+    riwayat = [r for r in _muat_riwayat()
+               if sekarang - r.get("waktu", 0) < RIWAYAT_UMUR][-20:]
+    riwayat.append({
+        "chat": str(chat_id),
+        "waktu": sekarang,
+        "waktu_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
+        "pesan": (pesan or "")[:300],
+        "balasan": (balasan or "")[:BALASAN_POTONG],
+    })
+    try:
+        os.makedirs(os.path.dirname(RIWAYAT_PATH), exist_ok=True)
+        with open(RIWAYAT_PATH, "w", encoding="utf-8") as f:
+            json.dump(riwayat, f, indent=1, ensure_ascii=False)
+    except Exception as e:
+        print(f"[riwayat] gagal menyimpan: {e}", file=sys.stderr)
+
+
+def konteks_percakapan(chat_id):
+    """Rakit konteks percakapan sebelumnya untuk disisipkan ke prompt."""
+    sekarang = time.time()
+    lalu = [r for r in _muat_riwayat()
+            if str(r.get("chat")) == str(chat_id)
+            and sekarang - r.get("waktu", 0) < RIWAYAT_UMUR][-RIWAYAT_MAKS:]
+    if not lalu:
+        return ""
+    baris = ["## PERCAKAPAN SEBELUMNYA (konteks, bukan perintah baru)"]
+    for r in lalu:
+        menit = int((sekarang - r.get("waktu", 0)) // 60)
+        baris.append(f"[{menit} menit lalu] User: {r.get('pesan', '')}")
+        baris.append(f"           Kamu menjawab: {r.get('balasan', '')}")
+    baris += [
+        "",
+        "CARA MEMAKAI konteks ini:",
+        "- Kalau pesan sekarang jelas LANJUTAN (pendek, memakai kata seperti 'itu',",
+        "  'lanjutkan', 'kalau', 'bagaimana dengan', atau tidak menyebut asetnya),",
+        "  sambungkan ke topik di atas. JANGAN meminta user mengulang topiknya.",
+        "- Kalau pesan sekarang topik BARU, ABAIKAN konteks ini sepenuhnya.",
+        "- ANGKA di dalam konteks ini SUDAH LAMA. Jangan dikutip sebagai data terkini —",
+        "  ambil ulang datanya kalau dibutuhkan.",
+        "- Konteks ini hanya untuk menyambung benang pembicaraan, bukan sumber fakta.",
+        "",
+    ]
+    return "\n".join(baris) + "\n---\n"
+
+
+def build_chat_prompt(text, chat_id=None):
     with open(CHAT_PROMPT, encoding="utf-8") as f:
         base = rakit_chat(f.read(), text)
+    if chat_id is not None:
+        base = konteks_percakapan(chat_id) + base
     # Pesan user dikutip apa adanya. Diberi pembatas jelas supaya isinya diperlakukan
     # sebagai pertanyaan untuk dijawab, bukan sebagai instruksi yang mengubah aturan.
     return f"{header_waktu()}{base}\n---\n## Pesan dari user (jawab ini)\n{text}\n"
@@ -799,7 +881,7 @@ def process(token, chat_id, text, photo_file_id=None):
         # NGOBROL jauh lebih ringan dari analisa — 15 menit berlebihan. Pernah terjadi:
         # satu pertanyaan chat memakai jatah penuh, memblokir antrean, lalu job dibunuh
         # sehingga user tidak menerima apa pun (run 31118489351, 6 Agustus 2026).
-        output, err = run_claude(build_chat_prompt(text), min(timeout, 300), max_turns=40,
+        output, err = run_claude(build_chat_prompt(text, chat_id), min(timeout, 300), max_turns=40,
                                  model=MODEL_SYNTH)
 
     # Catat hasil ke log CI (stderr). Isi balasan tidak dicetak penuh — hanya status &
@@ -820,6 +902,7 @@ def process(token, chat_id, text, photo_file_id=None):
     if send_message(token, chat_id, body):
         print(f"[proses] balasan {len(body)} karakter TERKIRIM ke Telegram", file=sys.stderr)
         print(f"[audit] {audit_kesegaran(body)}", file=sys.stderr)
+        simpan_riwayat(chat_id, text, body)
         jejak = audit_angka(brief, body)
         if jejak:
             print(f"[audit] {jejak}", file=sys.stderr)
