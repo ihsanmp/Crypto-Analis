@@ -411,6 +411,21 @@ def _muat_riwayat():
         return []
 
 
+def _potong_balasan(teks):
+    """Pangkas balasan panjang dengan menyimpan AWAL dan AKHIR-nya.
+
+    Memotong dari depan saja akan membuang bagian paling penting untuk diskusi: pada
+    analisa, skor & bias ada di ATAS sementara KESIMPULAN ada di BAWAH. Kalau user
+    lalu bertanya "kenapa kamu bilang tunggu dulu?", justru bagian bawah itu yang
+    dibutuhkan.
+    """
+    teks = teks or ""
+    if len(teks) <= BALASAN_POTONG:
+        return teks
+    sisi = BALASAN_POTONG // 2
+    return teks[:sisi].rstrip() + "\n[...dipangkas...]\n" + teks[-sisi:].lstrip()
+
+
 def simpan_riwayat(chat_id, pesan, balasan):
     """Simpan satu pasang tanya-jawab supaya pesan lanjutan punya konteks.
 
@@ -438,7 +453,7 @@ def simpan_riwayat(chat_id, pesan, balasan):
         "waktu": sekarang,
         "waktu_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
         "pesan": (pesan or "")[:300],
-        "balasan": (balasan or "")[:BALASAN_POTONG],
+        "balasan": _potong_balasan(balasan),
     })
     try:
         os.makedirs(os.path.dirname(RIWAYAT_PATH), exist_ok=True)
@@ -507,9 +522,11 @@ def download_photo(token, file_id):
         return None
 
 
-def build_photo_prompt(caption, image_path):
+def build_photo_prompt(caption, image_path, chat_id=None):
     with open(FOTO_PROMPT, encoding="utf-8") as f:
         base = f.read()
+    if chat_id is not None:
+        base = konteks_percakapan(chat_id) + base
     instruksi = (caption.strip() if caption and caption.strip()
                  else "(tidak ada caption — pakai default: identifikasi keterkaitan dengan "
                       "koin/project, cari info terkait, beri rekomendasi tindakan)")
@@ -789,7 +806,7 @@ def process(token, chat_id, text, photo_file_id=None):
             return
         timeout = int(os.environ.get("ANALYSIS_TIMEOUT", "900"))
         # Model pintar (vision + penalaran); Read diizinkan untuk 'melihat' gambar.
-        output, err = run_claude(build_photo_prompt(text, img), timeout, max_turns=45,
+        output, err = run_claude(build_photo_prompt(text, img, chat_id), timeout, max_turns=45,
                                  model=MODEL_SYNTH, tools_override=ALLOWED_TOOLS_VISION)
         try:
             os.remove(img)
@@ -805,6 +822,9 @@ def process(token, chat_id, text, photo_file_id=None):
         if send_message(token, chat_id, body):
             print(f"[proses] balasan foto {len(body)} karakter TERKIRIM", file=sys.stderr)
             print(f"[audit] {audit_kesegaran(body)}", file=sys.stderr)
+            # Tanpa ini, pertanyaan lanjutan sesudah kirim gambar ("jadi menurutmu
+            # gimana?") datang tanpa tahu gambar apa yang barusan dibahas.
+            simpan_riwayat(chat_id, text or "(mengirim gambar)", body)
         else:
             print("[proses] GAGAL KIRIM balasan foto — cek TELEGRAM_BOT_TOKEN", file=sys.stderr)
         return
