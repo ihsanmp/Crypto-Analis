@@ -93,8 +93,31 @@ jobs:
         run: pip install tradingview-mcp-server
 
       - name: Jalankan analisa & balas ke Telegram
+        id: jalankan
         if: github.event_name == 'repository_dispatch' || steps.check.outputs.has_work == 'true'
         run: python cloud/bot_oneshot.py
+
+      # JARING PENGAMAN. Kalau langkah di atas gagal ATAU dibunuh dari luar (runner
+      # direbut, job dibatalkan, kehabisan waktu), proses Python tidak sempat mengabari
+      # siapa pun — user hanya melihat pesannya tenggelam tanpa jejak. Terjadi nyata pada
+      # run 31118489351 (6 Agustus 2026): job berjalan 15 menit lalu cancelled, dan TIDAK
+      # ADA balasan sama sekali. Langkah ini memanggil Telegram langsung lewat curl,
+      # sehingga tidak bergantung pada proses Python yang sudah mati.
+      - name: Kabari kalau gagal
+        if: always() && steps.jalankan.outcome != 'success' && steps.jalankan.outcome != 'skipped'
+        env:
+          TG: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CH: ${{ github.event.client_payload.chat_id }}
+        run: |
+          if [ -z "$TG" ] || [ -z "$CH" ]; then
+            echo "token/chat id kosong — lewati pemberitahuan"
+            exit 0
+          fi
+          PESAN="⚠️ Maaf, pemrosesan pesanmu terhenti di tengah jalan (${{ steps.jalankan.outcome }}) jadi tidak ada hasil yang bisa dikirim.
+          Silakan kirim ulang perintahnya. Kalau ini analisa berat, coba persempit (mis. sebut satu koin saja)."
+          curl -s -o /dev/null -X POST "https://api.telegram.org/bot$TG/sendMessage" \
+            --data-urlencode "chat_id=$CH" --data-urlencode "text=$PESAN" || true
+          echo "pemberitahuan kegagalan dikirim ke user"
 
       # Simpan ingatan terverifikasi + jejak pesan (pencegah dispatch ganda).
       # Jejak WAJIB ikut ter-commit: run berikutnya membacanya saat checkout untuk

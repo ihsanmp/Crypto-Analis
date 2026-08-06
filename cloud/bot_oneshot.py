@@ -790,11 +790,16 @@ def process(token, chat_id, text, photo_file_id=None):
     elif kind == "narasi":
         send_message(token, chat_id, "🔍 Oke, aku telusuri narasi yang lagi bergerak. "
                                      "Ini agak lama karena aku petakan sektornya dulu...")
-        output, err = run_claude(build_narasi_prompt(text), timeout, max_turns=70,
+        # Screening narasi memang berat (banyak kandidat), tapi tetap dibatasi supaya
+        # tidak memonopoli antrean selama 15 menit.
+        output, err = run_claude(build_narasi_prompt(text), min(timeout, 600), max_turns=70,
                                  model=MODEL_SYNTH)
     else:  # chat
         send_message(token, chat_id, "💬 Sebentar ya, aku cek datanya dulu...")
-        output, err = run_claude(build_chat_prompt(text), timeout, max_turns=40,
+        # NGOBROL jauh lebih ringan dari analisa — 15 menit berlebihan. Pernah terjadi:
+        # satu pertanyaan chat memakai jatah penuh, memblokir antrean, lalu job dibunuh
+        # sehingga user tidak menerima apa pun (run 31118489351, 6 Agustus 2026).
+        output, err = run_claude(build_chat_prompt(text), min(timeout, 300), max_turns=40,
                                  model=MODEL_SYNTH)
 
     # Catat hasil ke log CI (stderr). Isi balasan tidak dicetak penuh — hanya status &
