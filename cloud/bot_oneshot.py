@@ -902,10 +902,18 @@ def process(token, chat_id, text, photo_file_id=None):
                                  model=MODEL_SYNTH)
     else:  # chat
         send_message(token, chat_id, "💬 Sebentar ya, aku cek datanya dulu...")
-        # NGOBROL jauh lebih ringan dari analisa — 15 menit berlebihan. Pernah terjadi:
-        # satu pertanyaan chat memakai jatah penuh, memblokir antrean, lalu job dibunuh
-        # sehingga user tidak menerima apa pun (run 31118489351, 6 Agustus 2026).
-        output, err = run_claude(build_chat_prompt(text, chat_id), min(timeout, 300), max_turns=40,
+        # Jatah waktu NGOBROL disesuaikan isi pertanyaannya, bukan satu angka untuk semua.
+        # Terlalu longgar: satu pertanyaan memblokir antrean 15 menit lalu job dibunuh
+        # (run 31118489351). Terlalu ketat: pertanyaan riset ikut mati — "bagaimana kira-kira
+        # NFP nanti malam dari data historis dan berita" gagal di 300 detik (run 31152169645)
+        # padahal memang perlu menarik FRED + berita + riwayat.
+        # Pertanyaan pasar/riset dapat 600 detik; sapaan & konseptual cukup 180.
+        # Pertanyaan LANJUTAN juga dapat jatah panjang: "kenapa kesimpulannya begitu?"
+        # terdengar sepele tapi sering menuntut penarikan data ulang untuk menjawabnya.
+        lanjutan = bool(konteks_percakapan(chat_id).strip())
+        jatah = 600 if (_PASAR_UMUM.search((text or "").lower()) or lanjutan) else 180
+        print(f"[proses] jatah waktu chat: {jatah} detik", file=sys.stderr)
+        output, err = run_claude(build_chat_prompt(text, chat_id), min(timeout, jatah), max_turns=40,
                                  model=MODEL_SYNTH)
 
     # Catat hasil ke log CI (stderr). Isi balasan tidak dicetak penuh — hanya status &
@@ -922,7 +930,10 @@ def process(token, chat_id, text, photo_file_id=None):
     else:
         body = output
 
-    body = pastikan_bertanggal(body)
+    # Stempel waktu hanya untuk balasan berisi data. Menempelkannya pada pesan error
+    # membuat kegagalan terlihat seolah "data per jam sekian" — membingungkan.
+    if not body.startswith("❌"):
+        body = pastikan_bertanggal(body)
     if send_message(token, chat_id, body):
         print(f"[proses] balasan {len(body)} karakter TERKIRIM ke Telegram", file=sys.stderr)
         print(f"[audit] {audit_kesegaran(body)}", file=sys.stderr)
