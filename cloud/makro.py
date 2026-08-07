@@ -25,13 +25,16 @@ Pemakaian:
 
 import argparse
 import json
+import concurrent.futures
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 
 UA = {"User-Agent": "Mozilla/5.0 (compatible; riset-pasar/1.0)"}
 FRED = "https://fred.stlouisfed.org/graph/fredgraph.csv?id="
-TIMEOUT = 25
+TIMEOUT = 20
+PARALEL = 6      # FRED dari runner GitHub jauh lebih lambat daripada dari rumah:
+                 # sepuluh permintaan berurutan pernah menembus 240 detik (run 31165241681)
 
 # (kode FRED, nama, satuan, jenis) — jenis "bulanan" dihitung MoM/YoY, "harian" dihitung
 # perubahan 30 hari.
@@ -125,6 +128,76 @@ def olah(kode, nama, satuan, jenis, data):
     return item
 
 
+
+# Sumber TAMBAHAN di luar FRED. Daftar endpoint publiknya ditemukan lewat penelusuran
+# konektor FinceptTerminal; implementasinya ditulis sendiri (kode mereka AGPL — daftar API
+# publik itu sendiri bukan objek hak cipta). Semua tanpa API key, diuji hidup.
+YAHOO = "https://query1.finance.yahoo.com/v8/finance/chart/"
+ECB_DFR = ("https://data-api.ecb.europa.eu/service/data/FM/D.U2.EUR.4F.KR.DFR.LEV"
+           "?lastNObservations=1&format=csvdata")
+
+
+def _yahoo_terakhir(simbol):
+    try:
+        req = urllib.request.Request(YAHOO + simbol + "?range=1mo&interval=1d", headers=UA)
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+            hasil = json.loads(r.read().decode())["chart"]["result"][0]
+        meta = hasil.get("meta") or {}
+        # previousClose tidak selalu ada di meta indeks; ambil dari deret penutupan.
+        sebelum = meta.get("previousClose") or meta.get("chartPreviousClose")
+        if sebelum is None:
+            tutup = [x for x in (((hasil.get("indicators") or {}).get("quote") or [{}])[0]
+                                 .get("close") or []) if x is not None]
+            sebelum = tutup[-2] if len(tutup) >= 2 else None
+        return meta.get("regularMarketPrice"), sebelum, None
+    except Exception as e:
+        return None, None, type(e).__name__
+
+
+def ecb_suku_bunga():
+    """Suku bunga kebijakan ECB (deposit facility) — SDMX resmi ECB, tanpa API key.
+
+    Penting karena metodologi forex menuntut perbandingan arah kebijakan KEDUA bank
+    sentral. Dengan FRED saja hanya sisi AS yang terlihat, sehingga EURUSD cuma bisa
+    dinilai setengah.
+    """
+    try:
+        req = urllib.request.Request(ECB_DFR, headers=UA)
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+            baris = r.read().decode().strip().split("\n")
+        kepala = baris[0].split(",")
+        isi = baris[-1].split(",")
+        rekam = dict(zip(kepala, isi))
+        return {"nama": "Suku bunga kebijakan ECB (deposit facility)",
+                "terbaru": float(rekam.get("OBS_VALUE")),
+                "tanggal_data": rekam.get("TIME_PERIOD"),
+                "sumber": "ECB SDMX (resmi, tanpa API key)"}
+    except Exception as e:
+        return {"gagal": f"{type(e).__name__}"}
+
+
+def rezim_pasar():
+    """VIX & DXY — penanda rezim risiko yang diminta aturan 'kenali rezim dulu'."""
+    keluar = {}
+    for kode, simbol, nama, arti in (
+        ("vix", "%5EVIX", "VIX (indeks volatilitas S&P 500)",
+         "di bawah 15 = pasar tenang/risk-on; di atas 25 = tegang/risk-off; "
+         "di atas 30 = panik. Naik tajam biasanya menekan aset berisiko dan menopang emas."),
+        ("dxy", "DX-Y.NYB", "Indeks dolar DXY",
+         "dolar menguat menekan emas dan komoditas; melemah menopang keduanya."),
+    ):
+        nilai, sebelum, err = _yahoo_terakhir(simbol)
+        if err or nilai is None:
+            keluar[kode] = {"gagal": err or "kosong"}
+            continue
+        item = {"nama": nama, "terbaru": round(nilai, 2), "arti": arti,
+                "sumber": "Yahoo Finance (tanpa API key, API tidak resmi)"}
+        if sebelum:
+            item["perubahan_persen"] = round((nilai - sebelum) / sebelum * 100, 2)
+        keluar[kode] = item
+    return keluar
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ringkas", action="store_true",
@@ -147,15 +220,31 @@ def main():
         ],
     }
 
+    # Ditarik PARALEL. Berurutan, sepuluh seri x timeout 25 detik bisa menembus 240 detik
+    # dan seluruh langkah makro gagal — persis yang terjadi di run 31165241681, padahal
+    # dari mesin lokal hanya 5 detik. Satu seri lambat kini tidak lagi menjatuhkan sisanya.
     data, gagal = {}, {}
-    for kode, nama, satuan, jenis in SERI:
-        isi, err = ambil(kode)
-        if err:
-            gagal[nama] = err
-            continue
-        data[kode] = olah(kode, nama, satuan, jenis, isi)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=PARALEL) as pool:
+        tugas = {pool.submit(ambil, k): (k, n, sa, j) for k, n, sa, j in SERI}
+        for fut in concurrent.futures.as_completed(tugas):
+            kode, nama, satuan, jenis = tugas[fut]
+            try:
+                isi, err = fut.result()
+            except Exception as e:
+                isi, err = None, type(e).__name__
+            if err:
+                gagal[nama] = err
+                continue
+            data[kode] = olah(kode, nama, satuan, jenis, isi)
+    data = {k: data[k] for k, *_ in SERI if k in data}   # urutan tetap seperti daftar SERI
 
     hasil["indikator"] = data
+
+    # Ditarik paralel bersama FRED supaya tidak menambah waktu tunggu.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        f_ecb, f_rez = pool.submit(ecb_suku_bunga), pool.submit(rezim_pasar)
+        hasil["bank_sentral_lain"] = {"ecb": f_ecb.result()}
+        hasil["rezim_pasar"] = f_rez.result()
     if gagal:
         hasil["gagal_diambil"] = gagal
 

@@ -19,6 +19,7 @@ Konfigurasi lewat environment variable (di-set dari GitHub Secrets):
 """
 
 import hashlib
+import concurrent.futures
 import json
 import os
 import re
@@ -601,8 +602,26 @@ def build_photo_prompt(caption, image_path, chat_id=None):
             f"## Caption / pertanyaan user\n{instruksi}\n")
 
 
-def jalankan_script(args, batas=240):
-    """Jalankan script pengumpul data LANGSUNG dari Python, tanpa perantara model."""
+def jalankan_script(args, batas=300, min_kar=0, ulang=1):
+    """Jalankan script pengumpul data LANGSUNG dari Python, tanpa perantara model.
+
+    min_kar: bila keluarannya jauh lebih pendek dari itu, dicoba ULANG. Bursa membalas
+    JSON yang sah tapi nyaris kosong saat kena rate limit — tanpa error, sehingga
+    kegagalan itu lolos diam-diam dan model menerima data tipis tanpa tahu.
+    """
+    for percobaan in range(ulang + 1):
+        keluar, err = _jalankan_sekali(args, batas)
+        if err is None and (min_kar <= 0 or len(keluar) >= min_kar):
+            return keluar, err
+        if percobaan < ulang:
+            if err is None:
+                print(f"[data] keluaran tipis ({len(keluar)} < {min_kar} kar) dari "
+                      f"{args[0]} — coba ulang", file=sys.stderr)
+            time.sleep(2)
+    return keluar, err
+
+
+def _jalankan_sekali(args, batas):
     try:
         r = subprocess.run([sys.executable] + args, capture_output=True, text=True,
                            timeout=batas, cwd=os.path.dirname(BASE_DIR),
@@ -610,8 +629,75 @@ def jalankan_script(args, batas=240):
         if r.returncode != 0:
             return None, (r.stderr or "kode keluar bukan 0").strip()[:300]
         return (r.stdout or "").strip(), None
+    except subprocess.TimeoutExpired:
+        return None, f"melebihi {batas} detik"
     except Exception as e:
         return None, f"{type(e).__name__}: {e}"
+
+
+# Koin asli jaringan — bukan token kontrak, jadi daftar holder & aliran whale berbasis
+# kontrak tidak berlaku. Menjalankannya hanya menghasilkan bagian kosong.
+_KOIN_NATIF = {"BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "AVAX", "DOT", "ATOM", "LTC",
+               "TRX", "NEAR", "APT", "SUI", "TON", "ICP", "FIL", "HBAR", "XLM", "ALGO"}
+# Cakupan CoinMetrics Community praktis hanya dua ini; sisanya balas kosong.
+_ONCHAIN_ADA = {"BTC", "ETH"}
+# Tanpa protokol berpendapatan, fundamentals.py (DefiLlama) tidak punya apa pun.
+_TANPA_PROTOKOL = {"BTC", "LTC", "XRP", "DOGE", "SHIB", "PEPE", "BONK", "WIF", "TRUMP"}
+
+
+def data_mentah_crypto(coin):
+    """Kumpulkan data koin dengan KODE, hanya yang RELEVAN untuk koin itu.
+
+    Dijalankan paralel supaya penyaringan tidak mengorbankan kecepatan. Bagian yang
+    kosong dibuang dari brief — model tidak perlu membaca blok 'tidak tersedia' yang
+    panjang, dan tidak tergoda mengarang isinya.
+    """
+    t = coin.upper()
+    tugas = [("TEKNIKAL (indicators.py)", ["cloud/indicators.py", coin, "--ringkas"], 2500),
+             ("INGATAN (memori.py)", ["cloud/memori.py", "cari", coin], 0),
+             ("UJI BALIK (backtest.py)", ["cloud/backtest.py", coin, "--ringkas"], 1200),
+             ("SENTIMEN (sentiment.py)", ["cloud/sentiment.py", coin], 0)]
+    lewat = []
+    if t in _TANPA_PROTOKOL:
+        lewat.append(f"fundamentals.py ({t} tidak punya protokol berpendapatan)")
+    else:
+        tugas.append(("FUNDAMENTAL PROTOKOL (fundamentals.py)", ["cloud/fundamentals.py", coin], 0))
+    if t in _KOIN_NATIF:
+        lewat.append(f"investors.py & whaleflow.py ({t} koin natif, bukan token kontrak)")
+    else:
+        tugas.append(("KEPEMILIKAN (investors.py)", ["cloud/investors.py", coin], 0))
+    if t in _ONCHAIN_ADA:
+        tugas.append(("ON-CHAIN (onchain.py)", ["cloud/onchain.py", coin], 0))
+    else:
+        lewat.append(f"onchain.py (CoinMetrics Community tidak mencakup {t})")
+
+    bagian, gagal = [], []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        hasil = {pool.submit(jalankan_script, a, 300, mk): l for l, a, mk in tugas}
+        kumpul = {}
+        for fut in concurrent.futures.as_completed(hasil):
+            label = hasil[fut]
+            try:
+                keluar, err = fut.result()
+            except Exception as e:
+                keluar, err = None, type(e).__name__
+            kumpul[label] = (keluar, err)
+    for label, _, _ in tugas:
+        keluar, err = kumpul.get(label, (None, "tidak dijalankan"))
+        if err:
+            gagal.append(f"{label}: {err}")
+            bagian.append(f"[{label}]\nGAGAL DIAMBIL — {err}")
+        else:
+            bagian.append(f"[{label}]\n{keluar}")
+    if lewat:
+        bagian.append("[SENGAJA TIDAK DIAMBIL]\n" + "\n".join("- " + x for x in lewat)
+                      + "\nPerlakukan sebagai tidak berlaku untuk koin ini, BUKAN sebagai "
+                        "data yang hilang — jangan menyebutnya kekurangan.")
+    for g in gagal:
+        print(f"[data] GAGAL {g}", file=sys.stderr)
+    print(f"[data] crypto {t}: {len(tugas)} script dijalankan, {len(lewat)} dilewati, "
+          f"{sum(len(x) for x in bagian)} karakter", file=sys.stderr)
+    return "\n\n".join(bagian)
 
 
 def data_mentah_pasar(simbol, jenis):
@@ -642,7 +728,9 @@ def data_mentah_pasar(simbol, jenis):
 
     bagian, gagal = [], []
     for label, args in tugas:
+        t0 = time.time()
         keluar, err = jalankan_script(args)
+        print(f"[data] {label}: {time.time() - t0:.1f} detik", file=sys.stderr)
         if err:
             gagal.append(f"{label}: {err}")
             bagian.append(f"[{label}]\nGAGAL DIAMBIL — {err}")
@@ -688,61 +776,21 @@ def build_gather_pasar(simbol, jenis):
 
 
 def build_gather_prompt(coin):
-    """Instruksi TAHAP 1 untuk model murah: kumpulkan data mentah, JANGAN analisa."""
+    """TAHAP 1 crypto — HANYA berita & katalis.
+
+    Angka teknikal, fundamental, on-chain, sentimen, uji balik, dan ingatan sudah
+    dikumpulkan data_mentah_crypto() lewat kode, dan HANYA yang berlaku untuk koin itu.
+    Model tidak lagi diminta menjalankan script lalu menyalin ulang hasilnya — itu titik
+    gagal yang mengosongkan brief pada jalur pasar (run 31164017822).
+    """
     return (
         f"{header_waktu()}"
-        f"Kamu PETUGAS PENGUMPUL DATA (bukan analis). Kumpulkan data mentah untuk koin "
-        f"{coin} untuk analisa SPOT. JANGAN menganalisa, memberi skor, atau menyimpulkan — "
-        f"cukup jalankan tiap langkah dan TEMPEL hasil angkanya. Sebut jelas yang gagal/kosong.\n\n"
-        f"0. Bash: `python cloud/memori.py cari {coin}` → ingatan fakta yang PERNAH "
-        f"diverifikasi (dengan vonis kesegaran). Tempel apa adanya ke bagian [INGATAN]; "
-        f"kalau kosong tulis 'belum ada ingatan'. JANGAN menilai — tahap berikutnya yang menilai.\n"
-        f"1. Bash: `python cloud/indicators.py {coin} --ringkas` → untuk TIAP timeframe (1w/1d/4h) tempel: "
-        f"close, SELURUH isi ema (ema13/21/33/50/100/200 — tulis n/a bila None), ema_stack.status, "
-        f"ema_signal, ema_cross_valid, bollinger (basis/atas/bawah/posisi/squeeze), atr14, atr_pct, "
-        f"supertrend (arah+level), pivot_standar (P/R1/S1), kondisi_pasar (status + keandalan_sinyal_ema + sebaran_ema_persen), indikator_rentang bila ada, "
-        f"rsi14, rsi_divergence, stoch k/d/signal/"
-        f"cycle_bottom, fib zone + level penting, structure, volume ratio, source, quality.\n"
-        f"2. MCP coinmarketcap `cryptoQuotesLatest` untuk {coin} → harga, market cap, FDV, FDV/MC, "
-        f"volume 24h, perubahan 24h/7d/30d (WAJIB ketiganya — dipakai di output), circulating/total supply. Lalu `getCryptoMetadata` → "
-        f"kategori + tautan repo GitHub (kalau ada).\n"
-        f"3. Bash: `python cloud/fundamentals.py {coin} --mcap <market_cap_dari_langkah_2>` → revenue "
-        f"30d/TTM, MoM/QoQ/YoY, TVL + perubahan_30d_persen & perubahan_90d_persen, MC/TVL, P/S, "
-        f"P/F, volume DEX. Untuk kuartalan & bulanan TEMPEL juga perubahan_persen tiap "
-        f"periode (sudah dihitung script). Kalau error, tulis "
-        f"'bukan protokol DefiLlama'.\n"
-        f"4. Bash: `python cloud/investors.py {coin}` → jumlah holder, top10%, "
-        f"top10_non_bursa_kontrak%, 5 holder teratas (persen + kategori + label). Kalau error, "
-        f"tulis 'bukan token Ethereum'.\n"
-        f"4b. Bash: `python cloud/backtest.py {coin} --ringkas` → uji balik sinyal terhadap "
-        f"riwayat koin INI SENDIRI: golden/death cross, RSI ekstrem, pullback EMA21 "
-        f"— tiap sinyal dengan jumlah kejadian, menang_persen, return rata2, dan "
-        f"nyeri_maks. Tempel juga tolok_ukur (beli_dan_tahan_persen & "
-        f"hari_naik_persen). Kalau ada peringatan sampel kecil, TEMPEL juga.\n"
-        f"5. Bash: `python cloud/whaleflow.py` → Whale Index (skor+label) + apakah {coin} masuk "
-        f"top-token whale & arahnya (AKUMULASI/DISTRIBUSI/seimbang).\n"
-        f"6. MCP coinglass (kalau tersedia) → funding rate, open interest, long/short {coin}. "
-        f"Kalau gagal/no key, tulis 'derivatif tidak tersedia'.\n"
-        f"7. MCP coinmarketcap `globalMetricsLatest` + `fearAndGreedLatest` → dominasi BTC, "
-        f"Fear & Greed. Sebut juga harga BTC terkini.\n"
-        f"8. WebSearch → 2-4 katalis/berita/unlock terbaru untuk {coin} (dengan tanggal). "
-        f"Untuk institusi/whale sebut nama media + tanggal, bukan link markdown.\n\n"
-        f"WAJIB — STEMPEL WAKTU. Tahap berikutnya TIDAK BISA memanggil tool, jadi kalau kamu "
-        f"tidak membawa waktunya, angka itu jadi tak bertanggal dan menyesatkan. Karena itu:\n"
-        f"- Tempel `generated_utc` dari SETIAP script yang kamu jalankan (indicators, "
-        f"fundamentals, investors, whaleflow) apa adanya.\n"
-        f"- Untuk indicators sebut juga `source` (bursa asal harga) dan `quality`.\n"
-        f"- Tiap katalis/berita dari WebSearch WAJIB bertanggal + nama media. Yang tidak "
-        f"jelas tanggalnya, TULIS 'tanggal tidak jelas' — jangan dikarang.\n"
-        f"- Data fundamental sebut PERIODENYA (bulan/kuartal apa), bukan cuma '30d'.\n\n"
-        f"Di bagian [WAKTU DATA], untuk TIAP timeframe tulis SATU baris berformat PERSIS "
-        f"ini (dibaca pemeriksa otomatis — jangan ubah kata kuncinya):\n"
-        f"  <tf> source=<isi source> quality=<isi quality> last_candle_utc=<isi last_candle_utc>\n"
-        f"Contoh: 1d source=kraken quality=native last_candle_utc=2026-07-27 08:00\n\n"
-        f"OUTPUT: satu 'DATA BRIEF' terstruktur berlabel per bagian ([WAKTU DATA], [INGATAN], "
-        f"[PASAR], [HARGA/VALUASI], [TEKNIKAL 1W/1D/4H], [FUNDAMENTAL], [KEPEMILIKAN], "
-        f"[DERIVATIF], [KATALIS], [TIDAK TERSEDIA]). Bagian [WAKTU DATA] berisi semua "
-        f"generated_utc + source/quality. Angka apa adanya, tanpa interpretasi/skor/rekomendasi."
+        f"Kamu PETUGAS PENCARI BERITA untuk koin {coin}. Tugasmu HANYA mencari dan menempel berita/katalis — JANGAN menganalisa, JANGAN memberi skor, dan JANGAN menjalankan script apa pun (angkanya sudah dikumpulkan terpisah).\n\n"
+        f"1. WebSearch berita {coin} TERBARU: pembaruan produk/jaringan, kemitraan, listing, pendanaan, regulasi, insiden keamanan. Tempel JUDUL, MEDIA, TANGGAL, dan angkanya. Utamakan yang terbaru.\n"
+        f"2. Cari JADWAL UNLOCK token atau vesting cliff yang akan datang — ini supply shock terjadwal dan sering menentukan. Kalau tidak ketemu, tulis: jadwal unlock tidak ditemukan.\n"
+        f"3. Cari sentimen/narasi sektor yang sedang menggerakkan {coin}, kalau ada.\n"
+        f"4. DILARANG mengarang angka. Yang tidak ketemu ditulis tidak ditemukan.\n\n"
+        f"OUTPUT: satu bagian berlabel [KATALIS] berisi temuan apa adanya (judul, media, tanggal, angka), plus [UNLOCK] bila ada. Kalau tidak menemukan apa pun, tulis: [KATALIS] tidak ada berita relevan yang ditemukan. Tanpa interpretasi."
     )
 
 
@@ -975,9 +1023,16 @@ def process(token, chat_id, text, photo_file_id=None):
             coin = simbol
             # DUA TAHAP (model tiering): Haiku kumpulkan data -> Opus menganalisa.
             send_message(token, chat_id, f"⏳ Oke, riset koin {coin}. Tahap 1: kumpulkan data...")
-            t_gather = min(timeout, 600)
-            brief, err = run_claude(build_gather_prompt(coin), t_gather, max_turns=45,
-                                    model=MODEL_GATHER, with_tools=True)
+            t_gather = min(timeout, 300)
+            mentah = data_mentah_crypto(coin)
+            berita, err = run_claude(build_gather_prompt(coin), t_gather, max_turns=20,
+                                     model=MODEL_GATHER, with_tools=True)
+            if err or not berita:
+                print(f"[proses] pencarian berita gagal ({str(err)[:120]}) — "
+                      f"lanjut dengan data angka saja", file=sys.stderr)
+                berita = "[KATALIS]" + NL + "Pencarian berita gagal — tidak ada data berita."
+            brief = mentah + NL + NL + berita
+            err = None if mentah.strip() else "data mentah kosong"
             if err:
                 print(f"[proses] tahap-1 (gather, {MODEL_GATHER}) GAGAL: {err[:300]}", file=sys.stderr)
                 output = None
