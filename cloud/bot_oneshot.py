@@ -42,6 +42,7 @@ SUMBER_PROMPT = os.path.join(BASE_DIR, "prompts", "analisa_sumber.md")
 CHAT_PROMPT = os.path.join(BASE_DIR, "prompts", "chat.md")
 NARASI_PROMPT = os.path.join(BASE_DIR, "prompts", "narasi.md")
 PASAR_PROMPT = os.path.join(BASE_DIR, "prompts", "analisa_pasar.md")
+PERAN_DIR = os.path.join(BASE_DIR, "prompts", "peran")
 FOTO_PROMPT = os.path.join(BASE_DIR, "prompts", "foto.md")
 MCP_CONFIG = os.path.join(BASE_DIR, ".mcp.cloud.json")
 
@@ -65,8 +66,13 @@ MAX_JOBS_PER_RUN = 2
 # Analisa KOIN dipecah 2 tahap: model MURAH/CEPAT mengumpulkan data (jalankan
 # script + MCP + web — bagian terberat & terbanyak round-trip), model PINTAR
 # menafsirkan & menyusun laporan dari data itu. Hemat kuota + lebih cepat.
-MODEL_GATHER = os.environ.get("MODEL_GATHER", "claude-haiku-4-5")   # petugas pengumpul data
-MODEL_SYNTH = os.environ.get("MODEL_SYNTH", "claude-opus-4-8")      # analis (sintesis akhir)
+# Penjenjangan model dipilih dari BEBAN PENALARAN tiap tahap, bukan satu model untuk semua.
+# Tahap yang mekanis (menjalankan script lalu menempel JSON) tidak bertambah baik dengan
+# model mahal; tahap yang menimbang bukti dan menegakkan aturan kalibrasi jelas bertambah baik.
+MODEL_GATHER = os.environ.get("MODEL_GATHER", "claude-haiku-4-5")   # mekanis: ambil & tempel
+MODEL_SYNTH = os.environ.get("MODEL_SYNTH", "claude-opus-5")        # analis: empat peran sekaligus
+MODEL_NARASI = os.environ.get("MODEL_NARASI", "claude-sonnet-5")    # screening: banyak putaran
+MODEL_RINGAN = os.environ.get("MODEL_RINGAN", "claude-sonnet-5")    # sapaan & pertanyaan konsep
 
 HELP_TEXT = (
     "🤖 Halo! Aku bot riset PASAR (crypto/saham/forex) & PERKEMBANGAN AI.\n"
@@ -335,7 +341,7 @@ def build_analisa_prompt(text):
 
 def build_narasi_prompt(text):
     with open(NARASI_PROMPT, encoding="utf-8") as f:
-        base = f.read()
+        base = rakit_peran("crypto", ["inti", "analis"]) + f.read()
     return (f"{header_waktu()}{base}\n---\n## Permintaan user (jawab ini)\n{text}\n\n"
             "Tentukan dulu JALUR A (user menyebut narasi tertentu -> fokus ke situ) atau "
             "JALUR B (tidak menyebut -> cari sendiri narasi yang paling bergerak).\n")
@@ -491,9 +497,66 @@ def konteks_percakapan(chat_id):
     return "\n".join(baris) + "\n---\n"
 
 
+
+# Seed peran: identitas profesional yang dipakai saat menganalisa. inti.md SELALU ikut
+# (memuat aturan kalibrasi keras yang mencegah model mengarang keyakinan); peran lain
+# dimuat sesuai kebutuhan mode. Tiap file punya blok bertanda sektor, jadi analisa crypto
+# tidak ikut membawa aturan risiko forex/saham — itu yang membuat mutu naik tanpa boros.
+PERAN_LENGKAP = ("inti", "analis", "risk", "portofolio", "trader")
+
+
+def rakit_peran(sektor, peran=PERAN_LENGKAP):
+    """Gabungkan seed peran, hanya blok yang cocok sektornya.
+
+    sektor: "crypto" | "forex" | "saham". Blok bertanda pemicu lain dibuang.
+    Berkas yang hilang DILEWATI diam-diam supaya analisa tetap jalan, bukan mati total.
+    """
+    bagian = []
+    for nama in peran:
+        jalur = os.path.join(PERAN_DIR, f"{nama}.md")
+        try:
+            with open(jalur, encoding="utf-8") as f:
+                teks = f.read()
+        except OSError:
+            continue
+
+        def ganti(m, _s=sektor):
+            return m.group(3) + "\n" if _s in m.group(2) else ""
+
+        bagian.append(_BLOK_RE.sub(ganti, teks).strip())
+    pisah = "\n\n---\n\n"
+    return (pisah.join(bagian) + pisah) if bagian else ""
+
+
+
+def _sektor_pesan(teks):
+    """Tebak sektor dari isi pesan untuk memilih blok peran yang relevan.
+    Default crypto — itu bidang terbesar bot ini dan salah tebak hanya berarti
+    blok risiko yang kurang pas, bukan analisa yang salah."""
+    low = (teks or "").lower()
+    if any(k in low for k in ("emas", "gold", "xau", "forex", "usd", "eur", "jpy",
+                              "dolar", "yield", "fed", "cpi", "nfp", "perak", "xag")):
+        return "forex"
+    if any(k in low for k in ("saham", "stock", "emiten", "earnings", "nasdaq",
+                              "s&p", "bursa", "dividen", "p/e")):
+        return "saham"
+    return "crypto"
+
+
 def build_chat_prompt(text, chat_id=None):
     with open(CHAT_PROMPT, encoding="utf-8") as f:
         base = rakit_chat(f.read(), text)
+    # Aturan kalibrasi hanya untuk pertanyaan pasar. Buat "apa itu RAG?" atau sapaan,
+    # aturan konviksi & bukti kontra tidak berguna dan cuma menambah beban.
+    if _PASAR_UMUM.search((text or "").lower()):
+        low = (text or "").lower()
+        peran = ["inti"]
+        if any(k in low for k in ("risiko", "risk", "rugi", "drawdown", "aman", "bahaya")):
+            peran.append("risk")
+        if any(k in low for k in ("porto", "alokasi", "ukuran posisi", "modal",
+                                  "diversifikasi", "korelasi")):
+            peran.append("portofolio")
+        base = rakit_peran(_sektor_pesan(text), peran) + base
     if chat_id is not None:
         base = konteks_percakapan(chat_id) + base
     # Pesan user dikutip apa adanya. Diberi pembatas jelas supaya isinya diperlakukan
@@ -658,7 +721,7 @@ def build_synth_pasar(simbol, jenis, brief):
     """TAHAP 2 untuk saham/forex. Memakai analisa_pasar.md — memakai analisa.md (crypto)
     di sini akan menuntut TVL/holder/whale yang tidak ada padanannya."""
     with open(PASAR_PROMPT, encoding="utf-8") as f:
-        base = f.read()
+        base = rakit_peran("saham" if jenis == "saham" else "forex") + f.read()
     return (
         f"{header_waktu()}{base}\n---\n"
         f"## DATA BRIEF (hasil pengumpulan tahap 1 — SEMUA data ada di sini)\n"
@@ -674,7 +737,7 @@ def build_synth_pasar(simbol, jenis, brief):
 def build_synth_prompt(coin, brief):
     """Instruksi TAHAP 2 untuk model pintar: analisa dari DATA BRIEF, tanpa tool lagi."""
     with open(ANALISA_PROMPT, encoding="utf-8") as f:
-        base = f.read()
+        base = rakit_peran("crypto") + f.read()
     return (
         f"{header_waktu()}{base}\n---\n"
         f"## DATA BRIEF (hasil pengumpulan tahap 1 — SEMUA data ada di sini)\n"
@@ -899,7 +962,7 @@ def process(token, chat_id, text, photo_file_id=None):
         # Screening narasi memang berat (banyak kandidat), tapi tetap dibatasi supaya
         # tidak memonopoli antrean selama 15 menit.
         output, err = run_claude(build_narasi_prompt(text), min(timeout, 600), max_turns=70,
-                                 model=MODEL_SYNTH)
+                                 model=MODEL_NARASI)
     else:  # chat
         send_message(token, chat_id, "💬 Sebentar ya, aku cek datanya dulu...")
         # Jatah waktu NGOBROL disesuaikan isi pertanyaannya, bukan satu angka untuk semua.
@@ -913,8 +976,13 @@ def process(token, chat_id, text, photo_file_id=None):
         lanjutan = bool(konteks_percakapan(chat_id).strip())
         jatah = 600 if (_PASAR_UMUM.search((text or "").lower()) or lanjutan) else 180
         print(f"[proses] jatah waktu chat: {jatah} detik", file=sys.stderr)
+        # Model chat mengikuti berat pertanyaannya: yang menyangkut pasar/diskusi lanjutan
+        # memakai model terkuat karena di situlah mutu jawaban terasa; sapaan dan
+        # pertanyaan konseptual tidak bertambah baik dengan model termahal.
+        model_chat = MODEL_SYNTH if jatah == 600 else MODEL_RINGAN
+        print(f"[proses] model chat: {model_chat}", file=sys.stderr)
         output, err = run_claude(build_chat_prompt(text, chat_id), min(timeout, jatah), max_turns=40,
-                                 model=MODEL_SYNTH)
+                                 model=model_chat)
 
     # Catat hasil ke log CI (stderr). Isi balasan tidak dicetak penuh — hanya status &
     # potongan error — supaya log tetap informatif tanpa membanjiri / membocorkan.

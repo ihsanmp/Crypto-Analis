@@ -69,6 +69,18 @@ def ringkas(hasil_depan):
         "terbaik_persen": round(max(h["return_persen"] for h in hasil_depan), 2),
         "terburuk_persen": round(min(h["return_persen"] for h in hasil_depan), 2),
     }
+    # Win-rate sendirian menyesatkan (lihat peran Portfolio Manager): sistem 40% menang
+    # dengan R:R 3:1 unggul atas 70% menang dengan R:R 1:2. Karena itu profit factor dan
+    # expectancy disediakan langsung supaya tidak dihitung manual oleh model.
+    rugi = [h for h in hasil_depan if h["return_persen"] <= 0]
+    tot_u = sum(h["return_persen"] for h in untung)
+    tot_r = abs(sum(h["return_persen"] for h in rugi))
+    r["profit_factor"] = round(tot_u / tot_r, 2) if tot_r else None
+    r["expectancy_persen"] = r["return_rata2_persen"]
+    r["rata2_untung_persen"] = round(tot_u / len(untung), 2) if untung else None
+    r["rata2_rugi_persen"] = round(-tot_r / len(rugi), 2) if rugi else None
+    if r["rata2_rugi_persen"]:
+        r["rasio_untung_rugi"] = round(abs(r["rata2_untung_persen"] / r["rata2_rugi_persen"]), 2)             if r["rata2_untung_persen"] else None
     if n < 10:
         r["peringatan"] = (f"SAMPEL KECIL ({n} kejadian) — angka ini TIDAK bermakna secara "
                            "statistik. Sebut sebagai catatan, jangan sebagai bukti.")
@@ -162,6 +174,74 @@ def cari_pemicu(candles):
             "pullback_ke_ema21_saat_uptrend": pullback}
 
 
+
+def metrik_risiko(candles, setahun):
+    """Metrik risiko dari riwayat harga aset itu sendiri — bahan peran Risk Manager.
+
+    Dihitung dari distribusi return HARIAN yang sebenarnya terjadi, bukan dari asumsi
+    distribusi normal. Itu penting: return pasar punya fat tails, sehingga VaR bergaya
+    Monte-Carlo-normal hampir selalu terlalu optimistis soal ekor kirinya.
+
+    setahun: 365 untuk crypto (dagang tiap hari), 252 untuk saham/forex (hari bursa).
+    """
+    tutup = [x[4] for x in candles if x[4]]   # indeks 4 = harga penutupan (sama dengan uji_sinyal)
+    if len(tutup) < 30:
+        return {"tidak_tersedia": f"butuh minimal 30 candle, tersedia {len(tutup)}"}
+
+    ret = [(tutup[i] - tutup[i - 1]) / tutup[i - 1] for i in range(1, len(tutup))]
+    n = len(ret)
+    rata = sum(ret) / n
+    var_ = sum((x - rata) ** 2 for x in ret) / n
+    sd = var_ ** 0.5
+
+    turun = [x for x in ret if x < 0]
+    sd_turun = ((sum(x * x for x in turun) / len(turun)) ** 0.5) if turun else 0.0
+
+    # Penurunan terdalam dari puncak (peak-to-trough) sepanjang rentang data.
+    puncak, dd_maks = tutup[0], 0.0
+    for h in tutup:
+        puncak = max(puncak, h)
+        dd_maks = min(dd_maks, (h - puncak) / puncak)
+
+    akar = setahun ** 0.5
+    total = tutup[-1] / tutup[0] - 1
+    tahunan = (1 + total) ** (setahun / n) - 1 if n else 0.0
+
+    urut = sorted(ret)
+    i5 = max(0, int(0.05 * len(urut)) - 1)
+    var95 = urut[i5]
+    ekor = urut[:i5 + 1]
+    cvar95 = sum(ekor) / len(ekor) if ekor else var95
+
+    m = {
+        "rentang_candle": n + 1,
+        "hari_setahun_dipakai": setahun,
+        "return_total_persen": round(total * 100, 2),
+        "return_tahunan_persen": round(tahunan * 100, 2),
+        "volatilitas_tahunan_persen": round(sd * akar * 100, 2),
+        "drawdown_maks_persen": round(dd_maks * 100, 2),
+        "pemulihan_dibutuhkan_persen": (round((1 / (1 + dd_maks) - 1) * 100, 1)
+                                        if dd_maks > -1 else None),
+        "sharpe": round(rata / sd * akar, 2) if sd else None,
+        "sortino": round(rata / sd_turun * akar, 2) if sd_turun else None,
+        "calmar": round(tahunan / abs(dd_maks), 2) if dd_maks else None,
+        "var95_harian_persen": round(var95 * 100, 2),
+        "cvar95_harian_persen": round(cvar95 * 100, 2),
+    }
+    m["arti_singkat"] = (
+        "drawdown_maks = penurunan terdalam dari puncak yang PERNAH terjadi di rentang ini; "
+        "pemulihan_dibutuhkan = kenaikan yang diperlukan untuk balik modal dari situ. "
+        "var95 = kerugian harian yang hanya dilampaui 1 dari 20 hari; cvar95 = RATA-RATA "
+        "kerugian pada hari-hari terburuk itu — selalu lebih dalam dari var95, dan itulah "
+        "angka yang jujur. Sortino lebih relevan dari Sharpe untuk spot karena hanya "
+        "menghukum gejolak TURUN. Calmar rendah = returnnya ada tapi jalannya menyakitkan."
+    )
+    if n < 120:
+        m["peringatan"] = (f"rentang hanya {n + 1} candle — metrik risiko dari sampel "
+                           "sependek ini belum stabil, perlakukan sebagai indikasi kasar.")
+    return m
+
+
 def uji_makro(candles):
     """Bandingkan BESAR gerakan harian pada hari rilis terjadwal vs hari biasa.
 
@@ -208,15 +288,18 @@ def uji_makro(candles):
 # ditempel ke DATA BRIEF lalu dikirim ULANG ke model penganalisa — dibayar dua kali.
 # Peringatan AKTIF (sampel kecil, tidak tersedia, close-only) SENGAJA tidak termasuk:
 # itu pengaman mutu, bukan hiasan.
-_PANDUAN_STATIS = ("acuan", "cara_pakai", "arti", "cara_baca", "acuan_penilaian")
+_PANDUAN_STATIS = ("acuan", "cara_pakai", "arti", "cara_baca", "acuan_penilaian",
+                   # arti_singkat menjelaskan VaR/CVaR/Sortino/Calmar — penjelasan yang sama
+                   # sudah ada di seed peran risk.md, jadi tidak perlu dibayar dua kali.
+                   "arti_singkat")
 
 
-def ringkas(obj):
+def buang_panduan(obj):
     """Buang panduan statis secara rekursif. Peringatan aktif tetap dipertahankan."""
     if isinstance(obj, dict):
-        return {k: ringkas(v) for k, v in obj.items() if k not in _PANDUAN_STATIS}
+        return {k: buang_panduan(v) for k, v in obj.items() if k not in _PANDUAN_STATIS}
     if isinstance(obj, list):
-        return [ringkas(v) for v in obj]
+        return [buang_panduan(v) for v in obj]
     return obj
 
 
@@ -247,7 +330,7 @@ def main():
     candles, dipakai, err = ambil_candle(simbol, args.pasar)
     if err or not candles:
         hasil["error"] = f"Gagal mengambil riwayat harga: {err or 'kosong'}"
-        print(json.dumps(ringkas(hasil) if args.ringkas else hasil, indent=2, ensure_ascii=False))
+        print(json.dumps(buang_panduan(hasil) if args.ringkas else hasil, indent=2, ensure_ascii=False))
         return
 
     hasil["simbol_dipakai"] = dipakai
@@ -275,6 +358,8 @@ def main():
                       "berarti unggul; di pasar naik kencang, untung kecil bisa berarti kalah."),
     }
 
+    hasil["metrik_risiko"] = metrik_risiko(candles, 252 if args.pasar else 365)
+
     pemicu = cari_pemicu(candles)
     uji = {}
     for nama, idx in pemicu.items():
@@ -293,7 +378,7 @@ def main():
         "apa adanya, jangan dipoles.",
         "Selalu sebut jumlah kejadian saat mengutip angka ini.",
     ]
-    print(json.dumps(ringkas(hasil) if args.ringkas else hasil, indent=2, ensure_ascii=False))
+    print(json.dumps(buang_panduan(hasil) if args.ringkas else hasil, indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":
