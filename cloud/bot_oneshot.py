@@ -73,6 +73,7 @@ MODEL_GATHER = os.environ.get("MODEL_GATHER", "claude-haiku-4-5")   # mekanis: a
 MODEL_SYNTH = os.environ.get("MODEL_SYNTH", "claude-opus-5")        # analis: empat peran sekaligus
 MODEL_NARASI = os.environ.get("MODEL_NARASI", "claude-sonnet-5")    # screening: banyak putaran
 MODEL_RINGAN = os.environ.get("MODEL_RINGAN", "claude-sonnet-5")    # sapaan & pertanyaan konsep
+NL = "\n"
 
 HELP_TEXT = (
     "🤖 Halo! Aku bot riset PASAR (crypto/saham/forex) & PERKEMBANGAN AI.\n"
@@ -600,61 +601,89 @@ def build_photo_prompt(caption, image_path, chat_id=None):
             f"## Caption / pertanyaan user\n{instruksi}\n")
 
 
-def build_gather_pasar(simbol, jenis):
-    """TAHAP 1 untuk SAHAM & FOREX. Sengaja terpisah dari jalur crypto: DefiLlama, holder
-    Ethereum, dan whale flow sama sekali tidak berlaku di sini, dan memanggilnya hanya
-    menghasilkan error atau angka yang tidak nyambung."""
-    if jenis == "forex":
-        perintah = f"python cloud/market.py {simbol} --forex"
-        khusus = (
-        f"2b. Bash: `python cloud/makro.py --ringkas` → data makro AS RESMI dari FRED: CPI, "
-        f"Core CPI, Core PCE, NFP, pengangguran, klaim mingguan, Fed Funds Rate, yield 2y & "
-        f"10y, indeks dolar, plus kurva imbal hasil. Tempel angka + tanggal_data + "
-        f"arah_emas_bila_naik apa adanya. Ini angka AKTUAL, BUKAN konsensus.\n"
-            f"3. Kalau simbolnya XAUUSD/XAGUSD (emas/perak): WAJIB baca acuan makro dengan "
-            f"Bash `cat cloud/data/gold_drivers.md` dan TEMPEL bagian yang relevan — daftar "
-            f"data ekonomi penggerak, arah dampaknya, dan peringkat kekuatannya.\n"
-            f"4. WebSearch: rilis data ekonomi AS TERBARU yang sudah keluar (CPI, NFP, Core PCE, "
-            f"keputusan FOMC) beserta TANGGAL dan angkanya. Tempel apa adanya. Kalau ada rilis "
-            f"besar yang akan datang, sebut tanggalnya.\n"
-            f"5. JANGAN mengarang angka forecast/konsensus — kalau tidak ketemu, tulis "
-            f"'konsensus tidak tersedia'.\n")
-    else:
-        perintah = f"python cloud/market.py {simbol}"
-        khusus = (
-            f"3. Bash: `python cloud/stockfund.py {simbol} --price <harga_dari_langkah_1>` → "
-            f"revenue, laba bersih, EPS, margin, aset/liabilitas/ekuitas, arus kas, P/E, P/S, "
-            f"kuartalan & tahunan BESERTA perubahan_persen tiap periode. Kalau sebuah "
-            f"perubahan_persen bernilai null dengan catatan, TEMPEL catatannya juga — jangan "
-            f"dihitung sendiri. Kalau emitennya tidak ada di SEC, tulis 'bukan emiten bursa AS'.\n"
-            f"4. WebSearch: berita/katalis terbaru untuk {simbol} (earnings, panduan manajemen, "
-            f"regulasi, produk) dengan TANGGAL + nama media.\n")
+def jalankan_script(args, batas=240):
+    """Jalankan script pengumpul data LANGSUNG dari Python, tanpa perantara model."""
+    try:
+        r = subprocess.run([sys.executable] + args, capture_output=True, text=True,
+                           timeout=batas, cwd=os.path.dirname(BASE_DIR),
+                           encoding="utf-8", errors="replace")
+        if r.returncode != 0:
+            return None, (r.stderr or "kode keluar bukan 0").strip()[:300]
+        return (r.stdout or "").strip(), None
+    except Exception as e:
+        return None, f"{type(e).__name__}: {e}"
 
+
+def data_mentah_pasar(simbol, jenis):
+    """Kumpulkan data deterministik saham/forex dengan KODE, bukan lewat model.
+
+    Kenapa: tahap gather pernah mengembalikan brief 759 karakter untuk 'analisa gold'
+    (run 31164017822) padahal keempat scriptnya sehat dan menghasilkan ~20 rb karakter.
+    Modelnya yang tidak menjalankan langkahnya. Selama pengumpulan data bergantung pada
+    KEPATUHAN model, kegagalan diam-diam seperti itu akan terulang.
+
+    Sekarang script dijalankan kode; model gather hanya mengerjakan bagian yang memang
+    butuh penilaian (mencari berita & rilis terbaru). Bonus: model tidak perlu lagi
+    menyalin ulang 20 rb karakter JSON, jadi lebih hemat sekaligus lebih andal.
+    """
+    emas = any(k in simbol.upper() for k in ("GC=F", "SI=F", "XAU", "XAG"))
+    tugas = [
+        ("TEKNIKAL (market.py)", ["cloud/market.py", simbol, "--ringkas"]
+         + ([] if jenis == "saham" else ["--forex"])),
+        ("INGATAN (memori.py)", ["cloud/memori.py", "cari", simbol]),
+        ("UJI BALIK (backtest.py)", ["cloud/backtest.py", simbol, "--ringkas", "--pasar"]
+         + (["--makro"] if jenis != "saham" else [])),
+    ]
+    if jenis == "saham":
+        tugas.append(("FUNDAMENTAL (stockfund.py)",
+                      ["cloud/stockfund.py", simbol, "--ringkas"]))
+    else:
+        tugas.append(("MAKRO AS (makro.py, sumber FRED)", ["cloud/makro.py", "--ringkas"]))
+
+    bagian, gagal = [], []
+    for label, args in tugas:
+        keluar, err = jalankan_script(args)
+        if err:
+            gagal.append(f"{label}: {err}")
+            bagian.append(f"[{label}]\nGAGAL DIAMBIL — {err}")
+        else:
+            bagian.append(f"[{label}]\n{keluar}")
+
+    if emas:
+        try:
+            with open(os.path.join(BASE_DIR, "data", "gold_drivers.md"), encoding="utf-8") as f:
+                bagian.append("[ACUAN PENGGERAK EMAS]\n" + f.read())
+        except OSError as e:
+            gagal.append(f"gold_drivers.md: {e}")
+
+    for g in gagal:
+        print(f"[data] GAGAL {g}", file=sys.stderr)
+    print(f"[data] terkumpul {len(bagian)} bagian, {sum(len(x) for x in bagian)} karakter"
+          f"{' — ADA YANG GAGAL' if gagal else ''}", file=sys.stderr)
+    return "\n\n".join(bagian)
+
+
+def build_gather_pasar(simbol, jenis):
+    """TAHAP 1 saham/forex — HANYA berita & rilis ekonomi.
+
+    Angka teknikal, fundamental, makro, uji balik, dan ingatan sudah dikumpulkan
+    data_mentah_pasar() lewat kode. Model tidak lagi diminta menjalankan script lalu
+    menyalin ulang hasilnya — itu titik gagal yang mengosongkan brief (run 31164017822),
+    dan menyalin 20 rb karakter JSON juga pemborosan murni.
+    """
+    emas = any(k in simbol.upper() for k in ("GC=F", "SI=F", "XAU", "XAG"))
+    fokus = ("data ekonomi AS (CPI, NFP, Core PCE, keputusan & pernyataan FOMC) dan arah "
+             "dolar/yield" if jenis != "saham" else
+             f"emiten {simbol}: laporan keuangan terbaru, guidance, revisi estimasi analis, "
+             f"aksi korporasi, dan berita sektornya")
     return (
         f"{header_waktu()}"
-        f"Kamu PETUGAS PENGUMPUL DATA (bukan analis) untuk {jenis.upper()} {simbol}. "
-        f"JANGAN menganalisa atau menyimpulkan — jalankan tiap langkah dan TEMPEL hasilnya. "
-        f"Sebut jelas yang gagal/kosong.\n\n"
-        f"PENTING: ini BUKAN crypto. JANGAN menjalankan fundamentals.py, investors.py, "
-        f"whaleflow.py, onchain.py, atau MCP coinmarketcap/coinglass/blockscout — semuanya "
-        f"khusus crypto dan tidak berlaku di sini.\n\n"
-        f"1. Bash: `{perintah}` → untuk TIAP timeframe (1w/1d/4h) tempel: close, SELURUH isi "
-        f"ema (ema13/21/33/50/100/200, tulis n/a bila None), ema_stack.status, ema_signal, "
-        f"bollinger, atr14, atr_pct, supertrend, pivot_standar, rsi14, stoch, fib, structure, "
-        f"kondisi_pasar (status + keandalan_sinyal_ema), volume, source, quality, last_candle_utc. Tempel juga bagian 'profil' (bursa, mata "
-        f"uang, harga terakhir) dan seluruh 'peringatan'.\n"
-        f"2. Bash: `python cloud/memori.py cari {simbol}` → ingatan terverifikasi. Tempel apa "
-        f"adanya; kalau kosong tulis 'belum ada ingatan'.\n"
-        f"{khusus}"
-        f"6. Bash: `python cloud/backtest.py {simbol} --ringkas --pasar" + (" --makro" if jenis == "forex" else "") + "` "
-        f"→ uji balik sinyal terhadap riwayat aset INI SENDIRI + tolok ukur beli-dan-tahan. Untuk forex/komoditas ada uji makro: besar gerakan pada hari rilis terjadwal (NFP/CPI/Kamis Claims) dibanding hari biasa. Tempel apa adanya, TERMASUK peringatan sampel kecil.\n"
-        f"\nWAJIB — STEMPEL WAKTU. Tempel generated_utc dan last_candle_utc apa adanya, plus "
-        f"source & quality tiap timeframe. Di bagian [WAKTU DATA] tulis SATU baris berformat "
-        f"PERSIS ini per timeframe (dibaca pemeriksa otomatis):\n"
-        f"  <tf> source=<isi source> quality=<isi quality> last_candle_utc=<isi last_candle_utc>\n\n"
-        f"OUTPUT: satu 'DATA BRIEF' berlabel per bagian ([WAKTU DATA], [INGATAN], [PROFIL], "
-        f"[TEKNIKAL 1W/1D/4H], [FUNDAMENTAL] atau [MAKRO], [KATALIS], [TIDAK TERSEDIA]). "
-        f"Angka apa adanya, tanpa interpretasi/skor/rekomendasi."
+        f"Kamu PETUGAS PENCARI BERITA untuk {jenis.upper()} {simbol}. Tugasmu HANYA mencari dan menempel berita/rilis — JANGAN menganalisa, JANGAN memberi skor atau rekomendasi, dan JANGAN menjalankan script apa pun (angkanya sudah dikumpulkan terpisah).\n\n"
+        f"1. WebSearch: {fokus}. Untuk TIAP temuan tempel JUDUL, MEDIA, TANGGAL, dan angkanya. Utamakan yang terbaru; artikel lama boleh dipakai asal tanggalnya disebut.\n"
+        f"2. Sebutkan rilis besar yang AKAN datang beserta tanggalnya, kalau ada.\n"
+        f"3. DILARANG mengarang angka konsensus/forecast. Kalau tidak ketemu, tulis persis: konsensus tidak tersedia.\n"
+        + (f"4. Emas: cari juga arah imbal hasil riil, dolar, dan aliran dana ETF emas terbaru.\n" if emas else "")
+        + f"\nOUTPUT: satu bagian berlabel [KATALIS] berisi temuan apa adanya (judul, media, tanggal, angka). Kalau tidak menemukan apa pun, tulis: [KATALIS] tidak ada berita relevan yang ditemukan. Tanpa interpretasi."
     )
 
 
@@ -920,13 +949,23 @@ def process(token, chat_id, text, photo_file_id=None):
             label = "saham" if jenis == "saham" else "forex"
             send_message(token, chat_id,
                          f"⏳ Oke, riset {label} {simbol}. Tahap 1: kumpulkan data...")
-            brief, err = run_claude(build_gather_pasar(simbol, jenis), min(timeout, 600),
-                                    max_turns=40, model=MODEL_GATHER, with_tools=True)
-            if err or not brief:
-                print(f"[proses] tahap-1 {label} GAGAL: {str(err)[:200]}", file=sys.stderr)
+            # Data deterministik dikumpulkan KODE (tidak bisa dilewatkan model), berita
+            # dicari model karena butuh penilaian. Kalau berita gagal, analisa TETAP jalan
+            # dengan data angkanya — sebelumnya satu kegagalan model mengosongkan semuanya.
+            mentah = data_mentah_pasar(simbol, jenis)
+            berita, err = run_claude(build_gather_pasar(simbol, jenis), min(timeout, 300),
+                                     max_turns=20, model=MODEL_GATHER, with_tools=True)
+            if err or not berita:
+                print(f"[proses] pencarian berita gagal ({str(err)[:120]}) — "
+                      f"lanjut dengan data angka saja", file=sys.stderr)
+                berita = "[KATALIS]" + NL + "Pencarian berita gagal — tidak ada data berita."
+            brief = mentah + NL + NL + berita
+            if not mentah.strip():
+                print(f"[proses] tahap-1 {label} GAGAL: data mentah kosong", file=sys.stderr)
                 output = None
             else:
-                print(f"[proses] tahap-1 {label} OK, brief {len(brief)} karakter -> tahap-2",
+                print(f"[proses] tahap-1 {label} OK, brief {len(brief)} karakter "
+                      f"(kode {len(mentah)} + berita {len(berita)}) -> tahap-2",
                       file=sys.stderr)
                 send_message(token, chat_id, "🧠 Tahap 2: analisa & susun laporan...")
                 output, err = run_claude(build_synth_pasar(simbol, jenis, brief),

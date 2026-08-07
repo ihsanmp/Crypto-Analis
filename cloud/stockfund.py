@@ -79,7 +79,15 @@ def hari(s):
 
 
 def ambil_metrik(cik, tags):
-    """Coba tiap kandidat tag; kembalikan (entri, nama_tag) dari yang pertama berhasil."""
+    """Coba SEMUA kandidat tag, pakai yang datanya PALING BARU.
+
+    Dulu dipakai tag pertama yang ada isinya. Itu keliru saat emiten berganti tag: AAPL
+    masih punya "Revenues" warisan yang berhenti di 2018, sementara revenue sebenarnya
+    dilaporkan di "RevenueFromContractWithCustomerExcludingAssessedTax" sampai sekarang.
+    Akibatnya revenue AAPL macet di 2018 dan setiap rasio yang memakainya salah, tanpa
+    peringatan apa pun. Sekarang semua kandidat dicoba dan yang terbaru yang menang.
+    """
+    kandidat = []
     for tag in tags:
         d = get(f"{SEC}/CIK{cik}/us-gaap/{tag}.json")
         if "__err" in d:
@@ -94,8 +102,12 @@ def ambil_metrik(cik, tags):
                 entri.append({"akhir": akhir, "durasi": durasi, "nilai": b.get("val"),
                               "form": b.get("form"), "diajukan": b.get("filed"), "unit": unit})
         if entri:
-            return entri, tag
-    return [], None
+            kandidat.append((max(e["akhir"] for e in entri), entri, tag))
+    if not kandidat:
+        return [], None
+    kandidat.sort(key=lambda x: x[0])
+    _, entri, tag = kandidat[-1]
+    return entri, tag
 
 
 def pilih(entri, kuartalan):
@@ -175,6 +187,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("ticker")
     ap.add_argument("--price", type=float, default=None, help="harga saham untuk hitung P/E & P/S")
+    ap.add_argument("--ringkas", action="store_true",
+                    help="hanya 6 kuartal & 3 tahun terakhir per metrik — hemat token")
     args = ap.parse_args()
     ticker = args.ticker.upper().replace("$", "")
 
@@ -265,6 +279,108 @@ def main():
     else:
         hasil["catatan_rasio"] = ("P/E & P/S tidak dihitung karena harga tidak diberikan. "
                                   "Jalankan ulang dengan --price <harga> (ambil dari market.py).")
+
+    # Kartu rasio: yang BISA dihitung jujur dari tag XBRL yang ada. Yang tidak bisa
+    # (current/quick ratio butuh aset & liabilitas LANCAR terpisah; interest coverage butuh
+    # beban bunga & EBIT) dilaporkan tidak tersedia — bukan ditebak.
+    def akhir(nama):
+        d = (data.get(nama) or {}).get("kuartalan") or []
+        return d[-1]["nilai"] if d and d[-1].get("nilai") is not None else None
+
+    def ttm(nama):
+        """Jumlah 4 kuartal terakhir. None kalau deretnya BERLUBANG — menjumlahkan kuartal
+        yang tidak berurutan menghasilkan TTM palsu (kuartal Q4 sering hanya ada di 10-K)."""
+        d = [x for x in ((data.get(nama) or {}).get("kuartalan") or [])
+             if x.get("nilai") is not None]
+        if len(d) < 4:
+            return None
+        empat = d[-4:]
+        try:
+            tgl = [datetime.strptime(x["periode"], "%Y-%m-%d") for x in empat]
+        except Exception:
+            return None
+        for a, b in zip(tgl, tgl[1:]):
+            if not (70 <= (b - a).days <= 110):   # jarak kuartal yang wajar
+                return None
+        return sum(x["nilai"] for x in empat)
+
+    # Arus (laba, revenue, arus kas) dipakai TTM; neraca (aset/liabilitas/ekuitas) dipakai
+    # nilai terakhir. Membandingkan laba SATU KUARTAL dengan ekuitas menghasilkan ROE
+    # kuartalan yang mudah disalahbaca sebagai tahunan.
+    def peta_tahunan(nama):
+        return {x["periode"]: x["nilai"]
+                for x in ((data.get(nama) or {}).get("tahunan") or [])
+                if x.get("nilai") is not None}
+
+    def tahunan_sepadan():
+        """Ambil revenue & laba dari PERIODE YANG SAMA.
+
+        Mengambil elemen terakhir tiap metrik secara terpisah bisa memasangkan revenue
+        tahun X dengan laba tahun Y — AAPL sempat menghasilkan margin 42% (aslinya ~22%)
+        karena keduanya dari tahun berbeda. Periode wajib sama.
+        """
+        pr, pn = peta_tahunan("revenue"), peta_tahunan("laba_bersih")
+        sama = sorted(set(pr) & set(pn))
+        if not sama:
+            return None, None, None, None
+        t = sama[-1]
+        return pr[t], pn[t], peta_tahunan("arus_kas_operasi").get(t), t
+
+    # TTM lebih segar, tapi deret kuartalan sering berlubang (kuartal yang hanya ada di
+    # 10-K). Kalau begitu, pakai TAHUNAN — itu data sah, cuma lebih lama. Yang dipakai
+    # selalu disebutkan supaya tidak disalahbaca sebagai angka terbaru.
+    rev, ni, ocf = ttm("revenue"), ttm("laba_bersih"), ttm("arus_kas_operasi")
+    dasar = "TTM (4 kuartal terakhir berurutan)"
+    if rev is None or ni is None:
+        rev_t, ni_t, ocf_t, per_t = tahunan_sepadan()
+        if rev_t and ni_t:
+            rev, ni, ocf = rev_t, ni_t, ocf_t
+            dasar = (f"TAHUNAN {per_t} (deret kuartalan berlubang sehingga TTM tidak bisa "
+                     f"dihitung — angka ini lebih lama, WAJIB sebutkan periodenya)")
+            try:
+                umur_th = (datetime.now(timezone.utc).date()
+                           - datetime.strptime(per_t, "%Y-%m-%d").date()).days
+                if umur_th > 500:
+                    dasar += (f" — PERINGATAN: laporan tahunan ini sudah {umur_th} hari "
+                              f"({umur_th // 365} tahun); rasio ini kemungkinan besar TIDAK "
+                              f"lagi menggambarkan kondisi sekarang, jangan dipakai menilai "
+                              f"valuasi saat ini")
+            except Exception:
+                pass
+    aset, liab, eq = akhir("aset"), akhir("liabilitas"), akhir("ekuitas")
+    kartu, kosong = {}, []
+    kartu["dasar_perhitungan"] = f"arus = {dasar}; neraca = kuartal terakhir"
+    def taruh(k, pembilang, penyebut, kali=1, satuan="x"):
+        if pembilang is not None and penyebut:
+            kartu[k] = round(pembilang / penyebut * kali, 2)
+        else:
+            kosong.append(k)
+    taruh("roe_ttm_persen", ni, eq, 100)
+    taruh("roa_ttm_persen", ni, aset, 100)
+    taruh("margin_bersih_ttm_persen", ni, rev, 100)
+    taruh("utang_terhadap_ekuitas", liab, eq)
+    taruh("perputaran_aset_ttm", rev, aset)
+    # Kualitas laba: arus kas operasi dibagi laba bersih. Di bawah 1 berarti laba tidak
+    # sepenuhnya menjadi kas — persis tanda tanya yang disebut metodologi saham.
+    taruh("kualitas_laba_ocf_per_laba_ttm", ocf, ni)
+    if kartu:
+        if kosong:
+            kartu["tidak_bisa_dihitung"] = kosong
+        kartu["tidak_tersedia"] = [
+            "current ratio & quick ratio (butuh aset/liabilitas LANCAR terpisah)",
+            "interest coverage (butuh beban bunga & EBIT)",
+            "ROIC & WACC (butuh modal terinvestasi & biaya modal)",
+        ]
+        hasil["kartu_rasio"] = kartu
+
+    if args.ringkas:
+        for nama, isi in (hasil.get("metrik") or {}).items():
+            if isinstance(isi, dict):
+                for periode, batas in (("kuartalan", 6), ("tahunan", 3)):
+                    if isinstance(isi.get(periode), list):
+                        isi[periode] = isi[periode][-batas:]
+        for k in ("tag_xbrl_terpakai",):
+            hasil.pop(k, None)
 
     print(json.dumps(hasil, indent=2, ensure_ascii=False))
 

@@ -95,10 +95,25 @@ def ke_4jam(satu_jam):
     return keluar
 
 
+_PANDUAN_STATIS = ("acuan", "cara_baca", "cara_pakai", "arti", "acuan_penilaian")
+
+
+def buang_panduan(obj):
+    """Buang panduan statis rekursif. Peringatan AKTIF (mis. quality/indikator_rentang)
+    sengaja TIDAK termasuk — itu pengaman mutu, bukan hiasan."""
+    if isinstance(obj, dict):
+        return {k: buang_panduan(v) for k, v in obj.items() if k not in _PANDUAN_STATIS}
+    if isinstance(obj, list):
+        return [buang_panduan(v) for v in obj]
+    return obj
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("simbol", help="AAPL, MSFT, NVDA, EURUSD, XAUUSD (fokus: saham luar negeri)")
     ap.add_argument("--forex", action="store_true", help="tambahkan akhiran =X untuk pasangan mata uang")
+    ap.add_argument("--ringkas", action="store_true",
+                    help="buang panduan statis (acuan/cara_baca) — hemat token")
     args = ap.parse_args()
 
     simbol = args.simbol.upper().replace("$", "")
@@ -135,7 +150,7 @@ def main():
         hasil["error"] = f"Gagal mengambil data harian: {err}"
         hasil["saran"] = ("Cek penulisan simbol. Bursa non-AS perlu akhiran Yahoo "
                           "(mis. BBCA.JK, VOD.L). Forex pakai --forex (EURUSD -> EURUSD=X).")
-        print(json.dumps(hasil, indent=2, ensure_ascii=False))
+        print(json.dumps(buang_panduan(hasil) if args.ringkas else hasil, indent=2, ensure_ascii=False))
         return
 
     if meta:
@@ -186,7 +201,7 @@ def main():
     hasil["indicator_settings"] = ("EMA 13/21/33/50/100/200 (cross 13x21), RSI 14 (Wilder), "
                                    "Stoch 5-3-3, BB+MidBand EMA 20 (mult 2 & 1), ATR 14 + "
                                    "trailing 3x, SuperTrend 10x3, Pivot standar, Fibonacci")
-    print(json.dumps(hasil, indent=2, ensure_ascii=False))
+    print(json.dumps(buang_panduan(hasil) if args.ringkas else hasil, indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":
