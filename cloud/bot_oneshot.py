@@ -544,6 +544,10 @@ def build_gather_pasar(simbol, jenis):
     if jenis == "forex":
         perintah = f"python cloud/market.py {simbol} --forex"
         khusus = (
+        f"2b. Bash: `python cloud/makro.py --ringkas` → data makro AS RESMI dari FRED: CPI, "
+        f"Core CPI, Core PCE, NFP, pengangguran, klaim mingguan, Fed Funds Rate, yield 2y & "
+        f"10y, indeks dolar, plus kurva imbal hasil. Tempel angka + tanggal_data + "
+        f"arah_emas_bila_naik apa adanya. Ini angka AKTUAL, BUKAN konsensus.\n"
             f"3. Kalau simbolnya XAUUSD/XAGUSD (emas/perak): WAJIB baca acuan makro dengan "
             f"Bash `cat cloud/data/gold_drivers.md` dan TEMPEL bagian yang relevan — daftar "
             f"data ekonomi penggerak, arah dampaknya, dan peringkat kekuatannya.\n"

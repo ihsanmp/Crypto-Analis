@@ -161,6 +161,12 @@ langsung jawab.
 - **DATA MAKRO (FOMC, CPI, NFP, suku bunga, dsb) — MINTA KE USER, JANGAN MENGARANG.**
   Angka KONSENSUS/ekspektasi pasar tidak tersedia di sumber gratis kita. Yang menggerakkan
   pasar adalah SELISIH aktual vs konsensus, jadi tanpa konsensus jangan berpura-pura tahu.
+  0. **Ambil angka AKTUAL-nya dulu:** `python cloud/makro.py --ringkas` → CPI, Core CPI,
+     Core PCE, NFP, pengangguran, klaim, Fed Funds, yield 2y/10y, indeks dolar (sumber
+     FRED, resmi & gratis). Ini menutup separuh persoalan: yang AKTUAL kini otomatis,
+     tinggal KONSENSUS-nya yang perlu dari user. Sebut periodenya (mis. 'CPI Juni'),
+     dan JANGAN menyebutnya data basi — laporan bulanan memang terbit sebulan setelah
+     periodenya.
   1. Cek ingatan dulu: `python cloud/memori.py cari MAKRO`. Kalau ada dan vonisnya SEGAR,
      pakai itu (sebut tanggalnya).
   2. Kalau TIDAK ADA atau sudah KEDALUWARSA, **TANYAKAN ke user** dengan spesifik, mis.:
