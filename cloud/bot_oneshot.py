@@ -176,7 +176,9 @@ _NARASI_AMBIGU = ("ai", "gaming", "storage", "payment", "wallet", "privacy", "pr
                   "meme", "infra")
 # Penanda bahwa yang dimaksud TOPIK/INDUSTRI, bukan aset yang diperdagangkan.
 _TOPIK_RE = re.compile(r"\b(sektor|industri|perkembangan|kabar|berita|teknologi|"
-                       r"riset|model|regulasi|tren|topik|dunia|bidang|kecerdasan)\b")
+                       r"riset|model|regulasi|tren|topik|dunia|bidang|kecerdasan|"
+                       # "ada yang baru di ai?" juga pertanyaan industri, bukan soal koin.
+                       r"baru|terbaru|update|rilis|kemajuan|arah)\b")
 # Kata yang menandakan MINTA REKOMENDASI (bukan pertanyaan faktual). Dipakai untuk
 # membedakan "koin apa yang menarik?" (screening) dari "koin apa saja yang di-hold
 # BlackRock?" (pertanyaan fakta -> harus ke mode chat, bukan pipeline screening).
