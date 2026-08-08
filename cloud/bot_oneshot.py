@@ -598,6 +598,28 @@ def build_chat_prompt(text, chat_id=None):
                                   "diversifikasi", "korelasi")):
             peran.append("portofolio")
         base = rakit_peran(_sektor_pesan(text), peran) + base
+    # Penegasan lewat KODE, bukan berharap model membaca blok yang tepat. Routing sudah
+    # benar mengarahkan "analisis sektor ai" ke chat, tapi jawabannya tetap berisi koin AI,
+    # dominasi BTC, dan Fear & Greed — kerangka crypto di bagian inti prompt mengalahkan
+    # blok AI. Arahan ini ditempel PALING ATAS supaya tidak bisa terlewat.
+    if topik_ai(text.strip().lower()):
+        base = (
+            "## ARAHAN WAJIB — INI PERTANYAAN TENTANG INDUSTRI AI" + NL +
+            "User menanyakan AI sebagai BIDANG/INDUSTRI: perusahaan, model, chip & compute, "
+            "riset, pendanaan, regulasi, adopsi. Ini BUKAN pertanyaan tentang koin." + NL + NL +
+            "DILARANG dalam jawaban ini:" + NL +
+            "- Menjawab dengan daftar KOIN bernarasi AI (FET, RENDER, TAO, dsb)" + NL +
+            "- Membuka dengan harga BTC, dominasi BTC, atau Fear & Greed" + NL +
+            "- Memberi skor koin, level entry, atau rencana akumulasi" + NL +
+            "- Menjalankan indicators.py / sentiment.py / investors.py — tidak ada koin di sini" + NL + NL +
+            "YANG DIMINTA: keadaan industrinya — rilis & kemampuan model terbaru, persaingan "
+            "antar pemain, rantai pasok chip & kapasitas compute, pendanaan dan valuasi, "
+            "regulasi, serta adopsi nyata. Pakai `python cloud/ainews.py --hari 7` dan "
+            "WebSearch. Sebut nama sumber + tanggalnya." + NL + NL +
+            "Kaitan ke pasar boleh disebut SEBAGAI PELENGKAP di akhir, dan hanya bila "
+            "jalurnya nyata (mis. permintaan compute menopang emiten chip) — bukan sebagai "
+            "isi utama jawaban. Kalau user memang ingin sisi koinnya, ia akan menyebut "
+            "'koin' atau 'token'." + NL + NL + "---" + NL + NL) + base
     if chat_id is not None:
         base = konteks_percakapan(chat_id) + base
     # Pesan user dikutip apa adanya. Diberi pembatas jelas supaya isinya diperlakukan
