@@ -142,10 +142,20 @@ def classify(text):
     low = text.strip().lower().lstrip("/")
     if low in ("start", "help", "mulai", "bantuan"):
         return "help"
-    if low == "analisa" or low.startswith("analisa "):
-        return "analisa"
+    # AI sebagai BIDANG didahulukan. Tanpa ini "analisa sektor ai" masuk jalur aset dan
+    # dibaca sebagai koin bernama "SEKTOR", sedangkan "analisis sektor ai" tersedot ke
+    # screening narasi lalu dijawab dengan daftar koin AI — keduanya bukan yang diminta.
+    if topik_ai(low):
+        return "chat"
+    # "analisis" (ejaan baku) sama sahnya dengan "analisa"; dulu hanya satu yang dikenali
+    # sehingga perintah yang sama berperilaku berbeda tergantung ejaan.
+    # Screening diperiksa DULU: "analisa sektor rwa" adalah permintaan screening, bukan
+    # koin bernama "SEKTOR". is_narasi sudah menuntut penanda screening yang jelas
+    # (narasi/sektor/tema atau kata cari + koin), jadi "analisa sol" tidak ikut tertarik.
     if is_narasi(low):
         return "narasi"
+    if low in ("analisa", "analisis") or low.startswith(("analisa ", "analisis ")):
+        return "analisa"
     return "chat"
 
 
@@ -159,6 +169,14 @@ NARASI_TERMS = [
 ]
 _NARASI_RE = re.compile(r"\b(" + "|".join(re.escape(t) for t in NARASI_TERMS) + r")\b")
 _KOIN_RE = re.compile(r"\b(koin|coin|altcoin|token)\b")
+# Sebagian istilah narasi juga kata sehari-hari atau topik lain yang sah. "ai" paling
+# parah: AI adalah BIDANG TERSENDIRI bagi bot ini, jadi "analisis sektor ai" ikut tersedot
+# ke screening koin dan dijawab dengan daftar koin AI — bukan itu yang diminta user.
+_NARASI_AMBIGU = ("ai", "gaming", "storage", "payment", "wallet", "privacy", "privasi",
+                  "meme", "infra")
+# Penanda bahwa yang dimaksud TOPIK/INDUSTRI, bukan aset yang diperdagangkan.
+_TOPIK_RE = re.compile(r"\b(sektor|industri|perkembangan|kabar|berita|teknologi|"
+                       r"riset|model|regulasi|tren|topik|dunia|bidang|kecerdasan)\b")
 # Kata yang menandakan MINTA REKOMENDASI (bukan pertanyaan faktual). Dipakai untuk
 # membedakan "koin apa yang menarik?" (screening) dari "koin apa saja yang di-hold
 # BlackRock?" (pertanyaan fakta -> harus ke mode chat, bukan pipeline screening).
@@ -184,7 +202,9 @@ _ALIAS_FX = {"GOLD": "GC=F", "EMAS": "GC=F", "XAUUSD": "GC=F", "XAU": "GC=F",
 # aset, jadi harus dilewati. "saham"/"forex" TIDAK di sini — keduanya penanda jenis yang
 # punya penanganan tersendiri di bawah.
 _KATA_PENGANTAR = ("koin", "coin", "kripto", "crypto", "token", "aset", "asset",
-                   "harga", "chart", "grafik", "si", "untuk", "tentang", "soal", "the")
+                   "harga", "chart", "grafik", "si", "untuk", "tentang", "soal", "the",
+                   # Ditambah setelah "analisa sektor ai" terbaca sebagai koin "SEKTOR".
+                   "sektor", "perkembangan", "industri", "kabar", "berita", "topik")
 
 # Kata yang, bila BERDIRI SENDIRI, berarti permintaan SCAN — bukan nama aset.
 # Sengaja jauh lebih sempit dari _KATA_PENGANTAR: sebagian kata di atas ADALAH ticker
@@ -235,8 +255,14 @@ def is_narasi(low):
 
     Sengaja longgar: kalau meleset ke mode chat pun bot tetap menjawab (chat juga bisa
     bahas narasi), cuma tidak sedalam pipeline screening penuh."""
+    # "sektor"/"tema" SAJA tidak cukup. "analisis sektor ai" berarti INDUSTRI AI, bukan
+    # screening koin AI — kejadian nyata yang dilaporkan user. Kata itu baru berarti
+    # screening kalau konteksnya memang koin, atau narasinya khas crypto (defi, rwa, dst).
     if "narasi" in low or "sektor" in low or "tema " in low:
-        return True
+        if _KOIN_RE.search(low) or not _NARASI_RE.search(low):
+            return True
+        return not any(re.search(r"\b" + re.escape(t) + r"\b", low)
+                       for t in _NARASI_AMBIGU)
     # "carikan/cari/cariin koin ...", "rekomendasi koin ...", dsb.
     if any(k in low for k in ("cari", "carikan", "cariin", "rekomendasi", "rekomen", "saran")) \
             and _KOIN_RE.search(low):
@@ -251,6 +277,19 @@ def is_narasi(low):
     if _NARASI_RE.search(low) and _KOIN_RE.search(low):
         return True
     return False
+
+
+def topik_ai(low):
+    """Pertanyaan tentang AI sebagai BIDANG, bukan tentang koin bernarasi AI.
+
+    AI adalah satu dari empat bidang bot ini. Tanpa pemisahan ini "analisis sektor ai"
+    dijawab dengan daftar koin AI — persis yang dikeluhkan user.
+    """
+    if not re.search(r"\b(ai|kecerdasan buatan|artificial intelligence)\b", low):
+        return False
+    if _KOIN_RE.search(low):        # "koin ai"/"token ai" -> memang soal koin
+        return False
+    return bool(_TOPIK_RE.search(low))
 
 
 def fetch_updates(token, offset=None):

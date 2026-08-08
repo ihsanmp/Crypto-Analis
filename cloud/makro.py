@@ -49,7 +49,20 @@ SERI = [
     ("DGS2", "Yield US 2 tahun", "persen", "harian"),
     ("DGS10", "Yield US 10 tahun", "persen", "harian"),
     ("DTWEXBGS", "Indeks dolar AS (broad)", "indeks", "harian"),
+    # Kredit & kondisi finansial. Spread kredit bereaksi LEBIH CEPAT daripada saham
+    # terhadap guncangan — pelebarannya biasanya mendahului tekanan equity.
+    ("BAMLH0A0HYM2", "Spread High Yield (HY OAS)", "persen", "harian"),
+    ("BAMLC0A0CM", "Spread Investment Grade (IG OAS)", "persen", "harian"),
+    ("NFCI", "Indeks kondisi finansial Chicago Fed", "indeks", "harian"),
+    ("DFII10", "Yield RIIL 10 tahun (TIPS)", "persen", "harian"),
+    ("DGS3MO", "Yield US 3 bulan", "persen", "harian"),
 ]
+
+# Seri yang persentilnya dihitung. Nilai mentah spread kredit tidak berarti tanpa tahu
+# posisinya terhadap sejarah: HY OAS 2,7% terdengar kecil, tapi apakah itu zona euforia
+# atau normal hanya terlihat dari peringkat persentilnya.
+_PERSENTIL = {"BAMLH0A0HYM2", "BAMLC0A0CM", "NFCI", "DFII10"}
+_TAHUN_PERSENTIL = 3
 
 # Arah dampak ke EMAS bila angkanya NAIK. Sesuai cloud/data/gold_drivers.md, termasuk
 # DUA PENGECUALIAN yang arahnya terbalik (pengangguran & klaim: naik = ekonomi lemah =
@@ -59,6 +72,12 @@ ARAH_EMAS = {
     "PAYEMS": "turun", "DFF": "turun", "DGS2": "turun", "DGS10": "turun",
     "DTWEXBGS": "turun",
     "UNRATE": "NAIK (pengecualian arah)", "ICSA": "NAIK (pengecualian arah)",
+    # Yield RIIL adalah discount rate untuk semua aset berdurasi panjang — naik menekan
+    # emas paling langsung. Spread kredit melebar = stres, biasanya menopang emas.
+    "DFII10": "turun", "DGS3MO": "turun",
+    "BAMLH0A0HYM2": "NAIK (stres kredit menopang emas)",
+    "BAMLC0A0CM": "NAIK (stres kredit menopang emas)",
+    "NFCI": "NAIK (kondisi finansial mengetat = stres)",
 }
 
 
@@ -114,6 +133,18 @@ def olah(kode, nama, satuan, jenis, data):
         acuan = data[-22] if len(data) >= 22 else data[0]
         item["perubahan_30h_persen"] = tumbuh(nilai, acuan[1])
         item["nilai_30h_lalu"] = acuan[1]
+
+    if kode in _PERSENTIL and len(data) > 60:
+        # Peringkat persentil terhadap ~3 tahun terakhir. Ini yang membuat metrik dari
+        # kelas aset berbeda bisa dibandingkan setara, bukan angka mentahnya.
+        jendela = data[-(252 * _TAHUN_PERSENTIL):]
+        nilai_saja = sorted(x[1] for x in jendela)
+        posisi = sum(1 for x in nilai_saja if x <= nilai)
+        item["persentil_3thn"] = round(posisi / len(nilai_saja) * 100, 1)
+        item["rentang_3thn"] = [round(nilai_saja[0], 3), round(nilai_saja[-1], 3)]
+        item["arti_persentil"] = ("0 = terendah dalam 3 tahun, 100 = tertinggi. "
+                                  "Untuk spread kredit: persentil RENDAH berarti kompresi/"
+                                  "euforia (risiko dihargai murah), TINGGI berarti stres.")
 
     # FRED memberi tanggal di AWAL periode: data bulan Juni bertanggal 2026-06-01 padahal
     # baru terbit pertengahan Juli. Jadi "umur" terlihat besar walau itu rilis TERBARU.
@@ -177,14 +208,28 @@ def ecb_suku_bunga():
 
 
 def rezim_pasar():
-    """VIX & DXY — penanda rezim risiko yang diminta aturan 'kenali rezim dulu'."""
+    """Penanda rezim risiko lintas pasar — pilar Volatilitas, Breadth, dan Selera Risiko.
+
+    Semua dari Yahoo, tanpa API key. Yang dikejar bukan level mentahnya melainkan
+    RASIO dan DIVERGENSInya: harga bisa naik sementara kesehatannya memburuk, dan justru
+    divergensi itu sinyal paling berharga.
+    """
     keluar = {}
     for kode, simbol, nama, arti in (
         ("vix", "%5EVIX", "VIX (indeks volatilitas S&P 500)",
          "di bawah 15 = pasar tenang/risk-on; di atas 25 = tegang/risk-off; "
          "di atas 30 = panik. Naik tajam biasanya menekan aset berisiko dan menopang emas."),
         ("dxy", "DX-Y.NYB", "Indeks dolar DXY",
-         "dolar menguat menekan emas dan komoditas; melemah menopang keduanya."),
+         "dolar menguat menekan emas dan komoditas; melemah menopang keduanya. "
+         "Dolar adalah harga likuiditas global — menguat = pengetatan untuk semua aset berisiko."),
+        ("vix3m", "%5EVIX3M", "VIX 3 bulan",
+         "dipakai bersama VIX untuk term structure; lihat vix_term_structure."),
+        ("move", "%5EMOVE", "MOVE (volatilitas obligasi)",
+         "volatilitas obligasi sering MEMIMPIN VIX — naik lebih dulu sebelum stres "
+         "merambat ke saham."),
+        ("audjpy", "AUDJPY=X", "AUD/JPY",
+         "proksi risk-on/risk-off paling murni. Turun tajam = carry trade di-unwind, "
+         "biasanya bersamaan dengan VIX naik."),
     ):
         nilai, sebelum, err = _yahoo_terakhir(simbol)
         if err or nilai is None:
@@ -195,6 +240,43 @@ def rezim_pasar():
         if sebelum:
             item["perubahan_persen"] = round((nilai - sebelum) / sebelum * 100, 2)
         keluar[kode] = item
+
+    # --- Rasio: inilah yang mengungkap kesehatan, bukan level tunggal ---
+    def rasio(a, b):
+        na, _, ea = _yahoo_terakhir(a)
+        nb, _, eb = _yahoo_terakhir(b)
+        return (round(na / nb, 4) if (na and nb) else None), (ea or eb)
+
+    turunan = {}
+    vix = (keluar.get("vix") or {}).get("terbaru")
+    v3m = (keluar.get("vix3m") or {}).get("terbaru")
+    if vix and v3m:
+        ts = round(vix / v3m, 3)
+        turunan["vix_term_structure"] = {
+            "nilai": ts,
+            "status": "BACKWARDATION — stres akut" if ts > 1.0 else "contango (normal)",
+            "arti": ("VIX dibagi VIX3M. Di atas 1,0 berarti pasar membayar lebih mahal untuk "
+                     "perlindungan JANGKA PENDEK daripada jangka panjang — tanda stres akut, "
+                     "bukan sekadar volatilitas tinggi."),
+        }
+    rsp_spy, e1 = rasio("RSP", "SPY")
+    if rsp_spy:
+        turunan["breadth_equal_vs_cap"] = {
+            "nilai": rsp_spy,
+            "arti": ("S&P equal-weight dibagi cap-weight. Rasio TURUN berarti kenaikan indeks "
+                     "makin ditopang segelintir raksasa — partisipasi menyempit dan rapuh. "
+                     "Bandingkan arahnya dengan arah indeks: indeks naik sementara rasio ini "
+                     "turun adalah pola DISTRIBUSI klasik."),
+        }
+    xly_xlp, e2 = rasio("XLY", "XLP")
+    if xly_xlp:
+        turunan["selera_risiko_siklikal_vs_defensif"] = {
+            "nilai": xly_xlp,
+            "arti": ("Consumer discretionary dibagi consumer staples. Turun = rotasi diam-diam "
+                     "ke defensif, sering mendahului pelemahan indeks."),
+        }
+    if turunan:
+        keluar["turunan"] = turunan
     return keluar
 
 
@@ -261,6 +343,17 @@ def main():
             "arti": ("Inversi historisnya mendahului resesi dan cenderung mendukung emas. "
                      "Ini konteks jangka panjang, BUKAN sinyal masuk."),
         }
+        y3m = (data.get("DGS3MO") or {}).get("terbaru")
+        if y3m is not None:
+            # 10y-3m dipakai riset Fed sendiri dan historisnya lebih akurat daripada 10y-2y.
+            s3 = round(y10 - y3m, 2)
+            hasil["kurva_imbal_hasil"]["spread_10y_3m"] = s3
+            hasil["kurva_imbal_hasil"]["status_10y_3m"] = (
+                "INVERSI" if s3 < 0 else "datar" if s3 < 0.3 else "normal")
+            hasil["kurva_imbal_hasil"]["catatan_10y_3m"] = (
+                "Versi 10y-3m ini yang dipakai riset Fed sendiri dan historisnya lebih "
+                "akurat memprediksi resesi daripada 10y-2y. Kalau keduanya berbeda vonis, "
+                "sebutkan keduanya.")
 
     hasil["cara_pakai"] = [
         "Bandingkan angka AKTUAL di sini dengan KONSENSUS dari user untuk menilai arah reaksi.",
