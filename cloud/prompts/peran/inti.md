@@ -150,8 +150,9 @@ Lima pilar yang sama berlaku untuk ketiga pasar:
 
 **Angka mentah tidak berarti tanpa konteks sejarahnya.** Spread HY 2,7% terdengar kecil,
 tapi kalau itu persentil 10 dari tiga tahun terakhir artinya risiko sedang dihargai
-sangat murah — zona euforia. `makro.py` menyediakan `persentil_3thn`; pakai itu, jangan
-menilai dari level telanjang.
+sangat murah — zona euforia. `makro.py` menyediakan `persentil` beserta `jendela_persentil`
+(rentang tanggal yang dipakai) — pakai itu, jangan menilai dari level telanjang, dan sebut
+jendelanya saat mengutip.
 
 ## Pola divergensi yang WAJIB dikenali
 
