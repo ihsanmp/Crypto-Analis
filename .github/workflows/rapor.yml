@@ -1,0 +1,79 @@
+# Rapor rekomendasi MINGGUAN: nilai panggilan yang masih terbuka, lalu kirim ringkasannya.
+#
+# Cron GitHub TIDAK akurat — bisa meleset sampai berjam-jam. Untuk laporan mingguan itu
+# tidak masalah, beda dengan kasus webhook yang justru menjadi alasan cron dibuang dari
+# bot.yml.
+#
+# Rapor hanya MENGAMATI. Ia tidak menyetel ambang apa pun; kalibrasi tetap keputusan manusia.
+name: Rapor rekomendasi
+
+on:
+  schedule:
+    - cron: "0 2 * * 1"       # Senin ~09:00 WIB
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rapor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Nilai panggilan yang masih terbuka
+        run: python cloud/rapor.py nilai
+
+      - name: Susun ringkasan
+        run: python cloud/rapor.py ringkas --hari 90 | tee ringkasan.json
+
+      - name: Simpan hasil penilaian
+        run: |
+          if [ -z "$(git status --porcelain cloud/data/rapor.jsonl)" ]; then
+            echo "tidak ada perubahan — lewati commit"; exit 0
+          fi
+          git config user.name "crypto-analis-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add cloud/data/rapor.jsonl
+          git commit -m "Penilaian rapor rekomendasi ${GITHUB_RUN_ID}"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin HEAD:main && exit 0
+            echo "percobaan $i gagal, ulangi..."; sleep 3
+          done
+          echo "::warning::Hasil penilaian gagal disimpan setelah 3 percobaan."
+
+      - name: Kirim ringkasan ke Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          PESAN=$(python - <<'PY'
+          import json
+          d = json.load(open("ringkasan.json", encoding="utf-8"))
+          k = d.get("keseluruhan") or {}
+          baris = [f"📋 RAPOR REKOMENDASI ({d.get('rentang_hari')} hari)",
+                   f"Total panggilan: {d.get('total_panggilan')}"]
+          if k:
+              baris.append(f"Terbukti benar: {k.get('terbukti_benar')}/{k.get('sudah_bisa_dinilai')}"
+                           f" ({k.get('menang_persen')}%)")
+              baris.append(f"Return 30h rata2: {k.get('return_30h_rata2_persen')}%"
+                           f" | nyeri maks {k.get('nyeri_maks_rata2_persen')}%")
+          baris.append("")
+          baris.append("Per rentang skor:")
+          for nama, v in (d.get("per_rentang_skor") or {}).items():
+              tanda = " (sampel kecil)" if "peringatan" in v else ""
+              baris.append(f"  {nama}: {v.get('menang_persen')}% dari {v.get('panggilan')}{tanda}")
+          baris.append("")
+          baris.append("Kalau rentang skor tinggi TIDAK lebih sering benar daripada yang rendah,")
+          baris.append("sistem skornya belum bermakna dan ambangnya perlu dikalibrasi.")
+          print("\n".join(baris))
+          PY
+          )
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" --data-urlencode "text=${PESAN}" > /dev/null

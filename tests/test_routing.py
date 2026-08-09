@@ -347,3 +347,75 @@ def test_satu_aset_tetap_dikumpulkan():
     """Penjaga multi-aset tidak boleh ikut mematikan kasus satu aset."""
     assert bot.aset_dari_pesan("rsi eth di daily berapa?") == ("crypto", "ETH")
     assert bot.aset_dari_pesan("apa dampaknya ke harga gold?") == ("forex", "GC=F")
+
+
+# --------------------------------------------------------------- rapor (T7)
+
+import rapor  # noqa: E402
+
+_BALASAN_LENGKAP = """🧮 SKOR 62/100  (Fund 58 - Tek 65)
+
+🎯 BIAS SPOT: TAHAN
+
+Harga $4.399,7 - EMA21 harian $4.281,5 - RSI harian 58
+
+Invalid $4.230  (tesis gugur bila close di bawah ini)
+Target  $4.520 - $4.680 - $4.850
+"""
+
+
+def test_rapor_urai_panggilan_lengkap():
+    p = rapor.urai_panggilan(_BALASAN_LENGKAP)
+    assert p["bias"] == "TAHAN"
+    assert p["skor"] == 62
+    assert p["harga_saat_panggilan"] == 4399.7
+    assert p["level_invalid"] == 4230.0
+    assert p["level_target"] == [4520.0, 4680.0, 4850.0]
+
+
+@pytest.mark.parametrize("rusak", [
+    _BALASAN_LENGKAP.replace("Harga $4.399,7", "Harga"),              # tanpa harga
+    _BALASAN_LENGKAP.replace("Invalid $4.230", "Invalid")
+                    .replace("Target  $4.520 - $4.680 - $4.850", "Target"),  # tanpa level
+    "obrolan biasa tanpa bias apa pun",
+])
+def test_rapor_menolak_panggilan_tak_terukur(rusak):
+    """Panggilan tanpa harga ATAU tanpa level TIDAK BISA dinilai — jangan dipaksakan masuk."""
+    assert rapor.urai_panggilan(rusak) is None
+
+
+@pytest.mark.parametrize("teks,nilai", [
+    ("4.399,7", 4399.7), ("4399.70", 4399.7), ("$1.234", 1234.0),
+    ("64.978", 64978.0), ("0,32", 0.32),
+])
+def test_rapor_angka_dua_format(teks, nilai):
+    assert rapor._angka(teks) == nilai
+
+
+@pytest.mark.parametrize("bias,status,ret,harap", [
+    ("AKUMULASI", "TARGET_KENA", 10.0, True),
+    ("AKUMULASI", "INVALID_KENA", -20.0, False),
+    ("TAHAN", "MASIH_TERBUKA", 3.0, None),
+    # SADAR ARAH: menghindar terbukti benar kalau harganya memang turun.
+    # Tanpa ini, panggilan HINDARI yang tepat justru terhitung KALAH.
+    ("HINDARI", "INVALID_KENA", -60.0, True),
+    ("HINDARI", "TARGET_KENA", 15.0, False),
+    ("KURANGI", "MASIH_TERBUKA", -8.0, True),
+])
+def test_rapor_penilaian_sadar_arah(bias, status, ret, harap):
+    e = {"bias": bias, "status": status, "return_30h_persen": ret}
+    assert rapor._benar(e) is harap
+
+
+@pytest.mark.parametrize("skor,kelompok", [
+    (10, "0-40"), (40, "0-40"), (41, "41-60"), (60, "41-60"),
+    (61, "61-80"), (80, "61-80"), (81, "81-100"), (100, "81-100"), (None, "tanpa skor"),
+])
+def test_rapor_kelompok_skor(skor, kelompok):
+    assert rapor._kelompok_skor(skor) == kelompok
+
+
+def test_rapor_sampel_kecil_ditandai():
+    kecil = [{"bias": "AKUMULASI", "status": "TARGET_KENA", "return_30h_persen": 5.0}]
+    assert "peringatan" in rapor._hitung(kecil)
+

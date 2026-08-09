@@ -1223,6 +1223,7 @@ def process(token, chat_id, text, photo_file_id=None):
     if sudah_diproses(chat_id, text, photo_file_id):
         return
 
+    simbol = jenis = simbol_chat = jenis_chat = None   # dipakai pencatat rapor di akhir
     brief = None          # DATA BRIEF tahap-1 (hanya terisi di analisa koin); dipakai
                           # audit keterlacakan angka. Dideklarasikan di sini supaya
                           # SELALU terdefinisi di semua cabang, termasuk mode foto.
@@ -1438,6 +1439,21 @@ def process(token, chat_id, text, photo_file_id=None):
         # Vonis lengkap tetap dicetak utuh ke log, bukan hanya yang terparah.
         print(f"[audit] {kesegaran}", file=sys.stderr)
         simpan_riwayat(chat_id, text, body)
+        # Catat PANGGILAN (bias + level) supaya bisa dinilai belakangan. Diekstraksi oleh
+        # kode dari teks balasan, jadi tidak bisa dilewatkan dan tidak menambah biaya
+        # giliran. DIBUNGKUS try/except: pencatatan rapor tidak boleh menggagalkan apa pun —
+        # balasannya sendiri sudah terkirim di baris atas.
+        try:
+            aset_rapor = simbol if kind == "analisa" else simbol_chat
+            jenis_rapor = jenis if kind == "analisa" else jenis_chat
+            if aset_rapor:
+                sys.path.insert(0, BASE_DIR)
+                from rapor import catat as catat_rapor
+                rid = catat_rapor(body, aset_rapor, jenis_rapor, kind)
+                if rid:
+                    print(f"[rapor] panggilan dicatat: {rid}", file=sys.stderr)
+        except Exception as e:
+            print(f"[rapor] gagal mencatat ({type(e).__name__}) — diabaikan", file=sys.stderr)
         if jejak:
             print(f"[audit] {jejak}", file=sys.stderr)
         if asal:

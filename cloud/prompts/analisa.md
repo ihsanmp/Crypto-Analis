@@ -188,6 +188,13 @@ Level kunci: support $xxx · resisten $xxx
 • Investor institusi: <nama + nominal + tanggal, atau "tidak ditemukan">
 • <catatan konsentrasi setelah alamat bursa/kontrak dikeluarkan>
 
+**PANGGILANMU KINI DICATAT DAN DINILAI.** Bias, level invalidasi, dan target di bawah
+diekstraksi otomatis oleh `rapor.py` lalu diperiksa terhadap harga yang benar-benar terjadi.
+Konsekuensinya: bias WAJIB disertai level yang bisa diuji. Panggilan tanpa harga atau tanpa
+satu pun level TIDAK BISA dinilai dan akan dilewatkan — artinya kesimpulan yang mengambang
+tidak pernah masuk hitungan, tidak pernah terbukti benar, dan tidak menambah apa pun.
+Ini memperkuat aturan yang sudah ada: baris "Sudah pegang" WAJIB menyebut level.
+
 🧭 RENCANA SPOT
 Entry   40% $xxx–xxx
         35% $xxx–xxx
