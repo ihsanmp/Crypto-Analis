@@ -903,3 +903,47 @@ def test_berkas_besar_disimpan_terkompresi():
         assert os.path.exists(os.path.join(data, mentah + ".gz")), (
             f"{mentah}.gz tidak ditemukan")
 
+
+
+# ----------------------------- dilaporkan user: tanggal singkat & rencana vs posisi
+
+@pytest.mark.parametrize("teks", [
+    "9 Agustus 2026", "9 Agu 2026", "9 Ags 2026", "1 Sept 2026",
+    "3 Des 2026", "17 Jul 2026", "2026-08-09", "Agustus 2026",
+])
+def test_tanggal_singkatan_bulan_dikenali(teks):
+    """Model kerap menulis "9 Agu 2026" alih-alih nama bulan lengkap.
+
+    Bug yang DILAPORKAN USER: tanpa singkatan di daftar bulan, tanggalnya tidak dikenali
+    sehingga audit memvonis "angka TANPA satu pun tanggal" dan memunculkan peringatan
+    palsu — terlihat langsung di layar user pada balasan yang jelas bertanggal.
+    """
+    assert bot._TGL_RE.search(teks), teks
+
+
+def test_kesegaran_tidak_menyala_untuk_tanggal_singkat():
+    balasan = ("🕒 Data per 9 Agu 2026, candle 4H tutup 19:00 WIB" + N + N +
+               "EMA21 Daily $0,002084. RSI 4H 75,8.")
+    assert "BURUK" not in bot.audit_kesegaran(balasan)
+    assert bot.peringatan_audit(None, None, bot.audit_kesegaran(balasan)) is None
+
+
+def test_kesegaran_tetap_menyala_kalau_benar_benar_tanpa_tanggal():
+    """Menerima singkatan tidak boleh melumpuhkan deteksinya."""
+    assert "BURUK" in bot.audit_kesegaran("EMA21 $0,002084. RSI 75,8. Harga $0,002683.")
+
+
+@pytest.mark.parametrize("berkas", [
+    "chat.md", "analisa.md", "analisa_pasar.md",
+])
+def test_aturan_rencana_vs_posisi_ada_di_prompt(berkas):
+    """Bug yang DILAPORKAN USER: "kalo buy di $X bagaimana menurutmu?" dijawab seolah
+
+    posisinya sudah ada ("entry kamu sekarang profit tipis", "Sudah pegang: TAHAN"),
+    padahal user baru HENDAK membeli. Kata pengandaian berarti RENCANA, bukan kepemilikan.
+    """
+    with open(os.path.join(AKAR, "cloud", "prompts", berkas), encoding="utf-8") as f:
+        isi = f.read()
+    assert "RENCANA vs POSISI" in isi
+    assert "Belum punya" in isi
+

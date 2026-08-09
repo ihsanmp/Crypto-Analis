@@ -347,8 +347,17 @@ def write_output(has_work):
             f.write(line + "\n")
 
 
-_BULAN_ID = ("Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli",
-             "Agustus", "September", "Oktober", "November", "Desember")
+# Nama bulan LENGKAP dan SINGKATANNYA. Model kerap menulis "9 Agu 2026" alih-alih
+# "9 Agustus 2026" — dan tanpa singkatan di daftar ini tanggalnya tidak dikenali,
+# sehingga audit_kesegaran memvonis "angka TANPA satu pun tanggal" lalu memunculkan
+# PERINGATAN PALSU. Terlihat langsung di layar user: balasan yang jelas bertanggal
+# tetap diberi peringatan seolah disusun dari ingatan.
+# Yang panjang ditulis LEBIH DULU supaya regex tidak berhenti di singkatannya
+# ("Agustus" jangan sampai cuma tercocok sebagai "Agu").
+_BULAN_ID = ("Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus",
+             "September", "Oktober", "November", "Desember",
+             "Sept", "Jan", "Feb", "Mar", "Apr", "Jun", "Jul", "Agu", "Ags", "Agt",
+             "Sep", "Okt", "Nov", "Des")
 
 
 def header_waktu():
