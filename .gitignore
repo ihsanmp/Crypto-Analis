@@ -7,3 +7,9 @@ vendor/
 # Python
 __pycache__/
 *.pyc
+
+# Berkas cache Windows yang sempat terbawa `git add -A` dari luar pohon repo
+# (commit b9e9a49). Bukan bagian proyek — 0,98 MB yang ikut ditarik tiap clone.
+%SystemDrive%/
+*.ver0x*.db
+cversions.*.db

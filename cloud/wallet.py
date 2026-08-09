@@ -21,6 +21,7 @@ Pemakaian:
 """
 
 import argparse
+import gzip
 import json
 import os
 import re
@@ -51,11 +52,23 @@ _BURSA = ("binance", "coinbase", "kraken", "kucoin", "okx", "okex", "bybit", "ga
 
 
 def load_labels():
-    try:
-        with open(_LABELS_PATH, encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return {}
+    """Baca label alamat. Diutamakan versi terkompresi.
+
+    Berkas mentahnya 1,94 MB dan merupakan berkas TERBESAR di repo — ikut ditarik setiap
+    clone, termasuk checkout di TIAP run GitHub Actions, padahal isinya nyaris tidak pernah
+    berubah. Versi .gz separuhnya. Versi .json tetap dibaca kalau ada, supaya checkout lama
+    tidak mendadak kehilangan pelabelan.
+    """
+    for jalur, buka in ((_LABELS_PATH + ".gz", lambda p: gzip.open(p, "rt", encoding="utf-8")),
+                        (_LABELS_PATH, lambda p: open(p, encoding="utf-8"))):
+        try:
+            with buka(jalur) as f:
+                return json.load(f)
+        except OSError:
+            continue
+        except Exception:
+            return {}
+    return {}
 
 
 def try_json(url, headers=None):

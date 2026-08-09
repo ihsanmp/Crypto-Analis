@@ -649,3 +649,43 @@ def test_stockfund_turunan_menuntut_periode_sama():
     assert "laba_kotor" in stockfund.METRIK
     assert "beban_bunga" in stockfund.METRIK
 
+
+
+# ------------------------------------------------------------ T8: kebersihan
+
+def test_chat_id_tidak_disimpan_polos(monkeypatch):
+    """Repo ini PUBLIK. Chat ID adalah identifier akun Telegram.
+
+    memori.py sudah menolak alamat dompet & saldo di level kode, tapi chat ID sempat lolos.
+    """
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "token-uji")
+    h = bot._id_chat("7525096497")
+    assert h != "7525096497"
+    assert not h.isdigit()
+    assert len(h) == 16
+    assert bot._id_chat("7525096497") == h          # deterministik dalam satu garam
+
+
+def test_chat_id_bergaram(monkeypatch):
+    """Tanpa garam, sha256 dari ~10 digit praktis sama dengan menyimpannya polos."""
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "token-A")
+    a = bot._id_chat("7525096497")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "token-B")
+    assert bot._id_chat("7525096497") != a
+
+
+def test_label_eth_terbaca_dari_gz():
+    """Berkas label 1,94 MB adalah yang TERBESAR di repo dan ikut ditarik tiap checkout."""
+    import investors
+    import wallet
+    a, b = investors.load_labels(), wallet.load_labels()
+    assert len(a) > 20000, len(a)
+    assert len(a) == len(b)
+
+
+def test_berkas_besar_tidak_masuk_repo():
+    """Penjaga agar berkas mentah 2 MB tidak diam-diam kembali."""
+    import os
+    assert not os.path.exists(os.path.join(AKAR, "cloud", "data", "eth_labels.json"))
+    assert os.path.exists(os.path.join(AKAR, "cloud", "data", "eth_labels.json.gz"))
+

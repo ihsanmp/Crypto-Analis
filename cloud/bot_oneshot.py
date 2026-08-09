@@ -551,6 +551,49 @@ def angka_kunci(teks):
     return keluar
 
 
+def bersihkan_id():
+    """Ubah chat ID polos di riwayat lama menjadi hash. Sekali jalan.
+
+    Dipakai setelah _id_chat() diperkenalkan: entri yang sudah tersimpan masih memuat chat
+    ID apa adanya. Riwayat GIT-nya tetap memuat yang polos — membersihkan itu menuntut
+    force-push yang menulis ulang sejarah bersama, dan sengaja TIDAK dilakukan di sini.
+    """
+    try:
+        with open(RIWAYAT_PATH, encoding="utf-8") as f:
+            riwayat = json.load(f)
+    except OSError:
+        print("[bersihkan] tidak ada riwayat untuk dibersihkan")
+        return
+    diubah = 0
+    for r in riwayat:
+        chat = str(r.get("chat", ""))
+        if chat.isdigit():          # masih polos
+            r["chat"] = _id_chat(chat)
+            diubah += 1
+    with open(RIWAYAT_PATH, "w", encoding="utf-8") as f:
+        json.dump(riwayat, f, indent=1, ensure_ascii=False)
+    print(f"[bersihkan] {diubah} dari {len(riwayat)} entri disamarkan")
+
+
+def _id_chat(chat_id):
+    """Samarkan chat ID sebelum disimpan — repo ini PUBLIK.
+
+    memori.py sudah menolak alamat dompet & saldo di level kode, tapi chat ID lolos padahal
+    itu identifier akun Telegram. Di-hash dengan GARAM dari token bot supaya tidak bisa
+    dibalik dengan mencoba semua angka: chat ID hanya ~10 digit, jadi sha256 tanpa garam
+    praktis sama dengan menyimpannya polos.
+
+    Konsekuensi yang disadari: kalau token bot diganti, garamnya berubah dan riwayat lama
+    tidak lagi cocok. Riwayatnya jadi terlihat kosong — mengganggu, tapi jauh lebih ringan
+    daripada membocorkan identifier akun di repo publik.
+
+    CATATAN: riwayat git yang LAMA tetap memuat chat ID polos. Membersihkannya menuntut
+    force-push yang menulis ulang sejarah bersama, dan itu di luar cakupan tugas ini.
+    """
+    garam = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    return hashlib.sha256(f"{garam}|{chat_id}".encode()).hexdigest()[:16]
+
+
 def simpan_riwayat(chat_id, pesan, balasan):
     """Simpan satu pasang tanya-jawab supaya pesan lanjutan punya konteks.
 
@@ -574,7 +617,7 @@ def simpan_riwayat(chat_id, pesan, balasan):
     riwayat = [r for r in _muat_riwayat()
                if sekarang - r.get("waktu", 0) < RIWAYAT_UMUR][-20:]
     riwayat.append({
-        "chat": str(chat_id),
+        "chat": _id_chat(chat_id),
         "waktu": sekarang,
         "waktu_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
         "pesan": (pesan or "")[:300],
@@ -595,7 +638,7 @@ def konteks_percakapan(chat_id):
     """Rakit konteks percakapan sebelumnya untuk disisipkan ke prompt."""
     sekarang = time.time()
     lalu = [r for r in _muat_riwayat()
-            if str(r.get("chat")) == str(chat_id)
+            if str(r.get("chat")) == _id_chat(chat_id)
             and sekarang - r.get("waktu", 0) < RIWAYAT_UMUR][-RIWAYAT_MAKS:]
     if not lalu:
         return ""
@@ -1801,4 +1844,8 @@ def main():
 
 
 if __name__ == "__main__":
+    # Perintah pemeliharaan sekali jalan, sebelum alur normal.
+    if "--bersihkan-id" in sys.argv:
+        bersihkan_id()
+        sys.exit(0)
     main()
