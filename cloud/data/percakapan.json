@@ -59,5 +59,22 @@
    "harga=4.331",
    "harga=4.268"
   ]
+ },
+ {
+  "chat": "7525096497",
+  "waktu": 1786254379.9648905,
+  "waktu_utc": "2026-08-09 05:46",
+  "pesan": "analisa sol",
+  "balasan": "🕒 Data per 9 Agu 2026, 12:43 WIB · sumber harga Kraken (native)\n\n📊 PASAR\nFear & Greed 31 (Fear, kemarin 30 — stabil)\nBTC, dominasi, dan Whale Index TIDAK tersedia di brief ini — jadi filter pasar tidak lengkap. Perlakukan kesimpulan di bawah dengan k\n[...dipangkas...]\nagalnya harga menembus $77,3–78,0 dengan volume; (2) kelanjutan arus masuk ETF MSOL; (3) angka fees Agustus — apakah kenaikan Juli +36,9% berlanjut atau cuma satu bulan.\n\n⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.",
+  "angka_kunci": [
+   "harga=60,12",
+   "harga=77,3",
+   "harga=44,2",
+   "harga=188",
+   "harga=15,0",
+   "harga=272,7",
+   "harga=1,58",
+   "harga=32,2"
+  ]
  }
 ]
