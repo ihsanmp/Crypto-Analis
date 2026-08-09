@@ -798,3 +798,28 @@ def test_rapor_target_semua_format_resmi(baris, harap):
     teks = "🎯 BIAS SPOT: TAHAN" + N + "Harga $100" + N + "Invalid $90" + N + baris
     assert rapor.urai_panggilan(teks)["level_target"] == harap
 
+
+
+def test_audit_kesegaran_tidak_ditutupi_stempel_sendiri():
+    """pastikan_bertanggal() menyisipkan tanggal buatan kita SENDIRI.
+
+    Kalau audit kesegaran berjalan sesudah itu, ia selalu melihat tanggal dan memvonis OK —
+    sehingga vonis BURUK ("angka tanpa satu pun tanggal") mustahil menyala, padahal justru
+    itu yang menandai jawaban dari ingatan. Bug nyata: tingkat peringatan keempat praktis
+    kode mati sampai urutannya diperbaiki.
+    """
+    tanpa = "Harga $64.978 dengan RSI 58 dan volume 12.345 juta."
+    assert "BURUK" in bot.audit_kesegaran(tanpa)
+    assert "BURUK" not in bot.audit_kesegaran(bot.pastikan_bertanggal(tanpa))
+
+
+def test_urutan_audit_sebelum_stempel_di_kode():
+    """Penjaga urutan: audit_kesegaran harus dipanggil SEBELUM pastikan_bertanggal."""
+    with open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8") as f:
+        kode = f.read()
+    for potong in ("kesegaran = audit_kesegaran(body)",
+                   "kesegaran_foto = audit_kesegaran(body)"):
+        i = kode.index(potong)
+        j = kode.index("pastikan_bertanggal(body)", max(0, i - 900))
+        assert i < j, f"{potong}: stempel dipasang sebelum audit"
+

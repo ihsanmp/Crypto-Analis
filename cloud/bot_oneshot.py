@@ -1314,9 +1314,9 @@ def process(token, chat_id, text, photo_file_id=None):
         # Jalur foto punya pengiriman SENDIRI, sehingga dua pengaman di jalur utama
         # sempat terlewat di sini: stempel waktu dan peringatan audit. Padahal analisa
         # gambar justru rawan — angkanya sering dibaca dari gambar lama tanpa tanggal.
+        kesegaran_foto = audit_kesegaran(body)      # pada teks ASLI, lihat jalur utama
         if not body.startswith("❌"):
             body = pastikan_bertanggal(body)
-        kesegaran_foto = audit_kesegaran(body)
         if not body.startswith("❌"):
             catatan_foto = peringatan_audit(None, None, kesegaran_foto)
             if catatan_foto:
@@ -1491,12 +1491,17 @@ def process(token, chat_id, text, photo_file_id=None):
 
     # Stempel waktu hanya untuk balasan berisi data. Menempelkannya pada pesan error
     # membuat kegagalan terlihat seolah "data per jam sekian" — membingungkan.
+    # Kesegaran diperiksa pada teks ASLI — SEBELUM stempel waktu ditambahkan.
+    # pastikan_bertanggal() menyisipkan tanggal buatan kita sendiri, dan kalau auditnya
+    # berjalan sesudah itu, ia selalu melihat tanggal dan memvonis OK. Vonis BURUK
+    # ("angka tanpa satu pun tanggal") jadi mustahil menyala — padahal justru itu yang
+    # menandai jawaban dari ingatan. Terbukti: teks yang sama divonis BURUK sebelum
+    # distempel dan OK sesudahnya.
+    kesegaran = audit_kesegaran(body)
     if not body.startswith("❌"):
         body = pastikan_bertanggal(body)
 
-    # Audit dijalankan SEBELUM pengiriman supaya vonisnya bisa ikut ke user. Sebelumnya
-    # ketiganya berjalan setelah send_message, jadi hasilnya tidak mungkin sampai.
-    kesegaran = audit_kesegaran(body)
+    # Audit lain dijalankan SEBELUM pengiriman supaya vonisnya bisa ikut ke user.
     jejak = audit_angka(brief, body)
     asal = audit_sumber(brief)
     if not body.startswith("❌"):
