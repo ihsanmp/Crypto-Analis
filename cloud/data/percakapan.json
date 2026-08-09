@@ -89,5 +89,22 @@
    "rsi=14",
    "ema=2 1"
   ]
+ },
+ {
+  "chat": "7525096497",
+  "waktu": 1786272383.206501,
+  "waktu_utc": "2026-08-09 10:46",
+  "pesan": "analisa saham nvda",
+  "balasan": "🕒 Data per 7 Agustus 2026 (penutupan bursa) · NasdaqGS · kualitas native · brief diambil 9 Agustus 2026 pukul 17.42 WIB\nCatatan data: bursa AS tutup akhir pekan, jadi candle terakhir Jumat 7 Agustus — wajar, bukan data basi. Satu galat sumber: field\n[...dipangkas...]\nditembus dengan volume atau ditolak; dua, laporan 26 Agustus — bukan angkanya saja, tapi selisih terhadap konsensus $2,13 / $93,6 miliar, guidance, dan komposisi margin.\n\n⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.",
+  "angka_kunci": [
+   "harga=98,91",
+   "harga=81,6",
+   "harga=44,1",
+   "harga=215,9",
+   "harga=2,13",
+   "harga=93,6",
+   "harga=4,90",
+   "harga=223,96"
+  ]
  }
 ]
