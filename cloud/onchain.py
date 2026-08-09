@@ -69,8 +69,13 @@ def angka(x):
         return None
 
 
-def tren(seri):
-    """Bandingkan nilai terbaru dengan ~30 hari lalu."""
+def tren(seri, rentang_hari=None):
+    """Bandingkan nilai terbaru dengan awal jendela yang BENAR-BENAR tersedia.
+
+    Dulu hasilnya selalu diberi nama `tren_30h` padahal jendelanya 35 hari (default --hari)
+    dan bisa lebih pendek lagi kalau harinya berlubang. Label periode yang tidak sesuai
+    kenyataan adalah jenis kesalahan yang tidak pernah ketahuan dari log.
+    """
     nilai = [a for a in seri if a is not None]
     if len(nilai) < 5:
         return None
@@ -80,6 +85,8 @@ def tren(seri):
     delta = (akhir - awal) / abs(awal) * 100
     arah = "naik" if delta > 3 else "turun" if delta < -3 else "datar"
     return {"perubahan_persen": round(delta, 1), "arah": arah,
+            "titik_dipakai": len(nilai),
+            "rentang_hari": rentang_hari,
             "dari": round(awal, 4), "ke": round(akhir, 4)}
 
 
@@ -163,9 +170,9 @@ def main():
             tidak_tersedia.append(m)
             continue
         item = {"terbaru": round(nilai[-1], 6), "arti": ARTI.get(m, "")}
-        t = tren(seri)
+        t = tren(seri, args.hari)
         if t:
-            item["tren_30h"] = t
+            item["tren"] = t
         metrik_keluar[m] = item
 
     hasil["metrik"] = metrik_keluar

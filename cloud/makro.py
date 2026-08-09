@@ -110,6 +110,27 @@ def tumbuh(baru, lama):
     return round((baru - lama) / abs(lama) * 100, 2)
 
 
+def _acuan_tanggal(data, tgl_akhir, mundur_hari):
+    """Titik data terdekat sebelum `mundur_hari` dari tanggal terakhir.
+
+    Dipakai supaya label periode selalu jujur apa pun frekuensi serinya. Mundur sejumlah
+    TITIK hanya benar untuk seri harian, dan seri mingguan diam-diam melompat berkali lipat.
+    """
+    try:
+        batas = datetime.strptime(tgl_akhir, "%Y-%m-%d") - timedelta(days=mundur_hari)
+    except ValueError:
+        return data[0]
+    kandidat = None
+    for t, v in data:
+        try:
+            if datetime.strptime(t, "%Y-%m-%d") <= batas:
+                kandidat = (t, v)
+        except ValueError:
+            continue
+    return kandidat or data[0]
+
+
+
 def olah(kode, nama, satuan, jenis, data):
     tgl, nilai = data[-1]
     try:
@@ -122,17 +143,48 @@ def olah(kode, nama, satuan, jenis, data):
             "arah_emas_bila_naik": ARAH_EMAS.get(kode)}
 
     if jenis == "bulanan":
-        if len(data) >= 2:
-            item["mom_persen"] = tumbuh(nilai, data[-2][1])
-        if len(data) >= 13:
-            item["yoy_persen"] = tumbuh(nilai, data[-13][1])
+        # MoM & YoY dicari lewat BULAN, bukan mundur 1 atau 12 titik. Deret resmi pun
+        # BERLUBANG: CPI Oktober 2025 tidak ada sama sekali di FRED (rilisnya tertunda),
+        # sehingga data[-13] mendarat 13 bulan lalu dan angka itu tetap dilaporkan
+        # sebagai "yoy_persen". Inflasi tahunan adalah angka utama untuk analisa emas —
+        # meleset satu bulan diam-diam jauh lebih berbahaya daripada kosong.
+        peta = {}
+        for t, v in data:
+            try:
+                d = datetime.strptime(t, "%Y-%m-%d")
+            except ValueError:
+                continue
+            peta[(d.year, d.month)] = v
+        try:
+            kini = datetime.strptime(tgl, "%Y-%m-%d")
+        except ValueError:
+            kini = None
+        if kini:
+            for label, mundur in (("mom_persen", 1), ("yoy_persen", 12)):
+                bulan = kini.month - mundur
+                tahun = kini.year + (bulan - 1) // 12
+                bulan = (bulan - 1) % 12 + 1
+                lalu = peta.get((tahun, bulan))
+                if lalu is not None:
+                    item[label] = tumbuh(nilai, lalu)
+                else:
+                    item[label] = None
+                    item[f"catatan_{label}"] = (
+                        f"periode pembanding ({tahun}-{bulan:02d}) TIDAK ADA di deret — "
+                        "kemungkinan rilisnya tertunda atau dibatalkan. Perubahan tidak "
+                        "dihitung; JANGAN menghitung sendiri dari periode terdekat.")
         # NFP lebih bermakna sebagai SELISIH orang, bukan persen.
         if kode == "PAYEMS" and len(data) >= 2:
             item["tambahan_pekerjaan_ribu"] = round(nilai - data[-2][1], 1)
     else:
-        acuan = data[-22] if len(data) >= 22 else data[0]
+        # Acuan dicari dari TANGGAL, bukan mundur 22 titik. Mundur 22 titik hanya benar
+        # untuk seri harian: pada seri MINGGUAN (klaim pengangguran, NFCI) itu berarti
+        # 22 minggu = 147 hari, tapi tetap dilaporkan sebagai "perubahan_30h_persen".
+        # Angka salah berlabel benar seperti ini tidak pernah ketahuan dari log.
+        acuan = _acuan_tanggal(data, tgl, 30)
         item["perubahan_30h_persen"] = tumbuh(nilai, acuan[1])
         item["nilai_30h_lalu"] = acuan[1]
+        item["tanggal_pembanding"] = acuan[0]
 
     if kode in _PERSENTIL and len(data) > 60:
         # Jendela dihitung dari TANGGAL, bukan jumlah titik. Memakai 252*3 titik hanya

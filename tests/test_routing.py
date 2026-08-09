@@ -523,3 +523,72 @@ def test_makro_jendela_persentil_dari_tanggal():
                - datetime.strptime(awal, "%Y-%m-%d")).days / 365.25
     assert 2.5 <= rentang <= 3.5, f"jendela {rentang:.1f} tahun, seharusnya ~3"
 
+
+
+# ============================================================================
+# KELAS BUG: angka SALAH berlabel BENAR
+#
+# Tes di atas sebagian besar menguji BENTUK keluaran. Tiga bug berturut-turut lolos
+# darinya karena yang salah adalah NILAI-nya terhadap waktu & frekuensi data — bukan
+# strukturnya. Blok ini menguji kebenaran nilainya, dengan data sintetis yang lubangnya
+# dibuat sengaja, sehingga tidak menyentuh jaringan.
+# ============================================================================
+
+def test_makro_yoy_menolak_periode_yang_hilang():
+    """Deret resmi pun berlubang: CPI Oktober 2025 tidak ada di FRED (rilis tertunda).
+
+    Bug nyata: data[-13] lalu mendarat 13 bulan lalu dan tetap dilaporkan sebagai
+    yoy_persen. Inflasi tahunan adalah angka utama untuk analisa emas.
+    """
+    import makro
+    data = []
+    for tahun, bulan in [(2025, m) for m in range(1, 13)] + [(2026, m) for m in range(1, 7)]:
+        if (tahun, bulan) == (2025, 10):
+            continue                                   # LUBANG yang disengaja
+        data.append((f"{tahun}-{bulan:02d}-01", 100.0 + len(data)))
+    item = makro.olah("CPIAUCSL", "uji", "indeks", "bulanan", data)
+    # Juni 2026 vs Juni 2025 ADA keduanya -> YoY harus terhitung dan TIDAK meleset
+    assert item["yoy_persen"] is not None
+    juni25 = dict((t[:7], v) for t, v in data)["2025-06"]
+    juni26 = dict((t[:7], v) for t, v in data)["2026-06"]
+    assert item["yoy_persen"] == round((juni26 - juni25) / juni25 * 100, 2)
+
+
+def test_makro_yoy_kosong_kalau_pembanding_tidak_ada():
+    """Kalau periode pembandingnya memang hilang, jangan dihitung dari yang terdekat."""
+    import makro
+    data = [("2026-05-01", 100.0), ("2026-06-01", 101.0)]     # tidak ada 2025-06
+    item = makro.olah("CPIAUCSL", "uji", "indeks", "bulanan", data)
+    assert item["yoy_persen"] is None
+    assert "catatan_yoy_persen" in item
+
+
+def test_makro_perubahan_30h_benar_untuk_seri_mingguan():
+    """Mundur 22 TITIK hanya benar untuk seri harian.
+
+    Bug nyata: pada seri MINGGUAN (klaim pengangguran, NFCI) itu berarti 147 hari, tapi
+    tetap dilaporkan sebagai perubahan_30h_persen.
+    """
+    import makro
+    from datetime import datetime, timedelta
+    mulai = datetime(2026, 1, 1)
+    data = [((mulai + timedelta(weeks=i)).strftime("%Y-%m-%d"), 100.0 + i) for i in range(60)]
+    item = makro.olah("ICSA", "uji", "orang", "harian", data)
+    jarak = (datetime.strptime(item["tanggal_data"], "%Y-%m-%d")
+             - datetime.strptime(item["tanggal_pembanding"], "%Y-%m-%d")).days
+    assert 28 <= jarak <= 37, f"pembanding {jarak} hari, seharusnya sekitar 30"
+
+
+def test_onchain_tren_menyebut_rentang_sebenarnya():
+    """Label periode harus mengikuti jendela yang benar-benar dipakai."""
+    import onchain
+    t = onchain.tren([100.0 + i for i in range(35)], 35)
+    assert t["rentang_hari"] == 35
+    assert t["titik_dipakai"] == 35
+
+
+def test_onchain_tren_menolak_pembagi_nol():
+    """Nilai awal 0 tidak bisa dijadikan dasar persentase — kembalikan None, jangan 0."""
+    import onchain
+    assert onchain.tren([0.0] + [float(i) for i in range(1, 35)], 35) is None
+
