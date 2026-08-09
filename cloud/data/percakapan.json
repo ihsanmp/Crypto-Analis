@@ -1,52 +1,5 @@
 [
  {
-  "chat": "325b60962ab73036",
-  "waktu": 1786253625.6308477,
-  "waktu_utc": "2026-08-09 05:33",
-  "pesan": "analisa gold",
-  "balasan": "🕒 Data per 9 Agustus 2026, 12.28 WIB · sumber COMEX via Yahoo Finance (native) · candle terakhir Jumat 7 Agustus — pasar tutup akhir pekan, ini wajar, bukan data basi.\n\n━━━━━━━━━━━━━━━━━━━━\nGC=F — Emas berjangka COMEX (logam, bukan saham tambang)\n━━━\n[...dipangkas...]\n: CPI Juli keluar di atas konsensus DAN DXY berbalik menguat — kalau keduanya terjadi, tesis \"Fed melunak menopang emas\" gugur, dan level $4.200 kemungkinan besar diuji.\n\n⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.",
-  "angka_kunci": [
-   "harga=4.049",
-   "harga=2.432",
-   "harga=4.343",
-   "harga=3",
-   "harga=530",
-   "harga=4.399,70",
-   "harga=4.331",
-   "harga=4.268"
-  ]
- },
- {
-  "chat": "325b60962ab73036",
-  "waktu": 1786254379.9648905,
-  "waktu_utc": "2026-08-09 05:46",
-  "pesan": "analisa sol",
-  "balasan": "🕒 Data per 9 Agu 2026, 12:43 WIB · sumber harga Kraken (native)\n\n📊 PASAR\nFear & Greed 31 (Fear, kemarin 30 — stabil)\nBTC, dominasi, dan Whale Index TIDAK tersedia di brief ini — jadi filter pasar tidak lengkap. Perlakukan kesimpulan di bawah dengan k\n[...dipangkas...]\nagalnya harga menembus $77,3–78,0 dengan volume; (2) kelanjutan arus masuk ETF MSOL; (3) angka fees Agustus — apakah kenaikan Juli +36,9% berlanjut atau cuma satu bulan.\n\n⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.",
-  "angka_kunci": [
-   "harga=60,12",
-   "harga=77,3",
-   "harga=44,2",
-   "harga=188",
-   "harga=15,0",
-   "harga=272,7",
-   "harga=1,58",
-   "harga=32,2"
-  ]
- },
- {
-  "chat": "325b60962ab73036",
-  "waktu": 1786255309.497222,
-  "waktu_utc": "2026-08-09 06:01",
-  "pesan": "rsi eth di daily berapa?",
-  "balasan": "🕒 Data per 9 Agustus 2026, 13:01 WIB\n\n🕒 Data per 9 Agu 2026, 13:01 WIB · candle Daily terakhir 8 Agu 2026 (Kraken)\n\nRSI14 Daily $ETH: 56,56 — netral, belum overbought/oversold. Sama dengan angka 49 menit lalu, karena candle harian belum ganti.\n\n• Har\n[...dipangkas...]\n• Stoch Daily netral (K 75 vs D 73), belum kasih sinyal jual tegas\n\nBelum ada perubahan arah dari analisa sebelumnya — masih fase transisi, bukan sinyal beli/jual baru.\n\n⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.",
-  "angka_kunci": [
-   "harga=1.915",
-   "harga=1.880",
-   "rsi=14",
-   "ema=2 1"
-  ]
- },
- {
   "chat": "d835af1780ef5751",
   "waktu": 1786272383.206501,
   "waktu_utc": "2026-08-09 10:46",
@@ -95,6 +48,23 @@
    "harga=1,89",
    "harga=92,2",
    "harga=82,3"
+  ]
+ },
+ {
+  "chat": "1242dcf6b322d4c6",
+  "waktu": 1786291724.5206606,
+  "waktu_utc": "2026-08-09 16:08",
+  "pesan": "analisa saham nvda",
+  "balasan": "🕒 Data per 7 Agustus 2026 (penutupan bursa terakhir, Jumat) · diambil 9 Agustus 2026 23:04 WIB · Yahoo Finance (quality: native). Hari ini Minggu, bursa AS tutup — candle terakhir = penutupan Jumat, itu wajar.\n\n━━━━━━━━━━━━━━━━━━━━\n$NVDA — NVIDIA Cor\n[...dipangkas...]\nsi di $226,5–229,4 — tembus dengan volume di atas rata-rata mengubah gambaran, tembus dengan volume tipis adalah jebakan; (2) guidance 26 Agustus, bukan angka aktualnya.\n\n⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.",
+  "angka_kunci": [
+   "harga=81,6",
+   "harga=44,1",
+   "harga=61,2",
+   "harga=6,3",
+   "harga=54,8",
+   "harga=58,3",
+   "harga=13",
+   "harga=1,87"
   ]
  }
 ]
