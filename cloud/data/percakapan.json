@@ -1,22 +1,5 @@
 [
  {
-  "chat": "d835af1780ef5751",
-  "waktu": 1786272383.206501,
-  "waktu_utc": "2026-08-09 10:46",
-  "pesan": "analisa saham nvda",
-  "balasan": "🕒 Data per 7 Agustus 2026 (penutupan bursa) · NasdaqGS · kualitas native · brief diambil 9 Agustus 2026 pukul 17.42 WIB\nCatatan data: bursa AS tutup akhir pekan, jadi candle terakhir Jumat 7 Agustus — wajar, bukan data basi. Satu galat sumber: field\n[...dipangkas...]\nditembus dengan volume atau ditolak; dua, laporan 26 Agustus — bukan angkanya saja, tapi selisih terhadap konsensus $2,13 / $93,6 miliar, guidance, dan komposisi margin.\n\n⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.",
-  "angka_kunci": [
-   "harga=98,91",
-   "harga=81,6",
-   "harga=44,1",
-   "harga=215,9",
-   "harga=2,13",
-   "harga=93,6",
-   "harga=4,90",
-   "harga=223,96"
-  ]
- },
- {
   "chat": "1242dcf6b322d4c6",
   "waktu": 1786273420.322405,
   "waktu_utc": "2026-08-09 11:03",
@@ -99,6 +82,23 @@
    "harga=58,3",
    "harga=13",
    "harga=2,39"
+  ]
+ },
+ {
+  "chat": "1242dcf6b322d4c6",
+  "waktu": 1786294461.2531292,
+  "waktu_utc": "2026-08-09 16:54",
+  "pesan": "analisa pump",
+  "balasan": "🕒 Data per 9 Agustus 2026, 23:51 WIB · sumber harga Kraken (native) · candle tertutup saja\n\n📊 PASAR\nBTC / dominasi / Whale Index: TIDAK TERSEDIA di brief ini — jangan dianggap netral, memang tidak diambil.\nFear & Greed 31 (Fear, kemarin 30 · stabil).\n[...dipangkas...]\nat saya BERUBAH pandangan jadi akumulasi: close mingguan di atas $0,00268 (SuperTrend mingguan) dengan volume di atas rata-rata, plus TVL mulai tumbuh lagi >20% 30 hari.\n\n⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.",
+  "angka_kunci": [
+   "harga=37,6",
+   "harga=14,72",
+   "harga=0,95",
+   "harga=251,4",
+   "harga=9,59",
+   "harga=106,7",
+   "harga=591,7",
+   "harga=20,2"
   ]
  }
 ]
