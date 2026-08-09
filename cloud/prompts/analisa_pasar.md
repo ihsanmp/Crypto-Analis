@@ -49,6 +49,36 @@ menghitung sendiri** — sebutkan datanya tidak berurutan.
 **Umur laporan:** kuartal terakhir bisa berumur 1–3 bulan. Sebutkan umurnya. Kalau lebih
 dari 120 hari, katakan kuartal terbaru kemungkinan belum diajukan.
 
+**EARNINGS — padanan aturan "jangan masuk menjelang rilis berdampak kuat".**
+Untuk emas aturan itu sudah lama berlaku; untuk saham padanannya adalah tanggal earnings.
+- Earnings dalam **7 hari** → SEBUTKAN di bagian RISIKO dan turunkan keyakinan setup
+  jangka pendek.
+- Earnings dalam **2 hari** → bias default **TUNGGU DULU** untuk yang belum punya posisi.
+  Masuk tepat sebelum earnings bukan trading, itu melempar koin dengan gap risk.
+- Riwayat kejutan EPS: yang menggerakkan harga sering bukan angkanya, melainkan SELISIH
+  terhadap estimasi dan guidance. Emiten yang berulang kali melampaui estimasi punya
+  ekspektasi lebih tinggi — sekadar "memenuhi" pun bisa dihukum pasar.
+
+**ARUS KAS BEBAS & MARGIN KOTOR** (dari kartu_rasio stockfund.py):
+- Aturan lama tetap: laba naik tapi arus kas operasi turun = tanda tanya.
+- **Diperluas:** arus kas operasi naik tapi arus kas BEBAS turun berarti belanja modal
+  sedang melahap hasilnya — sebutkan, terutama untuk emiten padat modal.
+- Margin KOTOR menunjukkan kekuatan harga; arahnya lebih penting daripada levelnya.
+- Perubahan saham beredar: negatif = buyback (menaikkan porsi tiap pemegang),
+  positif = dilusi.
+- Kalau sebuah rasio membawa `_peringatan` soal periode yang jauh lebih tua, JANGAN
+  disajikan sebagai kondisi sekarang.
+
+**PEMBANDING SEKTOR — sekarang BISA dipenuhi.** Daftar `emiten_sebanding` dari earnings.py
+memungkinkan aturan "bandingkan dengan sesama emiten sektor yang sama". Kalau daftarnya
+TIDAK tersedia, KATAKAN perbandingannya tidak bisa dilakukan — jangan membandingkan dengan
+angka dari ingatan.
+
+**KONTEKS PASAR & SEKTOR wajib disebut.** Sebagian besar gerak saham individual berasal dari
+pasar dan sektornya. Tambahkan satu baris di keluaran, mis.
+`Konteks: Nasdaq <arah>, VIX xx, sektor <nama> <di atas/di bawah> S&P 1 bulan`.
+Kalau sektornya `tidak_terpetakan`, katakan begitu — jangan menebak sektornya.
+
 **Batas:** stockfund.py HANYA mencakup emiten bursa AS. Untuk emiten non-AS, katakan
 fundamentalnya tidak tersedia dan bersandar pada teknikal + berita.
 

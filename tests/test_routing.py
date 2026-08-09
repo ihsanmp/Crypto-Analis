@@ -592,3 +592,60 @@ def test_onchain_tren_menolak_pembagi_nol():
     import onchain
     assert onchain.tren([0.0] + [float(i) for i in range(1, 35)], 35) is None
 
+
+
+# ------------------------------------------------------- T6: konteks & earnings
+
+def test_konteks_pemetaan_sic_tidak_menebak():
+    """Kode SIC di luar peta harus DILAPORKAN, bukan dicocokkan ke sektor terdekat.
+
+    Pembanding sektor yang salah lebih menyesatkan daripada mengaku tidak tahu.
+    """
+    import konteks
+    ketemu = [etf for (a, b), etf, _ in konteks.SIC_KE_SEKTOR if a <= 3674 <= b]
+    assert ketemu == ["XLK"], ketemu            # semikonduktor -> teknologi
+    assert not [etf for (a, b), etf, _ in konteks.SIC_KE_SEKTOR if a <= 9999 <= b]
+
+
+def test_konteks_semua_etf_dikenali():
+    """Tiap ETF di peta SIC harus punya nama sektor — kalau tidak, keluarannya bolong."""
+    import konteks
+    for _, etf, _ in konteks.SIC_KE_SEKTOR:
+        assert etf in konteks.SEKTOR, etf
+
+
+def test_konteks_tutup_pada_berbasis_tanggal():
+    """Mundur sekian CANDLE tidak setara antar simbol karena libur bursa berbeda."""
+    import konteks
+    hari = 86400
+    akhir = 1_700_000_000
+    # candle harian dengan satu lubang panjang (libur) di tengah
+    candles = [[(akhir - n * hari) * 1000, 0, 0, 0, 100.0 + n, 0]
+               for n in range(120, -1, -1) if not (40 < n < 60)]
+    harga, tgl = konteks._tutup_pada(candles, 30)
+    assert harga is not None and tgl
+    from datetime import datetime, timezone
+    jarak = (akhir - datetime.strptime(tgl, "%Y-%m-%d")
+             .replace(tzinfo=timezone.utc).timestamp()) / 86400
+    assert 29 <= jarak <= 36, f"{jarak} hari, seharusnya sekitar 30"
+
+
+def test_earnings_tanpa_kunci_tidak_mati(monkeypatch):
+    """Pola kunci opsional: laporkan tidak tersedia, JANGAN mematikan analisa."""
+    import earnings
+    monkeypatch.delenv("FINNHUB_API_KEY", raising=False)
+    data, cache, err = earnings.ambil("/stock/peers", {"symbol": "NVDA"}, "uji")
+    assert data is None and err and "kosong" in err
+
+
+def test_stockfund_turunan_menuntut_periode_sama():
+    """Arus kas bebas menuntut arus kas operasi DAN capex dari periode yang SAMA.
+
+    Memasangkan komponen dari periode berbeda menghasilkan angka yang terlihat wajar
+    tapi salah — kelas kesalahan yang tidak pernah ketahuan dari log.
+    """
+    import stockfund
+    assert "capex" in stockfund.METRIK
+    assert "laba_kotor" in stockfund.METRIK
+    assert "beban_bunga" in stockfund.METRIK
+

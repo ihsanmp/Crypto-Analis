@@ -47,6 +47,16 @@ METRIK = {
     "ekuitas": ["StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"],
     "arus_kas_operasi": ["NetCashProvidedByUsedInOperatingActivities",
                          "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations"],
+    # Tanpa capex, ARUS KAS BEBAS mustahil dihitung — dan untuk emiten padat modal itu
+    # menyembunyikan risiko terbesarnya: laba operasi besar bisa habis oleh belanja modal.
+    "capex": ["PaymentsToAcquirePropertyPlantAndEquipment",
+              "PaymentsToAcquireProductiveAssets"],
+    "laba_kotor": ["GrossProfit"],
+    "beban_rnd": ["ResearchAndDevelopmentExpense"],
+    "saham_beredar": ["CommonStockSharesOutstanding",
+                      "WeightedAverageNumberOfDilutedSharesOutstanding"],
+    "utang_jangka_panjang": ["LongTermDebtNoncurrent", "LongTermDebt"],
+    "beban_bunga": ["InterestExpense", "InterestExpenseDebt"],
 }
 
 
@@ -363,6 +373,92 @@ def main():
     # Kualitas laba: arus kas operasi dibagi laba bersih. Di bawah 1 berarti laba tidak
     # sepenuhnya menjadi kas — persis tanda tanya yang disebut metodologi saham.
     taruh("kualitas_laba_ocf_per_laba_ttm", ocf, ni)
+    # --- Turunan yang menuntut DUA komponen dari PERIODE YANG SAMA ---
+    # Memasangkan komponen dari periode berbeda menghasilkan angka yang terlihat wajar
+    # tapi salah — itu jenis kesalahan yang tidak pernah ketahuan dari log. Karena itu
+    # tiap pasangan dicocokkan periodenya dulu; kalau tidak ketemu, hasilnya null + catatan.
+    def sepadan(a, b, periode="kuartalan"):
+        """Nilai (a, b, periode) dari periode TERAKHIR yang punya keduanya."""
+        pa = {x["periode"]: x["nilai"] for x in ((data.get(a) or {}).get(periode) or [])
+              if x.get("nilai") is not None}
+        pb = {x["periode"]: x["nilai"] for x in ((data.get(b) or {}).get(periode) or [])
+              if x.get("nilai") is not None}
+        sama = sorted(set(pa) & set(pb))
+        if not sama:
+            return None, None, None
+        t = sama[-1]
+        return pa[t], pb[t], t
+
+    # Periode TERBARU yang tersedia di seluruh metrik — jadi acuan menilai kebasian.
+    _semua_periode = []
+    for isi in (data or {}).values():
+        for p_ in ("kuartalan", "tahunan"):
+            _semua_periode += [x["periode"] for x in (isi.get(p_) or []) if x.get("periode")]
+    _terbaru = max(_semua_periode) if _semua_periode else None
+
+    def turunan(nama, a, b, hitung, arti):
+        for periode in ("kuartalan", "tahunan"):
+            va, vb, t = sepadan(a, b, periode)
+            if va is not None and vb:
+                kartu[nama] = hitung(va, vb)
+                kartu[f"{nama}_periode"] = f"{t} ({periode})"
+                # Salah satu komponen bisa berhenti dilaporkan jauh lebih awal daripada
+                # yang lain — beban bunga NVDA misalnya berhenti 2024 sementara sisanya
+                # sampai 2026. Tanpa penanda, angka dua tahun lalu tampil berdampingan
+                # dengan angka terkini seolah sama barunya.
+                if _terbaru and t:
+                    try:
+                        tua = (datetime.strptime(_terbaru, "%Y-%m-%d")
+                               - datetime.strptime(t, "%Y-%m-%d")).days
+                        if tua > 200:
+                            kartu[f"{nama}_peringatan"] = (
+                                f"periode ini {tua} hari lebih tua daripada laporan terbaru "
+                                f"({_terbaru}) — salah satu komponennya berhenti dilaporkan. "
+                                f"JANGAN disajikan sebagai kondisi sekarang.")
+                    except ValueError:
+                        pass
+                return
+        kosong.append(f"{nama} ({arti})")
+
+    turunan("arus_kas_bebas", "arus_kas_operasi", "capex",
+            lambda o, c: round(o - abs(c), 0),
+            "butuh arus kas operasi DAN capex di periode yang sama")
+    turunan("margin_kotor_persen", "laba_kotor", "revenue",
+            lambda g, r: round(g / r * 100, 2), "butuh laba kotor DAN revenue")
+    turunan("rnd_terhadap_revenue_persen", "beban_rnd", "revenue",
+            lambda d, r: round(d / r * 100, 2), "butuh beban R&D DAN revenue")
+    # Cakupan bunga: arus kas operasi dipakai karena laba operasi tidak selalu ada
+    # sebagai tag tersendiri. Sebutkan dasarnya supaya tidak disalahbaca sebagai EBIT.
+    turunan("cakupan_bunga_dari_arus_kas", "arus_kas_operasi", "beban_bunga",
+            lambda o, i: round(o / abs(i), 1) if i else None,
+            "butuh arus kas operasi DAN beban bunga")
+
+    # Perubahan saham beredar YoY: negatif = buyback, positif = dilusi.
+    sb = [x for x in ((data.get("saham_beredar") or {}).get("kuartalan") or [])
+          if x.get("nilai")]
+    if len(sb) >= 2:
+        peta_sb = {x["periode"]: x["nilai"] for x in sb}
+        akhir_p = sb[-1]["periode"]
+        try:
+            d_akhir = datetime.strptime(akhir_p, "%Y-%m-%d")
+            banding = None
+            for t, v in peta_sb.items():
+                selisih = abs((d_akhir - datetime.strptime(t, "%Y-%m-%d")).days - 365)
+                if selisih <= 45 and (banding is None or selisih < banding[0]):
+                    banding = (selisih, t, v)
+            if banding:
+                _, t_lalu, v_lalu = banding
+                ubah = (sb[-1]["nilai"] - v_lalu) / v_lalu * 100
+                kartu["perubahan_saham_beredar_yoy_persen"] = round(ubah, 2)
+                kartu["saham_beredar_dibanding"] = t_lalu
+                kartu["arti_saham_beredar"] = ("negatif = buyback (mengurangi jumlah saham, "
+                                               "menaikkan porsi tiap pemegang); positif = "
+                                               "dilusi.")
+            else:
+                kosong.append("perubahan_saham_beredar_yoy (tidak ada periode ~1 tahun lalu)")
+        except ValueError:
+            pass
+
     if kartu:
         if kosong:
             kartu["tidak_bisa_dihitung"] = kosong

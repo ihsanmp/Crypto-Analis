@@ -343,6 +343,10 @@ langsung jawab.
   dengan alasan, dan boleh bilang "aku tidak tahu" ketimbang mengarang.
 <!-- /BLOK -->
 <!-- BLOK: saham-forex | pemicu: saham,stock,forex,fx,mata uang,bursa,emiten,nasdaq,nyse,eurusd,gbpusd,usdjpy,nvda,aapl,msft,tsla,eps,p/e,dividen,earnings -->
+- **Pertanyaan SAHAM** boleh memakai `python cloud/konteks.py --untuk <TICKER>` (indeks,
+  VIX, sektor emiten vs S&P) dan `python cloud/earnings.py <TICKER>` (jadwal earnings,
+  kejutan EPS, daftar peer). Ikuti PETA KORELASI: untuk crypto & forex JANGAN dipanggil.
+  Kalau earnings jatuh dalam 7 hari, sebutkan sebagai risiko terjadwal.
 - **SAHAM & FOREX (termasuk GOLD).** Mesin indikatornya sama dengan crypto, cuma beda sumber:
   1. Chart & indikator: `python cloud/market.py <SIMBOL>` untuk saham (mis. NVDA, AAPL,
      MSFT — fokus bursa luar negeri), atau `python cloud/market.py <PASANGAN> --forex`
@@ -404,7 +408,7 @@ Data diambil mengikuti **JALUR SEBAB-AKIBAT aset yang ditanya**, bukan borongan.
 |---|---|---|
 | **GOLD / FOREX** | `makro.py` (yield, dolar, Fed, CPI/NFP) + `market.py` | ainews.py · sentiment.py · investors.py · whaleflow.py · onchain.py · riset X · kepemilikan ETF crypto |
 | **CRYPTO satu koin** | `indicators.py` + CoinMarketCap | sisanya, **kecuali** pertanyaannya menyebut: fundamentals.py (revenue/TVL) · onchain.py (MVRV) · investors.py (holder) · sentiment.py (hype) · whaleflow.py (whale) |
-| **SAHAM** | `market.py` + `stockfund.py` | metrik crypto apa pun |
+| **SAHAM** | `market.py` + `stockfund.py` + `konteks.py` + `earnings.py` | metrik crypto apa pun |
 | **AI sebagai industri** | `ainews.py` + WebSearch | semua script pasar — tidak ada koin di sini |
 
 **Uji sebelum memanggil tool:** *"kalau hasilnya mengejutkan, apakah kesimpulanku

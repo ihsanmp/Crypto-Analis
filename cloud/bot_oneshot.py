@@ -1006,6 +1006,13 @@ def data_mentah_pasar(simbol, jenis):
     if jenis == "saham":
         tugas.append(("FUNDAMENTAL (stockfund.py)",
                       ["cloud/stockfund.py", simbol, "--ringkas"]))
+        # Konteks pasar & sektor: sebagian besar gerak saham individual berasal dari
+        # keduanya, bukan dari emitennya sendiri.
+        tugas.append(("KONTEKS PASAR & SEKTOR (konteks.py)",
+                      ["cloud/konteks.py", "--untuk", simbol]))
+        # Jadwal earnings: padanan aturan "jangan masuk menjelang rilis berdampak kuat"
+        # yang sudah lama berlaku untuk emas. Tetap jalan tanpa FINNHUB_API_KEY.
+        tugas.append(("EARNINGS & PEER (earnings.py)", ["cloud/earnings.py", simbol]))
     else:
         tugas.append(("MAKRO AS (makro.py, sumber FRED)", ["cloud/makro.py", "--ringkas"]))
         # Konsensus & jadwal rilis — HANYA untuk forex/komoditas. Saham dinilai dari
@@ -1013,11 +1020,21 @@ def data_mentah_pasar(simbol, jenis):
         tugas.append(("KONSENSUS & JADWAL RILIS (kalender.py)",
                       ["cloud/kalender.py", "--ringkas"]))
 
+    # Dijalankan paralel seperti jalur crypto. Jalur saham kini punya enam bagian dan
+    # berurutan memakan ~70 detik, yang memakan jatah tahap analisa. Pekerja dibatasi 2
+    # karena stockfund.py dan konteks.py sama-sama menembak SEC.
     bagian, gagal = [], []
+    kumpul = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        antre = {pool.submit(jalankan_script, a): l for l, a in tugas}
+        for fut in concurrent.futures.as_completed(antre):
+            label = antre[fut]
+            try:
+                kumpul[label] = fut.result()
+            except Exception as e:
+                kumpul[label] = (None, type(e).__name__)
     for label, args in tugas:
-        t0 = time.time()
-        keluar, err = jalankan_script(args)
-        print(f"[data] {label}: {time.time() - t0:.1f} detik", file=sys.stderr)
+        keluar, err = kumpul.get(label, (None, "tidak dijalankan"))
         if err:
             gagal.append(f"{label}: {err}")
             bagian.append(f"[{label}]\nGAGAL DIAMBIL — {err}")
