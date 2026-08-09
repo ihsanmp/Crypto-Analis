@@ -1159,14 +1159,25 @@ def process(token, chat_id, text, photo_file_id=None):
     # membuat kegagalan terlihat seolah "data per jam sekian" — membingungkan.
     if not body.startswith("❌"):
         body = pastikan_bertanggal(body)
+
+    # Audit dijalankan SEBELUM pengiriman supaya vonisnya bisa ikut ke user. Sebelumnya
+    # ketiganya berjalan setelah send_message, jadi hasilnya tidak mungkin sampai.
+    kesegaran = audit_kesegaran(body)
+    jejak = audit_angka(brief, body)
+    asal = audit_sumber(brief)
+    if not body.startswith("❌"):
+        catatan = peringatan_audit(jejak, asal, kesegaran)
+        if catatan:
+            body = sisipkan_peringatan(body, catatan)
+            print(f"[audit] peringatan DIKIRIM ke user: {catatan[:70]}", file=sys.stderr)
+
     if send_message(token, chat_id, body):
         print(f"[proses] balasan {len(body)} karakter TERKIRIM ke Telegram", file=sys.stderr)
-        print(f"[audit] {audit_kesegaran(body)}", file=sys.stderr)
+        # Vonis lengkap tetap dicetak utuh ke log, bukan hanya yang terparah.
+        print(f"[audit] {kesegaran}", file=sys.stderr)
         simpan_riwayat(chat_id, text, body)
-        jejak = audit_angka(brief, body)
         if jejak:
             print(f"[audit] {jejak}", file=sys.stderr)
-        asal = audit_sumber(brief)
         if asal:
             print(f"[audit] {asal}", file=sys.stderr)
     else:
@@ -1180,6 +1191,57 @@ _TGL_RE = re.compile(
     r"\b(" + "|".join(_BULAN_ID) + r")\s+\d{4}\b|"             # Juli 2026
     r"\b\d{4}-\d{2}-\d{2}\b",                                  # 2026-07-17
     re.IGNORECASE)
+
+
+def peringatan_audit(jejak, asal, kesegaran):
+    """Ubah hasil audit jadi MAKSIMAL SATU baris peringatan untuk user, atau None.
+
+    Ketiga audit sudah menghitung vonis nyata sejak lama, tapi hasilnya hanya dicetak ke
+    stderr — dan itu SETELAH balasan dikirim. Artinya kalau sebagian besar angka tidak bisa
+    dilacak ke data mentah, user tetap menerima analisa itu tanpa tanda apa pun, sementara
+    vonisnya terkubur di log Actions yang tidak pernah dibuka.
+
+    Hanya SATU yang ditampilkan, yang paling parah. Menumpuk tiga peringatan membuat orang
+    berhenti membacanya, dan peringatan yang diabaikan sama saja dengan tidak ada.
+
+    Vonis PERIKSA (15-35% tidak terlacak) sengaja TIDAK memicu peringatan: level turunan
+    seperti target dan invalidasi memang wajar tidak muncul persis di data mentah, jadi
+    memperingatkannya akan sering dan membuat peringatan ini kehilangan arti.
+    """
+    asal = asal or ""
+    jejak = jejak or ""
+    kesegaran = kesegaran or ""
+
+    if "CLOSE-ONLY" in asal:
+        return ("⚠️ Sebagian data hanya harga penutupan — ATR, SuperTrend, dan Pivot di atas "
+                "tidak sahih.")
+    if "MENCURIGAKAN" in jejak:
+        return ("⚠️ Sebagian angka di atas tidak bisa kulacak ke data mentah — periksa ulang "
+                "sebelum dipakai.")
+    if "DATA BASI" in asal:
+        return ("⚠️ Candle terakhir sudah lebih dari 48 jam — untuk crypto ini tidak wajar, "
+                "perlakukan levelnya sebagai perkiraan.")
+    if "BURUK" in kesegaran:
+        return ("⚠️ Balasan ini memuat angka tanpa satu pun tanggal — ada kemungkinan sebagian "
+                "berasal dari ingatan, bukan data baru.")
+    return None
+
+
+def sisipkan_peringatan(body, peringatan):
+    """Tempel peringatan sebagai baris terakhir SEBELUM disclaimer.
+
+    Disclaimer selalu jadi penutup; peringatan yang ditaruh sesudahnya akan terbaca seperti
+    catatan kaki dan kehilangan bobotnya.
+    """
+    if not peringatan:
+        return body
+    baris = body.rstrip().split("\n")
+    for i in range(len(baris) - 1, -1, -1):
+        if baris[i].lstrip().startswith(("⚠️ Riset", "⚠️ Bukan saran", "⚠️ Ini bukan")):
+            baris.insert(i, peringatan)
+            baris.insert(i + 1, "")
+            return "\n".join(baris)
+    return body.rstrip() + "\n\n" + peringatan
 
 
 def pastikan_bertanggal(teks):
