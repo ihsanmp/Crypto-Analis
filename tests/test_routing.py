@@ -24,6 +24,8 @@ sys.path.insert(0, os.path.join(AKAR, "cloud"))
 import bot_oneshot as bot          # noqa: E402
 import memori                      # noqa: E402
 
+N = chr(10)      # newline, dipakai membangun contoh balasan multi-baris
+
 
 # ---------------------------------------------------------------- classify
 
@@ -736,3 +738,63 @@ def test_sec_tickers_menyimpan_nama_bukan_hanya_cik():
         return                       # jaringan tidak tersedia: lewati
     rekam = peta.get("NVDA")
     assert rekam and rekam.get("cik") and rekam.get("nama"), rekam
+
+
+# ------------------------------- sapuan ke-5: data produksi & format saham
+
+def test_rapor_tidak_menyusut_dari_commit_sebelumnya():
+    """Penjaga: catatan panggilan TIDAK BOLEH berkurang.
+
+    Sudah terjadi DUA KALI dalam sesi ini bahwa skrip uji ad-hoc menghapus berkas data
+    lalu terbawa `git add -A`: berkas cache Windows ikut ter-commit, dan rapor.jsonl
+    terpangkas dari 3 entri jadi 0 sehingga tiga panggilan produksi hilang permanen.
+    Rapor bersifat append-only; menyusut berarti ada yang terhapus tanpa sengaja.
+    """
+    import subprocess
+    p = os.path.join(AKAR, "cloud", "data", "rapor.jsonl")
+    if not os.path.exists(p):
+        return
+    with open(p, encoding="utf-8") as f:
+        sekarang = sum(1 for baris in f if baris.strip().startswith("{"))
+    try:
+        lama = subprocess.run(["git", "show", "HEAD:cloud/data/rapor.jsonl"],
+                              cwd=AKAR, capture_output=True, text=True, timeout=30)
+    except Exception:
+        return                                   # git tidak tersedia: lewati
+    if lama.returncode != 0:
+        return                                   # belum pernah di-commit
+    sebelum = sum(1 for baris in lama.stdout.split(chr(10))
+                  if baris.strip().startswith("{"))
+    assert sekarang >= sebelum, (
+        f"rapor menyusut {sebelum} -> {sekarang} entri — ada panggilan yang terhapus")
+
+
+def test_audit_mengecualikan_rencana_kedua_format():
+    """Judul bagian rencana BERBEDA antar prompt: analisa.md menulis "RENCANA SPOT",
+
+    analisa_pasar.md hanya "RENCANA". Pola lama hanya mengenali yang pertama, sehingga pada
+    analisa SAHAM & FOREX seluruh level turunan (entry, invalidasi, target) ikut dinilai dan
+    balasan yang jujur divonis MENCURIGAKAN 83% — lalu memicu peringatan palsu ke user.
+    """
+    brief = "[TEKNIKAL]" + N + "close: 313.33" + N + "rsi14: 52"
+    inti = ("🧮 SKOR 54/100" + N + "🎯 BIAS: TAHAN" + N +
+            "Harga $313,33 · RSI harian 52" + N + N)
+    rencana = ("Entry   bertahap di $300–305" + N + "Invalid $291,00" + N +
+               "Target  $340,00 → $365,00" + N)
+    for judul in ("🧭 RENCANA" + N, "🧭 RENCANA SPOT" + N):
+        vonis = bot.audit_angka(brief, inti + judul + rencana)
+        assert "BAIK" in vonis, f"{judul.strip()}: {vonis}"
+        assert bot.peringatan_audit(vonis, None, "OK") is None
+
+
+@pytest.mark.parametrize("baris,harap", [
+    ("Target  $165,00 → $180,00 → $195,00", [165.0, 180.0, 195.0]),
+    ("Target  $340,00 → $365,00", [340.0, 365.0]),
+    ("Target $120", [120.0]),
+    ("Target  $120 -> $140", [120.0, 140.0]),
+])
+def test_rapor_target_semua_format_resmi(baris, harap):
+    """Target harus terbaca dari format analisa.md MAUPUN analisa_pasar.md."""
+    teks = "🎯 BIAS SPOT: TAHAN" + N + "Harga $100" + N + "Invalid $90" + N + baris
+    assert rapor.urai_panggilan(teks)["level_target"] == harap
+

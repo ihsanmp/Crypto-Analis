@@ -1702,10 +1702,13 @@ def audit_angka(brief, balasan):
         return None
 
     # Bagian RENCANA & KESIMPULAN berisi level TURUNAN (zona entry, target, invalidasi)
+    # Bagian RENCANA & KESIMPULAN berisi level TURUNAN (zona entry, target, invalidasi)
     # yang memang dihitung dari Fibonacci/support — wajar tidak ada persis di brief.
-    # Bagian itu dikecualikan supaya sinyal ini tajam: yang tersisa adalah klaim FAKTUAL
-    # (harga, indikator, fundamental, kepemilikan) — di situlah karangan benar-benar bahaya.
-    potong = re.split(r"🧭\s*RENCANA SPOT|✅\s*KESIMPULAN", balasan)
+    # Judulnya BERBEDA antar prompt: analisa.md menulis "RENCANA SPOT" sedangkan
+    # analisa_pasar.md hanya "RENCANA". Pola lama hanya mengenali yang pertama, sehingga
+    # pada analisa SAHAM & FOREX seluruh level turunan ikut dinilai dan balasan yang jujur
+    # divonis MENCURIGAKAN 83% — lalu memicu peringatan palsu ke user.
+    potong = re.split(r"🧭\s*RENCANA|✅\s*KESIMPULAN", balasan)
     faktual = potong[0] if len(potong) > 1 else balasan
     # Baris "Level kunci: support/resisten" juga berisi level TURUNAN (dihitung dari
     # swing/Fibonacci), bukan angka mentah dari sumber — buang agar tidak jadi derau.
