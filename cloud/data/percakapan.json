@@ -100,5 +100,22 @@
    "harga=591,7",
    "harga=20,2"
   ]
+ },
+ {
+  "chat": "1242dcf6b322d4c6",
+  "waktu": 1786294748.3780806,
+  "waktu_utc": "2026-08-09 16:59",
+  "pesan": "kalo buy di 0.002551 bagaimana menurutmu?",
+  "balasan": "🕒 Data per 9 Agustus 2026, 23:59 WIB\n\n🕒 Data per 9 Agu 2026, candle 4H terakhir tutup 19:00 WIB · harga native\n\nEntry $0,002551 kamu sekarang profit tipis — harga 4H terakhir $0,002683, sekitar +5% dari beli. Bukan entry di dip, tapi masih nempel di\n[...dipangkas...]\nose mingguan di atas $0,00268 — jangan kejar sekarang, 4H sudah overbought.\n\n⚠️ Balasan ini memuat angka tanpa satu pun tanggal — ada kemungkinan sebagian berasal dari ingatan, bukan data baru.\n\n⚠️ Bukan saran keuangan ya, DYOR & atur risiko sendiri.",
+  "angka_kunci": [
+   "harga=0,002551",
+   "harga=0,002683",
+   "harga=0,002084",
+   "harga=0,002404",
+   "harga=0,00268",
+   "rsi=4",
+   "ema=2 1",
+   "ema=21 4"
+  ]
  }
 ]
