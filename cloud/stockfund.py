@@ -71,14 +71,18 @@ def get(url):
 
 
 def cari_cik(ticker):
-    d = get(TICKERS)
-    if "__err" in d:
-        return None, None, f"Gagal mengambil daftar emiten SEC ({d['__err']})."
-    for v in d.values():
-        if str(v.get("ticker", "")).upper() == ticker:
-            return str(v["cik_str"]).zfill(10), v.get("title"), None
-    return None, None, (f"'{ticker}' tidak ada di daftar emiten SEC. Sumber ini HANYA "
-                        "mencakup perusahaan yang terdaftar di bursa AS.")
+    """Cari CIK lewat cache bersama — berkas ticker SEC ~777 KB dan dulu diunduh ULANG
+    tiap analisa, dua kali malah karena konteks.py memintanya sendiri. Di runner GitHub
+    itu pernah memakan 42,9 detik dan langsung memotong jatah tahap analisa."""
+    from sec_tickers import peta_ticker
+    peta, _, err = peta_ticker()
+    if not peta:
+        return None, None, f"Gagal mengambil daftar emiten SEC ({err})."
+    rekam = peta.get(ticker.upper())
+    if not rekam:
+        return None, None, (f"{ticker} tidak ditemukan di daftar emiten SEC. "
+                            "Script ini HANYA mencakup emiten bursa AS.")
+    return rekam["cik"], rekam.get("nama"), None
 
 
 def hari(s):

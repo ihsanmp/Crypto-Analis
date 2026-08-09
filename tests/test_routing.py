@@ -708,3 +708,31 @@ def test_berkas_riwayat_tidak_memuat_id_polos():
     polos = [str(r.get("chat")) for r in riwayat if str(r.get("chat", "")).isdigit()]
     assert not polos, f"chat ID polos di repo publik: {polos}"
 
+
+# ------------------------------------------- sapuan ke-4: konkurensi & cache
+
+def test_rapor_id_unik_dalam_detik_yang_sama(tmp_path, monkeypatch):
+    """Id harus unik.
+
+    Dengan detik saja, dua panggilan untuk aset yang sama dalam detik yang sama
+    menghasilkan id IDENTIK — membuat pembaruan status di nilai() ambigu, dan janji
+    "koreksi lewat entri baru yang merujuk id lama" mustahil dipenuhi.
+    """
+    monkeypatch.setattr(rapor, "RAPOR_PATH", str(tmp_path / "r.jsonl"))
+    balasan = ("🎯 BIAS SPOT: TAHAN\nHarga $100\nInvalid $90\nTarget $120")
+    ids = [rapor.catat(balasan, "BTC", "crypto") for _ in range(30)]
+    assert len(set(ids)) == 30, f"hanya {len(set(ids))} id unik dari 30"
+
+
+def test_sec_tickers_menyimpan_nama_bukan_hanya_cik():
+    """Cache yang hanya menyimpan CIK membuat nama emiten HILANG diam-diam.
+
+    Regresi nyata saat cache diperkenalkan: pemanggil lama mengambil nama dari respons
+    yang sama, jadi setelah dialihkan ke cache kolom namanya kosong tanpa error apa pun.
+    """
+    import sec_tickers
+    peta, _, _err = sec_tickers.peta_ticker()
+    if not peta:
+        return                       # jaringan tidak tersedia: lewati
+    rekam = peta.get("NVDA")
+    assert rekam and rekam.get("cik") and rekam.get("nama"), rekam

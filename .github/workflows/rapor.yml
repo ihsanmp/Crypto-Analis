@@ -12,6 +12,14 @@ on:
     - cron: "0 2 * * 1"       # Senin ~09:00 WIB
   workflow_dispatch:
 
+# Grup yang SAMA dengan bot.yml. Tanpa ini, `rapor.py nilai` yang MENULIS ULANG seluruh
+# berkas bisa berjalan bersamaan dengan run bot yang sedang MENAMBAH entri — dan penulisan
+# ulangnya akan menelan entri yang baru saja ditambahkan. Keduanya menyentuh rapor.jsonl,
+# jadi harus mengantre, bukan berjalan paralel.
+concurrency:
+  group: telegram-analisa-bot
+  cancel-in-progress: false
+
 permissions:
   contents: write
 

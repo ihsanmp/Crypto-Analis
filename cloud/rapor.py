@@ -23,6 +23,7 @@ import argparse
 import json
 import os
 import re
+import secrets
 import sys
 from datetime import datetime, timedelta, timezone
 
@@ -151,8 +152,13 @@ def catat(balasan, aset, jenis, mode="analisa"):
     if not p or not aset:
         return None
     sekarang = datetime.now(timezone.utc)
+    # Akhiran acak supaya id tetap unik. Dengan detik saja, dua panggilan untuk aset yang
+    # sama dalam detik yang sama menghasilkan id IDENTIK — dan itu membuat janji di
+    # docstring ("koreksi lewat entri baru yang merujuk id lama") mustahil dipenuhi,
+    # sekaligus membuat pembaruan status di nilai() menjadi ambigu.
+    acak = secrets.token_hex(3)
     entri = {
-        "id": f"{aset}-{sekarang.strftime('%Y%m%d%H%M%S')}",
+        "id": f"{aset}-{sekarang.strftime('%Y%m%d%H%M%S')}-{acak}",
         "tanggal_utc": sekarang.strftime("%Y-%m-%d %H:%M"),
         "aset": aset,
         "jenis": jenis,

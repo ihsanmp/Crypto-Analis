@@ -198,18 +198,12 @@ def peringkat_sektor():
 
 def _cik_dan_sic(ticker):
     """Ambil CIK & kode SIC emiten dari SEC. Return (cik, sic, nama, error)."""
-    try:
-        req = urllib.request.Request(
-            "https://www.sec.gov/files/company_tickers.json", headers=UA)
-        with urllib.request.urlopen(req, timeout=30) as r:
-            daftar = json.loads(r.read().decode())
-    except Exception as e:
-        return None, None, None, f"daftar emiten gagal: {type(e).__name__}"
-    cik = None
-    for v in daftar.values():
-        if (v.get("ticker") or "").upper() == ticker.upper():
-            cik = str(v["cik_str"]).zfill(10)
-            break
+    from sec_tickers import peta_ticker
+    peta, _, err_peta = peta_ticker()
+    if err_peta and not peta:
+        return None, None, None, f"daftar emiten gagal: {err_peta}"
+    rekam = peta.get(ticker.upper())
+    cik = rekam["cik"] if rekam else None
     if not cik:
         return None, None, None, f"{ticker} tidak ditemukan di daftar emiten SEC (non-AS?)"
     try:
