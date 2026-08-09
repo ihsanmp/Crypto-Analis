@@ -83,5 +83,22 @@
    "harga=4.270",
    "harga=4.400"
   ]
+ },
+ {
+  "chat": "1242dcf6b322d4c6",
+  "waktu": 1786293686.1407523,
+  "waktu_utc": "2026-08-09 16:41",
+  "pesan": "analisa saham nvda",
+  "balasan": "🕒 Data per 7 Agustus 2026 (candle harian terakhir) · brief disusun 9 Agustus 2026 23.36 WIB · sumber NasdaqGS via Yahoo Finance (quality: native). Hari ini Minggu — bursa tutup, candle terakhir = penutupan Jumat. Itu wajar, bukan data basi.\n\n━━━━━━━━\n[...dipangkas...]\nkup untuk menahan, tidak cukup untuk menambah agresif.\n\n⚠️ Candle terakhir sudah lebih dari 48 jam — untuk crypto ini tidak wajar, perlakukan levelnya sebagai perkiraan.\n\n⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.",
+  "angka_kunci": [
+   "harga=223,96",
+   "harga=81,6",
+   "harga=61,2",
+   "harga=6,3",
+   "harga=52",
+   "harga=58,3",
+   "harga=13",
+   "harga=2,39"
+  ]
  }
 ]
