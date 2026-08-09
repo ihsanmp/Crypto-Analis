@@ -214,7 +214,22 @@ def nilai_satu(entri):
 
     jalan = _sejak(candles, entri["tanggal_utc"])
     if not jalan:
-        return None                       # belum ada candle baru, biarkan apa adanya
+        # Belum ada candle SESUDAH panggilan. Untuk saham & forex ini normal dan sering:
+        # panggilan yang dibuat saat bursa tutup (akhir pekan, di luar sesi) baru punya
+        # candle baru pada sesi berikutnya. Dulu dikembalikan None sehingga entrinya
+        # tetap berstatus TERBUKA dengan seluruh field kosong dan TANPA penjelasan —
+        # tidak bisa dibedakan dari kegagalan penilaian yang sesungguhnya.
+        akhir = None
+        try:
+            akhir = datetime.fromtimestamp(candles[-1][0] / 1000, timezone.utc).strftime(
+                "%Y-%m-%d")
+        except Exception:
+            pass
+        return {"catatan_penilaian": (
+            f"belum ada candle sesudah panggilan (candle terakhir {akhir}). "
+            "Untuk saham/forex ini wajar bila bursa sedang tutup — akan dinilai pada "
+            "sesi berikutnya."),
+            "dinilai_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")}
 
     awal = entri["harga_saat_panggilan"]
     invalid = entri.get("level_invalid")

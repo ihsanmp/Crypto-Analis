@@ -823,3 +823,38 @@ def test_urutan_audit_sebelum_stempel_di_kode():
         j = kode.index("pastikan_bertanggal(body)", max(0, i - 900))
         assert i < j, f"{potong}: stempel dipasang sebelum audit"
 
+
+
+# ------------------------------- sapuan ke-6: observabilitas & penilaian saham
+
+def test_rapor_menjelaskan_kalau_belum_bisa_dinilai(monkeypatch):
+    """Panggilan yang belum punya candle baru harus MENJELASKAN DIRI, bukan diam.
+
+    Bug nyata: panggilan saham dibuat saat bursa tutup tidak punya candle sesudahnya, dan
+    nilai_satu mengembalikan None — entrinya tetap TERBUKA dengan seluruh field kosong dan
+    tanpa catatan apa pun, tidak bisa dibedakan dari kegagalan penilaian sesungguhnya.
+    """
+    from datetime import datetime, timedelta, timezone
+    lampau = datetime.now(timezone.utc) - timedelta(days=3)
+    candle = [[int(lampau.timestamp() * 1000), 100.0, 100.0, 100.0, 100.0, 0]]
+    monkeypatch.setattr(rapor, "_riwayat_harga", lambda a, j: (candle, None))
+    entri = {"aset": "NVDA", "jenis": "saham", "bias": "AKUMULASI",
+             "tanggal_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
+             "harga_saat_panggilan": 100.0, "level_invalid": 90.0, "level_target": [120.0]}
+    hasil = rapor.nilai_satu(entri)
+    assert hasil is not None
+    assert "belum ada candle" in hasil.get("catatan_penilaian", "")
+
+
+def test_timing_per_script_tetap_dicatat():
+    """Penjaga observabilitas: durasi tiap script harus dicetak.
+
+    Timing per-script sempat HILANG saat pengumpulan data diparalelkan — padahal itulah
+    yang dulu membongkar makro.py 65 detik dan stockfund.py 58 detik di runner.
+    """
+    with open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8") as f:
+        kode = f.read()
+    assert "_jalankan_terukur" in kode
+    assert kode.count("pool.submit(_jalankan_terukur") >= 2, (
+        "kedua pengumpul (crypto & pasar) harus memakai pembungkus terukur")
+

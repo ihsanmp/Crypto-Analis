@@ -971,6 +971,20 @@ _ONCHAIN_ADA = {"BTC", "ETH"}
 _TANPA_PROTOKOL = {"BTC", "LTC", "XRP", "DOGE", "SHIB", "PEPE", "BONK", "WIF", "TRUMP"}
 
 
+def _jalankan_terukur(label, args, min_kar=0):
+    """Jalankan script sambil mencatat durasinya.
+
+    Timing per-script sempat HILANG saat pengumpulan data diparalelkan — padahal itulah
+    yang dulu membongkar makro.py 65 detik dan stockfund.py 58 detik di runner. Tanpa
+    angka ini, script yang melambat tidak bisa dikenali dari log sama sekali.
+    """
+    t0 = time.time()
+    keluar, err = jalankan_script(args, 300, min_kar)
+    print(f"[data] {label}: {time.time() - t0:.1f} detik"
+          f"{' — GAGAL' if err else ''}", file=sys.stderr)
+    return keluar, err
+
+
 def data_mentah_crypto(coin):
     """Kumpulkan data koin dengan KODE, hanya yang RELEVAN untuk koin itu.
 
@@ -999,7 +1013,7 @@ def data_mentah_crypto(coin):
 
     bagian, gagal = [], []
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-        hasil = {pool.submit(jalankan_script, a, 300, mk): l for l, a, mk in tugas}
+        hasil = {pool.submit(_jalankan_terukur, l, a, mk): l for l, a, mk in tugas}
         kumpul = {}
         for fut in concurrent.futures.as_completed(hasil):
             label = hasil[fut]
@@ -1069,7 +1083,7 @@ def data_mentah_pasar(simbol, jenis):
     bagian, gagal = [], []
     kumpul = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-        antre = {pool.submit(jalankan_script, a): l for l, a in tugas}
+        antre = {pool.submit(_jalankan_terukur, l, a): l for l, a in tugas}
         for fut in concurrent.futures.as_completed(antre):
             label = antre[fut]
             try:
