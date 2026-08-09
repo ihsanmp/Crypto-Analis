@@ -63,8 +63,13 @@ brief). Inti yang wajib dipegang:
 1. **Satu pintu:** data ekonomi KUAT → Fed hawkish → yield & dolar naik → **gold TURUN**.
    Data LEMAH → Fed dovish → **gold NAIK**.
 2. **Yang menggerakkan adalah SELISIH actual vs forecast**, bukan angka absolutnya.
-   Kalau konsensus tidak ada di brief, **KATAKAN dan minta user memberikannya** — jangan
-   berpura-pura tahu arah reaksinya.
+   Konsensus kini TERSEDIA di brief lewat `kalender.py` (Forex Factory) beserta nowcast
+   inflasi Cleveland Fed. Pakai itu dulu. **Meminta ke user adalah JALAN TERAKHIR** — hanya
+   kalau konsensusnya kosong di kedua sumber; kalau begitu, KATAKAN dan minta.
+   - Sebut sumbernya saat mengutip: "konsensus (Forex Factory)". Itu KOMPILASI Forex
+     Factory, bukan median survei ekonom resmi.
+   - Nowcast Cleveland Fed adalah KELUARAN MODEL, bukan konsensus — jangan dicampur.
+   - Kalau keduanya berbeda jauh, sebutkan keduanya beserta selisihnya.
 3. **DUA pengecualian arah:** Unemployment Rate & Unemployment Claims — angkanya NAIK
    berarti ekonomi melemah, jadi efeknya **TERBALIK (gold naik)**. Ini paling sering
    tertukar — periksa dua kali sebelum menulis.

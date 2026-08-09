@@ -204,6 +204,16 @@ langsung jawab.
      dengan ingatan.
 <!-- /BLOK -->
 <!-- BLOK: makro | pemicu: fomc,cpi,nfp,ppi,pce,suku bunga,interest rate,the fed,federal reserve,inflasi,makro,macro,payroll,unemployment,gdp,powell,hawkish,dovish -->
+- **KONSENSUS SEKARANG TERSEDIA — ambil dulu, jangan langsung bertanya.**
+  Jalankan `python cloud/kalender.py --ringkas`. Isinya konsensus Forex Factory untuk rilis
+  berdampak tinggi 7 hari ke depan, plus nowcast inflasi Cleveland Fed.
+  **Minta angka ke user HANYA kalau konsensusnya kosong di KEDUA sumber.**
+  - Angka Forex Factory adalah KOMPILASI Forex Factory, bukan median survei ekonom resmi
+    (Bloomberg/Reuters). Sebut sumbernya: "konsensus (Forex Factory)".
+  - Nowcast Cleveland Fed adalah KELUARAN MODEL, bukan konsensus. Sebut demikian.
+  - Kalau kedua sumber berbeda jauh, SEBUTKAN keduanya beserta selisihnya — jangan diam-diam
+    memilih satu.
+  - Kolom konsensus bernilai null berarti TIDAK ADA. Itulah saatnya bertanya ke user.
 - **DATA MAKRO (FOMC, CPI, NFP, suku bunga, dsb) — MINTA KE USER, JANGAN MENGARANG.**
   Angka KONSENSUS/ekspektasi pasar tidak tersedia di sumber gratis kita. Yang menggerakkan
   pasar adalah SELISIH aktual vs konsensus, jadi tanpa konsensus jangan berpura-pura tahu.

@@ -1008,6 +1008,10 @@ def data_mentah_pasar(simbol, jenis):
                       ["cloud/stockfund.py", simbol, "--ringkas"]))
     else:
         tugas.append(("MAKRO AS (makro.py, sumber FRED)", ["cloud/makro.py", "--ringkas"]))
+        # Konsensus & jadwal rilis — HANYA untuk forex/komoditas. Saham dinilai dari
+        # fundamental emitennya, crypto tidak digerakkan kalender ekonomi AS.
+        tugas.append(("KONSENSUS & JADWAL RILIS (kalender.py)",
+                      ["cloud/kalender.py", "--ringkas"]))
 
     bagian, gagal = [], []
     for label, args in tugas:

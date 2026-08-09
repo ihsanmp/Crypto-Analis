@@ -21,7 +21,10 @@ concurrency:
   group: telegram-analisa-bot
   cancel-in-progress: false
 
-# Perlu menulis: ingatan terverifikasi (cloud/data/memori.jsonl) di-commit balik ke repo
+# Perlu menulis: ingatan terverifikasi (cloud/data/memori.jsonl) di-commit balik ke repo.
+# kalender_cache.json juga ikut: runner GitHub selalu bersih, jadi cache yang tidak
+# di-commit tidak pernah terpakai di run berikutnya — padahal Forex Factory hanya
+# mengizinkan 2 unduhan per 5 menit dan bot ini bisa jalan puluhan kali per jam.
 # supaya bertahan antar-run. Tiap run adalah mesin baru, jadi tanpa ini bot tidak ingat
 # apa pun. Concurrency di atas membuat run berurutan, sehingga tidak saling tabrakan.
 permissions:
@@ -127,13 +130,13 @@ jobs:
       - name: Simpan ingatan terverifikasi
         if: always() && (github.event_name == 'repository_dispatch' || steps.check.outputs.has_work == 'true')
         run: |
-          if [ -z "$(git status --porcelain cloud/data/memori.jsonl cloud/data/diproses.json cloud/data/percakapan.json)" ]; then
+          if [ -z "$(git status --porcelain cloud/data/memori.jsonl cloud/data/diproses.json cloud/data/percakapan.json cloud/data/kalender_cache.json)" ]; then
             echo "tidak ada ingatan baru — lewati commit"
             exit 0
           fi
           git config user.name "crypto-analis-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add cloud/data/memori.jsonl cloud/data/diproses.json cloud/data/percakapan.json
+          git add cloud/data/memori.jsonl cloud/data/diproses.json cloud/data/percakapan.json cloud/data/kalender_cache.json
           git commit -m "Ingatan, jejak pesan & riwayat percakapan dari run ${GITHUB_RUN_ID}"
           # Run lain bisa menambah commit lebih dulu; rebase supaya tidak saling menimpa.
           for i in 1 2 3; do
