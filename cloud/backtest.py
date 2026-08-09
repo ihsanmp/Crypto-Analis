@@ -30,7 +30,6 @@ Pemakaian:
 import argparse
 import json
 import os
-import subprocess
 import sys
 from datetime import datetime, timezone
 from statistics import median
@@ -79,8 +78,9 @@ def ringkas(hasil_depan):
     r["expectancy_persen"] = r["return_rata2_persen"]
     r["rata2_untung_persen"] = round(tot_u / len(untung), 2) if untung else None
     r["rata2_rugi_persen"] = round(-tot_r / len(rugi), 2) if rugi else None
-    if r["rata2_rugi_persen"]:
-        r["rasio_untung_rugi"] = round(abs(r["rata2_untung_persen"] / r["rata2_rugi_persen"]), 2)             if r["rata2_untung_persen"] else None
+    if r["rata2_rugi_persen"] and r["rata2_untung_persen"]:
+        r["rasio_untung_rugi"] = round(
+            abs(r["rata2_untung_persen"] / r["rata2_rugi_persen"]), 2)
     if n < 10:
         r["peringatan"] = (f"SAMPEL KECIL ({n} kejadian) — angka ini TIDAK bermakna secara "
                            "statistik. Sebut sebagai catatan, jangan sebagai bukti.")
@@ -90,7 +90,6 @@ def ringkas(hasil_depan):
 def uji_sinyal(candles, pemicu, n_depan=20):
     """Untuk tiap indeks yang memenuhi `pemicu`, ukur hasil n_depan candle berikutnya."""
     c = [x[4] for x in candles]
-    h = [x[2] for x in candles]
     l = [x[3] for x in candles]
     keluar = []
     for i in pemicu:

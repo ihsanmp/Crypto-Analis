@@ -419,3 +419,32 @@ def test_rapor_sampel_kecil_ditandai():
     kecil = [{"bias": "AKUMULASI", "status": "TARGET_KENA", "return_30h_persen": 5.0}]
     assert "peringatan" in rapor._hitung(kecil)
 
+
+# ------------------------------- audit tidak boleh menyala palsu (bug nyata)
+
+_BRIEF_KECIL = "[TEKNIKAL]\nclose: 148.20\nema21: 145.00\nrsi14: 58"
+_STEMPEL = "🕒 Data per 9 Agustus 2026, 12:54 WIB\n\n🧮 SKOR 62/100\n"
+_DISCLAIMER = "\n⚠️ Riset pasar berbasis data, bukan saran keuangan."
+
+
+def test_audit_tidak_menyala_untuk_balasan_jujur():
+    """Stempel waktu, penyebut skor, dan disclaimer bukan angka pasar.
+
+    Bug nyata: ketiganya dulu terhitung "tidak terlacak". Pada analisa panjang derau itu
+    terencerkan, tapi di mode NGOBROL briefnya kecil sehingga tiga angka ini saja mendorong
+    vonis ke MENCURIGAKAN dan memunculkan PERINGATAN PALSU ke user.
+    """
+    jujur = (_STEMPEL + "Harga $148,20 · EMA21 harian $145,00 · RSI harian 58"
+             + _DISCLAIMER)
+    vonis = bot.audit_angka(_BRIEF_KECIL, jujur)
+    assert "BAIK" in vonis, vonis
+    assert bot.peringatan_audit(vonis, None, "OK") is None
+
+
+def test_audit_tetap_menangkap_karangan():
+    """Presisi yang dinaikkan tidak boleh mematikan deteksi yang sebenarnya."""
+    karang = (_STEMPEL + "Harga $7.123 · EMA21 $6.888 · RSI 91,4 · Volume $55.321 juta "
+              "· Mcap $88.777" + _DISCLAIMER)
+    vonis = bot.audit_angka(_BRIEF_KECIL, karang)
+    assert "MENCURIGAKAN" in vonis, vonis
+    assert bot.peringatan_audit(vonis, None, "OK") is not None

@@ -563,7 +563,6 @@ def kondisi_pasar(closes, emas, price, bb):
                 silang += 1
 
     lebar_bb = (bb or {}).get("bandwidth_pct")
-    selaras = (emas.get("_selaras") if isinstance(emas.get("_selaras"), bool) else None)
 
     if silang >= 6:
         status = "CHOPPY — harga bolak-balik menembus EMA21"

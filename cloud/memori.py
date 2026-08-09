@@ -50,6 +50,7 @@ _MILIK_PRIBADI = re.compile(
 
 def masalah_privasi(teks):
     """Return alasan penolakan, atau None kalau aman disimpan di repo publik."""
+    teks = teks or ""      # dipanggil dari beberapa jalur; jangan pecah pada None
     if _EVM.search(teks):
         return "memuat alamat dompet EVM (0x...)"
     if _MILIK_PRIBADI.search(teks):

@@ -138,7 +138,6 @@ def cg_platforms(ticker):
 
 def deteksi_chain(platforms):
     """Pilih chain default: utamakan Ethereum, lalu urutan di CHAINS yang punya alamat."""
-    cg_to_chain = {info["cg"]: name for name, info in CHAINS.items()}
     for name in CHAINS:  # dict menjaga urutan sisip; ethereum pertama
         cg_key = CHAINS[name]["cg"]
         if platforms.get(cg_key):

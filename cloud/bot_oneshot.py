@@ -150,7 +150,7 @@ def send_message(token, chat_id, text):
 
 def classify(text):
     """Tentukan jenis pesan: 'help' | 'analisa' | 'narasi' | 'chat'."""
-    low = text.strip().lower().lstrip("/")
+    low = (text or "").strip().lower().lstrip("/")
     if low in ("start", "help", "mulai", "bantuan"):
         return "help"
     # AI sebagai BIDANG didahulukan. Tanpa ini "analisa sektor ai" masuk jalur aset dan
@@ -232,7 +232,7 @@ def jenis_aset(sisa):
     Urutan: kata kunci eksplisit -> alias emas/perak -> pola pasangan forex -> default crypto.
     Default sengaja CRYPTO supaya perintah lama tetap berperilaku sama.
     """
-    kata = sisa.split()
+    kata = (sisa or "").split()
     if not kata:
         return "crypto", None
 
@@ -1251,9 +1251,20 @@ def process(token, chat_id, text, photo_file_id=None):
             body = "❌ Selesai tapi output kosong. Coba lagi."
         else:
             body = output
+        # Jalur foto punya pengiriman SENDIRI, sehingga dua pengaman di jalur utama
+        # sempat terlewat di sini: stempel waktu dan peringatan audit. Padahal analisa
+        # gambar justru rawan — angkanya sering dibaca dari gambar lama tanpa tanggal.
+        if not body.startswith("❌"):
+            body = pastikan_bertanggal(body)
+        kesegaran_foto = audit_kesegaran(body)
+        if not body.startswith("❌"):
+            catatan_foto = peringatan_audit(None, None, kesegaran_foto)
+            if catatan_foto:
+                body = sisipkan_peringatan(body, catatan_foto)
+                print(f"[audit] peringatan foto DIKIRIM: {catatan_foto[:60]}", file=sys.stderr)
         if send_message(token, chat_id, body):
             print(f"[proses] balasan foto {len(body)} karakter TERKIRIM", file=sys.stderr)
-            print(f"[audit] {audit_kesegaran(body)}", file=sys.stderr)
+            print(f"[audit] {kesegaran_foto}", file=sys.stderr)
             # Tanpa ini, pertanyaan lanjutan sesudah kirim gambar ("jadi menurutmu
             # gimana?") datang tanpa tahu gambar apa yang barusan dibahas.
             simpan_riwayat(chat_id, text or "(mengirim gambar)", body)
@@ -1639,6 +1650,21 @@ def audit_angka(brief, balasan):
     # Baris "Level kunci: support/resisten" juga berisi level TURUNAN (dihitung dari
     # swing/Fibonacci), bukan angka mentah dari sumber — buang agar tidak jadi derau.
     faktual = re.sub(r"(?im)^.*\b(level kunci|support|resisten|resistance)\b.*$", "", faktual)
+    # Tiga sumber DERAU SISTEMATIS yang tidak mungkin ada di data mentah, dan karena itu
+    # dulu selalu terhitung "tidak terlacak":
+    #   1. baris stempel waktu — tahunnya (2026) bukan angka pasar
+    #   2. penyebut skor ("62/100") — angka 100 tidak pernah ada di brief
+    #   3. baris disclaimer
+    # Pada analisa panjang derau ini terencerkan, tapi di mode NGOBROL briefnya kecil
+    # sehingga tiga angka ini saja bisa mendorong vonis ke MENCURIGAKAN dan memunculkan
+    # PERINGATAN PALSU ke user. Peringatan yang salah menyala membuat orang berhenti
+    # membaca peringatan — persis yang berusaha dicegah oleh peringatan itu sendiri.
+    faktual = re.sub(r"(?m)^\s*🕒.*$", "", faktual)
+    faktual = re.sub(r"(?m)^\s*⚠️.*$", "", faktual)
+    faktual = re.sub(r"(?i)(SKOR\s*\d{1,3}\s*)/\s*100", r"\1", faktual)
+    # Tahun 19xx/20xx adalah TANGGAL, bukan angka pasar. Kesegarannya sudah diperiksa
+    # terpisah oleh audit_kesegaran, jadi di sini hanya menjadi derau.
+    faktual = re.sub(r"\b(19|20)\d{2}\b", "", faktual)
 
     dicek, tak_terlacak = 0, []
     for m in _ANGKA_RE.finditer(faktual):

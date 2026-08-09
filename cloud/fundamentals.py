@@ -21,7 +21,6 @@ Pemakaian:
 
 import argparse
 import json
-import sys
 import urllib.error
 import urllib.request
 from collections import OrderedDict
