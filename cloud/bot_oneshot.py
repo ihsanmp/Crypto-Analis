@@ -731,6 +731,24 @@ _TICKER_UMUM = {
 _KATA_BUKAN_TICKER = {"ADA", "OP", "ATAU", "INI", "ITU", "DAN", "APA", "KE", "DI"}
 
 
+def _semua_aset(teks):
+    """Kumpulan aset berbeda yang disebut dalam satu pesan. Dipakai untuk mendeteksi
+    pertanyaan PERBANDINGAN, yang tidak bisa dilayani satu brief."""
+    low = (teks or "").lower()
+    kata = re.findall(r"[A-Za-z]{2,6}", teks or "")
+    ketemu = set()
+    for alias, simbol in _ALIAS_FX.items():
+        if re.search(r"\b" + alias.lower() + r"\b", low):
+            ketemu.add(simbol)
+    for k in kata:
+        atas = k.upper()
+        if _PASANGAN_FX.match(atas):
+            ketemu.add(atas)
+        elif atas in _TICKER_UMUM and atas not in _KATA_BUKAN_TICKER:
+            ketemu.add(atas)
+    return ketemu
+
+
 def aset_dari_pesan(teks):
     """Cari aset yang disebut dalam pesan ngobrol. (jenis, simbol) atau (None, None).
 
@@ -741,6 +759,16 @@ def aset_dari_pesan(teks):
     """
     low = (teks or "").lower()
     kata = re.findall(r"[A-Za-z]{2,6}", teks or "")
+
+    # LEBIH DARI SATU aset disebut -> JANGAN kumpulkan apa pun.
+    # Kalau dipaksakan, brief hanya berisi aset PERTAMA, lalu angka aset kedua otomatis
+    # tertandai "tidak terlacak" oleh audit_angka dan memicu peringatan PALSU ke user.
+    # Peringatan yang salah menyala membuat orang berhenti membaca peringatan — lebih
+    # merugikan daripada tidak punya brief sama sekali. Pertanyaan perbandingan memang
+    # masuk tingkat BERAT (600 detik, 40 putaran), jadi model punya cukup ruang mencari
+    # sendiri seperti sebelum brief mode ngobrol ada.
+    if len(_semua_aset(teks)) > 1:
+        return None, None
 
     # 1. Emas/perak & pasangan mata uang — paling jelas, dicek lebih dulu.
     for alias, simbol in _ALIAS_FX.items():

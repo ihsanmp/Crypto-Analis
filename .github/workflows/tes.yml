@@ -1,0 +1,30 @@
+# Tes routing. SENGAJA menggagalkan job kalau ada yang merah — beda dari
+# mcp-security-scan.yml yang hanya melaporkan. Routing bot ditentukan seluruhnya oleh regex,
+# dan pola kegagalannya konsisten: bug ditemukan di Telegram, bukan oleh CI. Job ini yang
+# membalik pola itu.
+#
+# Ringan dengan sengaja: tanpa Node, tanpa MCP, tanpa secret apa pun, dan tesnya TIDAK boleh
+# menyentuh jaringan. Kalau suatu saat butuh secret, berarti ada tes yang salah kamar.
+name: Tes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Pasang pytest
+        run: pip install pytest
+
+      - name: Jalankan tes
+        run: pytest tests/ -v
