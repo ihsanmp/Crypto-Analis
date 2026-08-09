@@ -235,17 +235,42 @@ def nilai_satu(entri):
     if kena_pada:
         kembali["tanggal_hasil"] = kena_pada
 
-    # Return per horizon + TOLOK UKUR beli-dan-tahan. Tanpa pembanding ini angkanya
-    # menyesatkan: bot yang bilang AKUMULASI di pasar naik 40% bukan sedang hebat.
+    # Return per horizon. HANYA dilaporkan kalau waktunya BENAR-BENAR sudah berlalu.
+    # Dulu tidak dicek, sehingga panggilan berumur 20 hari tetap melaporkan return_30h
+    # dan return_90h — isinya return 20 hari yang diberi label salah, lalu masuk ke
+    # kalibrasi ambang skor sebagai data sah.
+    mulai = datetime.strptime(entri["tanggal_utc"], "%Y-%m-%d %H:%M").replace(
+        tzinfo=timezone.utc)
+    umur_hari = (datetime.now(timezone.utc) - mulai).days
+    kembali["umur_hari"] = umur_hari
     for h in HORIZON:
-        sampai = [x for x in jalan
-                  if x[0] <= datetime.strptime(entri["tanggal_utc"], "%Y-%m-%d %H:%M")
-                  .replace(tzinfo=timezone.utc) + timedelta(days=h)]
+        if umur_hari < h:
+            continue                  # horizon belum penuh — jangan dilaporkan
+        sampai = [x for x in jalan if x[0] <= mulai + timedelta(days=h)]
         if len(sampai) >= 2:
             akhir = sampai[-1][1][4]
             kembali[f"return_{h}h_persen"] = round((akhir - awal) / awal * 100, 2)
-    kembali["tolok_ukur_beli_tahan_persen"] = kembali.get(
-        f"return_{HORIZON[-1]}h_persen", kembali.get("return_7h_persen"))
+
+    # TOLOK UKUR yang benar-benar membandingkan. Versi lama menyalin return panggilan itu
+    # sendiri sebagai "tolok ukur" — untuk posisi spot, return sejak panggilan MEMANG sama
+    # dengan beli-dan-tahan, jadi selisihnya selalu nol dan tidak mengukur apa pun.
+    #
+    # Yang ingin diukur: hasil MENGIKUTI SARAN dibanding SELALU MEMBELI.
+    #   AKUMULASI/TAHAN        -> memegang aset -> dapat return pasar
+    #   HINDARI/KURANGI/TUNGGU -> di kas        -> dapat 0
+    # Dengan begitu keunggulannya terlihat: HINDARI saat pasar jatuh 30% bernilai +30,
+    # sedangkan AKUMULASI saat pasar naik 40% bernilai 0 — ikut arus, bukan unggul.
+    pasar = None
+    for h in HORIZON:
+        if kembali.get(f"return_{h}h_persen") is not None:
+            pasar = kembali[f"return_{h}h_persen"]
+    if pasar is None and jalan:
+        pasar = round((jalan[-1][1][4] - awal) / awal * 100, 2)
+    if pasar is not None:
+        ikut = pasar if entri.get("bias") in ("AKUMULASI", "TAHAN") else 0.0
+        kembali["beli_dan_tahan_persen"] = pasar
+        kembali["hasil_ikut_saran_persen"] = round(ikut, 2)
+        kembali["selisih_vs_beli_tahan"] = round(ikut - pasar, 2)
     kembali["dinilai_utc"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
     return kembali
 
@@ -326,6 +351,11 @@ def _hitung(kelompok):
         "return_30h_rata2_persen": round(sum(ret) / len(ret), 2) if ret else None,
         "nyeri_maks_rata2_persen": round(sum(mae) / len(mae), 2) if mae else None,
     }
+    # Angka PALING bermakna: keunggulan terhadap sekadar beli-dan-tahan. Menang 70% di
+    # pasar yang naik terus bukan prestasi — yang menentukan adalah selisihnya.
+    sel = [e.get("selisih_vs_beli_tahan") for e in kelompok
+           if e.get("selisih_vs_beli_tahan") is not None]
+    h["selisih_vs_beli_tahan_rata2"] = round(sum(sel) / len(sel), 2) if sel else None
     if n < SAMPEL_MINIMUM:
         h["peringatan"] = (f"SAMPEL KECIL ({n} panggilan) — angka ini TIDAK bermakna secara "
                            "statistik. Jangan dipakai mengubah ambang apa pun.")
@@ -372,6 +402,8 @@ def perintah_ringkas(hari):
         "Bandingkan menang_persen antar rentang skor. Kalau 61-80 TIDAK lebih baik daripada "
         "41-60, sistem skornya belum bermakna dan ambangnya perlu dikalibrasi.",
         "return_30h selalu dibaca bersama nyeri_maks: benar tapi menyakitkan tetap mahal.",
+        "selisih_vs_beli_tahan adalah angka yang paling menentukan: nol berarti bot cuma "
+        "ikut arus pasar, positif berarti sarannya benar-benar menambah nilai.",
         "Kelompok bertanda SAMPEL KECIL jangan dipakai mengambil keputusan apa pun.",
         "menang_persen sudah SADAR ARAH: untuk HINDARI/KURANGI, benar berarti harganya "
         "memang turun setelah itu — bukan target tercapai. Tanpa ini panggilan menghindar "

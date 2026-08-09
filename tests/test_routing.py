@@ -448,3 +448,78 @@ def test_audit_tetap_menangkap_karangan():
     vonis = bot.audit_angka(_BRIEF_KECIL, karang)
     assert "MENCURIGAKAN" in vonis, vonis
     assert bot.peringatan_audit(vonis, None, "OK") is not None
+
+
+# ---------------------------------------- rapor: horizon & tolok ukur (bug nyata)
+
+def _entri(umur_hari, bias="AKUMULASI"):
+    from datetime import datetime, timedelta, timezone
+    t = datetime.now(timezone.utc) - timedelta(days=umur_hari)
+    return {"aset": "BTC", "jenis": "crypto", "bias": bias,
+            "tanggal_utc": t.strftime("%Y-%m-%d %H:%M"),
+            "harga_saat_panggilan": 100.0, "level_invalid": 1.0,
+            "level_target": [9999999.0]}
+
+
+def _candle_naik(hari, awal=100.0, per_hari=0.5):
+    """Candle harian sintetis yang naik tetap — supaya tesnya tidak menyentuh jaringan."""
+    from datetime import datetime, timedelta, timezone
+    mulai = datetime.now(timezone.utc) - timedelta(days=hari)
+    keluar = []
+    for i in range(hari + 1):
+        h = awal * (1 + per_hari / 100) ** i
+        ts = int((mulai + timedelta(days=i)).timestamp() * 1000)
+        keluar.append([ts, h, h, h, h, 0])
+    return keluar
+
+
+def test_rapor_horizon_belum_penuh_tidak_dilaporkan(monkeypatch):
+    """Panggilan berumur 20 hari TIDAK boleh melaporkan return 30 & 90 hari.
+
+    Bug nyata: dulu return 20 hari diberi label return_30h dan return_90h, lalu masuk ke
+    kalibrasi ambang skor sebagai data sah.
+    """
+    monkeypatch.setattr(rapor, "_riwayat_harga", lambda a, j: (_candle_naik(20), None))
+    h = rapor.nilai_satu(_entri(20))
+    assert h.get("return_7h_persen") is not None
+    assert h.get("return_30h_persen") is None
+    assert h.get("return_90h_persen") is None
+
+
+def test_rapor_tolok_ukur_mengukur_sesuatu(monkeypatch):
+    """Tolok ukur harus MEMBANDINGKAN, bukan menyalin return panggilan itu sendiri.
+
+    Bug nyata: versi lama menyalin return-nya sendiri sebagai "tolok ukur", sehingga
+    selisihnya selalu nol dan tidak mengukur apa pun.
+    """
+    monkeypatch.setattr(rapor, "_riwayat_harga", lambda a, j: (_candle_naik(100), None))
+    ikut = rapor.nilai_satu(_entri(100, "AKUMULASI"))
+    hindar = rapor.nilai_satu(_entri(100, "HINDARI"))
+    # Pasar naik: memegang = ikut arus (selisih 0), menghindar = tertinggal (selisih negatif)
+    assert ikut["selisih_vs_beli_tahan"] == 0.0
+    assert hindar["selisih_vs_beli_tahan"] < 0
+    assert hindar["beli_dan_tahan_persen"] > 0
+    assert hindar["hasil_ikut_saran_persen"] == 0.0
+
+
+# --------------------------------- makro: jendela persentil sesuai frekuensi seri
+
+def test_makro_jendela_persentil_dari_tanggal():
+    """NFCI itu MINGGUAN. Jendela berbasis jumlah titik membuatnya 14,5 tahun, bukan 3.
+
+    Diuji tanpa jaringan: data sintetis mingguan selama 10 tahun, jendela harus
+    memuat kira-kira 3 tahun saja.
+    """
+    import makro
+    from datetime import datetime, timedelta
+    mulai = datetime(2016, 1, 1)
+    data = [((mulai + timedelta(weeks=i)).strftime("%Y-%m-%d"), float(i))
+            for i in range(520)]                      # 10 tahun mingguan
+    item = makro.olah("NFCI", "uji", "indeks", "harian", data)
+    j = item.get("jendela_persentil") or ""
+    assert j, item
+    awal, akhir = j.split(" (")[0].split(" s/d ")
+    rentang = (datetime.strptime(akhir, "%Y-%m-%d")
+               - datetime.strptime(awal, "%Y-%m-%d")).days / 365.25
+    assert 2.5 <= rentang <= 3.5, f"jendela {rentang:.1f} tahun, seharusnya ~3"
+

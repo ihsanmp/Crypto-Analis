@@ -28,7 +28,7 @@ import json
 import concurrent.futures
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 UA = {"User-Agent": "Mozilla/5.0 (compatible; riset-pasar/1.0)"}
 FRED = "https://fred.stlouisfed.org/graph/fredgraph.csv?id="
@@ -135,14 +135,26 @@ def olah(kode, nama, satuan, jenis, data):
         item["nilai_30h_lalu"] = acuan[1]
 
     if kode in _PERSENTIL and len(data) > 60:
-        # Peringkat persentil terhadap ~3 tahun terakhir. Ini yang membuat metrik dari
-        # kelas aset berbeda bisa dibandingkan setara, bukan angka mentahnya.
-        jendela = data[-(252 * _TAHUN_PERSENTIL):]
+        # Jendela dihitung dari TANGGAL, bukan jumlah titik. Memakai 252*3 titik hanya
+        # benar untuk seri harian: NFCI itu MINGGUAN, sehingga 756 titik = 14,5 tahun
+        # padahal fieldnya bernama persentil_3thn. Labelnya keliru secara faktual, dan
+        # persentil terhadap 14 tahun berarti hal yang sangat berbeda.
+        batas = datetime.strptime(tgl, "%Y-%m-%d") - timedelta(days=365 * _TAHUN_PERSENTIL)
+        jendela = []
+        for t, v in data:
+            try:
+                if datetime.strptime(t, "%Y-%m-%d") >= batas:
+                    jendela.append((t, v))
+            except ValueError:
+                continue
+        if len(jendela) < 30:
+            jendela = data[-60:]      # riwayat terlalu pendek: pakai apa adanya
         nilai_saja = sorted(x[1] for x in jendela)
         posisi = sum(1 for x in nilai_saja if x <= nilai)
-        item["persentil_3thn"] = round(posisi / len(nilai_saja) * 100, 1)
-        item["rentang_3thn"] = [round(nilai_saja[0], 3), round(nilai_saja[-1], 3)]
-        item["arti_persentil"] = ("0 = terendah dalam 3 tahun, 100 = tertinggi. "
+        item["persentil"] = round(posisi / len(nilai_saja) * 100, 1)
+        item["rentang_jendela"] = [round(nilai_saja[0], 3), round(nilai_saja[-1], 3)]
+        item["jendela_persentil"] = f"{jendela[0][0]} s/d {jendela[-1][0]} ({len(jendela)} titik)"
+        item["arti_persentil"] = ("0 = terendah dalam jendela di atas, 100 = tertinggi. "
                                   "Untuk spread kredit: persentil RENDAH berarti kompresi/"
                                   "euforia (risiko dihargai murah), TINGGI berarti stres.")
 
