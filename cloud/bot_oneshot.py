@@ -47,17 +47,28 @@ PERAN_DIR = os.path.join(BASE_DIR, "prompts", "peran")
 FOTO_PROMPT = os.path.join(BASE_DIR, "prompts", "foto.md")
 MCP_CONFIG = os.path.join(BASE_DIR, ".mcp.cloud.json")
 
-ALLOWED_TOOLS = ",".join([
-    "mcp__coinglass__*",
-    "mcp__blockscout__*",
-    "mcp__coinmarketcap__*",
-    "mcp__tradingview__*",
-    "WebSearch",
-    "WebFetch",
-    "Bash",          # untuk menjalankan cloud/indicators.py
-])
-# Mode foto butuh tool Read (untuk "melihat" gambar yang diunduh).
-ALLOWED_TOOLS_VISION = ALLOWED_TOOLS + ",Read"
+# Set tool DIPISAH menurut tahap, bukan satu daftar untuk semua.
+#
+# ALASANNYA: claude dijalankan dengan --dangerously-skip-permissions (perlu, karena runner
+# tanpa TTY). Kalau Bash dan WebFetch aktif BERSAMAAN, isi halaman web sembarang — yang
+# dibaca saat mencari katalis — masuk ke konteks model yang punya akses shell. Halaman
+# berbahaya bisa menyisipkan instruksi di situ. Repo ini sudah memindai server MCP pihak
+# ketiga lewat mcp-security-scan.yml dengan alasan yang persis sama; jalur WebFetch yang
+# belum dijaga.
+#
+# Pemisahan ini jadi murah setelah data dikumpulkan oleh KODE: tahap yang membaca web tidak
+# lagi butuh menjalankan script.
+_MCP_PASAR = ["mcp__coinglass__*", "mcp__blockscout__*",
+              "mcp__coinmarketcap__*", "mcp__tradingview__*"]
+
+TOOLS_WEB = ",".join(_MCP_PASAR + ["WebSearch", "WebFetch"])   # baca web, TANPA shell
+TOOLS_SKRIP = ",".join(_MCP_PASAR + ["Bash"])                  # jalankan script, tanpa web
+TOOLS_VISION = TOOLS_WEB + ",Read"                             # mode foto butuh Read
+TOOLS_LONGGAR = TOOLS_WEB + ",Bash"                            # cadangan & screening narasi
+
+# Nama lama dipertahankan supaya pemanggil yang belum diubah tetap berjalan.
+ALLOWED_TOOLS = TOOLS_LONGGAR
+ALLOWED_TOOLS_VISION = TOOLS_VISION
 
 # Maksimal pekerjaan per run. Job GitHub Actions dibatasi 30 menit; satu analisa bisa
 # 15 menit -> lebih dari 2 berisiko job dibunuh di tengah jalan dan pesan hilang.
@@ -706,7 +717,59 @@ def bobot_chat(text, ada_konteks):
     return 120, MODEL_RINGAN, 8, "RINGAN (di luar kosakata pasar)"
 
 
-def build_chat_prompt(text, chat_id=None):
+# Ticker crypto yang lazim ditanyakan. Daftar SENGAJA terbatas: deteksi yang terlalu
+# agresif akan menarik data koin untuk pesan yang sebenarnya bukan soal koin, dan itu
+# lebih merugikan daripada tidak mendeteksi sama sekali (kalau meleset, perilakunya
+# kembali seperti sebelum tugas ini — model mencari sendiri).
+_TICKER_UMUM = {
+    "BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "AVAX", "DOT", "MATIC", "LINK", "UNI",
+    "ATOM", "LTC", "TRX", "NEAR", "APT", "SUI", "TON", "ICP", "FIL", "ARB", "OP",
+    "INJ", "TIA", "SEI", "PEPE", "DOGE", "SHIB", "BONK", "WIF", "RNDR", "FET", "TAO",
+    "ONDO", "ENA", "JUP", "PYTH", "AAVE", "MKR", "CRV", "LDO", "SNX", "COMP", "GRT",
+    "IMX", "SAND", "MANA", "AXS", "HBAR", "XLM", "ALGO", "VET", "STX", "RUNE", "KAS",
+}
+_KATA_BUKAN_TICKER = {"ADA", "OP", "ATAU", "INI", "ITU", "DAN", "APA", "KE", "DI"}
+
+
+def aset_dari_pesan(teks):
+    """Cari aset yang disebut dalam pesan ngobrol. (jenis, simbol) atau (None, None).
+
+    Dipakai untuk memutuskan apakah data deterministik perlu dikumpulkan lewat KODE.
+    SENGAJA konservatif — kalau tidak yakin, kembalikan None dan biarkan model mencari
+    sendiri seperti sebelumnya. Salah menarik data jauh lebih merugikan daripada tidak
+    menarik: brief yang isinya aset lain akan membuat audit keterlacakan ikut keliru.
+    """
+    low = (teks or "").lower()
+    kata = re.findall(r"[A-Za-z]{2,6}", teks or "")
+
+    # 1. Emas/perak & pasangan mata uang — paling jelas, dicek lebih dulu.
+    for alias, simbol in _ALIAS_FX.items():
+        if re.search(r"\b" + alias.lower() + r"\b", low):
+            return "forex", simbol
+    for k in kata:
+        if _PASANGAN_FX.match(k.upper()):
+            return "forex", k.upper()
+
+    # 2. "saham NVDA" / "emiten AAPL" — jenisnya disebut eksplisit.
+    m = re.search(r"\b(?:saham|emiten|stock)\s+([A-Za-z]{1,5})\b", teks or "", re.I)
+    if m:
+        return "saham", m.group(1).upper()
+
+    # 3. Ticker crypto dari daftar terbatas. Kata Indonesia yang kebetulan sama
+    #    (mis. "ada", "op") dikecualikan supaya tidak salah tangkap.
+    for k in kata:
+        atas = k.upper()
+        if atas in _TICKER_UMUM and atas not in _KATA_BUKAN_TICKER:
+            return "crypto", atas
+        # "$ADA" ditulis dengan dolar = jelas ticker, pengecualian tidak berlaku.
+    for m2 in re.finditer(r"[$]([A-Za-z]{2,6})\b", teks or ""):
+        atas = m2.group(1).upper()
+        if atas in _TICKER_UMUM:
+            return "crypto", atas
+    return None, None
+
+
+def build_chat_prompt(text, chat_id=None, brief=None):
     with open(CHAT_PROMPT, encoding="utf-8") as f:
         base = rakit_chat(f.read(), text)
     # Aturan kalibrasi hanya untuk pertanyaan pasar. Buat "apa itu RAG?" atau sapaan,
@@ -746,6 +809,15 @@ def build_chat_prompt(text, chat_id=None):
         base = konteks_percakapan(chat_id) + base
     # Pesan user dikutip apa adanya. Diberi pembatas jelas supaya isinya diperlakukan
     # sebagai pertanyaan untuk dijawab, bukan sebagai instruksi yang mengubah aturan.
+    if brief:
+        # Data sudah dikumpulkan KODE — model tidak perlu menariknya lagi. Selain lebih
+        # cepat, ini yang membuat brief ADA di mode ngobrol sehingga audit keterlacakan
+        # angka bisa berjalan; sebelumnya mode ini keluar tanpa pemeriksaan sama sekali.
+        base += (NL + "---" + NL + "## DATA BRIEF (SUDAH DIAMBIL — jangan tarik ulang)"
+                 + NL + "Angka di bawah ini baru saja diambil sistem. Pakai apa adanya, "
+                 "JANGAN menjalankan script untuk mengambilnya lagi. Metrik yang TIDAK ADA "
+                 "di sini diperlakukan tidak tersedia — jangan mengarang." + NL + NL
+                 + brief + NL)
     return f"{header_waktu()}{base}\n---\n## Pesan dari user (jawab ini)\n{text}\n"
 
 
@@ -1185,7 +1257,8 @@ def process(token, chat_id, text, photo_file_id=None):
             # dengan data angkanya — sebelumnya satu kegagalan model mengosongkan semuanya.
             mentah = data_mentah_pasar(simbol, jenis)
             berita, err = run_claude(build_gather_pasar(simbol, jenis), min(timeout, 300),
-                                     max_turns=20, model=MODEL_GATHER, with_tools=True)
+                                     max_turns=20, model=MODEL_GATHER,
+                                     tools_override=TOOLS_WEB)
             if err or not berita:
                 print(f"[proses] pencarian berita gagal ({str(err)[:120]}) — "
                       f"lanjut dengan data angka saja", file=sys.stderr)
@@ -1209,7 +1282,7 @@ def process(token, chat_id, text, photo_file_id=None):
             t_gather = min(timeout, 300)
             mentah = data_mentah_crypto(coin)
             berita, err = run_claude(build_gather_prompt(coin), t_gather, max_turns=20,
-                                     model=MODEL_GATHER, with_tools=True)
+                                     model=MODEL_GATHER, tools_override=TOOLS_WEB)
             if err or not berita:
                 print(f"[proses] pencarian berita gagal ({str(err)[:120]}) — "
                       f"lanjut dengan data angka saja", file=sys.stderr)
@@ -1238,8 +1311,11 @@ def process(token, chat_id, text, photo_file_id=None):
                                      "Ini agak lama karena aku petakan sektornya dulu...")
         # Screening narasi memang berat (banyak kandidat), tapi tetap dibatasi supaya
         # tidak memonopoli antrean selama 15 menit.
+        # Screening memang butuh web DAN shell sekaligus (cari kandidat lalu hitung
+        # indikatornya). Ini kompromi yang disadari, bukan kelalaian — jalur inilah yang
+        # paling terbuka terhadap penyisipan lewat halaman web.
         output, err = run_claude(build_narasi_prompt(text), min(timeout, 600), max_turns=70,
-                                 model=MODEL_NARASI)
+                                 model=MODEL_NARASI, tools_override=TOOLS_LONGGAR)
     else:  # chat
         # Bobot ditentukan dari BERAT pertanyaannya, bukan dari ada/tidaknya riwayat.
         # Lihat bobot_chat(): tiga tingkat, dan konteks kini MENURUNKAN bobot.
@@ -1247,12 +1323,53 @@ def process(token, chat_id, text, photo_file_id=None):
         jatah, model_chat, putaran, tingkat = bobot_chat(text, ada_konteks)
         print(f"[proses] bobot chat: {tingkat} -> {jatah} dtk, {model_chat}, "
               f"{putaran} putaran", file=sys.stderr)
+
+        # Kalau pesannya menyebut ASET, kumpulkan datanya lewat KODE. Cakupannya sudah
+        # mengikuti PETA KORELASI dengan sendirinya: data_mentah_pasar tidak menarik script
+        # crypto, dan data_mentah_crypto tidak menarik makro/saham.
+        # Efek terpenting: brief jadi ADA di mode ngobrol, sehingga audit keterlacakan
+        # angka berjalan di sini juga — sebelumnya mode ini keluar tanpa pemeriksaan,
+        # padahal justru paling rawan karangan karena model menjawab lebih bebas.
+        jenis_chat, simbol_chat = aset_dari_pesan(text)
+        if simbol_chat:
+            try:
+                brief = (data_mentah_crypto(simbol_chat) if jenis_chat == "crypto"
+                         else data_mentah_pasar(simbol_chat, jenis_chat))
+                print(f"[proses] chat: data {jenis_chat} {simbol_chat} dikumpulkan kode "
+                      f"({len(brief)} karakter)", file=sys.stderr)
+            except Exception as e:
+                # Kegagalan di sini TIDAK boleh menggagalkan balasan — tanpa brief, model
+                # kembali mencari sendiri persis seperti sebelum perubahan ini.
+                brief = None
+                print(f"[proses] chat: pengumpulan data gagal ({type(e).__name__}) — "
+                      f"model mencari sendiri", file=sys.stderr)
         # Pesan tunggu hanya untuk yang memang lama. Untuk RINGAN, balasannya datang lebih
         # cepat daripada pesan tunggunya sendiri.
         if jatah > 120:
             send_message(token, chat_id, "💬 Sebentar ya, aku cek datanya dulu...")
-        output, err = run_claude(build_chat_prompt(text, chat_id), min(timeout, jatah),
-                                 max_turns=putaran, model=model_chat)
+        # Kalau data sudah di brief, chat tidak butuh Bash sama sekali — cukup web.
+        # Kalau pengumpulan gagal, BOLEH jatuh ke mode longgar (web + shell), tapi itu
+        # dicatat supaya ketahuan seberapa sering pengaman ini terpaksa dilonggarkan.
+        if brief:
+            tools_chat = TOOLS_WEB          # data sudah ada, shell tidak diperlukan
+        elif simbol_chat:
+            # Aset terdeteksi tapi pengumpulannya gagal — model perlu shell sebagai
+            # cadangan. Dicatat supaya ketahuan seberapa sering pengaman terpaksa dilepas.
+            tools_chat = TOOLS_LONGGAR
+            print("[proses] chat: mode tool LONGGAR (web + shell) karena pengumpulan data "
+                  "gagal", file=sys.stderr)
+        elif topik_ai(text.strip().lower()):
+            # Pertanyaan industri AI memang butuh menjalankan ainews.py.
+            tools_chat = TOOLS_LONGGAR
+        else:
+            # Sapaan & pertanyaan konseptual: tidak ada aset, tidak ada script yang perlu
+            # dijalankan. Tanpa shell, halaman web yang dibaca tidak bisa berbuat apa-apa.
+            tools_chat = TOOLS_WEB
+        print(f"[proses] chat: tool = {'WEB' if tools_chat == TOOLS_WEB else 'LONGGAR'}",
+              file=sys.stderr)
+        output, err = run_claude(build_chat_prompt(text, chat_id, brief),
+                                 min(timeout, jatah), max_turns=putaran, model=model_chat,
+                                 tools_override=tools_chat)
 
     # Catat hasil ke log CI (stderr). Isi balasan tidak dicetak penuh — hanya status &
     # potongan error — supaya log tetap informatif tanpa membanjiri / membocorkan.
