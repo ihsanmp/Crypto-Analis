@@ -689,3 +689,22 @@ def test_berkas_besar_tidak_masuk_repo():
     assert not os.path.exists(os.path.join(AKAR, "cloud", "data", "eth_labels.json"))
     assert os.path.exists(os.path.join(AKAR, "cloud", "data", "eth_labels.json.gz"))
 
+
+
+def test_berkas_riwayat_tidak_memuat_id_polos():
+    """Penjaga CI: chat ID polos tidak boleh diam-diam kembali ke repo publik.
+
+    Menguji BERKAS-nya, bukan fungsinya — satu run yang berjalan dengan kode lama sudah
+    cukup untuk menaruh identifier akun ke dalam repo, dan itu tidak akan terlihat dari
+    tes yang hanya memanggil _id_chat().
+    """
+    import json
+    import os
+    p = os.path.join(AKAR, "cloud", "data", "percakapan.json")
+    if not os.path.exists(p):
+        return
+    with open(p, encoding="utf-8") as f:
+        riwayat = json.load(f)
+    polos = [str(r.get("chat")) for r in riwayat if str(r.get("chat", "")).isdigit()]
+    assert not polos, f"chat ID polos di repo publik: {polos}"
+
