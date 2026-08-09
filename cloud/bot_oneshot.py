@@ -406,6 +406,33 @@ _BLOK_RE = re.compile(
     re.DOTALL)
 
 
+# Gagal-aman BERKELOMPOK. Versi lama biner: begitu pesan menyentuh satu kata _PASAR_UMUM,
+# SELURUH blok dimuat. Karena kosakata itu berisi ~60 kata umum ("harga", "gold", "fed"),
+# satu pertanyaan gold ikut membawa aturan 13F, riset X, dan ainews.py — lalu model
+# menjalankan tool yang tidak ada hubungannya dengan pertanyaannya.
+# Sekarang kosakata dipetakan ke rumpun, dan hanya blok serumpun yang dimuat.
+_RUMPUN = {
+    "makro-fx": (("emas", "gold", "xau", "perak", "xag", "forex", "dolar", "yield", "fed",
+                  "cpi", "nfp", "suku bunga", "inflasi", "makro", "rupiah", "fomc"),
+                 ("gold", "makro", "saham-forex")),
+    "saham": (("saham", "stock", "emiten", "bursa", "earnings", "dividen", "p/e", "nasdaq"),
+              ("saham-forex", "makro")),
+    "crypto": (("koin", "coin", "token", "tvl", "on-chain", "onchain", "holder", "whale",
+                "dompet", "wallet", "staking", "airdrop", "unlock", "listing", "narasi",
+                "sektor", "funding", "likuidasi", "mcap", "supply", "etf", "institusi"),
+               ("institusi", "x-twitter")),
+}
+
+
+def _rumpun_cocok(low):
+    """Blok mana yang relevan dengan pesan ini. Kosong = tidak ada rumpun yang cocok."""
+    blok = set()
+    for kata_kunci, blok_terkait in _RUMPUN.values():
+        if any(k in low for k in kata_kunci):
+            blok.update(blok_terkait)
+    return blok
+
+
 def rakit_chat(teks_prompt, pesan):
     """Rakit prompt NGOBROL: bagian inti selalu ikut, blok domain hanya bila relevan.
 
@@ -429,14 +456,18 @@ def rakit_chat(teks_prompt, pesan):
                 dipakai.add(nama)
                 break
 
-    # GAGAL-AMAN diperketat: begitu pesan menyinggung kosakata pasar, SEMUA blok dimuat —
-    # tidak peduli sudah ada blok lain yang cocok. Versi sebelumnya hanya memuat penuh bila
-    # TIDAK ADA yang cocok, sehingga satu pemicu lemah bisa mematikannya: "menurutmu pasar
-    # gimana" cuma memuat blok data-konten karena kata "menurutmu" kebetulan cocok, padahal
-    # pertanyaannya soal pasar. Penghematan tetap besar karena datang dari pertanyaan
-    # konseptual & sapaan — di situlah aturan domain memang tidak terpakai.
+    # GAGAL-AMAN BERKELOMPOK. Dulu biner: sentuh satu kata _PASAR_UMUM, SEMUA blok dimuat.
+    # Itu terlalu lebar — pertanyaan gold ikut membawa aturan 13F dan riset X, lalu model
+    # menjalankan tool yang tidak nyambung. Sekarang hanya blok SERUMPUN yang ditambahkan.
+    # Kalau menyentuh kosakata pasar tapi TIDAK ADA rumpun yang cocok, barulah semua blok
+    # dimuat — di situ kita memang tidak tahu apa yang dibutuhkan, dan kehilangan aturan
+    # lebih merugikan daripada boros. Prinsip lamanya dipertahankan, ambangnya dipersempit.
     if _PASAR_UMUM.search(low):
-        dipakai = {nama for nama, _, _ in blok}
+        serumpun = _rumpun_cocok(low)
+        if serumpun:
+            dipakai.update(serumpun)
+        else:
+            dipakai = {nama for nama, _, _ in blok}
 
     def ganti(m):
         nama, _, isi = m.group(1), m.group(2), m.group(3)
@@ -475,6 +506,40 @@ def _potong_balasan(teks):
     return teks[:sisi].rstrip() + "\n[...dipangkas...]\n" + teks[-sisi:].lstrip()
 
 
+# Pola angka yang benar-benar mengubah keputusan. Sengaja SEMPIT: yang dikejar bukan semua
+# angka, melainkan yang biasanya ditanyakan lagi di giliran berikutnya.
+_ANGKA_POLA = [
+    ("harga", re.compile(r"[$]\s*(\d[\d.,]*)")),
+    ("rsi", re.compile(r"RSI\s*(?:14)?\s*(?:di|:|=)?\s*(\d+(?:[.,]\d+)?)", re.I)),
+    ("ema", re.compile(r"EMA\s*(\d+)\s*[$]?\s*(\d[\d.,]*)", re.I)),
+    ("persen", re.compile(r"(-?\d+(?:[.,]\d+)?\s*%)")),
+    ("skor", re.compile(r"(\d+)\s*/\s*100")),
+]
+_ANGKA_MAKS = 8
+
+
+def angka_kunci(teks):
+    """Tarik angka penting dari balasan supaya giliran berikutnya tidak menarik ulang semua.
+
+    Riwayat memangkas balasan jadi BALASAN_POTONG karakter, jadi angka dari giliran
+    sebelumnya memang HILANG — itulah sebab bot menarik ulang seluruh data hanya untuk
+    menjawab "jadi gambaranmu bagaimana?". Menyimpan angkanya secara terpisah menutup
+    lubang itu tanpa memperbesar potongan balasannya.
+    """
+    teks = teks or ""
+    keluar = []
+    for label, pola in _ANGKA_POLA:
+        for m in pola.finditer(teks):
+            # Buang tanda baca yang ikut tertangkap di ujung ("$4.230." -> "4.230").
+            nilai = " ".join(x.strip(" .,;:") for x in m.groups() if x)
+            butir = f"{label}={nilai}"
+            if butir not in keluar:
+                keluar.append(butir)
+            if len(keluar) >= _ANGKA_MAKS:
+                return keluar
+    return keluar
+
+
 def simpan_riwayat(chat_id, pesan, balasan):
     """Simpan satu pasang tanya-jawab supaya pesan lanjutan punya konteks.
 
@@ -503,6 +568,9 @@ def simpan_riwayat(chat_id, pesan, balasan):
         "waktu_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
         "pesan": (pesan or "")[:300],
         "balasan": _potong_balasan(balasan),
+        # Angka kunci disimpan TERPISAH karena balasannya dipangkas — tanpa ini angka
+        # dari giliran sebelumnya hilang dan bot terpaksa menarik ulang semuanya.
+        "angka_kunci": angka_kunci(balasan),
     })
     try:
         os.makedirs(os.path.dirname(RIWAYAT_PATH), exist_ok=True)
@@ -525,6 +593,10 @@ def konteks_percakapan(chat_id):
         menit = int((sekarang - r.get("waktu", 0)) // 60)
         baris.append(f"[{menit} menit lalu] User: {r.get('pesan', '')}")
         baris.append(f"           Kamu menjawab: {r.get('balasan', '')}")
+        ak = r.get("angka_kunci") or []
+        if ak:
+            baris.append(f"           Angka kunci saat itu ({menit} menit lalu): "
+                         + " · ".join(ak))
     baris += [
         "",
         "CARA MEMAKAI konteks ini:",
@@ -584,6 +656,54 @@ def _sektor_pesan(teks):
                               "s&p", "bursa", "dividen", "p/e")):
         return "saham"
     return "crypto"
+
+
+# Penanda tingkat beban pertanyaan ngobrol.
+_RINGAN_RE = re.compile(
+    r"^(halo|hai|hi|hey|pagi|siang|sore|malam|thanks|thank you|makasih|terima kasih|"
+    r"ok|oke|sip|mantap|siap|bagus|wah|hmm)[\s!.?]*$", re.I)
+_KONSEP_RE = re.compile(
+    r"\b(apa itu|apa sih|apakah maksud|kenapa .* (bekerja|begitu)|bagaimana cara kerja|"
+    r"jelaskan istilah|bedanya .* dan|maksudnya apa|kamu bisa apa|siapa kamu)", re.I)
+_TAFSIR_RE = re.compile(
+    r"\b(jadi (gimana|bagaimana)|menurutmu|artinya apa|gambaranmu|kesimpulannya|"
+    r"pendapatmu|bagaimana menurut|jadi kesimpulan)", re.I)
+_BERAT_RE = re.compile(
+    r"\b(detail|lengkap|panjang|bandingkan|perbandingan|versus|\bvs\b|"
+    r"jelaskan lebih|riset|selengkapnya)", re.I)
+
+
+# Kosakata TEKNIKAL & timeframe. _PASAR_UMUM tidak memuatnya, sehingga "rsi eth di daily
+# berapa?" sempat jatuh ke tingkat RINGAN dengan 8 putaran — padahal butuh menjalankan
+# indicators.py. Kalau putarannya habis di tengah, balasannya terpotong TANPA error, jadi
+# kegagalannya tidak berisik dan sulit disadari.
+_TEKNIKAL_RE = re.compile(
+    r"\b(rsi|ema|sma|macd|stoch|stochastic|bollinger|atr|supertrend|pivot|fibo|fibonacci|"
+    r"daily|weekly|harian|mingguan|4h|1d|1w|candle|timeframe|oversold|overbought|"
+    r"golden cross|death cross|divergence|divergensi)", re.I)
+
+
+def bobot_chat(text, ada_konteks):
+    """Tentukan (jatah_detik, model, max_turns) dari BERAT pertanyaannya.
+
+    Dulu cuma dua tingkat, dan adanya riwayat 6 jam terakhir otomatis memberi jatah 600
+    detik + model termahal. Praktisnya hampir semua pesan dapat jalur paling lambat.
+    Logikanya juga TERBALIK: pertanyaan lanjutan justru sering lebih RINGAN karena
+    konteksnya sudah ada — jadi konteks kini menurunkan bobot, bukan menaikkan.
+    """
+    low = (text or "").strip().lower()
+
+    if _BERAT_RE.search(low):
+        return 600, MODEL_SYNTH, 40, "BERAT (diminta detail / perbandingan)"
+    if _RINGAN_RE.match(low) or _KONSEP_RE.search(low):
+        return 120, MODEL_RINGAN, 8, "RINGAN (sapaan / konseptual)"
+    # Penafsiran lanjutan: angka kuncinya sudah ada di konteks, tinggal ditimbang.
+    if _TAFSIR_RE.search(low) and ada_konteks:
+        return 120, MODEL_RINGAN, 8, "RINGAN (penafsiran dari konteks yang sudah ada)"
+    if _PASAR_UMUM.search(low) or _TEKNIKAL_RE.search(low):
+        # Satu aset, satu pertanyaan spesifik. Butuh data tapi bukan riset multi-sumber.
+        return 300, MODEL_NARASI, 20, "SEDANG (pertanyaan pasar spesifik)"
+    return 120, MODEL_RINGAN, 8, "RINGAN (di luar kosakata pasar)"
 
 
 def build_chat_prompt(text, chat_id=None):
@@ -1121,25 +1241,18 @@ def process(token, chat_id, text, photo_file_id=None):
         output, err = run_claude(build_narasi_prompt(text), min(timeout, 600), max_turns=70,
                                  model=MODEL_NARASI)
     else:  # chat
-        send_message(token, chat_id, "💬 Sebentar ya, aku cek datanya dulu...")
-        # Jatah waktu NGOBROL disesuaikan isi pertanyaannya, bukan satu angka untuk semua.
-        # Terlalu longgar: satu pertanyaan memblokir antrean 15 menit lalu job dibunuh
-        # (run 31118489351). Terlalu ketat: pertanyaan riset ikut mati — "bagaimana kira-kira
-        # NFP nanti malam dari data historis dan berita" gagal di 300 detik (run 31152169645)
-        # padahal memang perlu menarik FRED + berita + riwayat.
-        # Pertanyaan pasar/riset dapat 600 detik; sapaan & konseptual cukup 180.
-        # Pertanyaan LANJUTAN juga dapat jatah panjang: "kenapa kesimpulannya begitu?"
-        # terdengar sepele tapi sering menuntut penarikan data ulang untuk menjawabnya.
-        lanjutan = bool(konteks_percakapan(chat_id).strip())
-        jatah = 600 if (_PASAR_UMUM.search((text or "").lower()) or lanjutan) else 180
-        print(f"[proses] jatah waktu chat: {jatah} detik", file=sys.stderr)
-        # Model chat mengikuti berat pertanyaannya: yang menyangkut pasar/diskusi lanjutan
-        # memakai model terkuat karena di situlah mutu jawaban terasa; sapaan dan
-        # pertanyaan konseptual tidak bertambah baik dengan model termahal.
-        model_chat = MODEL_SYNTH if jatah == 600 else MODEL_RINGAN
-        print(f"[proses] model chat: {model_chat}", file=sys.stderr)
-        output, err = run_claude(build_chat_prompt(text, chat_id), min(timeout, jatah), max_turns=40,
-                                 model=model_chat)
+        # Bobot ditentukan dari BERAT pertanyaannya, bukan dari ada/tidaknya riwayat.
+        # Lihat bobot_chat(): tiga tingkat, dan konteks kini MENURUNKAN bobot.
+        ada_konteks = bool(konteks_percakapan(chat_id).strip())
+        jatah, model_chat, putaran, tingkat = bobot_chat(text, ada_konteks)
+        print(f"[proses] bobot chat: {tingkat} -> {jatah} dtk, {model_chat}, "
+              f"{putaran} putaran", file=sys.stderr)
+        # Pesan tunggu hanya untuk yang memang lama. Untuk RINGAN, balasannya datang lebih
+        # cepat daripada pesan tunggunya sendiri.
+        if jatah > 120:
+            send_message(token, chat_id, "💬 Sebentar ya, aku cek datanya dulu...")
+        output, err = run_claude(build_chat_prompt(text, chat_id), min(timeout, jatah),
+                                 max_turns=putaran, model=model_chat)
 
     # Catat hasil ke log CI (stderr). Isi balasan tidak dicetak penuh — hanya status &
     # potongan error — supaya log tetap informatif tanpa membanjiri / membocorkan.
