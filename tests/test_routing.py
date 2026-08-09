@@ -858,3 +858,48 @@ def test_timing_per_script_tetap_dicatat():
     assert kode.count("pool.submit(_jalankan_terukur") >= 2, (
         "kedua pengumpul (crypto & pasar) harus memakai pembungkus terukur")
 
+
+
+# ------------------------------------- sapuan ke-7: Worker & berkas yang di-commit
+
+def _worker():
+    with open(os.path.join(AKAR, "deploy", "cloudflare-worker.js"), encoding="utf-8") as f:
+        return f.read()
+
+
+def test_worker_tidak_membocorkan_chat_id():
+    """Endpoint GET Worker TERBUKA tanpa autentikasi.
+
+    Bug nyata: ia mencetak nilai ALLOWED_CHAT_IDS apa adanya — identifier akun Telegram
+    yang justru repot-repot di-hash keluar dari repo publik di T8. Komentar di kodenya
+    sendiri sudah menyatakan "tidak pernah nilainya", tapi barisnya melanggar itu.
+    """
+    js = _worker()
+    assert "ALLOWED_CHAT_IDS: env.ALLOWED_CHAT_IDS ||" not in js, (
+        "nilai ALLOWED_CHAT_IDS dicetak apa adanya di endpoint publik")
+    assert "terisi (" in js, "seharusnya hanya melaporkan jumlahnya"
+
+
+def test_worker_gagal_tertutup():
+    """Daftar chat KOSONG harus menolak semua, bukan melayani semua.
+
+    Versi lama: `if (allowed.length && ...)` — satu salah konfigurasi diam-diam membuka
+    bot ke siapa pun yang menemukan webhook-nya.
+    """
+    js = _worker()
+    assert "if (!allowed.length || !allowed.includes(chatId))" in js
+    assert "if (allowed.length && !allowed.includes(chatId))" not in js
+
+
+def test_berkas_besar_disimpan_terkompresi():
+    """Berkas yang di-commit ikut ditarik SETIAP checkout, termasuk run yang tidak
+
+    membutuhkannya. Peta ticker SEC ~669 KB mentah; versi .gz 180 KB.
+    """
+    data = os.path.join(AKAR, "cloud", "data")
+    for mentah in ("eth_labels.json", "sec_tickers_cache.json"):
+        assert not os.path.exists(os.path.join(data, mentah)), (
+            f"{mentah} mentah tidak boleh ikut ter-commit")
+        assert os.path.exists(os.path.join(data, mentah + ".gz")), (
+            f"{mentah}.gz tidak ditemukan")
+

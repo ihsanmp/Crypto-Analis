@@ -20,7 +20,7 @@
 // harus ditempel ulang manual di dashboard Cloudflare. Versi ini muncul di respons GET
 // supaya bisa dipastikan versi mana yang benar-benar aktif (dulu foto hilang diam-diam
 // karena Worker masih versi lama, dan tidak ada cara memeriksanya dari luar).
-const WORKER_VERSION = "2026-07-27-foto";
+const WORKER_VERSION = "2026-08-09-tutup-bocor";
 
 export default {
   async fetch(request, env) {
@@ -38,7 +38,13 @@ export default {
               GITHUB_TOKEN: env.GITHUB_TOKEN ? "terisi" : "KOSONG",
               TELEGRAM_SECRET: env.TELEGRAM_SECRET ? "terisi" : "KOSONG",
               GITHUB_REPO: env.GITHUB_REPO || "KOSONG",
-              ALLOWED_CHAT_IDS: env.ALLOWED_CHAT_IDS || "KOSONG",
+              // JANGAN cetak nilainya. Endpoint ini TERBUKA tanpa autentikasi, dan
+              // chat ID adalah identifier akun Telegram — hal yang justru repot-repot
+              // di-hash keluar dari repo publik. Komentar di atas sudah menyatakan
+              // "tidak pernah nilainya", tapi baris ini dulu melanggarnya sendiri.
+              ALLOWED_CHAT_IDS: env.ALLOWED_CHAT_IDS
+                ? `terisi (${env.ALLOWED_CHAT_IDS.split(",").filter(Boolean).length} chat)`
+                : "KOSONG",
             },
           },
           null,
@@ -97,7 +103,11 @@ export default {
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
-    if (allowed.length && !allowed.includes(chatId)) {
+    // GAGAL-TERTUTUP. Versi lama berbunyi `if (allowed.length && ...)` sehingga daftar
+    // yang KOSONG berarti semua chat dilayani — satu salah konfigurasi diam-diam membuka
+    // bot ke siapa pun. Sisi bot memang menyaring lagi dan menolak jalan tanpa daftar,
+    // tapi run GitHub Actions telanjur terpicu dan kuotanya terpakai.
+    if (!allowed.length || !allowed.includes(chatId)) {
       return new Response("ok");
     }
 

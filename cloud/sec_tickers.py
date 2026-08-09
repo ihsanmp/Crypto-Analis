@@ -9,6 +9,7 @@ Isinya nyaris tidak berubah — emiten baru terdaftar hitungan hari, bukan menit
 di-cache 7 hari. Cache ikut di-commit supaya berguna di runner yang selalu bersih.
 """
 
+import gzip
 import json
 import os
 import time
@@ -28,13 +29,22 @@ def peta_ticker(paksa=False):
     Nama emiten ikut disimpan: pemanggil lama mengambilnya dari respons yang sama, jadi
     kalau cache hanya menyimpan CIK, nama emiten hilang diam-diam dari keluaran.
     """
-    try:
-        with open(CACHE_PATH, encoding="utf-8") as f:
-            simpan = json.load(f)
-        if not paksa and time.time() - simpan.get("waktu", 0) < CACHE_UMUR:
-            return simpan.get("peta") or {}, True, None
-    except Exception:
-        simpan = {}
+    # Dibaca dari versi TERKOMPRESI. Petanya ~684 KB mentah dan ikut ditarik setiap
+    # checkout — termasuk pada run crypto/forex yang tidak membutuhkannya sama sekali.
+    simpan = {}
+    for jalur, buka in ((CACHE_PATH + ".gz", lambda p: gzip.open(p, "rt", encoding="utf-8")),
+                        (CACHE_PATH, lambda p: open(p, encoding="utf-8"))):
+        try:
+            with buka(jalur) as f:
+                simpan = json.load(f)
+            break
+        except OSError:
+            continue
+        except Exception:
+            simpan = {}
+            break
+    if not paksa and simpan.get("peta") and time.time() - simpan.get("waktu", 0) < CACHE_UMUR:
+        return simpan["peta"], True, None
 
     try:
         with urllib.request.urlopen(urllib.request.Request(URL, headers=UA),
@@ -60,8 +70,8 @@ def peta_ticker(paksa=False):
 
     try:
         os.makedirs(os.path.dirname(CACHE_PATH), exist_ok=True)
-        with open(CACHE_PATH, "w", encoding="utf-8") as f:
-            json.dump({"peta": peta, "waktu": time.time()}, f)
+        with gzip.open(CACHE_PATH + ".gz", "wt", encoding="utf-8", compresslevel=9) as f:
+            json.dump({"peta": peta, "waktu": time.time()}, f, separators=(",", ":"))
     except Exception as e:
         print(f"[sec_tickers] gagal menyimpan cache: {e}")
     return peta, False, None
