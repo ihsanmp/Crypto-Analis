@@ -32,5 +32,15 @@
    "ema=21 4.134,15",
    "ema=21 4.290,97"
   ]
+ },
+ {
+  "chat": "7525096497",
+  "waktu": 1786252312.2300942,
+  "waktu_utc": "2026-08-09 05:11",
+  "pesan": "rsi eth di daily berapa?",
+  "balasan": "🕒 Data per 9 Agustus 2026, 12:11 WIB\n\nRSI14 Daily $ETH per 8 Agu 2026 (candle terakhir): 56,56 — netral, belum overbought/oversold.\n\nKonteksnya: ada bearish divergence RSI di daily (harga bikin high baru tapi momentum RSI melemah), jadi meski angkanya netral, ini sinyal waspada tenaga uptrend mulai berkurang.",
+  "angka_kunci": [
+   "rsi=14"
+  ]
  }
 ]
