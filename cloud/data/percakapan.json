@@ -1,40 +1,6 @@
 [
  {
   "chat": "325b60962ab73036",
-  "waktu": 1786251634.3394053,
-  "waktu_utc": "2026-08-09 05:00",
-  "pesan": "apa dampaknya ke harga gold?",
-  "balasan": "🕒 Data per 9 Agustus 2026, 12:00 WIB\n\nJalur utama gold sekarang: dolar melemah (mendukung gold), tapi struktur teknikal sudah overbought dan sinyal antar timeframe belum sejalan — jadi dampaknya campuran, bukan satu arah bersih.\n\n• DXY (indeks dolar)\n[...dipangkas...]\nggu koreksi ke area EMA21 daily $4.134 atau konfirmasi breakout lanjut dulu\nSudah pegang: TAHAN — selama close daily masih di atas EMA21 $4.134, tren utama belum rusak; waspada kalau close harian jatuh di bawah situ\n\n⚠️ Bukan saran keuangan ya, DYOR.",
-  "angka_kunci": [
-   "harga=4.399",
-   "harga=4.399,7",
-   "harga=4.134,2",
-   "harga=4.328,9",
-   "harga=4.049",
-   "harga=4.291",
-   "harga=4.403",
-   "harga=4.134"
-  ]
- },
- {
-  "chat": "325b60962ab73036",
-  "waktu": 1786251770.6062522,
-  "waktu_utc": "2026-08-09 05:02",
-  "pesan": "jadi gambaranmu bagaimana?",
-  "balasan": "🕒 Data per 9 Agustus 2026, 12:02 WIB\n\nGambaran besarnya: tren utama gold masih naik, tapi tenaganya udah mulai \"ngos-ngosan\" — jadi kombinasinya uptrend intact + sinyal capek jangka pendek, bukan sinyal jual.\n\nData per 7 Agu 2026 (candle terakhir, pa\n[...dipangkas...]\n— baru masuk kalau ada pullback sehat ke EMA21 4H $4.291 atau makin dalam ke EMA21 daily $4.134\nSudah pegang: TAHAN — selama close daily masih di atas EMA21 $4.134, tren utama belum rusak, cuma sedang koreksi wajar\n\n⚠️ Bukan saran keuangan ya, DYOR.",
-  "angka_kunci": [
-   "harga=4.399,7",
-   "harga=4.134,15",
-   "harga=4.290,97",
-   "harga=4.134",
-   "harga=4.291",
-   "rsi=67,5",
-   "ema=21 4.134,15",
-   "ema=21 4.290,97"
-  ]
- },
- {
-  "chat": "325b60962ab73036",
   "waktu": 1786252312.2300942,
   "waktu_utc": "2026-08-09 05:11",
   "pesan": "rsi eth di daily berapa?",
@@ -105,6 +71,23 @@
    "harga=93,6",
    "harga=4,90",
    "harga=223,96"
+  ]
+ },
+ {
+  "chat": "1242dcf6b322d4c6",
+  "waktu": 1786273420.322405,
+  "waktu_utc": "2026-08-09 11:03",
+  "pesan": "analisa eth",
+  "balasan": "🕒 Data per 9 Agu 2026 17:59 WIB · sumber harga Kraken (native)\n\n📊 PASAR\nBTC, dominasi & Whale Index: TIDAK TERSEDIA di run ini · Fear & Greed 31 (Fear; kemarin 30, stabil)\nTanpa filter BTC, dua dari empat kategori konfluensi buta — alokasi wajib lebi\n[...dipangkas...]\npa perbaikan fee/volume, ambil profit bertahap.\nPantau      : volume saat menguji $1.945–1.979 · arah pecahnya BB squeeze harian · nasib proposal bakar reward validator.\n\n⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.",
+  "angka_kunci": [
+   "harga=231,7",
+   "harga=1,87",
+   "harga=86,3",
+   "harga=7,73",
+   "harga=251,2",
+   "harga=56,2",
+   "harga=28,3",
+   "harga=8,1"
   ]
  }
 ]
