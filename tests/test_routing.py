@@ -1455,3 +1455,30 @@ def test_syarat_proyeksi_lengkap_di_seed():
     # Batas yang paling mudah dilupakan saat prompt dirapikan.
     assert "TIDAK ADA EDGE ARAH" in teks
     assert "bukan konsensus ekonom Wall Street" in teks
+
+
+def test_batas_nfp_fomc_dinyatakan_di_seed():
+    """NFP/PPI/FOMC TIDAK punya konsensus historis di sumber gratis mana pun.
+
+    Tanpa aturan eksplisit, model akan memperlakukan "perubahan terhadap bulan lalu"
+    sebagai kejutan terhadap ekspektasi — padahal NFP -23 ribu bisa disambut naik kalau
+    konsensus memperkirakan lebih buruk. Batas ini harus tetap tertulis.
+    """
+    # Spasi dinormalkan: prompt dibungkus pada 96 kolom, jadi kalimatnya sering terpotong
+    # baris. Tes yang peka pembungkusan akan gagal setiap kali paragrafnya dirapikan.
+    teks = " ".join(open(os.path.join(AKAR, "cloud", "prompts", "peran", "prediktor.md"),
+                         encoding="utf-8").read().split())
+    assert "tidak bisa dibuat** untuk NFP, PPI, maupun FOMC" in teks
+    assert "BUKAN kejutan terhadap ekspektasi" in teks
+
+
+def test_cache_baru_ikut_disimpan_workflow():
+    """Runner ephemeral: cache yang tidak di-commit balik berarti ditarik ulang tiap run.
+
+    Untuk jadwal.py itu bukan sekadar boros — BLS tanpa kunci dibatasi 25 permintaan
+    per hari, jadi cache yang tidak bertahan bisa menghabiskan kuotanya.
+    """
+    alur = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"),
+                encoding="utf-8").read()
+    for berkas in ("cloud/data/kejutan_cache.json", "cloud/data/jadwal_cache.json"):
+        assert alur.count(berkas) == 2, f"{berkas} harus ada di pemeriksaan DAN git add"

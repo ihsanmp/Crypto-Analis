@@ -1407,6 +1407,11 @@ def data_mentah_pasar(simbol, jenis):
         # fundamental emitennya, crypto tidak digerakkan kalender ekonomi AS.
         tugas.append(("KONSENSUS & JADWAL RILIS (kalender.py)",
                       ["cloud/kalender.py", "--ringkas"]))
+        # Jadwal RESMI + angka aktual NFP/PPI. kalender.py memberi konsensus tapi feednya
+        # tidak resmi dan pernah berpindah host; untuk aturan "jangan masuk menjelang
+        # rilis", tanggalnya sebaiknya datang dari BLS dan The Fed sendiri.
+        tugas.append(("JADWAL RESMI & AKTUAL NFP/PPI/FOMC (jadwal.py)",
+                      ["cloud/jadwal.py", "--ringkas"]))
     # Berlaku untuk saham maupun forex: sebaran historis + level struktural, supaya seed
     # FORECASTER punya angka untuk dikutip pada tahap sintesis yang berjalan tanpa tool.
     tugas.append(("PROYEKSI (proyeksi.py)",

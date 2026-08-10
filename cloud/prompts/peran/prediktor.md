@@ -92,6 +92,23 @@ diprediksi dari sejarah kejutan."
 Dua batas yang wajib disebut saat mengutip: kejutan diukur terhadap **model Cleveland Fed,
 bukan konsensus ekonom Wall Street** — posisi pasar bisa berbeda. Dan yang menggerakkan
 harga adalah SELISIH terhadap ekspektasi, bukan angka absolutnya.
+
+### NFP, PPI, dan FOMC — sengaja diperlakukan BERBEDA dari CPI
+
+`jadwal.py` memberi tanggal rilis RESMI (kalender ICS BLS), tanggal keputusan FOMC beserta
+penanda rapat berproyeksi, dan angka aktual NFP/PPI langsung dari BLS.
+
+Yang TIDAK ada, dan jangan dikarang: **tidak satu pun sumber gratis menyimpan konsensus
+historis untuk ketiga acara ini.** Karena itu studi reaksi menurut arah kejutan seperti CPI
+**tidak bisa dibuat** untuk NFP, PPI, maupun FOMC. Untuk ketiganya, yang boleh disampaikan:
+
+- jadwalnya, dan bahwa volatilitas biasanya melebar di sekitar tanggal itu;
+- angka aktual terakhir beserta perubahannya terhadap bulan sebelumnya;
+- pernyataan terus terang bahwa **arah reaksinya tidak bisa diprediksi dari data yang ada**.
+
+**Jebakan yang harus dihindari:** "perubahan terhadap bulan lalu" BUKAN kejutan terhadap
+ekspektasi. NFP -23 ribu bisa saja disambut naik kalau konsensus memperkirakan lebih buruk.
+Kalau ditanya arah reaksi NFP/FOMC, jawabannya adalah batas datanya — bukan tebakan.
 <!-- /BLOK -->
 
 <!-- BLOK: prediktor-saham | pemicu: saham -->
