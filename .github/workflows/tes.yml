@@ -18,6 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Butuh riwayat untuk membandingkan berkas hanya-tambah dengan versi di main.
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -28,3 +31,20 @@ jobs:
 
       - name: Jalankan tes
         run: pytest tests/ -v
+
+      # rapor.jsonl pernah terhapus dari 3 entri jadi 0 gara-gara `git add -A` yang menyapu
+      # terlalu luas, dan baru ketahuan belakangan. Berkas ini hanya BERTAMBAH — arsip
+      # konsensus bahkan tidak punya cadangan di mana pun, karena feed Forex Factory
+      # membuang pekan yang sudah lewat. Kalau menyusut, gagalkan job-nya.
+      - name: Berkas hanya-tambah tidak boleh menyusut
+        run: |
+          for f in cloud/data/rapor.jsonl cloud/data/arsip_konsensus.jsonl; do
+            [ -f "$f" ] || continue
+            lama=$(git show origin/main:"$f" 2>/dev/null | wc -l || echo 0)
+            baru=$(wc -l < "$f")
+            if [ "$baru" -lt "$lama" ]; then
+              echo "::error::$f menyusut dari $lama ke $baru baris"
+              exit 1
+            fi
+            echo "$f: $lama -> $baru baris, aman"
+          done

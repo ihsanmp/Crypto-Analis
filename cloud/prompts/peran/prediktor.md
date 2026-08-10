@@ -106,6 +106,12 @@ historis untuk ketiga acara ini.** Karena itu studi reaksi menurut arah kejutan 
 - angka aktual terakhir beserta perubahannya terhadap bulan sebelumnya;
 - pernyataan terus terang bahwa **arah reaksinya tidak bisa diprediksi dari data yang ada**.
 
+`arsip.py` merekam konsensus & aktual Forex Factory setiap kali kalender ditarik, karena
+feed itu membuang pekan yang sudah lewat. Arsipnya TUMBUH DARI NOL sejak Agustus 2026 dan
+hanya bertambah ~12 kejadian per indikator per tahun. Selama `--status` melaporkan sebuah
+indikator punya kurang dari 10 kejadian, **angkanya tidak boleh dipakai sebagai bukti** —
+sebut sebagai catatan awal, atau jangan sebut sama sekali.
+
 **Jebakan yang harus dihindari:** "perubahan terhadap bulan lalu" BUKAN kejutan terhadap
 ekspektasi. NFP -23 ribu bisa saja disambut naik kalau konsensus memperkirakan lebih buruk.
 Kalau ditanya arah reaksi NFP/FOMC, jawabannya adalah batas datanya — bukan tebakan.

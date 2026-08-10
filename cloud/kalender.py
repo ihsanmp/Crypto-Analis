@@ -238,6 +238,19 @@ def kalender_rilis(pekan_depan=False, paksa=False):
         })
     hasil["rilis"] = rilis
     hasil["jumlah"] = len(rilis)
+
+    # Feed ini hanya memuat pekan berjalan; begitu pekannya lewat, konsensusnya hilang
+    # selamanya. Diarsipkan supaya studi kejutan untuk NFP/PPI/FOMC — yang mustahil sekarang
+    # karena tidak ada sumber gratis berisi konsensus historis — menjadi mungkin nanti.
+    # Kegagalan mengarsip TIDAK boleh menggagalkan kalender: ini fitur sampingan.
+    try:
+        import arsip
+        baru, diperbarui, total = arsip.catat(rilis)
+        if baru or diperbarui:
+            print(f"[kalender] arsip konsensus: +{baru} baru, {diperbarui} diperbarui, "
+                  f"{total} total")
+    except Exception as e:
+        print(f"[kalender] arsip konsensus gagal: {type(e).__name__}: {e}")
     return hasil
 
 

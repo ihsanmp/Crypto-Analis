@@ -1482,3 +1482,84 @@ def test_cache_baru_ikut_disimpan_workflow():
                 encoding="utf-8").read()
     for berkas in ("cloud/data/kejutan_cache.json", "cloud/data/jadwal_cache.json"):
         assert alur.count(berkas) == 2, f"{berkas} harus ada di pemeriksaan DAN git add"
+
+
+# ------------------------------------------------- arsip konsensus Forex Factory
+import arsip  # noqa: E402
+
+
+def _arsip_sementara(tmp_path, monkeypatch):
+    monkeypatch.setattr(arsip, "ARSIP_PATH", str(tmp_path / "a.jsonl"))
+
+
+def _acara(aktual, nama="Non-Farm Employment Change"):
+    return [{"nama": nama, "mata_uang": "USD", "waktu": "2026-09-04T08:30:00-04:00",
+             "dampak": "tinggi", "konsensus": "75K", "sebelumnya": "-23K", "aktual": aktual}]
+
+
+def test_arsip_tidak_menghapus_aktual_dengan_cache_lama(tmp_path, monkeypatch):
+    """Kegagalan paling merusak di arsip ini: aktual tertimpa kosong.
+
+    Feed dibaca dari cache 6 jam, jadi satu acara bisa dibaca ulang dalam keadaan
+    'belum rilis' SETELAH aktualnya sempat terekam. Arsip ini tidak punya cadangan di
+    mana pun — Forex Factory membuang pekan yang sudah lewat — jadi menimpanya dengan
+    kosong berarti angka itu hilang selamanya.
+    """
+    _arsip_sementara(tmp_path, monkeypatch)
+    assert arsip.catat(_acara(None))[0] == 1
+    assert arsip.catat(_acara("120K"))[1] == 1
+    arsip.catat(_acara(None))
+    tersimpan = list(arsip.muat().values())[0]
+    assert tersimpan["aktual"] == "120K"
+
+
+def test_arsip_tidak_menggandakan_acara_yang_sama(tmp_path, monkeypatch):
+    """Upsert, bukan append: satu acara dibaca berkali-kali sepanjang pekan."""
+    _arsip_sementara(tmp_path, monkeypatch)
+    for _ in range(4):
+        arsip.catat(_acara("120K"))
+    assert len(arsip.muat()) == 1
+
+
+def test_arsip_hanya_dampak_tinggi(tmp_path, monkeypatch):
+    """Dampak rendah lima kali lebih banyak dan tak pernah dipakai untuk studi kejutan."""
+    _arsip_sementara(tmp_path, monkeypatch)
+    rendah = _acara("120K")
+    rendah[0]["dampak"] = "rendah"
+    assert arsip.catat(rendah) == (0, 0, 0)
+
+
+@pytest.mark.parametrize("aktual,konsensus,harap", [
+    ("0.4%", "0.2%", 0.2),
+    ("-23K", "75K", -98.0),
+    ("2.50T", "3.06T", -0.56),
+    ("0.2%", "150K", None),      # satuan beda -> tidak berarti
+    (None, "75K", None),
+    ("120K", None, None),
+])
+def test_arsip_kejutan_hanya_bila_satuan_sama(aktual, konsensus, harap):
+    """aktual - konsensus hanya sah kalau satuannya sama; '0.2%' - '150K' itu omong kosong."""
+    hasil = arsip.kejutan({"aktual": aktual, "konsensus": konsensus})
+    if harap is None:
+        assert hasil is None
+    else:
+        assert hasil == pytest.approx(harap)
+
+
+def test_arsip_status_menandai_sampel_kecil(tmp_path, monkeypatch):
+    """Arsip tumbuh dari nol — selama tipis, ia harus MENOLAK dianggap bukti."""
+    _arsip_sementara(tmp_path, monkeypatch)
+    arsip.catat(_acara("120K"))
+    st = arsip.status()
+    assert st["siap_dipakai"] == "BELUM ADA"
+    assert "tidak" in st["aturan_pakai"].lower()
+
+
+def test_arsip_dilindungi_workflow():
+    """Hanya-tambah: ikut di-commit balik, dan dijaga agar tidak menyusut."""
+    bot_yml = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"),
+                   encoding="utf-8").read()
+    assert bot_yml.count("cloud/data/arsip_konsensus.jsonl") == 2
+    tes_yml = open(os.path.join(AKAR, ".github", "workflows", "tes.yml"),
+                   encoding="utf-8").read()
+    assert "arsip_konsensus.jsonl" in tes_yml and "menyusut" in tes_yml
