@@ -1054,3 +1054,53 @@ def test_tidak_mengulang_kalau_semua_sumber_gagal():
     # keluaran normal TIDAK boleh ikut tertandai
     assert not bot._SEMUA_SUMBER_GAGAL.search('{"close": 148.2, "rsi14": 58}')
 
+
+
+# ------------------------- sapuan ke-10: struktur blok & pertumbuhan prompt
+
+def test_semua_blok_chat_terbentuk_utuh():
+    """Penjaga STRUKTUR: tiap pembuka BLOK harus punya penutupnya sendiri.
+
+    Bug nyata: satu penutup salah tempat membuat blok rencana-posisi MENELAN blok
+    berikutnya, sehingga peta-korelasi tidak pernah terbentuk dan isinya ikut dimuat
+    untuk SETIAP pesan — termasuk sapaan. Kegagalannya sunyi: promptnya tetap sah,
+    hanya jadi jauh lebih boros tanpa ada yang error.
+    """
+    with open(os.path.join(AKAR, "cloud", "prompts", "chat.md"), encoding="utf-8") as f:
+        teks = f.read()
+    pembuka = teks.count("<!-- BLOK:")
+    penutup = teks.count("<!-- /BLOK -->")
+    terbentuk = len(bot._BLOK_RE.findall(teks))
+    assert pembuka == penutup, f"{pembuka} pembuka vs {penutup} penutup"
+    assert terbentuk == pembuka, f"hanya {terbentuk} dari {pembuka} blok terbentuk"
+
+
+def test_sapaan_tidak_memuat_aturan_pasar():
+    """Sapaan tidak butuh peta tool, mode pendapat, maupun aturan transaksi.
+
+    Penghematan T3/T4 sempat tergerus tanpa disadari: "halo" naik dari 15.229 menjadi
+    20.221 karakter karena bagian yang ditambahkan belakangan semuanya masuk INTI.
+    """
+    p = bot.build_chat_prompt("halo")
+    for bagian in ("PETA KORELASI", "MODE PENDAPAT", "RENCANA vs POSISI"):
+        assert bagian not in p, f"{bagian} tidak seharusnya dimuat untuk sapaan"
+    assert len(p) < 18000, f"prompt sapaan {len(p)} kar — terlalu boros"
+
+
+@pytest.mark.parametrize("pesan,bagian", [
+    ("kalo buy pump di 0.0026 gimana?", "RENCANA vs POSISI"),
+    ("worth nggak hold sol sekarang?", "RENCANA vs POSISI"),
+    ("apa dampaknya ke harga gold?", "PETA KORELASI"),
+    ("jadi gambaranmu bagaimana?", "MODE PENDAPAT"),
+])
+def test_bagian_dimuat_saat_relevan(pesan, bagian):
+    """Menghemat tidak boleh berarti kehilangan aturan saat benar-benar dibutuhkan."""
+    assert bagian in bot.build_chat_prompt(pesan)
+
+
+@pytest.mark.parametrize("pesan", ["kalo buy pump di 0.0026", "mau sell sekarang",
+                                   "worth hold nggak"])
+def test_kosakata_transaksi_inggris_dikenali(pesan):
+    """buy/sell/hold sempat tidak ada di kosakata pasar, padahal lazim dipakai."""
+    assert bot._PASAR_UMUM.search(pesan.lower()), pesan
+

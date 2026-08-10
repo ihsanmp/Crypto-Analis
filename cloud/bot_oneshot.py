@@ -414,7 +414,7 @@ def build_narasi_prompt(text):
 # tidak ada satu pun blok yang cocok, seluruh blok dimuat. Prinsipnya ragu = muat, karena
 # kehilangan aturan jauh lebih merugikan daripada boros token.
 _PASAR_UMUM = re.compile(
-    r"\b(harga|beli|jual|akumulasi|prospek|pasar|market|tren|trend|level|support|resisten|"
+    r"\b(harga|beli|jual|buy|sell|hold|akumulasi|prospek|pasar|market|tren|trend|level|support|resisten|"
     r"chart|grafik|analisa|analisis|invest|portofolio|posisi|entry|target|koin|coin|token|"
     r"saham|stock|forex|emas|gold|bursa|rally|koreksi|bullish|bearish|cuan|rugi|profit|"
     r"dompet|wallet|alamat|address|holder|whale|on-chain|onchain|tvl|saldo|supply|mcap|"
