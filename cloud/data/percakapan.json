@@ -1,121 +1,16 @@
 [
  {
   "chat": "1242dcf6b322d4c6",
-  "waktu": 1786274664.7550254,
-  "waktu_utc": "2026-08-09 11:24",
-  "pesan": "analisa saham aapl",
-  "balasan": "🕒 Data per 7 Agustus 2026 (candle penutupan terakhir) · brief disusun 9 Agustus 2026 18:22 WIB · sumber Yahoo Finance NasdaqGS (native) + SEC EDGAR. Hari ini Minggu, bursa tutup — wajar, bukan data basi.\n\n━━━━━━━━━━━━━━━━━━━━\n$AAPL — Apple Inc. (Tekn\n[...dipangkas...]\nni bukan kondisi yang menuntut tindakan. Sinyal bertentangan antar timeframe dan antara fundamental dengan valuasi. Tidak bertransaksi adalah keputusan yang sah di sini.\n\n⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.",
+  "waktu": 1786357790.3061578,
+  "waktu_utc": "2026-08-10 10:29",
+  "pesan": "kalo buy pump di 0.0026 gimana menurutmu?",
+  "balasan": "🕒 Data per 10 Agustus 2026, 17:29 WIB\n\nBeli di $0,0026 itu praktis di harga sekarang (4H terakhir $0,00275, Daily $0,002673) — bukan pullback dalam, malah nyaris ngejar puncak lokal. RSI Daily 72,6 dan 4H 75,2 sudah overbought, dan Daily malah di ATA\n[...dipangkas...]\na saat overbought. Kalau ngotot, masuk kecil dulu, sisanya nunggu turun ke $0,0025 atau $0,00214.\n\n⚠️ Balasan ini memuat angka tanpa satu pun tanggal — ada kemungkinan sebagian berasal dari ingatan, bukan data baru.\n\n⚠️ Bukan saran keuangan ya, DYOR.",
   "angka_kunci": [
-   "harga=109,42",
-   "harga=94,04",
-   "harga=29,79",
-   "harga=2,02",
-   "harga=1,91",
-   "harga=1,89",
-   "harga=92,2",
-   "harga=82,3"
-  ]
- },
- {
-  "chat": "1242dcf6b322d4c6",
-  "waktu": 1786291724.5206606,
-  "waktu_utc": "2026-08-09 16:08",
-  "pesan": "analisa saham nvda",
-  "balasan": "🕒 Data per 7 Agustus 2026 (penutupan bursa terakhir, Jumat) · diambil 9 Agustus 2026 23:04 WIB · Yahoo Finance (quality: native). Hari ini Minggu, bursa AS tutup — candle terakhir = penutupan Jumat, itu wajar.\n\n━━━━━━━━━━━━━━━━━━━━\n$NVDA — NVIDIA Cor\n[...dipangkas...]\nsi di $226,5–229,4 — tembus dengan volume di atas rata-rata mengubah gambaran, tembus dengan volume tipis adalah jebakan; (2) guidance 26 Agustus, bukan angka aktualnya.\n\n⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.",
-  "angka_kunci": [
-   "harga=81,6",
-   "harga=44,1",
-   "harga=61,2",
-   "harga=6,3",
-   "harga=54,8",
-   "harga=58,3",
-   "harga=13",
-   "harga=1,87"
-  ]
- },
- {
-  "chat": "1242dcf6b322d4c6",
-  "waktu": 1786292226.6990926,
-  "waktu_utc": "2026-08-09 16:17",
-  "pesan": "analisa gold",
-  "balasan": "🕒 Data per 9 Agustus 2026 23:13 WIB · sumber Yahoo Finance/COMEX (native) · candle harian terakhir 7 Agustus (Jumat) — akhir pekan, wajar\n\n━━━━━━━━━━━━━━━━━━━━\nGC=F — Emas berjangka COMEX (logam, bukan saham tambang)\n━━━━━━━━━━━━━━━━━━━━\n\n🧮 SKOR 58/1\n[...dipangkas...]\ndengan close harian atau justru jadi lower high kedua.\n\n⚠️ Candle terakhir sudah lebih dari 48 jam — untuk crypto ini tidak wajar, perlakukan levelnya sebagai perkiraan.\n\n⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.",
-  "angka_kunci": [
-   "harga=4.399,70",
-   "harga=4.331",
-   "harga=4.268",
-   "harga=4.432",
-   "harga=4.479",
-   "harga=4.330",
-   "harga=4.270",
-   "harga=4.400"
-  ]
- },
- {
-  "chat": "1242dcf6b322d4c6",
-  "waktu": 1786293686.1407523,
-  "waktu_utc": "2026-08-09 16:41",
-  "pesan": "analisa saham nvda",
-  "balasan": "🕒 Data per 7 Agustus 2026 (candle harian terakhir) · brief disusun 9 Agustus 2026 23.36 WIB · sumber NasdaqGS via Yahoo Finance (quality: native). Hari ini Minggu — bursa tutup, candle terakhir = penutupan Jumat. Itu wajar, bukan data basi.\n\n━━━━━━━━\n[...dipangkas...]\nkup untuk menahan, tidak cukup untuk menambah agresif.\n\n⚠️ Candle terakhir sudah lebih dari 48 jam — untuk crypto ini tidak wajar, perlakukan levelnya sebagai perkiraan.\n\n⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.",
-  "angka_kunci": [
-   "harga=223,96",
-   "harga=81,6",
-   "harga=61,2",
-   "harga=6,3",
-   "harga=52",
-   "harga=58,3",
-   "harga=13",
-   "harga=2,39"
-  ]
- },
- {
-  "chat": "1242dcf6b322d4c6",
-  "waktu": 1786294461.2531292,
-  "waktu_utc": "2026-08-09 16:54",
-  "pesan": "analisa pump",
-  "balasan": "🕒 Data per 9 Agustus 2026, 23:51 WIB · sumber harga Kraken (native) · candle tertutup saja\n\n📊 PASAR\nBTC / dominasi / Whale Index: TIDAK TERSEDIA di brief ini — jangan dianggap netral, memang tidak diambil.\nFear & Greed 31 (Fear, kemarin 30 · stabil).\n[...dipangkas...]\nat saya BERUBAH pandangan jadi akumulasi: close mingguan di atas $0,00268 (SuperTrend mingguan) dengan volume di atas rata-rata, plus TVL mulai tumbuh lagi >20% 30 hari.\n\n⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.",
-  "angka_kunci": [
-   "harga=37,6",
-   "harga=14,72",
-   "harga=0,95",
-   "harga=251,4",
-   "harga=9,59",
-   "harga=106,7",
-   "harga=591,7",
-   "harga=20,2"
-  ]
- },
- {
-  "chat": "1242dcf6b322d4c6",
-  "waktu": 1786294748.3780806,
-  "waktu_utc": "2026-08-09 16:59",
-  "pesan": "kalo buy di 0.002551 bagaimana menurutmu?",
-  "balasan": "🕒 Data per 9 Agustus 2026, 23:59 WIB\n\n🕒 Data per 9 Agu 2026, candle 4H terakhir tutup 19:00 WIB · harga native\n\nEntry $0,002551 kamu sekarang profit tipis — harga 4H terakhir $0,002683, sekitar +5% dari beli. Bukan entry di dip, tapi masih nempel di\n[...dipangkas...]\nose mingguan di atas $0,00268 — jangan kejar sekarang, 4H sudah overbought.\n\n⚠️ Balasan ini memuat angka tanpa satu pun tanggal — ada kemungkinan sebagian berasal dari ingatan, bukan data baru.\n\n⚠️ Bukan saran keuangan ya, DYOR & atur risiko sendiri.",
-  "angka_kunci": [
-   "harga=0,002551",
-   "harga=0,002683",
-   "harga=0,002084",
-   "harga=0,002404",
-   "harga=0,00268",
-   "rsi=4",
-   "ema=2 1",
-   "ema=21 4"
-  ]
- },
- {
-  "chat": "1242dcf6b322d4c6",
-  "waktu": 1786295212.863905,
-  "waktu_utc": "2026-08-09 17:06",
-  "pesan": "kalo buy pump di 0.002551 bagaimana menurutmu?",
-  "balasan": "🕒 Data per 9 Agu 2026, candle 4H terakhir (buka 19:00, tutup 23:00 WIB) — harga native Kraken.\n\nIni masih rencana ya (belum beli), jadi aku nilai sebagai entry, bukan posisi berjalan. Harga sekarang di 4H $0,002683, di atas EMA21 4H $0,002404 — masih\n[...dipangkas...]\n.\n\n✅ KESIMPULAN SPOT\nBelum punya: BOLEH DICOBA BERTAHAP di $0,002551, tapi kalau mau lebih aman tunggu turun dulu ke $0,0024–0,00235 (EMA21/SuperTrend 4H). Batal kalau tembus ke bawah $0,00235.\n\n⚠️ Bukan saran keuangan ya, DYOR & atur risiko sendiri.",
-  "angka_kunci": [
-   "harga=0,002683",
-   "harga=0,002404",
-   "harga=0,002551",
-   "harga=0,002525",
-   "harga=0,002523",
-   "harga=0,002350",
-   "harga=0,002084",
-   "harga=0,00235"
+   "harga=0,00275",
+   "ema21=0,002138",
+   "ema21=0,002504",
+   "ema21=0,00214",
+   "rsi=72,6"
   ]
  }
 ]
