@@ -49,9 +49,10 @@ BASE = "https://openapi.sosovalue.com"
 UA = {"User-Agent": "Crypto-Analis Research bot"}
 TIMEOUT = 30
 
-# 20 permintaan/menit = 1 tiap 3 detik. Diberi jarak sendiri supaya tidak pernah kena 429
-# gara-gara beberapa panggilan beruntun dalam satu proses.
-JEDA_MINIMUM = 3.2
+# Dokumentasi menyebut 20 permintaan/menit, tapi diuji langsung: jeda 3,2 detik masih kena
+# 429 setelah 10 panggilan beruntun. Batas sebenarnya lebih ketat daripada yang ditulis.
+JEDA_MINIMUM = 6.5
+ULANG_SAAT_429 = 2
 _terakhir = [0.0]
 
 # Kandidat endpoint. Nama sebenarnya tidak bisa diverifikasi tanpa kunci (auth dicek sebelum
@@ -66,19 +67,27 @@ KANDIDAT = [
 # sementara semua tebakan ETF membalas 404. Tidak ada spesifikasi publik (/v3/api-docs
 # membalas 403), jadi alamat ETF hanya bisa dicari lewat percobaan. Daftar ini dicoba
 # sekali; yang tetap 404 semua berarti ETF memang tidak terjangkau dari plan ini.
+# TERBUKTI: yang hidup versi v2, bukan v1. Lima pola v1 lain membalas 404.
+ETF_METRIK = "/openapi/v2/etf/currentEtfDataMetrics"
 KANDIDAT_ETF = [
-    ("POST", "/openapi/v1/etf/current-etf-data-metrics", {"type": "us-btc-spot"}),
-    ("POST", "/openapi/v1/etf/metrics", {"type": "us-btc-spot"}),
-    ("GET", "/openapi/v1/etf/list", None),
-    ("GET", "/openapi/v1/etf/us-btc-spot/current", None),
-    ("POST", "/openapi/v2/etf/currentEtfDataMetrics", {"type": "us-btc-spot"}),
-    ("POST", "/openapi/v1/data/etf/currentEtfDataMetrics", {"type": "us-btc-spot"}),
+    ("POST", ETF_METRIK, {"type": "us-btc-spot"}),
+    ("POST", "/openapi/v2/etf/historicalInflowChart", {"type": "us-btc-spot"}),
 ]
 
 # Nama acara harus PERSIS. Daftar /macro/events cuma memuat dua pekan ke depan, jadi nama
 # untuk acara yang tidak sedang dijadwalkan tidak muncul di situ dan harus diuji satu-satu.
+# TERBUKTI HIDUP beserta kedalamannya — semuanya memuat kolom forecast:
+#   Nonfarm Payrolls  2018-05-04 .. 2026-08-07
+#   CPI (MoM)         2018-03-13 .. 2026-08-12
+#   Core CPI (MoM)    2018-03-13 .. 2026-08-12
+#   PPI (MoM)         2018-05-09 .. 2026-08-13
+ACARA_TERBUKTI = {
+    "NFP": "Nonfarm Payrolls",
+    "CPI": "CPI (MoM)",
+    "CORE CPI": "Core CPI (MoM)",
+    "PPI": "PPI (MoM)",
+}
 KANDIDAT_ACARA = [
-    "Nonfarm Payrolls", "CPI (MoM)", "Core CPI (MoM)", "PPI (MoM)",
     "Fed Interest Rate Decision", "FOMC Interest Rate Decision",
     "Unemployment Rate", "Average Hourly Earnings (MoM)",
 ]
@@ -105,7 +114,7 @@ def _simpan_cache(c):
         print(f"[sosovalue] gagal menyimpan cache: {e}")
 
 
-def panggil(jalur, metode="GET", badan=None, params=None, pakai_cache=True):
+def panggil(jalur, metode="GET", badan=None, params=None, pakai_cache=True, percobaan=0):
     """Satu-satunya pintu ke SoSoValue. Return (data, dari_cache, error).
 
     Kunci TIDAK PERNAH ikut ke keluaran mana pun — repo ini publik dan log Actions ikut
@@ -148,7 +157,12 @@ def panggil(jalur, metode="GET", badan=None, params=None, pakai_cache=True):
             pesan += " — endpoint tidak ada (alamatnya berubah?)"
         elif e.code == 429:
             tunggu = e.headers.get("retry_after") or e.headers.get("Retry-After")
-            pesan += f" — batas laju terlampaui (20/menit){f', tunggu {tunggu}s' if tunggu else ''}"
+            if percobaan < ULANG_SAAT_429:
+                jeda = float(tunggu) if (tunggu or "").replace(".", "").isdigit() else 20.0
+                print(f"[sosovalue] 429 — tunggu {jeda:.0f} detik lalu ulangi")
+                time.sleep(jeda)
+                return panggil(jalur, metode, badan, params, pakai_cache, percobaan + 1)
+            pesan += f" — batas laju terlampaui{f', tunggu {tunggu}s' if tunggu else ''}"
         if simpan.get("data") is not None:
             return simpan["data"], True, f"{pesan} (pakai cache lama)"
         return None, False, pesan
@@ -251,8 +265,7 @@ def riwayat_makro(acara, mulai=None, sampai=None, limit=100):
 
 def arus_etf(jenis="us-btc-spot"):
     """Arus dana ETF spot — kategori sinyal yang tidak dipunyai sumber lain di repo ini."""
-    isi, dari_cache, err = panggil("/openapi/v1/etf/currentEtfDataMetrics", "POST",
-                                   {"type": jenis})
+    isi, dari_cache, err = panggil(ETF_METRIK, "POST", {"type": jenis})
     if err:
         return {"tidak_tersedia": err}
     return {"jenis": jenis, "dari_cache": dari_cache, "data": isi,
