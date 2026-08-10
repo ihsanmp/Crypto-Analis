@@ -60,12 +60,27 @@ _terakhir = [0.0]
 KANDIDAT = [
     ("acara makro", "GET", "/openapi/v1/macro/events", None),
     ("riwayat makro", "GET", "/openapi/v1/macro/events/{acara}/history", None),
-    ("ETF metrik terkini", "POST", "/openapi/v1/etf/currentEtfDataMetrics",
-     {"type": "us-btc-spot"}),
-    ("ETF arus historis", "POST", "/openapi/v1/etf/historicalInflowChart",
-     {"type": "us-btc-spot"}),
-    ("indeks SoSoValue", "POST", "/openapi/v1/indicator/get_current_index", {}),
-    ("berita", "GET", "/openapi/v1/feeds/news", None),
+]
+
+# Putaran pertama membuktikan kedua endpoint makro HIDUP dan riwayatnya sampai 2018-05,
+# sementara semua tebakan ETF membalas 404. Tidak ada spesifikasi publik (/v3/api-docs
+# membalas 403), jadi alamat ETF hanya bisa dicari lewat percobaan. Daftar ini dicoba
+# sekali; yang tetap 404 semua berarti ETF memang tidak terjangkau dari plan ini.
+KANDIDAT_ETF = [
+    ("POST", "/openapi/v1/etf/current-etf-data-metrics", {"type": "us-btc-spot"}),
+    ("POST", "/openapi/v1/etf/metrics", {"type": "us-btc-spot"}),
+    ("GET", "/openapi/v1/etf/list", None),
+    ("GET", "/openapi/v1/etf/us-btc-spot/current", None),
+    ("POST", "/openapi/v2/etf/currentEtfDataMetrics", {"type": "us-btc-spot"}),
+    ("POST", "/openapi/v1/data/etf/currentEtfDataMetrics", {"type": "us-btc-spot"}),
+]
+
+# Nama acara harus PERSIS. Daftar /macro/events cuma memuat dua pekan ke depan, jadi nama
+# untuk acara yang tidak sedang dijadwalkan tidak muncul di situ dan harus diuji satu-satu.
+KANDIDAT_ACARA = [
+    "Nonfarm Payrolls", "CPI (MoM)", "Core CPI (MoM)", "PPI (MoM)",
+    "Fed Interest Rate Decision", "FOMC Interest Rate Decision",
+    "Unemployment Rate", "Average Hourly Earnings (MoM)",
 ]
 
 
@@ -173,6 +188,30 @@ def periksa(acara="Nonfarm Payrolls"):
     dicek sebelum routing, jadi API-nya sendiri yang harus menjawab.
     """
     hasil = []
+    for metode, jalur, badan in KANDIDAT_ETF:
+        isi, _, err = panggil(jalur, metode, badan, None, pakai_cache=False)
+        hasil.append({"nama": "ETF", "metode": metode, "jalur": jalur,
+                      "hasil": f"GAGAL: {err}" if err else "OK",
+                      **({} if err else {"cuplikan": json.dumps(isi, ensure_ascii=False)[:300]})})
+
+    for nm in KANDIDAT_ACARA:
+        j = f"/openapi/v1/macro/events/{urllib.parse.quote(nm)}/history"
+        isi, _, err = panggil(j, "GET", None, {"start_date": "2010-01-01", "limit": 100},
+                              pakai_cache=False)
+        baris = {"nama": f"acara: {nm}", "metode": "GET", "jalur": "(history)"}
+        if err:
+            baris["hasil"] = f"GAGAL: {err}"
+        else:
+            data = (isi or {}).get("data") if isinstance(isi, dict) else None
+            awal, akhir = _tanggal_terjauh(isi)
+            baris["hasil"] = "OK" if data else "KOSONG"
+            baris["jumlah"] = len(data) if isinstance(data, list) else None
+            if awal:
+                baris["rentang_tanggal"] = f"{awal} s/d {akhir}"
+            if isinstance(data, list) and data:
+                baris["contoh"] = json.dumps(data[0], ensure_ascii=False)[:160]
+        hasil.append(baris)
+
     for nama, metode, jalur, badan in KANDIDAT:
         j = jalur.replace("{acara}", urllib.parse.quote(acara))
         params = {"start_date": "2010-01-01", "limit": 100} if "history" in j else None
