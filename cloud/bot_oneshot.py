@@ -835,6 +835,18 @@ _TICKER_UMUM = {
     "IMX", "SAND", "MANA", "AXS", "HBAR", "XLM", "ALGO", "VET", "STX", "RUNE", "KAS",
 }
 _KATA_BUKAN_TICKER = {"ADA", "OP", "ATAU", "INI", "ITU", "DAN", "APA", "KE", "DI"}
+# Kata yang lazim MENGIKUTI kata kerja transaksi tapi jelas bukan nama aset.
+# Tanpa daftar ini, "beli banyak" terbaca sebagai koin BANYAK, "entry lagi" jadi koin
+# LAGI, dan "buy the dip" jadi koin THE — bot lalu mengumpulkan data untuk aset yang
+# tidak ada. Ini kelas kesalahan yang sama dengan "analisa koin pump" yang dulu sudah
+# diperbaiki, muncul kembali di tempat baru karena polanya ditulis ulang.
+_SETELAH_TRANSAKSI_BUKAN_ASET = {
+    "BANYAK", "SEDIKIT", "LAGI", "DULU", "AJA", "SAJA", "TERUS", "SEMUA", "SISA",
+    "SEBAGIAN", "SEKARANG", "NANTI", "BESOK", "KAPAN", "BERAPA", "HARGA", "POSISI",
+    "PELAN", "CEPAT", "PENUH", "THE", "DIP", "MORE", "NOW", "SOME", "ALL", "AGAIN",
+    "BACK", "IN", "OUT", "PADA", "SAAT", "KALAU", "KALO", "WAKTU", "SAMPAI", "SETELAH",
+    "SEBELUM", "BIAR", "SUPAYA", "MUMPUNG", "BARENG", "JUGA", "MASIH", "BELUM", "SUDAH",
+}
 
 
 def _semua_aset(teks):
@@ -896,7 +908,9 @@ def aset_dari_pesan(teks):
                    teks or "", re.I)
     if m2:
         atas = m2.group(1).upper()
-        if atas not in _KATA_BUKAN_TICKER and atas not in ("DI", "DARI", "KE", "PADA"):
+        if (atas not in _KATA_BUKAN_TICKER
+                and atas not in _SETELAH_TRANSAKSI_BUKAN_ASET
+                and atas not in ("DARI", "UNTUK", "DENGAN")):
             return "crypto", atas
 
     # 3. Ticker crypto dari daftar terbatas. Kata Indonesia yang kebetulan sama
@@ -1001,6 +1015,13 @@ def build_photo_prompt(caption, image_path, chat_id=None):
             f"## Caption / pertanyaan user\n{instruksi}\n")
 
 
+# Ciri "aset tidak ada": seluruh bursa/sumber gagal pada permintaan yang sama.
+_SEMUA_SUMBER_GAGAL = re.compile(
+    r'gagal ambil candle[^"]{0,200}?okx:'
+    r'|tidak ditemukan di daftar emiten'
+    r'|symbol tidak dikenal', re.I)
+
+
 def jalankan_script(args, batas=300, min_kar=0, ulang=1):
     """Jalankan script pengumpul data LANGSUNG dari Python, tanpa perantara model.
 
@@ -1011,6 +1032,14 @@ def jalankan_script(args, batas=300, min_kar=0, ulang=1):
     for percobaan in range(ulang + 1):
         keluar, err = _jalankan_sekali(args, batas)
         if err is None and (min_kar <= 0 or len(keluar) >= min_kar):
+            return keluar, err
+        # Keluaran tipis KARENA ASET TIDAK ADA tidak akan membaik dengan diulang.
+        # Cirinya khas: SELURUH sumber gagal sekaligus. Rate limit biasanya menyisakan
+        # sebagian sumber. Tanpa pembedaan ini, satu salah ketik ticker memakan 40 detik
+        # dari jatah 300 detik hanya untuk mengulang sesuatu yang pasti gagal lagi.
+        if err is None and keluar and _SEMUA_SUMBER_GAGAL.search(keluar):
+            print(f"[data] {args[0]}: semua sumber gagal — aset kemungkinan tidak ada, "
+                  f"tidak diulang", file=sys.stderr)
             return keluar, err
         if percobaan < ulang:
             if err is None:

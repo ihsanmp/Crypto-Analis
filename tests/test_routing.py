@@ -1011,3 +1011,46 @@ def test_aturan_rencana_vs_posisi_ada_di_prompt(berkas):
     assert "RENCANA vs POSISI" in isi
     assert "Belum punya" in isi
 
+
+
+# --------------------------- sapuan ke-9: regresi pada yang baru saja diubah
+
+@pytest.mark.parametrize("pesan,harap", [
+    # yang SAH harus tetap terdeteksi
+    ("kalo buy pump di 0.0026 gimana?", ("crypto", "PUMP")),
+    ("beli sol sekarang?", ("crypto", "SOL")),
+    ("masuk ondo di 0.85?", ("crypto", "ONDO")),
+    ("jual saham nvda sekarang?", ("saham", "NVDA")),
+    ("beli emas di 4300 gimana?", ("forex", "GC=F")),
+    # kata biasa setelah kata kerja transaksi BUKAN nama aset
+    ("beli banyak nggak ya", (None, None)),
+    ("entry lagi di harga berapa?", (None, None)),
+    ("buy the dip gimana?", (None, None)),
+    ("jual sebagian dulu", (None, None)),
+    ("beli lagi besok aja", (None, None)),
+    ("masuk sekarang atau tunggu?", (None, None)),
+])
+def test_aset_transaksi_tidak_salah_tangkap(pesan, harap):
+    """Regresi yang KUPERKENALKAN SENDIRI di sapuan ke-8.
+
+    Pola "buy <TOKEN>" membuat "beli banyak" terbaca sebagai koin BANYAK, "entry lagi"
+    jadi koin LAGI, dan "buy the dip" jadi koin THE — bot lalu mengumpulkan data untuk
+    aset yang tidak ada. Kelas kesalahan yang persis sama dengan "analisa koin pump"
+    yang dulu sudah diperbaiki, muncul kembali di tempat baru.
+    """
+    assert bot.aset_dari_pesan(pesan) == harap
+
+
+def test_tidak_mengulang_kalau_semua_sumber_gagal():
+    """Keluaran tipis karena ASET TIDAK ADA tidak akan membaik dengan diulang.
+
+    Satu salah ketik ticker sempat memakan 40,3 detik dari jatah 300 detik, hanya untuk
+    mengulang sesuatu yang pasti gagal lagi. Rate limit biasanya menyisakan sebagian
+    sumber; seluruh sumber gagal sekaligus adalah ciri aset yang memang tidak ada.
+    """
+    gagal = ('{"timeframes": {"1d": {"error": "gagal ambil candle harian: '
+             'binance: URLError; kraken: URLError; coinbase: URLError; okx: RuntimeError"}}}')
+    assert bot._SEMUA_SUMBER_GAGAL.search(gagal)
+    # keluaran normal TIDAK boleh ikut tertandai
+    assert not bot._SEMUA_SUMBER_GAGAL.search('{"close": 148.2, "rsi14": 58}')
+
