@@ -1131,3 +1131,61 @@ def test_gagal_aman_masih_utuh_tanpa_petunjuk():
     aktif = _blok_aktif(hasil, semua, teks)
     assert len(aktif) == len(semua), f"hanya {len(aktif)} dari {len(semua)} blok"
 
+
+
+# --------------------- sapuan ke-11: riwayat, foto, dan boilerplate di ekor
+
+def test_peringatan_audit_tidak_mendorong_kesimpulan_keluar_riwayat():
+    """Disclaimer & peringatan audit memakan jatah EKOR potongan riwayat.
+
+    Regresi nyata: sejak peringatan audit ditambahkan (T1a), blok KESIMPULAN terdorong
+    keluar dari potongan yang disimpan — padahal mempertahankan kesimpulan itulah alasan
+    potongan dua-ujung ini dibuat. Keduanya identik di setiap balasan, jadi tidak menambah
+    konteks apa pun saat dibaca ulang.
+    """
+    inti = ("🧮 SKOR 58/100" + N + "🎯 BIAS SPOT: TAHAN" + N + ("x" * 700) + N +
+            "✅ KESIMPULAN SPOT" + N + "Belum punya : TUNGGU DULU" + N +
+            "Sudah pegang: TAHAN — selama close di atas EMA21 $148,20" + N)
+    disc = "⚠️ Riset pasar berbasis data, bukan saran keuangan."
+    dengan = bot.sisipkan_peringatan(
+        inti + disc, "⚠️ Sebagian angka di atas tidak bisa kulacak ke data mentah.")
+    p = bot._potong_balasan(dengan)
+    assert "KESIMPULAN" in p, p[-200:]
+    assert "148,20" in p
+    assert "SKOR 58" in p              # ujung awal juga tetap ada
+
+
+def test_buang_ekor_hanya_di_ujung():
+    """Bagian RISIKO di TENGAH balasan memakai ⚠️ juga — jangan ikut terbuang."""
+    teks = ("Isi analisa" + N + "⚠️ RISIKO" + N + "• unlock besar pekan depan" + N +
+            "✅ KESIMPULAN" + N + "TUNGGU DULU" + N + "⚠️ Bukan saran keuangan.")
+    hasil = bot._buang_ekor_boilerplate(teks)
+    assert "⚠️ RISIKO" in hasil
+    assert "unlock besar" in hasil
+    assert "Bukan saran keuangan" not in hasil
+
+
+def test_foto_punya_aturan_rencana_vs_posisi():
+    """Mengirim chart lalu bertanya "kalau saya masuk di sini?" adalah hal paling wajar
+
+    di mode foto — tapi aturannya sempat hanya ada di chat.md dan kedua prompt analisa.
+    """
+    with open(os.path.join(AKAR, "cloud", "prompts", "foto.md"), encoding="utf-8") as f:
+        isi = f.read()
+    assert "RENCANA vs POSISI" in isi
+    assert "Belum punya" in isi
+
+
+@pytest.mark.parametrize("berkas", [
+    "chat.md", "analisa.md", "analisa_pasar.md", "foto.md", "narasi.md",
+    "analisa_sumber.md",
+])
+def test_pagar_kode_prompt_seimbang(berkas):
+    """Pagar ``` yang tidak tertutup membuat SELURUH teks sesudahnya terbaca sebagai
+
+    contoh kode, bukan aturan — kegagalan sunyi yang tidak memunculkan error apa pun.
+    """
+    with open(os.path.join(AKAR, "cloud", "prompts", berkas), encoding="utf-8") as f:
+        isi = f.read()
+    assert isi.count("```") % 2 == 0, f"{berkas}: pagar kode ganjil"
+

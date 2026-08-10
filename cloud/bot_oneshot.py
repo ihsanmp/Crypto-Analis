@@ -526,6 +526,20 @@ def _muat_riwayat():
         return []
 
 
+def _buang_ekor_boilerplate(teks):
+    """Buang disclaimer & peringatan audit di UJUNG balasan sebelum dipangkas.
+
+    Keduanya sama untuk setiap balasan, jadi tidak menambah konteks apa pun saat dibaca
+    ulang di giliran berikutnya — tapi keduanya MEMAKAN jatah ekor. Sejak peringatan audit
+    ditambahkan, blok "KESIMPULAN" terdorong keluar dari potongan yang disimpan, padahal
+    mempertahankan kesimpulan itulah alasan potongan dua-ujung ini dibuat.
+    """
+    baris = (teks or "").rstrip().split("\n")
+    while baris and (not baris[-1].strip() or baris[-1].lstrip().startswith("⚠️")):
+        baris.pop()
+    return "\n".join(baris)
+
+
 def _potong_balasan(teks):
     """Pangkas balasan panjang dengan menyimpan AWAL dan AKHIR-nya.
 
@@ -534,7 +548,7 @@ def _potong_balasan(teks):
     lalu bertanya "kenapa kamu bilang tunggu dulu?", justru bagian bawah itu yang
     dibutuhkan.
     """
-    teks = teks or ""
+    teks = _buang_ekor_boilerplate(teks)
     if len(teks) <= BALASAN_POTONG:
         return teks
     sisi = BALASAN_POTONG // 2
