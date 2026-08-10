@@ -778,7 +778,16 @@ def konteks_percakapan(chat_id):
 # (memuat aturan kalibrasi keras yang mencegah model mengarang keyakinan); peran lain
 # dimuat sesuai kebutuhan mode. Tiap file punya blok bertanda sektor, jadi analisa crypto
 # tidak ikut membawa aturan risiko forex/saham — itu yang membuat mutu naik tanpa boros.
-PERAN_LENGKAP = ("inti", "analis", "risk", "portofolio", "trader")
+PERAN_LENGKAP = ("inti", "analis", "risk", "portofolio", "trader", "prediktor")
+
+# Pertanyaan yang MEMINTA proyeksi: target harga, arah ke depan, atau perkiraan hasil
+# rilis data. Dipakai untuk memuat seed FORECASTER pada mode ngobrol — di analisa penuh
+# seed itu selalu ikut karena analisa memang berujung pada target dan skenario.
+_MINTA_PROYEKSI = re.compile(
+    r"(?:target|proyeksi|prediksi|forecast|ramal|potensi|berpotensi|bisa (?:naik|turun|"
+    r"tembus|sampai)|akan (?:naik|turun)|sampai (?:harga|level|\$)|ke \$|outlook|"
+    r"bakal|kapan|berapa lama|sejauh mana|seberapa (?:jauh|tinggi)|bullish|bearish|"
+    r"dampak(?:nya)?|efek(?:nya)?|hasil(?:nya)? (?:cpi|nfp|fomc))", re.I)
 
 
 def rakit_peran(sektor, peran=PERAN_LENGKAP):
@@ -899,6 +908,18 @@ _TICKER_UMUM = {
     "ONDO", "ENA", "JUP", "PYTH", "AAVE", "MKR", "CRV", "LDO", "SNX", "COMP", "GRT",
     "IMX", "SAND", "MANA", "AXS", "HBAR", "XLM", "ALGO", "VET", "STX", "RUNE", "KAS",
 }
+# Nama panjang. Tanpa ini "solana berpotensi naik sampai $200?" tidak dikenali sama sekali
+# (aset None -> bukan pertanyaan pasar -> tanpa aturan kalibrasi), padahal "sol" dikenali.
+# Orang menulis nama panjang justru saat TIDAK memakai perintah, yaitu di mode ngobrol.
+_ALIAS_KOIN = {
+    "bitcoin": "BTC", "ethereum": "ETH", "solana": "SOL", "cardano": "ADA",
+    "ripple": "XRP", "dogecoin": "DOGE", "polkadot": "DOT", "avalanche": "AVAX",
+    "chainlink": "LINK", "polygon": "MATIC", "litecoin": "LTC", "cosmos": "ATOM",
+    "arbitrum": "ARB", "optimism": "OP", "injective": "INJ", "celestia": "TIA",
+    "aptos": "APT", "toncoin": "TON", "hedera": "HBAR", "stellar": "XLM",
+    "algorand": "ALGO", "render": "RNDR", "bittensor": "TAO", "uniswap": "UNI",
+    "shiba inu": "SHIB", "binance coin": "BNB", "tron": "TRX", "filecoin": "FIL",
+}
 _KATA_BUKAN_TICKER = {"ADA", "OP", "ATAU", "INI", "ITU", "DAN", "APA", "KE", "DI"}
 # Kata yang lazim MENGIKUTI kata kerja transaksi tapi jelas bukan nama aset.
 # Tanpa daftar ini, "beli banyak" terbaca sebagai koin BANYAK, "entry lagi" jadi koin
@@ -978,6 +999,12 @@ def aset_dari_pesan(teks):
                 and atas not in ("DARI", "UNTUK", "DENGAN")):
             return "crypto", atas
 
+    # 2c. Nama panjang ("solana", "bitcoin"). Dicek sebelum daftar ticker karena kata
+    #     panjang tidak tertangkap oleh pemindaian 2-6 huruf di atas.
+    for nama, tik in _ALIAS_KOIN.items():
+        if re.search(r"\b" + re.escape(nama) + r"\b", low):
+            return "crypto", tik
+
     # 3. Ticker crypto dari daftar terbatas. Kata Indonesia yang kebetulan sama
     #    (mis. "ada", "op") dikecualikan supaya tidak salah tangkap.
     for k in kata:
@@ -1009,6 +1036,9 @@ def pesan_pasar(text):
         return False
     return bool(_PASAR_UMUM.search(low)
                 or _TEKNIKAL_RE.search(low)
+                # Meminta target/proyeksi jelas pertanyaan pasar, walau kalimatnya tidak
+                # memakai satu pun kosakata harga: "solana berpotensi naik sampai $200?"
+                or _MINTA_PROYEKSI.search(low)
                 or (_NIAT_TRANSAKSI.search(low) and _HARGA_KONKRET.search(low))
                 or any(aset_dari_pesan(text)))
 
@@ -1035,6 +1065,10 @@ def build_chat_prompt(text, chat_id=None, brief=None):
         if any(k in low for k in ("porto", "alokasi", "ukuran posisi", "modal",
                                   "diversifikasi", "korelasi")):
             peran.append("portofolio")
+        # Seed FORECASTER hanya ikut kalau memang diminta proyeksi. Isinya berat (lima syarat
+        # + protokol per pasar), dan tidak berguna untuk "harga btc berapa sekarang".
+        if _MINTA_PROYEKSI.search(low):
+            peran.append("prediktor")
         base = rakit_peran(_sektor_pesan(text), peran) + base
     # Penegasan lewat KODE, bukan berharap model membaca blok yang tepat. Routing sudah
     # benar mengarahkan "analisis sektor ai" ke chat, tapi jawabannya tetap berisi koin AI,
@@ -1207,6 +1241,11 @@ def data_mentah_crypto(coin):
         tugas.append(("ON-CHAIN (onchain.py)", ["cloud/onchain.py", coin], 0))
     else:
         lewat.append(f"onchain.py (CoinMetrics Community tidak mencakup {t})")
+    # Sebaran historis + level struktural. Analisa penuh selalu memuat seed FORECASTER, dan
+    # tahap sintesisnya berjalan TANPA tool — tanpa angka ini, seed itu memerintahkan
+    # menjalankan script yang mustahil dijalankan, lalu targetnya dihitung di kepala.
+    tugas.append(("PROYEKSI (proyeksi.py)",
+                  ["cloud/proyeksi.py", coin, "--hari", "60", "--ringkas"], 0))
 
     bagian, gagal = [], []
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
@@ -1234,6 +1273,96 @@ def data_mentah_crypto(coin):
         print(f"[data] GAGAL {g}", file=sys.stderr)
     print(f"[data] crypto {t}: {len(tugas)} script dijalankan, {len(lewat)} dilewati, "
           f"{sum(len(x) for x in bagian)} karakter", file=sys.stderr)
+    return "\n\n".join(bagian)
+
+
+# Harga yang DIAJUKAN user, mis. "sampai $200", "ke 55k", "target 4.000".
+_RE_TARGET = re.compile(
+    r"(?:sampai|hingga|ke|target|tembus|menuju|mencapai|capai)\s*[:=]?\s*"
+    r"[$]?\s*(\d[\d.,]*)\s*(k|rb|ribu)?\b", re.I)
+_RE_TARGET_DOLAR = re.compile(r"[$]\s*(\d[\d.,]*)\s*(k|rb|ribu)?\b", re.I)
+
+# Horizon proyeksi dari kata waktu di pesan. Default 60 hari perdagangan (~3 bulan):
+# cukup panjang untuk target yang berarti, cukup pendek untuk masih bisa diperiksa.
+_HORIZON_KATA = ((r"\b(?:tahun|setahun|jangka panjang|long term)\b", 250),
+                 (r"\b(?:bulan|sebulan|kuartal)\b", 30),
+                 (r"\b(?:minggu|pekan|mingguan)\b", 10),
+                 (r"\b(?:besok|hari ini|harian|intraday)\b", 5))
+
+# kejutan.py hanya punya nowcast Cleveland Fed untuk empat seri ini. NFP/FOMC TIDAK ada —
+# jangan dipancing menjalankannya lalu mengarang, biarkan modelnya bilang tidak tersedia.
+_INDIKATOR_KEJUTAN = ((r"\bcore\s*pce\b", "Core PCE"), (r"\bcore\s*cpi\b", "Core CPI"),
+                      (r"\bpce\b", "PCE"), (r"\b(?:cpi|inflasi|inflation)\b", "CPI"))
+
+
+def _ke_angka(teks, akhiran):
+    """Ubah '4.000' / '55,5' / '200' jadi float. Ribuan vs desimal dibedakan dari posisinya."""
+    t = (teks or "").strip()
+    if "," in t and "." in t:
+        t = (t.replace(".", "").replace(",", ".") if t.rfind(",") > t.rfind(".")
+             else t.replace(",", ""))
+    elif "," in t:
+        ekor = t.split(",")[-1]
+        t = t.replace(",", "") if len(ekor) == 3 else t.replace(",", ".")
+    elif t.count(".") == 1 and len(t.split(".")[-1]) == 3 and not t.startswith("0."):
+        t = t.replace(".", "")           # "4.000" = empat ribu, bukan empat koma nol
+    try:
+        n = float(t)
+    except ValueError:
+        return None
+    return n * 1000 if akhiran else n
+
+
+def target_dari_pesan(teks):
+    """Harga yang diajukan user, kalau ada. Inilah yang diuji, bukan yang divalidasi."""
+    for pola in (_RE_TARGET, _RE_TARGET_DOLAR):
+        m = pola.search(teks or "")
+        if m:
+            n = _ke_angka(m.group(1), m.group(2))
+            if n and n > 0:
+                return n
+    return None
+
+
+def horizon_dari_pesan(teks):
+    low = (teks or "").lower()
+    for pola, hari in _HORIZON_KATA:
+        if re.search(pola, low):
+            return hari
+    return 60
+
+
+def data_proyeksi(teks, jenis, simbol):
+    """Tambahan brief untuk pertanyaan proyeksi — dijalankan KODE, bukan diminta ke model.
+
+    Mode ngobrol memakai TOOLS_WEB (tanpa shell) begitu brief tersedia, jadi seed FORECASTER
+    tidak akan pernah bisa menjalankan proyeksi.py sendiri. Kalau angkanya tidak disiapkan di
+    sini, model terpaksa menghitung target di kepala — persis sumber angka karangan.
+    """
+    hari = horizon_dari_pesan(teks)
+    target = target_dari_pesan(teks)
+    args = ["cloud/proyeksi.py", simbol, "--hari", str(hari), "--ringkas"]
+    if jenis != "crypto":
+        args.append("--pasar")
+    if target:
+        args += ["--target", f"{target:g}"]
+
+    bagian = []
+    keluar, err = _jalankan_terukur("PROYEKSI (proyeksi.py)", args)
+    bagian.append(f"### PROYEKSI (proyeksi.py, horizon {hari} hari)\n"
+                  + (keluar if not err else f"tidak tersedia: {err}"))
+
+    # Reaksi historis terhadap rilis data — hanya untuk seri yang datanya memang ada.
+    low = (teks or "").lower()
+    for pola, ind in _INDIKATOR_KEJUTAN:
+        if re.search(pola, low):
+            k_args = ["cloud/kejutan.py", "--indikator", ind, "--simbol", simbol, "--ringkas"]
+            if jenis != "crypto":
+                k_args.append("--pasar")
+            keluar2, err2 = _jalankan_terukur(f"KEJUTAN {ind} (kejutan.py)", k_args)
+            bagian.append(f"### REAKSI HISTORIS TERHADAP RILIS {ind} (kejutan.py)\n"
+                          + (keluar2 if not err2 else f"tidak tersedia: {err2}"))
+            break
     return "\n\n".join(bagian)
 
 
@@ -1269,10 +1398,19 @@ def data_mentah_pasar(simbol, jenis):
         tugas.append(("EARNINGS & PEER (earnings.py)", ["cloud/earnings.py", simbol]))
     else:
         tugas.append(("MAKRO AS (makro.py, sumber FRED)", ["cloud/makro.py", "--ringkas"]))
+        # Reaksi historis emas/FX terhadap kejutan CPI — pelengkap kalender.py, yang hanya
+        # memberi jadwal & konsensus tanpa memberitahu apa yang BIASANYA terjadi sesudahnya.
+        tugas.append(("REAKSI HISTORIS RILIS CPI (kejutan.py)",
+                      ["cloud/kejutan.py", "--indikator", "CPI", "--simbol", simbol,
+                       "--pasar", "--ringkas"]))
         # Konsensus & jadwal rilis — HANYA untuk forex/komoditas. Saham dinilai dari
         # fundamental emitennya, crypto tidak digerakkan kalender ekonomi AS.
         tugas.append(("KONSENSUS & JADWAL RILIS (kalender.py)",
                       ["cloud/kalender.py", "--ringkas"]))
+    # Berlaku untuk saham maupun forex: sebaran historis + level struktural, supaya seed
+    # FORECASTER punya angka untuk dikutip pada tahap sintesis yang berjalan tanpa tool.
+    tugas.append(("PROYEKSI (proyeksi.py)",
+                  ["cloud/proyeksi.py", simbol, "--hari", "60", "--pasar", "--ringkas"]))
 
     # Dijalankan paralel seperti jalur crypto. Jalur saham kini punya enam bagian dan
     # berurutan memakan ~70 detik, yang memakan jatah tahap analisa. Pekerja dibatasi 2
@@ -1656,6 +1794,10 @@ def process(token, chat_id, text, photo_file_id=None):
             try:
                 brief = (data_mentah_crypto(simbol_chat) if jenis_chat == "crypto"
                          else data_mentah_pasar(simbol_chat, jenis_chat))
+                # Pertanyaan proyeksi butuh angka yang tidak ada di brief biasa: sebaran
+                # historis, ATR, dan — kalau user menyebut target — pengujian target itu.
+                if _MINTA_PROYEKSI.search(text.lower()):
+                    brief += "\n\n" + data_proyeksi(text, jenis_chat, simbol_chat)
                 print(f"[proses] chat: data {jenis_chat} {simbol_chat} dikumpulkan kode "
                       f"({len(brief)} karakter)", file=sys.stderr)
             except Exception as e:

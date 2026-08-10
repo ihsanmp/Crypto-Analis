@@ -1360,3 +1360,98 @@ def test_aturan_uji_hipotesis_ada_di_inti():
     assert "HIPOTESIS DARI USER" in teks
     for wajib in ("Alternatif yang setara", "Syarat pembatal", "KATEGORI yang mendukung"):
         assert wajib in teks, f"bagian '{wajib}' hilang dari aturan uji-hipotesis"
+
+
+@pytest.mark.parametrize("pesan,harap", [
+    ("solana berpotensi naik sampai $200?", 200.0),
+    ("btc bisa ke 55k dalam sebulan?", 55000.0),
+    ("emas target 4.000 tahun ini", 4000.0),
+    ("sol naik ke 0,002551 gimana", 0.002551),
+    ("prospek eth minggu ini", None),
+    ("prediksi cpi nanti bullish for gold?", None),
+])
+def test_target_dari_pesan(pesan, harap):
+    """Target user harus terbaca UTUH supaya bisa diuji proyeksi.py --target.
+
+    '4.000' adalah empat ribu, bukan empat koma nol; '55k' lima puluh lima ribu; dan
+    '0,002551' desimal. Salah membaca berarti menguji angka yang berbeda dari yang ditanya.
+    """
+    assert bot.target_dari_pesan(pesan) == harap
+
+
+@pytest.mark.parametrize("pesan,hari", [
+    ("emas target 4.000 tahun ini", 250),
+    ("btc bisa ke 55k dalam sebulan?", 30),
+    ("prospek eth minggu ini", 10),
+    ("sol gimana hari ini", 5),
+    ("solana berpotensi naik sampai $200?", 60),
+])
+def test_horizon_dari_pesan(pesan, hari):
+    """Target tanpa horizon tidak bisa salah — horizon wajib ikut kata waktunya."""
+    assert bot.horizon_dari_pesan(pesan) == hari
+
+
+@pytest.mark.parametrize("pesan,simbol", [
+    ("solana berpotensi naik sampai $200?", "SOL"),
+    ("analisa solana", "SOL"),
+    ("bitcoin gimana", "BTC"),
+    ("ethereum prospeknya", "ETH"),
+])
+def test_nama_koin_panjang_dikenali(pesan, simbol):
+    """Nama panjang sempat tak dikenali sama sekali walau tickernya ada di daftar.
+
+    Akibatnya berantai: aset None -> bukan pertanyaan pasar -> tanpa aturan kalibrasi
+    DAN tanpa brief. Orang justru menulis nama panjang saat tidak memakai perintah.
+    """
+    assert bot.aset_dari_pesan(pesan) == ("crypto", simbol)
+
+
+def test_nama_koin_tidak_salah_tangkap():
+    """Batas kata harus dijaga: 'solanaverse' bukan Solana."""
+    assert bot.aset_dari_pesan("solanaverse gimana") == (None, None)
+
+
+@pytest.mark.parametrize("pesan,ada", [
+    ("solana berpotensi naik sampai $200?", True),
+    ("prediksi cpi nanti bullish for gold?", True),
+    ("target eth di mana", True),
+    ("harga btc berapa sekarang", False),
+    ("halo", False),
+])
+def test_seed_forecaster_dimuat_saat_diminta_proyeksi(pesan, ada):
+    """Seed FORECASTER berat; ikut hanya kalau memang diminta proyeksi."""
+    p = bot.build_chat_prompt(pesan, "", None)
+    assert ("FORECASTER — proyeksi" in p) is ada
+
+
+def test_analisa_selalu_membawa_forecaster():
+    """Analisa penuh berujung pada target & skenario, jadi seed-nya selalu ikut."""
+    for sektor in ("crypto", "forex", "saham"):
+        teks = bot.rakit_peran(sektor)
+        assert "FORECASTER — proyeksi" in teks, sektor
+        assert "## Proyeksi" in teks, f"blok sektor {sektor} tidak terpasang"
+
+
+def test_larangan_prediksi_lama_sudah_dicabut():
+    """Kontradiksi prompt menghasilkan perilaku tidak konsisten.
+
+    inti.md dulu melarang memprediksi harga secara total, sementara seed FORECASTER
+    memerintahkan sebaliknya. Yang berlaku sekarang: angka BOLEH, asal tidak telanjang.
+    """
+    teks = open(os.path.join(AKAR, "cloud", "prompts", "peran", "inti.md"),
+                encoding="utf-8").read()
+    assert "Tugasmu BUKAN memprediksi harga" not in teks
+    assert "memPROYEKSIkannya secara terukur" in teks
+
+
+def test_syarat_proyeksi_lengkap_di_seed():
+    """Lima syarat itulah yang memisahkan proyeksi dari ramalan — jangan sampai terkikis."""
+    teks = open(os.path.join(AKAR, "cloud", "prompts", "peran", "prediktor.md"),
+                encoding="utf-8").read()
+    for wajib in ("Metode", "Horizon", "Rentang, bukan titik", "Pembatal", "Basis kejadian"):
+        assert wajib in teks, f"syarat '{wajib}' hilang"
+    for sektor in ("prediktor-crypto", "prediktor-forex", "prediktor-saham"):
+        assert sektor in teks, f"blok {sektor} hilang"
+    # Batas yang paling mudah dilupakan saat prompt dirapikan.
+    assert "TIDAK ADA EDGE ARAH" in teks
+    assert "bukan konsensus ekonom Wall Street" in teks
