@@ -1718,3 +1718,49 @@ def test_seed_menolak_meminjam_angka_fomc_untuk_crypto():
                          encoding="utf-8").read().split())
     assert "jangan meminjam angka dari emas atau saham" in teks
     assert "peringatan_cakupan` lebih dulu" in teks
+
+
+# ------------------------------------------------------------ adapter SoSoValue
+import sosovalue  # noqa: E402
+
+
+def test_sosovalue_tanpa_kunci_tidak_mati(capsys, monkeypatch):
+    """Pola yang sama dengan Finnhub: melaporkan tidak tersedia, bukan menggagalkan analisa."""
+    monkeypatch.delenv("SOSOVALUE_API_KEY", raising=False)
+    data, dari_cache, err = sosovalue.panggil("/openapi/v1/apa/pun")
+    assert data is None and err and "SOSOVALUE_API_KEY" in err
+
+
+def test_sosovalue_kunci_tidak_pernah_masuk_keluaran():
+    """Repo ini PUBLIK dan log Actions ikut terbaca publik.
+
+    Kunci hanya boleh muncul sebagai header permintaan. Satu f-string ceroboh yang
+    memasukkannya ke pesan galat akan menerbitkannya selamanya.
+    """
+    sumber = open(os.path.join(AKAR, "cloud", "sosovalue.py"), encoding="utf-8").read()
+    # Nilai kunci hanya boleh dipakai di satu tempat: header x-soso-api-key.
+    assert sumber.count('h["x-soso-api-key"] = key') == 1
+    for baris in sumber.splitlines():
+        telanjang = baris.strip()
+        if telanjang.startswith("#") or '"""' in telanjang:
+            continue
+        if ("print(" in telanjang or "pesan +=" in telanjang or "return None, False" in telanjang):
+            assert "key" not in telanjang.replace("SOSOVALUE_API_KEY", ""), telanjang
+
+
+def test_workflow_periksa_tidak_menggemakan_kunci():
+    alur = open(os.path.join(AKAR, ".github", "workflows", "periksa-sosovalue.yml"),
+                encoding="utf-8").read()
+    assert "workflow_dispatch" in alur, "harus manual, bukan terjadwal"
+    assert "echo $SOSOVALUE_API_KEY" not in alur
+    assert 'echo "$SOSOVALUE_API_KEY"' not in alur
+
+
+def test_sosovalue_semua_akses_lewat_satu_pintu():
+    """Tier gratisnya berstatus Demo dan bisa jadi berbayar. Kalau aksesnya tersebar,
+    mencabutnya berarti membongkar pipeline."""
+    sumber = open(os.path.join(AKAR, "cloud", "sosovalue.py"), encoding="utf-8").read()
+    assert sumber.count("urlopen") == 1, "hanya boleh ada satu tempat memanggil jaringan"
+    for lain in ("bot_oneshot.py", "kejutan.py", "jadwal.py", "arsip.py"):
+        teks = open(os.path.join(AKAR, "cloud", lain), encoding="utf-8").read()
+        assert "openapi.sosovalue.com" not in teks, f"{lain} memanggil SoSoValue langsung"

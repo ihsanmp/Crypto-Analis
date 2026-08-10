@@ -1,0 +1,38 @@
+# Pemeriksaan sekali jalan untuk SoSoValue. Dijalankan MANUAL, bukan terjadwal.
+#
+# Kenapa perlu workflow sendiri: nama endpoint SoSoValue tidak bisa diverifikasi tanpa kunci
+# — auth dicek SEBELUM routing, jadi path yang jelas tidak ada pun membalas 401, bukan 404.
+# Kuncinya hanya ada di GitHub Secrets dan TIDAK boleh keluar dari sana, jadi pemeriksaannya
+# harus berjalan di sini, bukan di mesin lokal.
+#
+# Yang dijawab sekali jalan: endpoint mana yang hidup, bentuk balasannya, dan — untuk riwayat
+# makro — sedalam apa datanya ke belakang. Setelah itu ketahuan, KANDIDAT di cloud/sosovalue.py
+# dirapikan dan workflow ini boleh dihapus.
+#
+# CATATAN KEAMANAN: repo ini publik, jadi log Actions ikut terbaca publik. cloud/sosovalue.py
+# tidak pernah mencetak kuncinya, dan GitHub menyamarkan nilai secret yang terdaftar. Jangan
+# menambahkan `echo` apa pun terhadap kunci di sini.
+name: Periksa SoSoValue
+
+on:
+  workflow_dispatch:
+
+jobs:
+  periksa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Jalankan pemeriksaan
+        env:
+          SOSOVALUE_API_KEY: ${{ secrets.SOSOVALUE_API_KEY }}
+        run: |
+          if [ -z "$SOSOVALUE_API_KEY" ]; then
+            echo "::error::SOSOVALUE_API_KEY belum terpasang di repository secrets"
+            exit 1
+          fi
+          python cloud/sosovalue.py --periksa
