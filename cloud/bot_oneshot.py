@@ -1413,6 +1413,13 @@ def data_mentah_pasar(simbol, jenis):
         # rilis", tanggalnya sebaiknya datang dari BLS dan The Fed sendiri.
         tugas.append(("JADWAL RESMI & AKTUAL NFP/PPI/FOMC (jadwal.py)",
                       ["cloud/jadwal.py", "--ringkas"]))
+        # Sensitivitas harga terhadap kejutan kebijakan FOMC (SF Fed, Bauer-Swanson).
+        # Dipakai varian ORTOGONAL: lebih konservatif karena sudah dibersihkan dari
+        # informasi publik sebelum pengumuman. Varian kasar memberi efek lebih besar,
+        # tapi sebagiannya cuma mencerminkan hal yang sudah diketahui pasar.
+        tugas.append(("SENSITIVITAS KEJUTAN FOMC (kejutan.py)",
+                      ["cloud/kejutan.py", "--indikator", "FOMC", "--simbol", simbol,
+                       "--pasar", "--rezim", "--ortogonal", "--ringkas"]))
     # Berlaku untuk saham maupun forex: sebaran historis + level struktural, supaya seed
     # FORECASTER punya angka untuk dikutip pada tahap sintesis yang berjalan tanpa tool.
     tugas.append(("PROYEKSI (proyeksi.py)",

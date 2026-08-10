@@ -29,6 +29,7 @@ Pemakaian:
 import argparse
 import json
 import os
+import re
 import time
 import urllib.request
 from datetime import datetime, timezone
@@ -49,6 +50,32 @@ INDIKATOR = {
     "CORE CPI": "Core CPI Inflation",
     "PCE": "PCE Inflation",
     "CORE PCE": "Core PCE Inflation",
+}
+
+# Kejutan kebijakan moneter FOMC dari Federal Reserve Bank of San Francisco (Bauer &
+# Swanson): perubahan harga futures suku bunga dalam jendela 30 menit di sekitar pengumuman,
+# dalam BASIS POIN. Ini bukan tebakan tentang keputusannya, melainkan repricing pasar yang
+# BENAR-BENAR terjadi — sudah mencakup nada statement dan dot plot sekaligus.
+#
+# DUA BATAS YANG MENENTUKAN CARA PAKAI:
+#  1. Serinya berakhir 2023-12-13 dan tidak diperbarui sejak itu. Rezim 2024-2026 TIDAK ada
+#     di dalamnya — padahal uji rezim pada CPI menunjukkan periode terakhir justru paling
+#     menyimpang. Jangan pernah menyajikannya seolah mencakup keadaan sekarang.
+#  2. Kejutannya diukur SETELAH pengumuman. Jadi seri ini menjawab "kalau kejutannya hawkish
+#     sekian bp, emas historisnya bergerak berapa" — BUKAN "FOMC nanti bullish atau tidak".
+#     Angkanya mustahil diketahui sebelum rapat; itu definisinya, bukan kekurangan data.
+#
+# Berkas xlsx-nya memuat 361 rapat sejak 1988, tapi candle harian gratis hanya sampai 2011
+# (rentang "max" Yahoo turun jadi bulanan), jadi CSV 2012-2023 sudah mencakup seluruh bagian
+# yang bisa dipasangkan dengan harga. Tidak ada yang hilang dengan memakai yang sederhana.
+FOMC_URL = "https://www.frbsf.org/wp-content/uploads/chart1-monetary-policy-surprises.csv"
+FOMC_AKHIR = "2023-12-13"
+
+# Label sisi kejutan berbeda maknanya per sumber: pada CPI "panas" berarti inflasi di atas
+# ramalan; pada FOMC positif berarti pasar mereprice ke arah HAWKISH.
+LABEL_SISI = {
+    "inflasi": ("kejutan_lebih_panas", "kejutan_lebih_dingin"),
+    "fomc": ("kejutan_hawkish", "kejutan_dovish"),
 }
 
 # Berapa hari perdagangan ke depan yang diukur. H = hari rilis itu sendiri.
@@ -169,6 +196,50 @@ def deret_kejutan(indikator, paksa=False):
     return data, False, None
 
 
+def deret_fomc(paksa=False, ortogonal=False):
+    """Kejutan kebijakan FOMC dalam basis poin. Bentuknya disamakan dengan deret_kejutan."""
+    kunci = "fomc_sffed"
+    cache = _muat_cache()
+    simpan = cache.get(kunci) or {}
+    mentah, dari_cache, err = None, False, None
+
+    if simpan.get("baris") and not paksa and time.time() - simpan.get("waktu", 0) < CACHE_UMUR:
+        mentah, dari_cache = simpan["baris"], True
+    else:
+        try:
+            with urllib.request.urlopen(urllib.request.Request(FOMC_URL, headers=UA),
+                                        timeout=TIMEOUT) as r:
+                teks = r.read().decode("utf-8-sig", errors="replace")
+            mentah = [b for b in teks.splitlines() if b.strip()]
+            cache[kunci] = {"baris": mentah, "waktu": time.time()}
+            _simpan_cache(cache)
+        except Exception as e:
+            if simpan.get("baris"):
+                mentah, dari_cache = simpan["baris"], True
+                err = f"{type(e).__name__} (pakai cache lama)"
+            else:
+                return None, False, f"{type(e).__name__}: {e}"
+
+    riwayat = []
+    for baris in mentah[1:]:                       # baris pertama header
+        bagian = [x.strip() for x in baris.split(",")]
+        if len(bagian) < 3:
+            continue
+        tgl, kasar, ortho = bagian[0], _angka(bagian[1]), _angka(bagian[2])
+        dipakai = ortho if ortogonal else kasar
+        if dipakai is None or not re.match(r"^\d{4}-\d{2}-\d{2}$", tgl):
+            continue
+        riwayat.append({"tanggal_rilis": tgl,
+                        "kejutan_pp": dipakai,          # satuan: basis poin
+                        "kejutan_kasar_bp": kasar,
+                        "kejutan_ortogonal_bp": ortho,
+                        # Tidak ada padanan "aktual" pada FOMC; pemotongan per tingkat
+                        # inflasi otomatis dilewati karena kolom ini kosong.
+                        "aktual_mom_persen": None})
+    riwayat.sort(key=lambda x: x["tanggal_rilis"])
+    return {"riwayat": riwayat, "belum_rilis": []}, dari_cache, err
+
+
 def _sebaran(nilai):
     """Ringkasan sebaran yang jujur: arah, besar, dan seberapa menyebar."""
     if not nilai:
@@ -187,7 +258,8 @@ def _sebaran(nilai):
     return r
 
 
-def reaksi_harga(simbol, riwayat, pasar, rentang="15y", catatan=None, meta=None):
+def reaksi_harga(simbol, riwayat, pasar, rentang="15y", catatan=None, meta=None,
+                 sisi="inflasi"):
     """Reaksi gabungan menurut arah kejutan. Angka POOLED — wajib dibaca bersama uji rezim.
 
     `catatan`/`meta` boleh dioper supaya pemanggil yang juga menghitung per rezim tidak
@@ -202,10 +274,12 @@ def reaksi_harga(simbol, riwayat, pasar, rentang="15y", catatan=None, meta=None)
     dingin = {h: [] for h in HORIZON}
     semua = {h: [] for h in HORIZON}
     for c in catatan:
-        sisi = panas if c["kejutan_pp"] > 0 else dingin
+        # Bukan bernama `sisi`: itu nama parameter pemilih label, dan menimpanya membuat
+        # LABEL_SISI[sisi] menerima dict.
+        kelompok = panas if c["kejutan_pp"] > 0 else dingin
         for h, v in c["ret"].items():
             semua[h].append(v)
-            sisi[h].append(v)
+            kelompok[h].append(v)
 
     def bungkus(d):
         return {f"H+{h}" if h else "H (hari rilis)": _sebaran(v) for h, v in d.items()}
@@ -217,8 +291,8 @@ def reaksi_harga(simbol, riwayat, pasar, rentang="15y", catatan=None, meta=None)
         "diukur": ("H = open->close hari rilis; H+1 dan H+5 = close hari rilis -> close "
                    "n hari perdagangan berikutnya. Semua dalam persen."),
         "semua_rilis": bungkus(semua),
-        "kejutan_lebih_panas": bungkus(panas),
-        "kejutan_lebih_dingin": bungkus(dingin),
+        LABEL_SISI[sisi][0]: bungkus(panas),
+        LABEL_SISI[sisi][1]: bungkus(dingin),
     }
     for k in ("di_luar_jangkauan_harga", "tanpa_hari_perdagangan"):
         if meta.get(k):
@@ -314,6 +388,13 @@ def _selisih_median(catatan):
         if panas[h] and dingin[h]:
             nama = f"H+{h}" if h else "H"
             keluar["selisih"][nama] = round(median(panas[h]) - median(dingin[h]), 2)
+    # Median dari sisi yang cuma 8 kejadian mudah bergeser oleh satu-dua rapat. Vonis
+    # "tanda bertahan" yang bersandar pada potongan setipis itu harus terlihat tipisnya.
+    tertipis = min(keluar["n_panas"], keluar["n_dingin"])
+    if tertipis < 10:
+        keluar["peringatan"] = (f"SISI TERTIPIS HANYA {tertipis} KEJADIAN — median di "
+                                "potongan ini rapuh. Jangan diperlakukan setara potongan "
+                                "yang tebal.")
     return keluar
 
 
@@ -370,6 +451,10 @@ def reaksi_per_rezim(simbol, riwayat, pasar, rentang="15y", catatan=None, meta=N
                  "Tanda yang bertahan TIDAK otomatis berarti efeknya nyata — besarannya "
                  "tetap harus di atas derau.")}
 
+    tipis = [n for n, p in hasil["potongan"].items() if p.get("peringatan")]
+    if tipis:
+        hasil["potongan_bersampel_tipis"] = tipis
+
     # Vonis ketahanan. Yang dinilai hanya H+1 dan H+5 — H (hari rilis) terlalu berisik.
     for horizon in ("H+1", "H+5"):
         tanda = [p["selisih"].get(horizon) for p in hasil["potongan"].values()
@@ -395,10 +480,60 @@ def reaksi_per_rezim(simbol, riwayat, pasar, rentang="15y", catatan=None, meta=N
     return hasil
 
 
+def main_fomc(args):
+    """Jalur FOMC. Dipisah dari jalur inflasi karena sumber, satuan, dan batasnya berbeda."""
+    data, dari_cache, err = deret_fomc(args.paksa if hasattr(args, "paksa") else False,
+                                       args.ortogonal)
+    keluar = {
+        "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
+        "indikator": "FOMC",
+        "ukuran": ("kejutan ORTOGONAL (bersih dari informasi publik sebelum pengumuman)"
+                   if args.ortogonal else "kejutan KASAR"),
+        "satuan": "basis poin",
+        "sumber": ("Federal Reserve Bank of San Francisco — Monetary Policy Surprises "
+                   "(Bauer & Swanson 2023): perubahan futures suku bunga dalam jendela "
+                   "30 menit di sekitar pengumuman FOMC."),
+        "dari_cache": dari_cache,
+    }
+    if err or not data:
+        keluar["tidak_tersedia"] = err or "gagal mengurai CSV kejutan FOMC"
+        print(json.dumps(keluar, indent=2, ensure_ascii=False))
+        return
+
+    riwayat = data["riwayat"]
+    keluar["jumlah_rapat"] = len(riwayat)
+    keluar["jendela"] = (f"{riwayat[0]['tanggal_rilis']} s/d {riwayat[-1]['tanggal_rilis']}"
+                         if riwayat else None)
+    keluar["batas_wajib_disebut"] = (
+        f"Seri ini BERAKHIR {FOMC_AKHIR} dan tidak diperbarui sejak itu — rezim 2024-2026 "
+        "tidak terwakili sama sekali. Dan kejutannya diukur SETELAH pengumuman, jadi angka "
+        "ini TIDAK BISA dipakai memperkirakan hasil rapat yang akan datang. Yang bisa "
+        "dijawab hanyalah SENSITIVITAS: kalau kejutannya hawkish sekian basis poin, "
+        "historisnya harga bergerak berapa.")
+
+    if args.simbol:
+        catatan, meta = _per_rilis(args.simbol, riwayat, args.pasar)
+        if catatan is None:
+            keluar["reaksi_harga"] = meta
+        else:
+            keluar["reaksi_harga"] = reaksi_harga(args.simbol, riwayat, args.pasar,
+                                                  catatan=catatan, meta=meta, sisi="fomc")
+            if args.rezim:
+                keluar["uji_ketahanan_per_rezim"] = reaksi_per_rezim(
+                    args.simbol, riwayat, args.pasar, catatan=catatan, meta=meta)
+    if args.ringkas:
+        from backtest import buang_panduan
+        keluar = buang_panduan(keluar)
+    print(json.dumps(keluar, indent=2, ensure_ascii=False))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--indikator", default="CPI",
-                    help="CPI | Core CPI | PCE | Core PCE")
+                    help="CPI | Core CPI | PCE | Core PCE | FOMC")
+    ap.add_argument("--ortogonal", action="store_true",
+                    help="FOMC: pakai kejutan yang diortogonalisasi terhadap informasi "
+                         "publik sebelum pengumuman (Bauer-Swanson)")
     ap.add_argument("--simbol", help="aset yang diukur reaksinya, mis. GOLD / BTC / SPX")
     ap.add_argument("--pasar", action="store_true",
                     help="simbol berupa komoditas/saham/forex (via market.py)")
@@ -409,6 +544,9 @@ def main():
     args = ap.parse_args()
 
     ind = args.indikator.strip().upper()
+    if ind == "FOMC":
+        main_fomc(args)
+        return
     if ind not in INDIKATOR:
         print(json.dumps({"tidak_tersedia": f"indikator '{args.indikator}' tidak dikenal",
                           "pilihan": list(INDIKATOR)}, indent=2, ensure_ascii=False))

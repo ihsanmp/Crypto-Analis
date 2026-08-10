@@ -1468,7 +1468,9 @@ def test_batas_nfp_fomc_dinyatakan_di_seed():
     # baris. Tes yang peka pembungkusan akan gagal setiap kali paragrafnya dirapikan.
     teks = " ".join(open(os.path.join(AKAR, "cloud", "prompts", "peran", "prediktor.md"),
                          encoding="utf-8").read().split())
-    assert "tidak bisa dibuat** untuk NFP, PPI, maupun FOMC" in teks
+    # FOMC dikeluarkan dari golongan ini setelah seri Bauer-Swanson dipakai; yang tersisa
+    # tanpa ukuran kejutan hanya NFP dan PPI.
+    assert "tidak bisa dibuat** untuk keduanya" in teks
     assert "BUKAN kejutan terhadap ekspektasi" in teks
 
 
@@ -1627,3 +1629,47 @@ def test_brief_forex_membawa_uji_rezim():
     sumber = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
     assert "--rezim" in sumber, "flag --rezim tidak dipakai di pengumpulan data"
     assert sumber.count("--rezim") >= 2, "jalur analisa DAN jalur proyeksi harus memakainya"
+
+
+def test_fomc_tidak_lagi_digolongkan_tanpa_ukuran_kejutan():
+    """Seed sempat menyatakan dua hal berlawanan tentang FOMC sekaligus.
+
+    Bagian NFP/PPI dulu menulis 'tidak ada konsensus historis untuk ketiga acara ini',
+    sementara bagian berikutnya menjelaskan seri kejutan FOMC dari SF Fed. Prompt yang
+    berkontradiksi menghasilkan perilaku acak.
+    """
+    teks = " ".join(open(os.path.join(AKAR, "cloud", "prompts", "peran", "prediktor.md"),
+                         encoding="utf-8").read().split())
+    assert "konsensus historis untuk NFP dan PPI" in teks
+    assert "historis untuk ketiga acara ini" not in teks
+    assert "Bauer-Swanson" in teks
+
+
+def test_seed_fomc_menolak_dipakai_sebagai_ramalan():
+    """Kejutan FOMC diukur SETELAH pengumuman — memakainya untuk meramal itu salah kaprah."""
+    teks = " ".join(open(os.path.join(AKAR, "cloud", "prompts", "peran", "prediktor.md"),
+                         encoding="utf-8").read().split())
+    assert "BUKAN ramalan" in teks
+    assert "berakhir 13 Desember 2023" in teks
+    assert "H+5 TIDAK bertahan" in teks
+
+
+def test_kejutan_fomc_memakai_label_sisi_yang_benar():
+    """Pada FOMC, positif berarti HAWKISH — bukan 'inflasi lebih panas'."""
+    assert _kejutan.LABEL_SISI["fomc"] == ("kejutan_hawkish", "kejutan_dovish")
+    catatan = [{"tanggal": f"202{i//9}-0{i%9+1}-10", "kejutan_pp": 1.0 if i % 2 else -1.0,
+                "aktual": None, "ret": {0: 0.0, 1: -0.5 if i % 2 else 0.5, 5: 0.0}}
+               for i in range(20)]
+    hasil = _kejutan.reaksi_harga("X", [], False, catatan=catatan,
+                                  meta={"simbol": "X", "jendela_harga": "-"}, sisi="fomc")
+    assert "kejutan_hawkish" in hasil and "kejutan_lebih_panas" not in hasil
+
+
+def test_potongan_tipis_ditandai():
+    """Vonis yang bersandar pada sisi 8 kejadian harus terlihat tipisnya."""
+    catatan = [{"tanggal": f"2020-{i % 12 + 1:02d}-10",
+                "kejutan_pp": 1.0 if i < 40 else -1.0, "aktual": None,
+                "ret": {0: 0.0, 1: -0.5 if i < 40 else 0.5, 5: 0.0}} for i in range(48)]
+    hasil = _kejutan.reaksi_per_rezim("X", [], False, catatan=catatan,
+                                      meta={"simbol": "X", "jendela_harga": "-"})
+    assert hasil.get("potongan_bersampel_tipis"), "potongan bersampel tipis tidak ditandai"

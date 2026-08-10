@@ -112,18 +112,44 @@ Dua batas yang wajib disebut saat mengutip: kejutan diukur terhadap **model Clev
 bukan konsensus ekonom Wall Street** — posisi pasar bisa berbeda. Dan yang menggerakkan
 harga adalah SELISIH terhadap ekspektasi, bukan angka absolutnya.
 
-### NFP, PPI, dan FOMC — sengaja diperlakukan BERBEDA dari CPI
+### NFP dan PPI — di sini memang tidak ada ukuran kejutan
 
 `jadwal.py` memberi tanggal rilis RESMI (kalender ICS BLS), tanggal keputusan FOMC beserta
 penanda rapat berproyeksi, dan angka aktual NFP/PPI langsung dari BLS.
 
 Yang TIDAK ada, dan jangan dikarang: **tidak satu pun sumber gratis menyimpan konsensus
-historis untuk ketiga acara ini.** Karena itu studi reaksi menurut arah kejutan seperti CPI
-**tidak bisa dibuat** untuk NFP, PPI, maupun FOMC. Untuk ketiganya, yang boleh disampaikan:
+historis untuk NFP dan PPI.** Karena itu studi reaksi menurut arah kejutan seperti CPI
+**tidak bisa dibuat** untuk keduanya. Yang boleh disampaikan:
 
 - jadwalnya, dan bahwa volatilitas biasanya melebar di sekitar tanggal itu;
 - angka aktual terakhir beserta perubahannya terhadap bulan sebelumnya;
 - pernyataan terus terang bahwa **arah reaksinya tidak bisa diprediksi dari data yang ada**.
+
+FOMC dulu satu golongan dengan keduanya, tapi TIDAK lagi — lihat bagian berikutnya.
+
+#### FOMC punya ukuran kejutan berupa ANGKA — tapi bukan ramalan
+
+`kejutan.py --indikator FOMC --simbol GOLD --pasar --rezim --ortogonal` memakai seri
+Monetary Policy Surprises dari Federal Reserve Bank of San Francisco (Bauer-Swanson):
+repricing futures suku bunga dalam jendela 30 menit di sekitar pengumuman, dalam basis poin.
+Karena diukur dari pasar, ia sudah mencakup nada statement dan dot plot sekaligus.
+
+Hasilnya pada emas jauh lebih kuat daripada CPI, dan masuk akal secara ekonomi karena emas
+terikat pada yield riil: kejutan hawkish -> emas naik hanya 43,8% (median H+1 -0,36%),
+kejutan dovish -> naik 75,9% (median H+1 +0,85%). Selisih H+1 -1,21%, jauh di atas derau.
+Dengan ukuran ortogonal, tanda H+1 bertahan di kelima potongan; **H+5 TIDAK bertahan**, jadi
+hanya reaksi satu hari yang boleh dipakai.
+
+**TIGA batas yang wajib disebut, dan yang ketiga paling sering dilanggar:**
+
+1. Serinya **berakhir 13 Desember 2023** — rezim 2024-2026 tidak terwakili sama sekali.
+2. Sisi dovish tipis di beberapa potongan (8-11 kejadian); lihat `potongan_bersampel_tipis`.
+3. **Ini BUKAN ramalan.** Kejutannya diukur SETELAH pengumuman, jadi mustahil diketahui
+   sebelumnya. Kalau ditanya "FOMC nanti bullish untuk emas?", jawaban yang benar bukan
+   angka arah, melainkan: "tergantung kejutannya, dan itu tidak bisa diketahui sebelum
+   pengumuman. Yang bisa kusampaikan: KALAU hasilnya dovish, historisnya emas cenderung
+   naik sekitar 0,9% dalam sehari; kalau hawkish, cenderung turun sekitar 0,4%."
+   Menyebutnya sebagai prediksi arah adalah pelanggaran aturan proyeksi.
 
 `arsip.py` merekam konsensus & aktual Forex Factory setiap kali kalender ditarik, karena
 feed itu membuang pekan yang sudah lewat. Arsipnya TUMBUH DARI NOL sejak Agustus 2026 dan
