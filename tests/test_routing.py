@@ -314,12 +314,76 @@ def test_peringatan_disisipkan_sebelum_disclaimer():
 # ------------------------------------------------------------------ angka_kunci
 
 def test_angka_kunci_menangkap_yang_penting():
+    """Persentase SENGAJA tidak lagi diambil — tanpa subjeknya, "2,4%" tidak bermakna
+    saat dibaca ulang di giliran berikutnya, dan slot 8 lebih berguna untuk harga & level."""
     teks = ("Gold $4.365 saat ini, di atas EMA21 $4.281 di daily. RSI 58,3 netral. "
             "Skor 62/100. Naik 2,4% pekan ini.")
     hasil = bot.angka_kunci(teks)
     gabung = " ".join(hasil)
-    assert "4.365" in gabung and "58,3" in gabung and "2,4%" in gabung
+    assert "harga=4.365" in gabung
+    assert "ema21=4.281" in gabung
+    assert "rsi=58,3" in gabung
+    assert "skor=62" in gabung
     assert len(hasil) <= bot._ANGKA_MAKS
+
+
+def test_angka_kunci_tidak_memungut_mcap_volume_atau_btc():
+    """Bug NYATA dari riwayat produksi: angka kunci PUMP berisi harga=37,6 & harga=14,72
+
+    (itu MCAP dan VOLUME), plus harga BTC dari baris pasar — sementara harga koin yang
+    dianalisa tenggelam. MODE PENDAPAT bersandar pada angka ini untuk menjawab pertanyaan
+    lanjutan, jadi angka yang salah di sini menjadi jawaban yang salah di sana.
+    """
+    teks = ("📊 PASAR" + N + "BTC $64.978 · Dominasi 59,0%" + N + N +
+            "Mcap $37,6 juta · Volume 24j $14,72 juta" + N +
+            "Harga $0,002683 · EMA21 harian $0,002084 · RSI harian 66")
+    hasil = bot.angka_kunci(teks)
+    gabung = " ".join(hasil)
+    assert "harga=0,002683" in gabung, hasil
+    for salah in ("64.978", "37,6", "14,72"):
+        assert salah not in gabung, f"{salah} seharusnya tidak ikut: {hasil}"
+
+
+def test_angka_kunci_rsi_bukan_timeframe():
+    """Bug NYATA: "RSI 4H 75,8" menghasilkan rsi=4 — angka timeframe, bukan nilainya."""
+    hasil = bot.angka_kunci("EMA21 4H $0,002404 · RSI 4H 75,8")
+    assert "rsi=75,8" in hasil, hasil
+    assert "rsi=4" not in hasil, hasil
+    assert "ema21=0,002404" in hasil, hasil
+
+
+def test_angka_kunci_harga_inline_mode_ngobrol():
+    """Mode ngobrol menulis harga di tengah kalimat, bukan di awal baris."""
+    hasil = bot.angka_kunci(
+        "Entry $0,002551 kamu profit tipis — harga 4H terakhir $0,002683, sekitar +5%.")
+    assert "harga=0,002683" in hasil, hasil
+
+
+@pytest.mark.parametrize("pesan,tingkat", [
+    ("kalo buy pump di 0.002551 bagaimana menurutmu?", "SEDANG"),
+    ("worth nggak masuk eth di 2400?", "SEDANG"),
+    ("bagusnya beli sol di 140 apa tunggu?", "SEDANG"),
+    ("kalo cut loss di 0.0021 gimana?", "SEDANG"),
+    ("jadi gambaranmu bagaimana?", "RINGAN"),
+    ("menurutmu gimana?", "RINGAN"),
+])
+def test_keputusan_transaksi_butuh_data_segar(pesan, tingkat):
+    """Bug NYATA: "kalo buy pump di 0.002551 bagaimana menurutmu?" jatuh ke tingkat RINGAN
+
+    — 8 putaran, tanpa shell, tanpa brief — karena kata "menurutmu" dianggap penafsiran
+    lanjutan. Jawabannya lalu bersandar pada angka giliran SEBELUMNYA untuk sebuah
+    keputusan beli. Niat transaksi + harga konkret selalu butuh data segar.
+    """
+    assert bot.bobot_chat(pesan, True)[3].startswith(tingkat)
+
+
+def test_aset_terdeteksi_dari_niat_transaksi():
+    """Ticker di luar daftar terbatas tidak pernah mendapat brief. Pola "buy <TOKEN>"
+
+    menyebut asetnya secara eksplisit, jadi cukup aman diambil.
+    """
+    assert bot.aset_dari_pesan("kalo buy pump di 0.002551 gimana?") == ("crypto", "PUMP")
+    assert bot.aset_dari_pesan("halo apa kabar") == (None, None)
 
 
 def test_angka_kunci_kosong_aman():

@@ -528,13 +528,25 @@ def _potong_balasan(teks):
 
 # Pola angka yang benar-benar mengubah keputusan. Sengaja SEMPIT: yang dikejar bukan semua
 # angka, melainkan yang biasanya ditanyakan lagi di giliran berikutnya.
-_ANGKA_POLA = [
-    ("harga", re.compile(r"[$]\s*(\d[\d.,]*)")),
-    ("rsi", re.compile(r"RSI\s*(?:14)?\s*(?:di|:|=)?\s*(\d+(?:[.,]\d+)?)", re.I)),
-    ("ema", re.compile(r"EMA\s*(\d+)\s*[$]?\s*(\d[\d.,]*)", re.I)),
-    ("persen", re.compile(r"(-?\d+(?:[.,]\d+)?\s*%)")),
-    ("skor", re.compile(r"(\d+)\s*/\s*100")),
-]
+# Pola angka kunci. Tiap pola BERJANGKAR pada labelnya, bukan sekadar mencari "$".
+# Versi lama memungut angka dolar apa pun sehingga yang tersimpan justru MCAP, VOLUME,
+# dan harga BTC dari baris pasar — sementara harga koin yang dianalisa tenggelam di
+# urutan bawah atau terpotong batas 8. RSI pun tertangkap sebagai "4" dari "RSI 4H".
+# Ini berbahaya karena MODE PENDAPAT bersandar pada angka-angka ini saat menjawab
+# pertanyaan lanjutan — angka yang salah di sini menjadi jawaban yang salah di situ.
+# Kata "harga" boleh di mana saja dalam kalimat, tidak harus di awal baris: mode
+# ngobrol menulisnya inline ("harga 4H terakhir $0,002683"). Yang penting kata itu
+# ADA di dekatnya — itulah yang membedakannya dari mcap & volume.
+_RE_AK_HARGA = re.compile(r"harga[^$\n]{0,26}[$]\s*(\d[\d.,]*)", re.I)
+# Cadangan: kalau tak ada kata "harga" sama sekali, ambil nilai dolar PERTAMA yang
+# jelas BUKAN mcap/volume/kapitalisasi.
+_RE_AK_DOLAR = re.compile(r"(?<!mcap )(?<!volume )[$]\s*(\d[\d.,]*)", re.I)
+_LABEL_BUKAN_HARGA = ("mcap", "market cap", "volume", "kapitalisasi", "fdv", "tvl")
+_RE_AK_EMA = re.compile(r"EMA\s*(\d{1,3})[^$\n]{0,16}[$]\s*(\d[\d.,]*)", re.I)
+_RE_AK_RSI = re.compile(r"RSI\s*(?:14)?\s*(?:harian|daily|mingguan|weekly|4H|1D|1W|D1|H4)?\s*[:=]?\s*(\d{1,3}(?:[.,]\d+)?)\b(?!\s*[Hh]\b)", re.I)
+_RE_AK_SKOR = re.compile(r"SKOR\s*(\d{1,3})\s*/\s*100", re.I)
+_RE_AK_INVALID = re.compile(r"Invalid(?:asi)?\s*[$]?\s*(\d[\d.,]*)", re.I)
+
 _ANGKA_MAKS = 8
 
 
@@ -543,22 +555,47 @@ def angka_kunci(teks):
 
     Riwayat memangkas balasan jadi BALASAN_POTONG karakter, jadi angka dari giliran
     sebelumnya memang HILANG — itulah sebab bot menarik ulang seluruh data hanya untuk
-    menjawab "jadi gambaranmu bagaimana?". Menyimpan angkanya secara terpisah menutup
-    lubang itu tanpa memperbesar potongan balasannya.
+    menjawab "jadi gambaranmu bagaimana?".
+
+    Tiap angka diambil dari LABELNYA, dan yang tidak masuk akal dibuang: RSI di luar
+    0-100 bukan RSI. Urutannya juga penting — harga & level dulu, baru sisanya, supaya
+    batas 8 tidak habis oleh angka pelengkap.
     """
     teks = teks or ""
     keluar = []
-    for label, pola in _ANGKA_POLA:
-        for m in pola.finditer(teks):
-            # Buang tanda baca yang ikut tertangkap di ujung ("$4.230." -> "4.230").
-            nilai = " ".join(x.strip(" .,;:") for x in m.groups() if x)
-            butir = f"{label}={nilai}"
-            if butir not in keluar:
-                keluar.append(butir)
-            if len(keluar) >= _ANGKA_MAKS:
-                return keluar
-    return keluar
 
+    def tambah(butir):
+        if butir not in keluar and len(keluar) < _ANGKA_MAKS:
+            keluar.append(butir)
+
+    m = _RE_AK_HARGA.search(teks)
+    if m:
+        tambah(f"harga={m.group(1).strip(' .,;:')}")
+    else:
+        # Tidak ada kata "harga" — ambil nilai dolar pertama dari baris yang tidak
+        # membicarakan mcap/volume/TVL, supaya yang tersimpan tetap harga aset.
+        for baris in teks.split("\n"):
+            if any(k in baris.lower() for k in _LABEL_BUKAN_HARGA):
+                continue
+            md = _RE_AK_DOLAR.search(baris)
+            if md:
+                tambah(f"harga={md.group(1).strip(' .,;:')}")
+                break
+    for m in _RE_AK_INVALID.finditer(teks):
+        tambah(f"invalid={m.group(1).strip(' .,;:')}")
+    for m in _RE_AK_EMA.finditer(teks):
+        tambah(f"ema{m.group(1)}={m.group(2).strip(' .,;:')}")
+    for m in _RE_AK_RSI.finditer(teks):
+        nilai = m.group(1).replace(",", ".")
+        try:
+            if 0 <= float(nilai) <= 100:      # di luar itu bukan RSI
+                tambah(f"rsi={m.group(1)}")
+        except ValueError:
+            pass
+    m = _RE_AK_SKOR.search(teks)
+    if m:
+        tambah(f"skor={m.group(1)}")
+    return keluar
 
 def bersihkan_id():
     """Ubah chat ID polos di riwayat lama menjadi hash. Sekali jalan.
@@ -746,6 +783,17 @@ _TEKNIKAL_RE = re.compile(
     r"golden cross|death cross|divergence|divergensi)", re.I)
 
 
+# Niat transaksi + harga konkret. Gabungan keduanya berarti user sedang menimbang
+# keputusan nyata, dan itu tidak boleh dijawab dari angka giliran sebelumnya.
+_NIAT_TRANSAKSI = re.compile(
+    r"\b(buy|beli|jual|sell|masuk|entry|entri|akumulasi|average|dca|cut|tp|take profit)",
+    re.I)
+# Harga bisa ditulis desimal ("0.002551"), berdolar ("$2400"), atau bulat begitu saja
+# ("masuk eth di 2400"). Bentuk terakhir sempat lolos sehingga pertanyaan transaksi
+# dengan harga bulat tetap jatuh ke tingkat RINGAN tanpa data.
+_HARGA_KONKRET = re.compile(r"\d+[.,]\d+|[$]\s*\d|\b\d{3,}\b")
+
+
 def bobot_chat(text, ada_konteks):
     """Tentukan (jatah_detik, model, max_turns) dari BERAT pertanyaannya.
 
@@ -760,6 +808,12 @@ def bobot_chat(text, ada_konteks):
         return 600, MODEL_SYNTH, 40, "BERAT (diminta detail / perbandingan)"
     if _RINGAN_RE.match(low) or _KONSEP_RE.search(low):
         return 120, MODEL_RINGAN, 8, "RINGAN (sapaan / konseptual)"
+    # Keputusan TRANSAKSI dengan harga konkret selalu butuh data segar, walau kalimatnya
+    # terdengar seperti minta pendapat. "kalo buy pump di 0.002551 bagaimana menurutmu?"
+    # sempat jatuh ke tingkat RINGAN — 8 putaran, tanpa shell, tanpa brief — sehingga
+    # jawabannya bersandar pada angka giliran SEBELUMNYA untuk sebuah keputusan beli.
+    if _NIAT_TRANSAKSI.search(low) and _HARGA_KONKRET.search(low):
+        return 300, MODEL_NARASI, 20, "SEDANG (keputusan transaksi dengan harga konkret)"
     # Penafsiran lanjutan: angka kuncinya sudah ada di konteks, tinggal ditimbang.
     if _TAFSIR_RE.search(low) and ada_konteks:
         return 120, MODEL_RINGAN, 8, "RINGAN (penafsiran dari konteks yang sudah ada)"
@@ -834,6 +888,16 @@ def aset_dari_pesan(teks):
     m = re.search(r"\b(?:saham|emiten|stock)\s+([A-Za-z]{1,5})\b", teks or "", re.I)
     if m:
         return "saham", m.group(1).upper()
+
+    # 2b. Pola "buy/beli/jual <TOKEN>" — niat transaksi menyebut asetnya secara eksplisit,
+    #     jadi cukup aman diambil walau tickernya di luar daftar terbatas. Tanpa ini, koin
+    #     yang tidak masuk daftar tidak pernah mendapat brief sama sekali.
+    m2 = re.search(r"\b(?:buy|beli|jual|sell|entry|masuk|akumulasi)\s+([A-Za-z]{2,6})\b",
+                   teks or "", re.I)
+    if m2:
+        atas = m2.group(1).upper()
+        if atas not in _KATA_BUKAN_TICKER and atas not in ("DI", "DARI", "KE", "PADA"):
+            return "crypto", atas
 
     # 3. Ticker crypto dari daftar terbatas. Kata Indonesia yang kebetulan sama
     #    (mis. "ada", "op") dikecualikan supaya tidak salah tangkap.
