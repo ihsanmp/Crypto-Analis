@@ -519,7 +519,11 @@ def rakit_chat(teks_prompt, pesan, jenis_aset_terdeteksi=None):
     # Kalau menyentuh kosakata pasar tapi TIDAK ADA rumpun yang cocok, barulah semua blok
     # dimuat — di situ kita memang tidak tahu apa yang dibutuhkan, dan kehilangan aturan
     # lebih merugikan daripada boros. Prinsip lamanya dipertahankan, ambangnya dipersempit.
-    if _PASAR_UMUM.search(low):
+    # Dipakai pesan_pasar(), bukan _PASAR_UMUM saja: kalimat seperti "di timeframe weekly
+    # masih possible turun sampai 55k-58k" jelas soal pasar, tapi tak menyentuh satu pun
+    # kata _PASAR_UMUM — sehingga gagal-aman tidak pernah aktif dan blok aturan yang
+    # relevan tidak ikut terpasang.
+    if pesan_pasar(pesan):
         serumpun = _rumpun_cocok(low)
         # Kalau kosakata rumpun tidak cocok TAPI jenis asetnya sudah dikenali dari pesan,
         # pakai itu. "kalo buy pump di 0.0026" menyentuh kosakata pasar lewat kata "buy",
@@ -874,7 +878,11 @@ def bobot_chat(text, ada_konteks):
     # Penafsiran lanjutan: angka kuncinya sudah ada di konteks, tinggal ditimbang.
     if _TAFSIR_RE.search(low) and ada_konteks:
         return 120, MODEL_RINGAN, 8, "RINGAN (penafsiran dari konteks yang sudah ada)"
-    if _PASAR_UMUM.search(low) or _TEKNIKAL_RE.search(low):
+    # Predikat yang sama dipakai untuk memuat aturan kalibrasi — SATU sumber kebenaran.
+    # Sebelumnya baris ini hanya menguji _PASAR_UMUM/_TEKNIKAL_RE, sehingga "btc masih bisa
+    # turun ke 55k?" — menyebut aset DAN target harga — jatuh ke tingkat RINGAN dengan label
+    # "di luar kosakata pasar": 8 putaran, model ringan, tanpa data segar.
+    if pesan_pasar(text):
         # Satu aset, satu pertanyaan spesifik. Butuh data tapi bukan riset multi-sumber.
         return 300, MODEL_NARASI, 20, "SEDANG (pertanyaan pasar spesifik)"
     return 120, MODEL_RINGAN, 8, "RINGAN (di luar kosakata pasar)"
@@ -984,6 +992,27 @@ def aset_dari_pesan(teks):
     return None, None
 
 
+def pesan_pasar(text):
+    """Apakah pesan ini menyangkut pasar — penentu apakah aturan kalibrasi dimuat.
+
+    Sengaja lebih longgar dari _PASAR_UMUM: menyebut indikator, aset, atau niat transaksi
+    berharga konkret sudah cukup. Sapaan dan pertanyaan konseptual tetap dikecualikan
+    supaya "apa itu RSI?" tidak menyeret seluruh berkas peran.
+    """
+    low = (text or "").strip().lower()
+    # Urutan mengikuti bobot_chat. Permintaan detail/perbandingan sudah dinilai BERAT di
+    # sana, jadi tidak boleh gugur di saringan konseptual — "bandingkan btc dan eth secara
+    # detail" sempat dianggap bukan pertanyaan pasar karenanya.
+    if _BERAT_RE.search(low):
+        return True
+    if _RINGAN_RE.match(low) or _KONSEP_RE.search(low):
+        return False
+    return bool(_PASAR_UMUM.search(low)
+                or _TEKNIKAL_RE.search(low)
+                or (_NIAT_TRANSAKSI.search(low) and _HARGA_KONKRET.search(low))
+                or any(aset_dari_pesan(text)))
+
+
 def build_chat_prompt(text, chat_id=None, brief=None):
     with open(CHAT_PROMPT, encoding="utf-8") as f:
         # Jenis aset ikut diberikan supaya pemilihan blok tidak jatuh ke "muat semua"
@@ -991,7 +1020,14 @@ def build_chat_prompt(text, chat_id=None, brief=None):
         base = rakit_chat(f.read(), text, aset_dari_pesan(text)[0])
     # Aturan kalibrasi hanya untuk pertanyaan pasar. Buat "apa itu RAG?" atau sapaan,
     # aturan konviksi & bukti kontra tidak berguna dan cuma menambah beban.
-    if _PASAR_UMUM.search((text or "").lower()):
+    #
+    # Dulu gerbangnya HANYA _PASAR_UMUM, padahal bobot_chat menyebut pesan sebagai
+    # "pertanyaan pasar spesifik" bila _PASAR_UMUM ATAU _TEKNIKAL_RE cocok. Dua ambang
+    # yang berbeda untuk keputusan yang sama, jadi pesan seperti "di timeframe weekly
+    # masih possible turun sampai 55k-58k" dinilai pertanyaan pasar TAPI dijawab tanpa
+    # inti.md — tanpa aturan konfluensi palsu, base rate, skenario, maupun daftar bias.
+    # Sekarang satu predikat dipakai bersama supaya keduanya tidak bisa melenceng lagi.
+    if pesan_pasar(text):
         low = (text or "").lower()
         peran = ["inti"]
         if any(k in low for k in ("risiko", "risk", "rugi", "drawdown", "aman", "bahaya")):

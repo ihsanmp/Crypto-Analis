@@ -1113,8 +1113,12 @@ def test_petunjuk_jenis_aset_mencegah_muat_semua():
     menyebut koin/token/saham/forex — sehingga gagal-aman memuat SEMUA blok (42 rb
     karakter) padahal jenis asetnya jelas crypto dan sudah dikenali dari pesannya.
     """
-    dengan = bot.build_chat_prompt("kalo buy pump di 0.0026 gimana?")
+    # Dibandingkan pada tingkat rakit_chat, bukan build_chat_prompt: yang diukur adalah
+    # pemilihan BLOK. build_chat_prompt ikut menempelkan berkas peran, jadi panjangnya
+    # bergerak setiap aturan kalibrasi berubah dan perbandingannya jadi tidak setara.
+    pesan = "kalo buy pump di 0.0026 gimana?"
     teks = _muat_chat_md()
+    dengan = bot.rakit_chat(teks, pesan, bot.aset_dari_pesan(pesan)[0])
     semua = len(bot.rakit_chat(teks, "menurutmu pasar gimana"))
     assert len(dengan) < semua, "petunjuk jenis aset tidak dipakai"
     assert "RENCANA vs POSISI" in dengan, "aturan transaksi tetap harus ikut"
@@ -1300,3 +1304,59 @@ def test_daemon_meneruskan_foto_ke_process():
     m = re.search(r"process\(token,\s*chat_id,\s*text([^)]*)\)", sumber)
     assert m, "panggilan process() tidak ditemukan di bot_daemon.py"
     assert m.group(1).strip(), "bot_daemon.py memanggil process() tanpa meneruskan foto"
+
+
+_PESAN_PASAR_TANPA_KOSAKATA_UMUM = [
+    "apabila dilihat di timeframe weekly, masih possible turun sampai range 55k-58k",
+    "btc masih bisa turun ke 55k?",
+    "di timeframe weekly gimana",
+    "ema21 nya udah ketembus belum",
+]
+
+
+@pytest.mark.parametrize("pesan", _PESAN_PASAR_TANPA_KOSAKATA_UMUM)
+def test_aturan_kalibrasi_ikut_pada_pertanyaan_pasar(pesan):
+    """Pertanyaan pasar WAJIB membawa inti.md, walau tak menyentuh kosakata _PASAR_UMUM.
+
+    Regresi nyata: gerbang peran memakai _PASAR_UMUM sedangkan bobot_chat memakai
+    _PASAR_UMUM ATAU _TEKNIKAL_RE. Pesan "di timeframe weekly masih possible turun
+    sampai 55k-58k" dinilai "pertanyaan pasar spesifik" oleh bobot_chat, tapi dijawab
+    TANPA aturan konfluensi palsu, base rate, skenario, maupun daftar bias.
+    """
+    p = bot.build_chat_prompt(pesan, "", None)
+    assert "kategori independen" in p, f"aturan konfluensi hilang: {pesan}"
+    assert "HIPOTESIS DARI USER" in p, f"aturan uji-hipotesis hilang: {pesan}"
+
+
+@pytest.mark.parametrize("pesan", ["halo", "apa itu RAG?", "apa itu RSI?", "makasih ya"])
+def test_sapaan_dan_konseptual_tetap_ramping(pesan):
+    """Penyempitan gerbang tidak boleh menyeret berkas peran ke sapaan / tanya konsep."""
+    assert not bot.pesan_pasar(pesan)
+    assert "kategori independen" not in bot.build_chat_prompt(pesan, "", None)
+
+
+def test_gerbang_peran_sejalan_dengan_bobot_chat():
+    """Dua ambang untuk satu keputusan adalah sumber bug ini — jangan melenceng lagi.
+
+    Apa pun yang dinilai SEDANG/BERAT oleh bobot_chat harus membawa aturan kalibrasi.
+    """
+    contoh = _PESAN_PASAR_TANPA_KOSAKATA_UMUM + [
+        "kalo buy di 0.002551 bagaimana menurutmu?",
+        "prospek sol gimana",
+        "bandingkan btc dan eth secara detail",
+    ]
+    for pesan in contoh:
+        tingkat = bot.bobot_chat(pesan, False)[3]
+        if tingkat.startswith(("SEDANG", "BERAT")):
+            assert bot.pesan_pasar(pesan), (
+                f"bobot_chat bilang {tingkat} tapi pesan_pasar() menolak: {pesan}")
+
+
+def test_aturan_uji_hipotesis_ada_di_inti():
+    """Menjawab 'ya' lalu mengumpulkan level di sekitar angka user adalah pembenaran,
+    bukan analisa. Aturannya harus tetap ada beserta ketiga kewajibannya."""
+    teks = open(os.path.join(AKAR, "cloud", "prompts", "peran", "inti.md"),
+                encoding="utf-8").read()
+    assert "HIPOTESIS DARI USER" in teks
+    for wajib in ("Alternatif yang setara", "Syarat pembatal", "KATEGORI yang mendukung"):
+        assert wajib in teks, f"bagian '{wajib}' hilang dari aturan uji-hipotesis"
