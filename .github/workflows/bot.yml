@@ -134,13 +134,13 @@ jobs:
       - name: Simpan ingatan terverifikasi
         if: always() && (github.event_name == 'repository_dispatch' || steps.check.outputs.has_work == 'true')
         run: |
-          if [ -z "$(git status --porcelain cloud/data/memori.jsonl cloud/data/diproses.json cloud/data/percakapan.json cloud/data/kalender_cache.json cloud/data/rapor.jsonl cloud/data/sec_tickers_cache.json.gz cloud/data/kejutan_cache.json cloud/data/jadwal_cache.json cloud/data/arsip_konsensus.jsonl)" ]; then
+          if [ -z "$(git status --porcelain cloud/data/memori.jsonl cloud/data/diproses.json cloud/data/percakapan.json cloud/data/kalender_cache.json cloud/data/rapor.jsonl cloud/data/sec_tickers_cache.json.gz cloud/data/kejutan_cache.json cloud/data/jadwal_cache.json cloud/data/arsip_konsensus.jsonl cloud/data/sosovalue_riwayat.json)" ]; then
             echo "tidak ada ingatan baru — lewati commit"
             exit 0
           fi
           git config user.name "crypto-analis-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add cloud/data/memori.jsonl cloud/data/diproses.json cloud/data/percakapan.json cloud/data/kalender_cache.json cloud/data/rapor.jsonl cloud/data/sec_tickers_cache.json.gz cloud/data/kejutan_cache.json cloud/data/jadwal_cache.json cloud/data/arsip_konsensus.jsonl
+          git add cloud/data/memori.jsonl cloud/data/diproses.json cloud/data/percakapan.json cloud/data/kalender_cache.json cloud/data/rapor.jsonl cloud/data/sec_tickers_cache.json.gz cloud/data/kejutan_cache.json cloud/data/jadwal_cache.json cloud/data/arsip_konsensus.jsonl cloud/data/sosovalue_riwayat.json
           git commit -m "Ingatan, jejak pesan & riwayat percakapan dari run ${GITHUB_RUN_ID}"
           # Run lain bisa menambah commit lebih dulu; rebase supaya tidak saling menimpa.
           for i in 1 2 3; do

@@ -71,12 +71,28 @@ INDIKATOR = {
 FOMC_URL = "https://www.frbsf.org/wp-content/uploads/chart1-monetary-policy-surprises.csv"
 FOMC_AKHIR = "2023-12-13"
 
+# Riwayat konsensus SoSoValue yang sudah ditarik dan disimpan (lihat sosovalue.py
+# --tarik-riwayat). Ini yang membuat studi kejutan NFP dan PPI mungkin: konsensusnya ada
+# sampai 2010, sesuatu yang tidak disimpan sumber gratis lain mana pun.
+#
+# BATAS YANG WAJIB DISEBUT: konsensus ini TIDAK punya jejak vintage. Tidak ada cara
+# memastikan angka forecast-nya sama dengan yang tampil di layar sebelum rilis — kalau
+# pernah di-backfill, kejutannya ikut salah. Perlakukan sebagai perkiraan, dan sebutkan
+# sumbernya. Bandingkan dengan arsip.py kalau arsip kita sendiri sudah cukup tebal.
+SOSO_PATH = os.path.join(BASE_DIR, "data", "sosovalue_riwayat.json")
+
 # Label sisi kejutan berbeda maknanya per sumber: pada CPI "panas" berarti inflasi di atas
-# ramalan; pada FOMC positif berarti pasar mereprice ke arah HAWKISH.
+# ramalan; pada FOMC positif berarti pasar mereprice ke arah HAWKISH; pada NFP positif
+# berarti lapangan kerja lebih KUAT dari perkiraan.
 LABEL_SISI = {
     "inflasi": ("kejutan_lebih_panas", "kejutan_lebih_dingin"),
     "fomc": ("kejutan_hawkish", "kejutan_dovish"),
+    "tenaga_kerja": ("kejutan_lebih_kuat", "kejutan_lebih_lemah"),
 }
+
+# Acara SoSoValue -> label sisi yang benar.
+SOSO_SISI = {"NFP": "tenaga_kerja", "PPI": "inflasi",
+             "CPI": "inflasi", "CORE CPI": "inflasi"}
 
 # Berapa hari perdagangan ke depan yang diukur. H = hari rilis itu sendiri.
 HORIZON = (0, 1, 5)
@@ -238,6 +254,52 @@ def deret_fomc(paksa=False, ortogonal=False):
                         "aktual_mom_persen": None})
     riwayat.sort(key=lambda x: x["tanggal_rilis"])
     return {"riwayat": riwayat, "belum_rilis": []}, dari_cache, err
+
+
+def _nilai_soso(v):
+    """'85' -> (85.0, '') · '0.1%' -> (0.1, '%') · '' -> (None, None)."""
+    t = (v or "").strip()
+    if not t:
+        return None, None
+    satuan = "%" if t.endswith("%") else ""
+    try:
+        return float(t.rstrip("%").replace(",", "")), satuan
+    except ValueError:
+        return None, None
+
+
+def deret_soso(label):
+    """Riwayat kejutan dari berkas SoSoValue. Bentuknya disamakan dengan deret_kejutan."""
+    try:
+        with open(SOSO_PATH, encoding="utf-8") as f:
+            berkas = json.load(f)
+    except OSError:
+        return None, False, ("berkas riwayat SoSoValue belum ada — jalankan workflow "
+                             "'Periksa SoSoValue' sekali untuk menariknya")
+    except ValueError:
+        return None, False, "berkas riwayat SoSoValue rusak"
+
+    acara = (berkas.get("acara") or {}).get(label)
+    if not acara or "data" not in acara:
+        return None, False, f"acara '{label}' tidak ada di berkas riwayat"
+
+    riwayat = []
+    for baris in acara["data"]:
+        tgl = (baris.get("date") or "").strip()
+        if not re.match(r"^\d{4}-\d{2}-\d{2}$", tgl):
+            continue
+        a, sa = _nilai_soso(baris.get("actual"))
+        f_, sf = _nilai_soso(baris.get("forecast"))
+        # Satuan harus sama; aktual kosong berarti belum rilis.
+        if a is None or f_ is None or sa != sf:
+            continue
+        riwayat.append({"tanggal_rilis": tgl, "kejutan_pp": round(a - f_, 4),
+                        "aktual_mom_persen": a if sa == "%" else None,
+                        "aktual": a, "konsensus": f_})
+    riwayat.sort(key=lambda x: x["tanggal_rilis"])
+    return ({"riwayat": riwayat, "belum_rilis": [],
+             "ditarik_utc": berkas.get("ditarik_utc"),
+             "nama_acara": acara.get("nama")}, True, None)
 
 
 def _sebaran(nilai):
@@ -466,8 +528,13 @@ def reaksi_per_rezim(simbol, riwayat, pasar, rentang="15y", catatan=None, meta=N
     if tipis:
         hasil["potongan_bersampel_tipis"] = tipis
 
-    # Vonis ketahanan. Yang dinilai hanya H+1 dan H+5 — H (hari rilis) terlalu berisik.
-    for horizon in ("H+1", "H+5"):
+    # Vonis ketahanan. H (hari rilis) DULU dikecualikan karena dianggap terlalu berisik —
+    # itu keliru dan sempat menyembunyikan temuan. Pada NFP, H adalah satu-satunya horizon
+    # yang tandanya konsisten (negatif di kelima potongan, -0,24% s/d -1,30%), sementara
+    # H+1 dan H+5 berbalik-balik. Ceritanya justru masuk akal: rilis menggerakkan harga
+    # SEKETIKA, lalu derau harian mengambil alih. Menghakimi hanya H+1/H+5 berarti
+    # menyimpulkan "tidak ada apa-apa" pada kejadian yang jelas ada apa-apanya.
+    for horizon in ("H", "H+1", "H+5"):
         tanda = [p["selisih"].get(horizon) for p in hasil["potongan"].values()
                  if p["selisih"].get(horizon) is not None]
         if len(tanda) < 3:
@@ -489,6 +556,44 @@ def reaksi_per_rezim(simbol, riwayat, pasar, rentang="15y", catatan=None, meta=N
                      "katakan arahnya tidak bisa diprediksi."),
         }
     return hasil
+
+
+def main_soso(args, label):
+    """Jalur konsensus pasar tersimpan. Menutup NFP dan PPI yang tak punya nowcast model."""
+    data, _, err = deret_soso(label)
+    keluar = {
+        "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
+        "indikator": label,
+        "sumber": ("konsensus pasar SoSoValue (tersimpan), BUKAN nowcast model. Tidak ada "
+                   "jejak vintage: tak bisa dipastikan angka forecast-nya sama dengan yang "
+                   "tampil sebelum rilis. Sebutkan sumbernya saat mengutip."),
+    }
+    if err or not data:
+        keluar["tidak_tersedia"] = err or "gagal membaca riwayat"
+        print(json.dumps(keluar, indent=2, ensure_ascii=False))
+        return
+
+    riwayat = data["riwayat"]
+    keluar["nama_acara"] = data.get("nama_acara")
+    keluar["data_ditarik_utc"] = data.get("ditarik_utc")
+    keluar["jumlah_rilis"] = len(riwayat)
+    keluar["jendela"] = (f"{riwayat[0]['tanggal_rilis']} s/d {riwayat[-1]['tanggal_rilis']}"
+                         if riwayat else None)
+    if args.simbol and riwayat:
+        catatan, meta = _per_rilis(args.simbol, riwayat, args.pasar)
+        if catatan is None:
+            keluar["reaksi_harga"] = meta
+        else:
+            keluar["reaksi_harga"] = reaksi_harga(
+                args.simbol, riwayat, args.pasar, catatan=catatan, meta=meta,
+                sisi=SOSO_SISI[label])
+            if args.rezim:
+                keluar["uji_ketahanan_per_rezim"] = reaksi_per_rezim(
+                    args.simbol, riwayat, args.pasar, catatan=catatan, meta=meta)
+    if args.ringkas:
+        from backtest import buang_panduan
+        keluar = buang_panduan(keluar)
+    print(json.dumps(keluar, indent=2, ensure_ascii=False))
 
 
 def main_fomc(args):
@@ -548,6 +653,9 @@ def main():
     ap.add_argument("--simbol", help="aset yang diukur reaksinya, mis. GOLD / BTC / SPX")
     ap.add_argument("--pasar", action="store_true",
                     help="simbol berupa komoditas/saham/forex (via market.py)")
+    ap.add_argument("--sumber", default="nowcast", choices=("nowcast", "sosovalue"),
+                    help="nowcast = Cleveland Fed (CPI/PCE saja); sosovalue = konsensus "
+                         "pasar tersimpan (NFP/PPI/CPI/Core CPI)")
     ap.add_argument("--rezim", action="store_true",
                     help="uji apakah tanda selisih bertahan saat data dipotong per rezim")
     ap.add_argument("--ringkas", action="store_true",
@@ -557,6 +665,9 @@ def main():
     ind = args.indikator.strip().upper()
     if ind == "FOMC":
         main_fomc(args)
+        return
+    if ind in SOSO_SISI and args.sumber == "sosovalue":
+        main_soso(args, ind)
         return
     if ind not in INDIKATOR:
         print(json.dumps({"tidak_tersedia": f"indikator '{args.indikator}' tidak dikenal",

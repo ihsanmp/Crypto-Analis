@@ -1468,10 +1468,12 @@ def test_batas_nfp_fomc_dinyatakan_di_seed():
     # baris. Tes yang peka pembungkusan akan gagal setiap kali paragrafnya dirapikan.
     teks = " ".join(open(os.path.join(AKAR, "cloud", "prompts", "peran", "prediktor.md"),
                          encoding="utf-8").read().split())
-    # FOMC dikeluarkan dari golongan ini setelah seri Bauer-Swanson dipakai; yang tersisa
-    # tanpa ukuran kejutan hanya NFP dan PPI.
-    assert "tidak bisa dibuat** untuk keduanya" in teks
+    # Golongan "tanpa ukuran kejutan" kini KOSONG: FOMC dapat seri Bauer-Swanson, NFP dan
+    # PPI dapat konsensus SoSoValue sejak 2010. Yang tersisa dari batas lama hanya jebakan
+    # membaca perubahan bulanan sebagai kejutan.
     assert "BUKAN kejutan terhadap ekspektasi" in teks
+    assert "PPI: tidak ada temuan" in teks, "hasil nol PPI harus tercatat"
+    assert "TIDAK punya jejak vintage" in teks, "batas konsensus SoSoValue hilang"
 
 
 def test_cache_baru_ikut_disimpan_workflow():
@@ -1640,8 +1642,9 @@ def test_fomc_tidak_lagi_digolongkan_tanpa_ukuran_kejutan():
     """
     teks = " ".join(open(os.path.join(AKAR, "cloud", "prompts", "peran", "prediktor.md"),
                          encoding="utf-8").read().split())
-    assert "konsensus historis untuk NFP dan PPI" in teks
     assert "historis untuk ketiga acara ini" not in teks
+    assert "konsensus historis untuk NFP dan PPI" not in teks, (
+        "klaim itu sudah tidak benar — riwayat SoSoValue memuat konsensus sejak 2010")
     assert "Bauer-Swanson" in teks
 
 
@@ -1764,3 +1767,32 @@ def test_sosovalue_semua_akses_lewat_satu_pintu():
     for lain in ("bot_oneshot.py", "kejutan.py", "jadwal.py", "arsip.py"):
         teks = open(os.path.join(AKAR, "cloud", lain), encoding="utf-8").read()
         assert "openapi.sosovalue.com" not in teks, f"{lain} memanggil SoSoValue langsung"
+
+
+def test_temuan_nfp_tercatat_dengan_horizonnya():
+    """Efek NFP nyata TAPI hanya pada hari rilis — dua-duanya harus tertulis.
+
+    Kalau cuma 'ada efek' yang dicatat, model akan memakainya untuk target beberapa hari;
+    kalau cuma 'tidak bertahan', temuannya hilang sama sekali.
+    """
+    teks = " ".join(open(os.path.join(AKAR, "cloud", "prompts", "peran", "prediktor.md"),
+                         encoding="utf-8").read().split())
+    assert "hanya pada HARI RILIS" in teks
+    assert "H+1 dan H+5: gugur" in teks
+    assert "tidak bertahan sampai besok" in teks
+
+
+def test_vonis_menyertakan_hari_rilis():
+    """Mengecualikan H dari vonis sempat menyembunyikan satu-satunya sinyal NFP."""
+    catatan = []
+    for tahun in (2014, 2018, 2024):
+        for i in range(20):
+            # Kejutan positif -> turun PADA HARI ITU, lalu acak sesudahnya.
+            catatan.append({"tanggal": f"{tahun}-{i % 12 + 1:02d}-10", "kejutan_pp": 1.0,
+                            "aktual": None, "ret": {0: -0.8, 1: 0.2 if i % 2 else -0.2, 5: 0.0}})
+            catatan.append({"tanggal": f"{tahun}-{i % 12 + 1:02d}-11", "kejutan_pp": -1.0,
+                            "aktual": None, "ret": {0: 0.1, 1: -0.2 if i % 2 else 0.2, 5: 0.0}})
+    hasil = _kejutan.reaksi_per_rezim("X", [], False, catatan=catatan,
+                                      meta={"simbol": "X", "jendela_harga": "-"})
+    assert "vonis_H" in hasil, "hari rilis harus ikut divonis"
+    assert hasil["vonis_H"]["tanda_bertahan"] is True

@@ -1411,6 +1411,14 @@ def data_mentah_pasar(simbol, jenis):
         tugas.append(("SENSITIVITAS KEJUTAN FOMC (kejutan.py)",
                       ["cloud/kejutan.py", "--indikator", "FOMC", "--simbol", simbol,
                        "--pasar", "--rezim", "--ortogonal", "--ringkas"]))
+        # NFP dipasang, PPI TIDAK. Keduanya sudah punya konsensus historis sejak 2010 lewat
+        # riwayat SoSoValue, tapi hanya NFP yang menghasilkan temuan bertahan (hari rilis,
+        # konsisten di kelima potongan). PPI gugur di ketiga horizon, dan membayar ~4 rb
+        # karakter tiap analisa untuk mengatakan "tidak ada apa-apa" itu pemborosan —
+        # hasil nolnya dicatat statis di seed.
+        tugas.append(("KEJUTAN NFP (kejutan.py, konsensus pasar)",
+                      ["cloud/kejutan.py", "--indikator", "NFP", "--sumber", "sosovalue",
+                       "--simbol", simbol, "--pasar", "--rezim", "--ringkas"]))
     else:
         tugas.append(("MAKRO AS (makro.py, sumber FRED)", ["cloud/makro.py", "--ringkas"]))
         # Reaksi historis emas/FX terhadap kejutan CPI — pelengkap kalender.py, yang hanya
@@ -1434,6 +1442,9 @@ def data_mentah_pasar(simbol, jenis):
         tugas.append(("SENSITIVITAS KEJUTAN FOMC (kejutan.py)",
                       ["cloud/kejutan.py", "--indikator", "FOMC", "--simbol", simbol,
                        "--pasar", "--rezim", "--ortogonal", "--ringkas"]))
+        tugas.append(("KEJUTAN NFP (kejutan.py, konsensus pasar)",
+                      ["cloud/kejutan.py", "--indikator", "NFP", "--sumber", "sosovalue",
+                       "--simbol", simbol, "--pasar", "--rezim", "--ringkas"]))
     # Berlaku untuk saham maupun forex: sebaran historis + level struktural, supaya seed
     # FORECASTER punya angka untuk dikutip pada tahap sintesis yang berjalan tanpa tool.
     tugas.append(("PROYEKSI (proyeksi.py)",

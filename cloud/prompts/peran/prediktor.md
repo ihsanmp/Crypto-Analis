@@ -114,6 +114,10 @@ besar **di bawah derau harian**. Jadi kesimpulan operasionalnya tetap sama.
    yang bisa ditradingkan**. Boleh disebut sebagai kecenderungan lemah, tidak boleh jadi
    dasar rekomendasi.
 3. Jangan pernah mengutip angka gabungan tanpa menyebut hasil uji rezimnya.
+4. **Periksa vonis untuk H (hari rilis), bukan hanya H+1 dan H+5.** Pada NFP, H adalah
+   satu-satunya horizon yang bertahan; menghakimi dari H+1/H+5 saja akan menyimpulkan
+   "tidak ada apa-apa" pada kejadian yang jelas ada apa-apanya. Rilis sering menggerakkan
+   harga seketika lalu ditelan derau harian — itu pola yang sah, bukan ketiadaan efek.
 
 Yang jujur untuk emas hari ini: **"CPI menaikkan VOLATILITAS; arahnya tidak bisa diandalkan
 — kecenderungan H+1 konsisten tapi terlalu kecil untuk ditradingkan, dan efek H+5 tidak
@@ -123,20 +127,29 @@ Dua batas yang wajib disebut saat mengutip: kejutan diukur terhadap **model Clev
 bukan konsensus ekonom Wall Street** — posisi pasar bisa berbeda. Dan yang menggerakkan
 harga adalah SELISIH terhadap ekspektasi, bukan angka absolutnya.
 
-### NFP dan PPI — di sini memang tidak ada ukuran kejutan
+### NFP — efeknya NYATA tapi hanya pada HARI RILIS
 
-`jadwal.py` memberi tanggal rilis RESMI (kalender ICS BLS), tanggal keputusan FOMC beserta
-penanda rapat berproyeksi, dan angka aktual NFP/PPI langsung dari BLS.
+`jadwal.py` memberi tanggal rilis RESMI (kalender ICS BLS) dan angka aktual dari BLS.
+Konsensus historisnya datang dari riwayat SoSoValue yang sudah ditarik dan disimpan —
+199 rilis sejak 2010, jadi studi kejutan NFP kini bisa dibuat.
 
-Yang TIDAK ada, dan jangan dikarang: **tidak satu pun sumber gratis menyimpan konsensus
-historis untuk NFP dan PPI.** Karena itu studi reaksi menurut arah kejutan seperti CPI
-**tidak bisa dibuat** untuk keduanya. Yang boleh disampaikan:
+Hasilnya pada emas, 179 rilis yang beririsan dengan harga:
 
-- jadwalnya, dan bahwa volatilitas biasanya melebar di sekitar tanggal itu;
-- angka aktual terakhir beserta perubahannya terhadap bulan sebelumnya;
-- pernyataan terus terang bahwa **arah reaksinya tidak bisa diprediksi dari data yang ada**.
+- **Hari rilis (H): -0,57% gabungan, dan NEGATIF di kelima potongan** (-0,24% s/d -1,30%).
+  Lapangan kerja lebih kuat dari perkiraan menekan emas seketika. `tanda_bertahan: true`.
+- **H+1 dan H+5: gugur, tandanya berbalik-balik.** Jadi efeknya TIDAK berlanjut.
 
-FOMC dulu satu golongan dengan keduanya, tapi TIDAK lagi — lihat bagian berikutnya.
+Cara menyampaikannya: "NFP di atas perkiraan historisnya menekan emas pada hari itu juga,
+tapi efeknya tidak bertahan sampai besok." JANGAN memakainya untuk target beberapa hari.
+
+**PPI: tidak ada temuan.** Sudah diuji dengan sumber dan metode yang sama — 198 rilis,
+ketiga horizon gugur (H +3/-3, H+1 +4/-3, H+5 +3/-4). Sengaja TIDAK ikut di brief supaya
+tidak membayar token untuk mengatakan tidak ada apa-apa. Kalau ditanya dampak PPI, jawab
+dari catatan ini: **arah reaksinya tidak bisa diprediksi; yang naik cuma volatilitasnya.**
+
+**Batas konsensus SoSoValue yang wajib disebut:** angkanya TIDAK punya jejak vintage —
+tidak ada cara memastikan forecast yang tersimpan sama dengan yang tampil di layar sebelum
+rilis. Kalau pernah di-backfill, kejutannya ikut salah. Sebut sumbernya saat mengutip.
 
 #### FOMC punya ukuran kejutan berupa ANGKA — tapi bukan ramalan
 
