@@ -1,0 +1,4798 @@
+{
+ "ditarik_utc": "2026-08-10 17:24",
+ "sumber": "SoSoValue OpenAPI /macro/events/{acara}/history",
+ "acara": {
+  "NFP": {
+   "nama": "Nonfarm Payrolls",
+   "jumlah": 199,
+   "rentang": "2010-01-08 s/d 2026-08-07",
+   "data": [
+    {
+     "date": "2010-01-08",
+     "actual": "-85",
+     "forecast": "0",
+     "previous": "-11"
+    },
+    {
+     "date": "2010-02-05",
+     "actual": "-20",
+     "forecast": "15",
+     "previous": "-85"
+    },
+    {
+     "date": "2010-03-05",
+     "actual": "-36",
+     "forecast": "-55",
+     "previous": "-20"
+    },
+    {
+     "date": "2010-04-02",
+     "actual": "162",
+     "forecast": "190",
+     "previous": "-36"
+    },
+    {
+     "date": "2010-05-07",
+     "actual": "290",
+     "forecast": "187",
+     "previous": "162"
+    },
+    {
+     "date": "2010-06-04",
+     "actual": "431",
+     "forecast": "500",
+     "previous": "290"
+    },
+    {
+     "date": "2010-07-02",
+     "actual": "-125",
+     "forecast": "-100",
+     "previous": "431"
+    },
+    {
+     "date": "2010-08-06",
+     "actual": "-131",
+     "forecast": "-65",
+     "previous": "-125"
+    },
+    {
+     "date": "2010-09-03",
+     "actual": "-54",
+     "forecast": "-118",
+     "previous": "-131"
+    },
+    {
+     "date": "2010-10-08",
+     "actual": "-95",
+     "forecast": "3",
+     "previous": "-54"
+    },
+    {
+     "date": "2010-11-05",
+     "actual": "151",
+     "forecast": "60",
+     "previous": "-95"
+    },
+    {
+     "date": "2010-12-03",
+     "actual": "39",
+     "forecast": "140",
+     "previous": "151"
+    },
+    {
+     "date": "2011-01-07",
+     "actual": "103",
+     "forecast": "150",
+     "previous": "39"
+    },
+    {
+     "date": "2011-02-04",
+     "actual": "36",
+     "forecast": "150",
+     "previous": "103"
+    },
+    {
+     "date": "2011-03-04",
+     "actual": "192",
+     "forecast": "180",
+     "previous": "36"
+    },
+    {
+     "date": "2011-04-01",
+     "actual": "216",
+     "forecast": "188",
+     "previous": "192"
+    },
+    {
+     "date": "2011-05-06",
+     "actual": "244",
+     "forecast": "185",
+     "previous": "216"
+    },
+    {
+     "date": "2011-06-03",
+     "actual": "54",
+     "forecast": "169",
+     "previous": "244"
+    },
+    {
+     "date": "2011-07-08",
+     "actual": "18",
+     "forecast": "89",
+     "previous": "54"
+    },
+    {
+     "date": "2011-08-05",
+     "actual": "117",
+     "forecast": "95",
+     "previous": "18"
+    },
+    {
+     "date": "2011-09-02",
+     "actual": "0",
+     "forecast": "74",
+     "previous": "117"
+    },
+    {
+     "date": "2011-10-07",
+     "actual": "103",
+     "forecast": "53",
+     "previous": "0"
+    },
+    {
+     "date": "2011-11-04",
+     "actual": "80",
+     "forecast": "95",
+     "previous": "103"
+    },
+    {
+     "date": "2011-12-02",
+     "actual": "120",
+     "forecast": "120",
+     "previous": "80"
+    },
+    {
+     "date": "2012-01-06",
+     "actual": "200",
+     "forecast": "150",
+     "previous": "120"
+    },
+    {
+     "date": "2012-02-03",
+     "actual": "243",
+     "forecast": "150",
+     "previous": "200"
+    },
+    {
+     "date": "2012-03-09",
+     "actual": "227",
+     "forecast": "210",
+     "previous": "243"
+    },
+    {
+     "date": "2012-04-06",
+     "actual": "120",
+     "forecast": "203",
+     "previous": "227"
+    },
+    {
+     "date": "2012-05-04",
+     "actual": "115",
+     "forecast": "170",
+     "previous": "120"
+    },
+    {
+     "date": "2012-06-01",
+     "actual": "69",
+     "forecast": "150",
+     "previous": "115"
+    },
+    {
+     "date": "2012-07-06",
+     "actual": "80",
+     "forecast": "90",
+     "previous": "69"
+    },
+    {
+     "date": "2012-08-03",
+     "actual": "163",
+     "forecast": "100",
+     "previous": "80"
+    },
+    {
+     "date": "2012-09-07",
+     "actual": "96",
+     "forecast": "125",
+     "previous": "163"
+    },
+    {
+     "date": "2012-10-05",
+     "actual": "114",
+     "forecast": "113",
+     "previous": "96"
+    },
+    {
+     "date": "2012-11-02",
+     "actual": "171",
+     "forecast": "125",
+     "previous": "114"
+    },
+    {
+     "date": "2012-12-07",
+     "actual": "146",
+     "forecast": "93",
+     "previous": "171"
+    },
+    {
+     "date": "2013-01-04",
+     "actual": "155",
+     "forecast": "150",
+     "previous": "146"
+    },
+    {
+     "date": "2013-02-01",
+     "actual": "157",
+     "forecast": "160",
+     "previous": "155"
+    },
+    {
+     "date": "2013-03-08",
+     "actual": "236",
+     "forecast": "160",
+     "previous": "157"
+    },
+    {
+     "date": "2013-04-05",
+     "actual": "88",
+     "forecast": "200",
+     "previous": "236"
+    },
+    {
+     "date": "2013-05-03",
+     "actual": "165",
+     "forecast": "145",
+     "previous": "88"
+    },
+    {
+     "date": "2013-06-07",
+     "actual": "175",
+     "forecast": "170",
+     "previous": "165"
+    },
+    {
+     "date": "2013-07-05",
+     "actual": "195",
+     "forecast": "165",
+     "previous": "175"
+    },
+    {
+     "date": "2013-08-02",
+     "actual": "162",
+     "forecast": "184",
+     "previous": "195"
+    },
+    {
+     "date": "2013-09-06",
+     "actual": "169",
+     "forecast": "180",
+     "previous": "162"
+    },
+    {
+     "date": "2013-10-22",
+     "actual": "148",
+     "forecast": "180",
+     "previous": "169"
+    },
+    {
+     "date": "2013-11-08",
+     "actual": "204",
+     "forecast": "125",
+     "previous": "148"
+    },
+    {
+     "date": "2013-12-06",
+     "actual": "203",
+     "forecast": "180",
+     "previous": "204"
+    },
+    {
+     "date": "2014-01-10",
+     "actual": "74",
+     "forecast": "196",
+     "previous": "203"
+    },
+    {
+     "date": "2014-02-07",
+     "actual": "113",
+     "forecast": "185",
+     "previous": "74"
+    },
+    {
+     "date": "2014-03-07",
+     "actual": "175",
+     "forecast": "149",
+     "previous": "113"
+    },
+    {
+     "date": "2014-04-04",
+     "actual": "192",
+     "forecast": "200",
+     "previous": "175"
+    },
+    {
+     "date": "2014-05-02",
+     "actual": "288",
+     "forecast": "210",
+     "previous": "192"
+    },
+    {
+     "date": "2014-06-06",
+     "actual": "217",
+     "forecast": "218",
+     "previous": "288"
+    },
+    {
+     "date": "2014-07-03",
+     "actual": "288",
+     "forecast": "212",
+     "previous": "217"
+    },
+    {
+     "date": "2014-08-01",
+     "actual": "209",
+     "forecast": "233",
+     "previous": "288"
+    },
+    {
+     "date": "2014-09-05",
+     "actual": "142",
+     "forecast": "225",
+     "previous": "209"
+    },
+    {
+     "date": "2014-10-03",
+     "actual": "248",
+     "forecast": "215",
+     "previous": "142"
+    },
+    {
+     "date": "2014-11-07",
+     "actual": "214",
+     "forecast": "231",
+     "previous": "248"
+    },
+    {
+     "date": "2014-12-05",
+     "actual": "321",
+     "forecast": "225",
+     "previous": "214"
+    },
+    {
+     "date": "2015-01-09",
+     "actual": "252",
+     "forecast": "240",
+     "previous": "321"
+    },
+    {
+     "date": "2015-02-06",
+     "actual": "257",
+     "forecast": "234",
+     "previous": "252"
+    },
+    {
+     "date": "2015-03-06",
+     "actual": "295",
+     "forecast": "240",
+     "previous": "257"
+    },
+    {
+     "date": "2015-04-03",
+     "actual": "126",
+     "forecast": "245",
+     "previous": "295"
+    },
+    {
+     "date": "2015-05-08",
+     "actual": "223",
+     "forecast": "224",
+     "previous": "126"
+    },
+    {
+     "date": "2015-06-05",
+     "actual": "280",
+     "forecast": "225",
+     "previous": "223"
+    },
+    {
+     "date": "2015-07-02",
+     "actual": "223",
+     "forecast": "230",
+     "previous": "280"
+    },
+    {
+     "date": "2015-08-07",
+     "actual": "215",
+     "forecast": "223",
+     "previous": "223"
+    },
+    {
+     "date": "2015-09-04",
+     "actual": "173",
+     "forecast": "220",
+     "previous": "215"
+    },
+    {
+     "date": "2015-10-02",
+     "actual": "142",
+     "forecast": "203",
+     "previous": "173"
+    },
+    {
+     "date": "2015-11-06",
+     "actual": "271",
+     "forecast": "180",
+     "previous": "142"
+    },
+    {
+     "date": "2015-12-04",
+     "actual": "211",
+     "forecast": "200",
+     "previous": "271"
+    },
+    {
+     "date": "2016-01-08",
+     "actual": "292",
+     "forecast": "200",
+     "previous": "211"
+    },
+    {
+     "date": "2016-02-05",
+     "actual": "151",
+     "forecast": "190",
+     "previous": "292"
+    },
+    {
+     "date": "2016-03-04",
+     "actual": "242",
+     "forecast": "190",
+     "previous": "151"
+    },
+    {
+     "date": "2016-04-01",
+     "actual": "215",
+     "forecast": "205",
+     "previous": "242"
+    },
+    {
+     "date": "2016-05-06",
+     "actual": "160",
+     "forecast": "202",
+     "previous": "215"
+    },
+    {
+     "date": "2016-06-03",
+     "actual": "38",
+     "forecast": "164",
+     "previous": "160"
+    },
+    {
+     "date": "2016-07-08",
+     "actual": "287",
+     "forecast": "175",
+     "previous": "38"
+    },
+    {
+     "date": "2016-08-05",
+     "actual": "255",
+     "forecast": "180",
+     "previous": "287"
+    },
+    {
+     "date": "2016-09-02",
+     "actual": "151",
+     "forecast": "180",
+     "previous": "255"
+    },
+    {
+     "date": "2016-10-07",
+     "actual": "156",
+     "forecast": "175",
+     "previous": "151"
+    },
+    {
+     "date": "2016-11-04",
+     "actual": "161",
+     "forecast": "175",
+     "previous": "156"
+    },
+    {
+     "date": "2016-12-02",
+     "actual": "178",
+     "forecast": "175",
+     "previous": "161"
+    },
+    {
+     "date": "2017-01-06",
+     "actual": "156",
+     "forecast": "178",
+     "previous": "178"
+    },
+    {
+     "date": "2017-02-03",
+     "actual": "227",
+     "forecast": "175",
+     "previous": "156"
+    },
+    {
+     "date": "2017-03-10",
+     "actual": "235",
+     "forecast": "200",
+     "previous": "227"
+    },
+    {
+     "date": "2017-04-07",
+     "actual": "98",
+     "forecast": "180",
+     "previous": "235"
+    },
+    {
+     "date": "2017-05-05",
+     "actual": "211",
+     "forecast": "185",
+     "previous": "98"
+    },
+    {
+     "date": "2017-06-02",
+     "actual": "138",
+     "forecast": "185",
+     "previous": "211"
+    },
+    {
+     "date": "2017-07-07",
+     "actual": "222",
+     "forecast": "179",
+     "previous": "138"
+    },
+    {
+     "date": "2017-08-04",
+     "actual": "209",
+     "forecast": "183",
+     "previous": "222"
+    },
+    {
+     "date": "2017-09-01",
+     "actual": "156",
+     "forecast": "180",
+     "previous": "209"
+    },
+    {
+     "date": "2017-10-06",
+     "actual": "-33",
+     "forecast": "90",
+     "previous": "156"
+    },
+    {
+     "date": "2017-11-03",
+     "actual": "261",
+     "forecast": "310",
+     "previous": "-33"
+    },
+    {
+     "date": "2017-12-08",
+     "actual": "228",
+     "forecast": "200",
+     "previous": "261"
+    },
+    {
+     "date": "2018-01-05",
+     "actual": "148",
+     "forecast": "190",
+     "previous": "228"
+    },
+    {
+     "date": "2018-02-02",
+     "actual": "200",
+     "forecast": "184",
+     "previous": "148"
+    },
+    {
+     "date": "2018-03-09",
+     "actual": "313",
+     "forecast": "200",
+     "previous": "200"
+    },
+    {
+     "date": "2018-04-06",
+     "actual": "103",
+     "forecast": "193",
+     "previous": "313"
+    },
+    {
+     "date": "2018-05-04",
+     "actual": "164",
+     "forecast": "189",
+     "previous": "103"
+    },
+    {
+     "date": "2018-06-01",
+     "actual": "223",
+     "forecast": "189",
+     "previous": "164"
+    },
+    {
+     "date": "2018-07-06",
+     "actual": "213",
+     "forecast": "200",
+     "previous": "223"
+    },
+    {
+     "date": "2018-08-03",
+     "actual": "157",
+     "forecast": "193",
+     "previous": "213"
+    },
+    {
+     "date": "2018-09-07",
+     "actual": "201",
+     "forecast": "191",
+     "previous": "157"
+    },
+    {
+     "date": "2018-10-05",
+     "actual": "134",
+     "forecast": "185",
+     "previous": "201"
+    },
+    {
+     "date": "2018-11-02",
+     "actual": "250",
+     "forecast": "193",
+     "previous": "134"
+    },
+    {
+     "date": "2018-12-07",
+     "actual": "155",
+     "forecast": "200",
+     "previous": "250"
+    },
+    {
+     "date": "2019-01-04",
+     "actual": "312",
+     "forecast": "178",
+     "previous": "155"
+    },
+    {
+     "date": "2019-02-01",
+     "actual": "304",
+     "forecast": "165",
+     "previous": "312"
+    },
+    {
+     "date": "2019-03-08",
+     "actual": "20",
+     "forecast": "181",
+     "previous": "304"
+    },
+    {
+     "date": "2019-04-05",
+     "actual": "196",
+     "forecast": "175",
+     "previous": "20"
+    },
+    {
+     "date": "2019-05-03",
+     "actual": "263",
+     "forecast": "181",
+     "previous": "196"
+    },
+    {
+     "date": "2019-06-07",
+     "actual": "75",
+     "forecast": "185",
+     "previous": "263"
+    },
+    {
+     "date": "2019-07-05",
+     "actual": "224",
+     "forecast": "160",
+     "previous": "75"
+    },
+    {
+     "date": "2019-08-02",
+     "actual": "164",
+     "forecast": "164",
+     "previous": "224"
+    },
+    {
+     "date": "2019-09-06",
+     "actual": "130",
+     "forecast": "160",
+     "previous": "164"
+    },
+    {
+     "date": "2019-10-04",
+     "actual": "136",
+     "forecast": "140",
+     "previous": "130"
+    },
+    {
+     "date": "2019-11-01",
+     "actual": "128",
+     "forecast": "89",
+     "previous": "136"
+    },
+    {
+     "date": "2019-12-06",
+     "actual": "266",
+     "forecast": "186",
+     "previous": "128"
+    },
+    {
+     "date": "2020-01-10",
+     "actual": "145",
+     "forecast": "164",
+     "previous": "266"
+    },
+    {
+     "date": "2020-02-07",
+     "actual": "225",
+     "forecast": "160",
+     "previous": "145"
+    },
+    {
+     "date": "2020-03-06",
+     "actual": "273",
+     "forecast": "175",
+     "previous": "225"
+    },
+    {
+     "date": "2020-04-03",
+     "actual": "-701",
+     "forecast": "-100",
+     "previous": "273"
+    },
+    {
+     "date": "2020-05-08",
+     "actual": "-20537",
+     "forecast": "-22000",
+     "previous": "-701"
+    },
+    {
+     "date": "2020-06-05",
+     "actual": "2509",
+     "forecast": "-8000",
+     "previous": "-20537"
+    },
+    {
+     "date": "2020-07-02",
+     "actual": "4800",
+     "forecast": "3000",
+     "previous": "2509"
+    },
+    {
+     "date": "2020-08-07",
+     "actual": "1763",
+     "forecast": "1600",
+     "previous": "4800"
+    },
+    {
+     "date": "2020-09-04",
+     "actual": "1371",
+     "forecast": "1400",
+     "previous": "1763"
+    },
+    {
+     "date": "2020-10-02",
+     "actual": "661",
+     "forecast": "850",
+     "previous": "1371"
+    },
+    {
+     "date": "2020-11-06",
+     "actual": "638",
+     "forecast": "600",
+     "previous": "661"
+    },
+    {
+     "date": "2020-12-04",
+     "actual": "245",
+     "forecast": "469",
+     "previous": "638"
+    },
+    {
+     "date": "2021-01-08",
+     "actual": "-140",
+     "forecast": "71",
+     "previous": "245"
+    },
+    {
+     "date": "2021-02-05",
+     "actual": "49",
+     "forecast": "50",
+     "previous": "-140"
+    },
+    {
+     "date": "2021-03-05",
+     "actual": "379",
+     "forecast": "182",
+     "previous": "49"
+    },
+    {
+     "date": "2021-04-02",
+     "actual": "916",
+     "forecast": "647",
+     "previous": "379"
+    },
+    {
+     "date": "2021-05-07",
+     "actual": "266",
+     "forecast": "978",
+     "previous": "916"
+    },
+    {
+     "date": "2021-06-04",
+     "actual": "559",
+     "forecast": "650",
+     "previous": "266"
+    },
+    {
+     "date": "2021-07-02",
+     "actual": "850",
+     "forecast": "700",
+     "previous": "559"
+    },
+    {
+     "date": "2021-08-06",
+     "actual": "943",
+     "forecast": "870",
+     "previous": "850"
+    },
+    {
+     "date": "2021-09-03",
+     "actual": "235",
+     "forecast": "750",
+     "previous": "943"
+    },
+    {
+     "date": "2021-10-08",
+     "actual": "194",
+     "forecast": "500",
+     "previous": "235"
+    },
+    {
+     "date": "2021-11-05",
+     "actual": "531",
+     "forecast": "450",
+     "previous": "194"
+    },
+    {
+     "date": "2021-12-03",
+     "actual": "210",
+     "forecast": "550",
+     "previous": "531"
+    },
+    {
+     "date": "2022-01-07",
+     "actual": "199",
+     "forecast": "400",
+     "previous": "210"
+    },
+    {
+     "date": "2022-02-04",
+     "actual": "467",
+     "forecast": "150",
+     "previous": "199"
+    },
+    {
+     "date": "2022-03-04",
+     "actual": "678",
+     "forecast": "400",
+     "previous": "467"
+    },
+    {
+     "date": "2022-04-01",
+     "actual": "431",
+     "forecast": "490",
+     "previous": "678"
+    },
+    {
+     "date": "2022-05-06",
+     "actual": "428",
+     "forecast": "391",
+     "previous": "431"
+    },
+    {
+     "date": "2022-06-03",
+     "actual": "390",
+     "forecast": "325",
+     "previous": "428"
+    },
+    {
+     "date": "2022-07-08",
+     "actual": "372",
+     "forecast": "268",
+     "previous": "390"
+    },
+    {
+     "date": "2022-08-05",
+     "actual": "528",
+     "forecast": "250",
+     "previous": "372"
+    },
+    {
+     "date": "2022-09-02",
+     "actual": "315",
+     "forecast": "300",
+     "previous": "528"
+    },
+    {
+     "date": "2022-10-07",
+     "actual": "263",
+     "forecast": "250",
+     "previous": "315"
+    },
+    {
+     "date": "2022-11-04",
+     "actual": "261",
+     "forecast": "200",
+     "previous": "263"
+    },
+    {
+     "date": "2022-12-02",
+     "actual": "263",
+     "forecast": "200",
+     "previous": "261"
+    },
+    {
+     "date": "2023-01-06",
+     "actual": "223",
+     "forecast": "200",
+     "previous": "263"
+    },
+    {
+     "date": "2023-02-03",
+     "actual": "517",
+     "forecast": "185",
+     "previous": "223"
+    },
+    {
+     "date": "2023-03-10",
+     "actual": "311",
+     "forecast": "205",
+     "previous": "517"
+    },
+    {
+     "date": "2023-04-07",
+     "actual": "236",
+     "forecast": "239",
+     "previous": "311"
+    },
+    {
+     "date": "2023-05-05",
+     "actual": "253",
+     "forecast": "180",
+     "previous": "236"
+    },
+    {
+     "date": "2023-06-02",
+     "actual": "339",
+     "forecast": "180",
+     "previous": "253"
+    },
+    {
+     "date": "2023-07-07",
+     "actual": "209",
+     "forecast": "225",
+     "previous": "339"
+    },
+    {
+     "date": "2023-08-04",
+     "actual": "187",
+     "forecast": "200",
+     "previous": "209"
+    },
+    {
+     "date": "2023-09-01",
+     "actual": "187",
+     "forecast": "170",
+     "previous": "187"
+    },
+    {
+     "date": "2023-10-06",
+     "actual": "336",
+     "forecast": "170",
+     "previous": "187"
+    },
+    {
+     "date": "2023-11-03",
+     "actual": "150",
+     "forecast": "180",
+     "previous": "336"
+    },
+    {
+     "date": "2023-12-08",
+     "actual": "199",
+     "forecast": "180",
+     "previous": "150"
+    },
+    {
+     "date": "2024-01-05",
+     "actual": "216",
+     "forecast": "170",
+     "previous": "199"
+    },
+    {
+     "date": "2024-02-02",
+     "actual": "353",
+     "forecast": "187",
+     "previous": "216"
+    },
+    {
+     "date": "2024-03-08",
+     "actual": "275",
+     "forecast": "198",
+     "previous": "353"
+    },
+    {
+     "date": "2024-04-05",
+     "actual": "303",
+     "forecast": "212",
+     "previous": "275"
+    },
+    {
+     "date": "2024-05-03",
+     "actual": "175",
+     "forecast": "238",
+     "previous": "303"
+    },
+    {
+     "date": "2024-06-07",
+     "actual": "272",
+     "forecast": "182",
+     "previous": "175"
+    },
+    {
+     "date": "2024-07-05",
+     "actual": "206",
+     "forecast": "191",
+     "previous": "272"
+    },
+    {
+     "date": "2024-08-02",
+     "actual": "114",
+     "forecast": "176",
+     "previous": "206"
+    },
+    {
+     "date": "2024-09-06",
+     "actual": "142",
+     "forecast": "164",
+     "previous": "114"
+    },
+    {
+     "date": "2024-10-04",
+     "actual": "254",
+     "forecast": "147",
+     "previous": "142"
+    },
+    {
+     "date": "2024-11-01",
+     "actual": "12",
+     "forecast": "106",
+     "previous": "254"
+    },
+    {
+     "date": "2024-12-06",
+     "actual": "227",
+     "forecast": "202",
+     "previous": "12"
+    },
+    {
+     "date": "2025-01-10",
+     "actual": "256",
+     "forecast": "164",
+     "previous": "227"
+    },
+    {
+     "date": "2025-02-07",
+     "actual": "143",
+     "forecast": "169",
+     "previous": "256"
+    },
+    {
+     "date": "2025-03-07",
+     "actual": "151",
+     "forecast": "159",
+     "previous": "143"
+    },
+    {
+     "date": "2025-04-04",
+     "actual": "228",
+     "forecast": "137",
+     "previous": "151"
+    },
+    {
+     "date": "2025-05-02",
+     "actual": "177",
+     "forecast": "138",
+     "previous": "228"
+    },
+    {
+     "date": "2025-06-06",
+     "actual": "139",
+     "forecast": "126",
+     "previous": "177"
+    },
+    {
+     "date": "2025-07-03",
+     "actual": "147",
+     "forecast": "111",
+     "previous": "139"
+    },
+    {
+     "date": "2025-08-01",
+     "actual": "73",
+     "forecast": "106",
+     "previous": "147"
+    },
+    {
+     "date": "2025-09-05",
+     "actual": "22",
+     "forecast": "75",
+     "previous": "73"
+    },
+    {
+     "date": "2025-11-20",
+     "actual": "119",
+     "forecast": "53",
+     "previous": "22"
+    },
+    {
+     "date": "2025-12-16",
+     "actual": "64",
+     "forecast": "51",
+     "previous": "-105"
+    },
+    {
+     "date": "2026-01-09",
+     "actual": "50",
+     "forecast": "66",
+     "previous": "64"
+    },
+    {
+     "date": "2026-02-11",
+     "actual": "130",
+     "forecast": "66",
+     "previous": "50"
+    },
+    {
+     "date": "2026-03-06",
+     "actual": "-92",
+     "forecast": "58",
+     "previous": "130"
+    },
+    {
+     "date": "2026-04-03",
+     "actual": "178",
+     "forecast": "65",
+     "previous": "-92"
+    },
+    {
+     "date": "2026-05-08",
+     "actual": "115",
+     "forecast": "65",
+     "previous": "178"
+    },
+    {
+     "date": "2026-06-05",
+     "actual": "172",
+     "forecast": "85",
+     "previous": "115"
+    },
+    {
+     "date": "2026-07-02",
+     "actual": "57",
+     "forecast": "114",
+     "previous": "172"
+    },
+    {
+     "date": "2026-08-07",
+     "actual": "-23",
+     "forecast": "85",
+     "previous": "57"
+    }
+   ]
+  },
+  "CPI": {
+   "nama": "CPI (MoM)",
+   "jumlah": 198,
+   "rentang": "2010-01-15 s/d 2026-08-12",
+   "data": [
+    {
+     "date": "2010-01-15",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2010-02-19",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2010-03-18",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2010-04-14",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0%"
+    },
+    {
+     "date": "2010-05-19",
+     "actual": "-0.1%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2010-06-17",
+     "actual": "-0.2%",
+     "forecast": "-0.2%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2010-07-16",
+     "actual": "-0.1%",
+     "forecast": "0.1%",
+     "previous": "-0.2%"
+    },
+    {
+     "date": "2010-08-13",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2010-09-17",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2010-10-15",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2010-11-17",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2010-12-15",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2011-01-14",
+     "actual": "0.5%",
+     "forecast": "0.4%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2011-02-17",
+     "actual": "0.4%",
+     "forecast": "0.3%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2011-03-17",
+     "actual": "0.5%",
+     "forecast": "0.4%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2011-04-15",
+     "actual": "0.5%",
+     "forecast": "0.5%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2011-05-13",
+     "actual": "0.4%",
+     "forecast": "0.4%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2011-06-15",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2011-07-15",
+     "actual": "-0.2%",
+     "forecast": "-0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2011-08-18",
+     "actual": "0.5%",
+     "forecast": "0.2%",
+     "previous": "-0.2%"
+    },
+    {
+     "date": "2011-09-15",
+     "actual": "0.4%",
+     "forecast": "0.2%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2011-10-19",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2011-11-16",
+     "actual": "-0.1%",
+     "forecast": "0%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2011-12-16",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2012-01-19",
+     "actual": "0%",
+     "forecast": "0.2%",
+     "previous": "0%"
+    },
+    {
+     "date": "2012-02-17",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0%"
+    },
+    {
+     "date": "2012-03-16",
+     "actual": "0.4%",
+     "forecast": "0.4%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2012-04-13",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2012-05-15",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2012-06-14",
+     "actual": "-0.3%",
+     "forecast": "-0.2%",
+     "previous": "0%"
+    },
+    {
+     "date": "2012-07-17",
+     "actual": "0%",
+     "forecast": "-0.1%",
+     "previous": "-0.3%"
+    },
+    {
+     "date": "2012-08-15",
+     "actual": "0%",
+     "forecast": "0.2%",
+     "previous": "0%"
+    },
+    {
+     "date": "2012-09-14",
+     "actual": "0.6%",
+     "forecast": "0.5%",
+     "previous": "0%"
+    },
+    {
+     "date": "2012-10-16",
+     "actual": "0.6%",
+     "forecast": "0.5%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2012-11-15",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2012-12-14",
+     "actual": "-0.3%",
+     "forecast": "-0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2013-01-16",
+     "actual": "0%",
+     "forecast": "0%",
+     "previous": "-0.3%"
+    },
+    {
+     "date": "2013-02-21",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "0%"
+    },
+    {
+     "date": "2013-03-15",
+     "actual": "0.7%",
+     "forecast": "0.5%",
+     "previous": "0%"
+    },
+    {
+     "date": "2013-04-16",
+     "actual": "-0.2%",
+     "forecast": "0.1%",
+     "previous": "0.7%"
+    },
+    {
+     "date": "2013-05-16",
+     "actual": "-0.4%",
+     "forecast": "-0.2%",
+     "previous": "-0.2%"
+    },
+    {
+     "date": "2013-06-18",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "-0.4%"
+    },
+    {
+     "date": "2013-07-16",
+     "actual": "0.5%",
+     "forecast": "0.3%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2013-08-15",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2013-09-17",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2013-10-30",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2013-11-20",
+     "actual": "-0.1%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2013-12-17",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2014-01-16",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0%"
+    },
+    {
+     "date": "2014-02-20",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2014-03-18",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2014-04-15",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2014-05-15",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2014-06-17",
+     "actual": "0.4%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2014-07-22",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2014-08-19",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2014-09-17",
+     "actual": "-0.2%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2014-10-22",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "-0.2%"
+    },
+    {
+     "date": "2014-11-20",
+     "actual": "0%",
+     "forecast": "-0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2014-12-17",
+     "actual": "-0.3%",
+     "forecast": "-0.1%",
+     "previous": "0%"
+    },
+    {
+     "date": "2015-01-16",
+     "actual": "-0.4%",
+     "forecast": "-0.4%",
+     "previous": "-0.3%"
+    },
+    {
+     "date": "2015-02-26",
+     "actual": "-0.7%",
+     "forecast": "-0.6%",
+     "previous": "-0.4%"
+    },
+    {
+     "date": "2015-03-24",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "-0.7%"
+    },
+    {
+     "date": "2015-04-17",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2015-05-22",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2015-06-18",
+     "actual": "0.4%",
+     "forecast": "0.5%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2015-07-17",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2015-08-19",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2015-09-16",
+     "actual": "-0.1%",
+     "forecast": "-0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2015-10-15",
+     "actual": "-0.2%",
+     "forecast": "-0.2%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2015-11-17",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "-0.2%"
+    },
+    {
+     "date": "2015-12-15",
+     "actual": "0%",
+     "forecast": "0%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2016-01-20",
+     "actual": "-0.1%",
+     "forecast": "0%",
+     "previous": "0%"
+    },
+    {
+     "date": "2016-02-19",
+     "actual": "0%",
+     "forecast": "-0.1%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2016-03-16",
+     "actual": "-0.2%",
+     "forecast": "-0.2%",
+     "previous": "0%"
+    },
+    {
+     "date": "2016-04-14",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "-0.2%"
+    },
+    {
+     "date": "2016-05-17",
+     "actual": "0.4%",
+     "forecast": "0.3%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2016-06-16",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2016-07-15",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2016-08-16",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2016-09-16",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0%"
+    },
+    {
+     "date": "2016-10-18",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2016-11-17",
+     "actual": "0.4%",
+     "forecast": "0.4%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2016-12-15",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2017-01-18",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2017-02-15",
+     "actual": "0.6%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2017-03-15",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2017-04-14",
+     "actual": "-0.3%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2017-05-12",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "-0.3%"
+    },
+    {
+     "date": "2017-06-14",
+     "actual": "-0.1%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2017-07-14",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2017-08-11",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0%"
+    },
+    {
+     "date": "2017-09-14",
+     "actual": "0.4%",
+     "forecast": "0.3%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2017-10-13",
+     "actual": "0.5%",
+     "forecast": "0.6%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2017-11-15",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2017-12-13",
+     "actual": "0.4%",
+     "forecast": "0.4%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2018-01-12",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2018-02-14",
+     "actual": "0.5%",
+     "forecast": "0.3%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2018-03-13",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2018-04-11",
+     "actual": "-0.1%",
+     "forecast": "0%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2018-05-10",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2018-06-12",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2018-07-12",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2018-08-10",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2018-09-13",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2018-10-11",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2018-11-14",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2018-12-12",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2019-01-11",
+     "actual": "-0.1%",
+     "forecast": "-0.1%",
+     "previous": "0%"
+    },
+    {
+     "date": "2019-02-13",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2019-03-12",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0%"
+    },
+    {
+     "date": "2019-04-10",
+     "actual": "0.4%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2019-05-10",
+     "actual": "0.3%",
+     "forecast": "0.4%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2019-06-12",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2019-07-11",
+     "actual": "0.1%",
+     "forecast": "0%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2019-08-13",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2019-09-12",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2019-10-10",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2019-11-13",
+     "actual": "0.4%",
+     "forecast": "0.3%",
+     "previous": "0%"
+    },
+    {
+     "date": "2019-12-11",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2020-01-14",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2020-02-13",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2020-03-11",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2020-04-10",
+     "actual": "-0.4%",
+     "forecast": "-0.3%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2020-05-12",
+     "actual": "-0.8%",
+     "forecast": "-0.8%",
+     "previous": "-0.4%"
+    },
+    {
+     "date": "2020-06-10",
+     "actual": "-0.1%",
+     "forecast": "-0.1%",
+     "previous": "-0.8%"
+    },
+    {
+     "date": "2020-07-14",
+     "actual": "0.6%",
+     "forecast": "0.5%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2020-08-12",
+     "actual": "0.6%",
+     "forecast": "0.3%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2020-09-11",
+     "actual": "0.4%",
+     "forecast": "0.3%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2020-10-13",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2020-11-12",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2020-12-10",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0%"
+    },
+    {
+     "date": "2021-01-13",
+     "actual": "0.4%",
+     "forecast": "0.4%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2021-02-10",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2021-03-10",
+     "actual": "0.4%",
+     "forecast": "0.4%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2021-04-13",
+     "actual": "0.6%",
+     "forecast": "0.5%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2021-05-12",
+     "actual": "0.8%",
+     "forecast": "0.2%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2021-06-10",
+     "actual": "0.6%",
+     "forecast": "0.4%",
+     "previous": "0.8%"
+    },
+    {
+     "date": "2021-07-13",
+     "actual": "0.9%",
+     "forecast": "0.5%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2021-08-11",
+     "actual": "0.5%",
+     "forecast": "0.5%",
+     "previous": "0.9%"
+    },
+    {
+     "date": "2021-09-14",
+     "actual": "0.3%",
+     "forecast": "0.4%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2021-10-13",
+     "actual": "0.4%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2021-11-10",
+     "actual": "0.9%",
+     "forecast": "0.6%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2021-12-10",
+     "actual": "0.8%",
+     "forecast": "0.7%",
+     "previous": "0.9%"
+    },
+    {
+     "date": "2022-01-12",
+     "actual": "0.5%",
+     "forecast": "0.4%",
+     "previous": "0.8%"
+    },
+    {
+     "date": "2022-02-10",
+     "actual": "0.6%",
+     "forecast": "0.5%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2022-03-10",
+     "actual": "0.8%",
+     "forecast": "0.8%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2022-04-12",
+     "actual": "1.2%",
+     "forecast": "1.2%",
+     "previous": "0.8%"
+    },
+    {
+     "date": "2022-05-11",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "1.2%"
+    },
+    {
+     "date": "2022-06-10",
+     "actual": "1%",
+     "forecast": "0.7%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2022-07-13",
+     "actual": "1.3%",
+     "forecast": "1.1%",
+     "previous": "1%"
+    },
+    {
+     "date": "2022-08-10",
+     "actual": "0%",
+     "forecast": "0.2%",
+     "previous": "1.3%"
+    },
+    {
+     "date": "2022-09-13",
+     "actual": "0.1%",
+     "forecast": "-0.1%",
+     "previous": "0%"
+    },
+    {
+     "date": "2022-10-13",
+     "actual": "0.4%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2022-11-10",
+     "actual": "0.4%",
+     "forecast": "0.6%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2022-12-13",
+     "actual": "0.1%",
+     "forecast": "0.3%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2023-01-12",
+     "actual": "-0.1%",
+     "forecast": "0%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2023-02-14",
+     "actual": "0.5%",
+     "forecast": "0.5%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2023-03-14",
+     "actual": "0.4%",
+     "forecast": "0.4%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2023-04-12",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2023-05-10",
+     "actual": "0.4%",
+     "forecast": "0.4%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2023-06-13",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2023-07-12",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2023-08-10",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2023-09-13",
+     "actual": "0.6%",
+     "forecast": "0.6%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2023-10-12",
+     "actual": "0.4%",
+     "forecast": "0.3%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2023-11-14",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2023-12-12",
+     "actual": "0.1%",
+     "forecast": "0%",
+     "previous": "0%"
+    },
+    {
+     "date": "2024-01-11",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2024-02-13",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2024-03-12",
+     "actual": "0.4%",
+     "forecast": "0.4%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2024-04-10",
+     "actual": "0.4%",
+     "forecast": "0.3%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2024-05-15",
+     "actual": "0.3%",
+     "forecast": "0.4%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2024-06-12",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2024-07-11",
+     "actual": "-0.1%",
+     "forecast": "0.1%",
+     "previous": "0%"
+    },
+    {
+     "date": "2024-08-14",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2024-09-11",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2024-10-10",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2024-11-13",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2024-12-11",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2025-01-15",
+     "actual": "0.4%",
+     "forecast": "0.4%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2025-02-12",
+     "actual": "0.5%",
+     "forecast": "0.3%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2025-03-12",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2025-04-10",
+     "actual": "-0.1%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2025-05-13",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2025-06-11",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2025-07-15",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2025-08-12",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2025-09-11",
+     "actual": "0.4%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2025-10-24",
+     "actual": "0.3%",
+     "forecast": "0.4%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2026-01-13",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2026-02-13",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2026-03-11",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2026-04-10",
+     "actual": "0.9%",
+     "forecast": "1%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2026-05-12",
+     "actual": "0.6%",
+     "forecast": "0.6%",
+     "previous": "0.9%"
+    },
+    {
+     "date": "2026-06-10",
+     "actual": "0.5%",
+     "forecast": "0.5%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2026-07-14",
+     "actual": "-0.4%",
+     "forecast": "-0.1%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2026-08-12",
+     "actual": "",
+     "forecast": "0.1%",
+     "previous": "-0.4%"
+    }
+   ]
+  },
+  "CORE CPI": {
+   "nama": "Core CPI (MoM)",
+   "jumlah": 198,
+   "rentang": "2010-01-15 s/d 2026-08-12",
+   "data": [
+    {
+     "date": "2010-01-15",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0%"
+    },
+    {
+     "date": "2010-02-19",
+     "actual": "-0.1%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2010-03-18",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2010-04-14",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2010-05-19",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "0%"
+    },
+    {
+     "date": "2010-06-17",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0%"
+    },
+    {
+     "date": "2010-07-16",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2010-08-13",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2010-09-17",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2010-10-15",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "0%"
+    },
+    {
+     "date": "2010-11-17",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "0%"
+    },
+    {
+     "date": "2010-12-15",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0%"
+    },
+    {
+     "date": "2011-01-14",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2011-02-17",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2011-03-17",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2011-04-15",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2011-05-13",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2011-06-15",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2011-07-15",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2011-08-18",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2011-09-15",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2011-10-19",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2011-11-16",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2011-12-16",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2012-01-19",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2012-02-17",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2012-03-16",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2012-04-13",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2012-05-15",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2012-06-14",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2012-07-17",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2012-08-15",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2012-09-14",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2012-10-16",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2012-11-15",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2012-12-14",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2013-01-16",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2013-02-21",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2013-03-15",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2013-04-16",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2013-05-16",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2013-06-18",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2013-07-16",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2013-08-15",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2013-09-17",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2013-10-30",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2013-11-20",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2013-12-17",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2014-01-16",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2014-02-20",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2014-03-18",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2014-04-15",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2014-05-15",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2014-06-17",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2014-07-22",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2014-08-19",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2014-09-17",
+     "actual": "0%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2014-10-22",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0%"
+    },
+    {
+     "date": "2014-11-20",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2014-12-17",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2015-01-16",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2015-02-26",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0%"
+    },
+    {
+     "date": "2015-03-24",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2015-04-17",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2015-05-22",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2015-06-18",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2015-07-17",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2015-08-19",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2015-09-16",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2015-10-15",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2015-11-17",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2015-12-15",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2016-01-20",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2016-02-19",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2016-03-16",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2016-04-14",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2016-05-17",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2016-06-16",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2016-07-15",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2016-08-16",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2016-09-16",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2016-10-18",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2016-11-17",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2016-12-15",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2017-01-18",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2017-02-15",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2017-03-15",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2017-04-14",
+     "actual": "-0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2017-05-12",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2017-06-14",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2017-07-14",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2017-08-11",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2017-09-14",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2017-10-13",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2017-11-15",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2017-12-13",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2018-01-12",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2018-02-14",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2018-03-13",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2018-04-11",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2018-05-10",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2018-06-12",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2018-07-12",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2018-08-10",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2018-09-13",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2018-10-11",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2018-11-14",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2018-12-12",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2019-01-11",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2019-02-13",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2019-03-12",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2019-04-10",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2019-05-10",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2019-06-12",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2019-07-11",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2019-08-13",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2019-09-12",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2019-10-10",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2019-11-13",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2019-12-11",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2020-01-14",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2020-02-13",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2020-03-11",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2020-04-10",
+     "actual": "-0.1%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2020-05-12",
+     "actual": "-0.4%",
+     "forecast": "-0.2%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2020-06-10",
+     "actual": "-0.1%",
+     "forecast": "-0.1%",
+     "previous": "-0.4%"
+    },
+    {
+     "date": "2020-07-14",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2020-08-12",
+     "actual": "0.6%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2020-09-11",
+     "actual": "0.4%",
+     "forecast": "0.2%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2020-10-13",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2020-11-12",
+     "actual": "0%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2020-12-10",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0%"
+    },
+    {
+     "date": "2021-01-13",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2021-02-10",
+     "actual": "0%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2021-03-10",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0%"
+    },
+    {
+     "date": "2021-04-13",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2021-05-12",
+     "actual": "0.9%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2021-06-10",
+     "actual": "0.7%",
+     "forecast": "0.4%",
+     "previous": "0.9%"
+    },
+    {
+     "date": "2021-07-13",
+     "actual": "0.9%",
+     "forecast": "0.4%",
+     "previous": "0.7%"
+    },
+    {
+     "date": "2021-08-11",
+     "actual": "0.3%",
+     "forecast": "0.4%",
+     "previous": "0.9%"
+    },
+    {
+     "date": "2021-09-14",
+     "actual": "0.1%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2021-10-13",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2021-11-10",
+     "actual": "0.6%",
+     "forecast": "0.4%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2021-12-10",
+     "actual": "0.5%",
+     "forecast": "0.5%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2022-01-12",
+     "actual": "0.6%",
+     "forecast": "0.5%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2022-02-10",
+     "actual": "0.6%",
+     "forecast": "0.5%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2022-03-10",
+     "actual": "0.5%",
+     "forecast": "0.5%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2022-04-12",
+     "actual": "0.3%",
+     "forecast": "0.5%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2022-05-11",
+     "actual": "0.6%",
+     "forecast": "0.4%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2022-06-10",
+     "actual": "0.6%",
+     "forecast": "0.5%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2022-07-13",
+     "actual": "0.7%",
+     "forecast": "0.6%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2022-08-10",
+     "actual": "0.3%",
+     "forecast": "0.5%",
+     "previous": "0.7%"
+    },
+    {
+     "date": "2022-09-13",
+     "actual": "0.6%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2022-10-13",
+     "actual": "0.6%",
+     "forecast": "0.5%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2022-11-10",
+     "actual": "0.3%",
+     "forecast": "0.5%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2022-12-13",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2023-01-12",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2023-02-14",
+     "actual": "0.4%",
+     "forecast": "0.4%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2023-03-14",
+     "actual": "0.5%",
+     "forecast": "0.4%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2023-04-12",
+     "actual": "0.4%",
+     "forecast": "0.4%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2023-05-10",
+     "actual": "0.4%",
+     "forecast": "0.4%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2023-06-13",
+     "actual": "0.4%",
+     "forecast": "0.4%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2023-07-12",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2023-08-10",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2023-09-13",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2023-10-12",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2023-11-14",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2023-12-12",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2024-01-11",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2024-02-13",
+     "actual": "0.4%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2024-03-12",
+     "actual": "0.4%",
+     "forecast": "0.3%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2024-04-10",
+     "actual": "0.4%",
+     "forecast": "0.3%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2024-05-15",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2024-06-12",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2024-07-11",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2024-08-14",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2024-09-11",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2024-10-10",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2024-11-13",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2024-12-11",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2025-01-15",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2025-02-12",
+     "actual": "0.4%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2025-03-12",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2025-04-10",
+     "actual": "0.1%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2025-05-13",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2025-06-11",
+     "actual": "0.1%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2025-07-15",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2025-08-12",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2025-09-11",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2025-10-24",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2026-01-13",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2026-02-13",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2026-03-11",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2026-04-10",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2026-05-12",
+     "actual": "0.4%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2026-06-10",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2026-07-14",
+     "actual": "0%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2026-08-12",
+     "actual": "",
+     "forecast": "0.2%",
+     "previous": "0%"
+    }
+   ]
+  },
+  "PPI": {
+   "nama": "PPI (MoM)",
+   "jumlah": 199,
+   "rentang": "2010-01-20 s/d 2026-08-13",
+   "data": [
+    {
+     "date": "2010-01-20",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "1.8%"
+    },
+    {
+     "date": "2010-02-18",
+     "actual": "1.4%",
+     "forecast": "0.8%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2010-03-17",
+     "actual": "-0.6%",
+     "forecast": "-0.2%",
+     "previous": "1.4%"
+    },
+    {
+     "date": "2010-04-22",
+     "actual": "0.7%",
+     "forecast": "0.4%",
+     "previous": "-0.6%"
+    },
+    {
+     "date": "2010-05-18",
+     "actual": "-0.1%",
+     "forecast": "0.1%",
+     "previous": "0.7%"
+    },
+    {
+     "date": "2010-06-16",
+     "actual": "-0.3%",
+     "forecast": "-0.5%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2010-07-15",
+     "actual": "-0.5%",
+     "forecast": "-0.1%",
+     "previous": "-0.3%"
+    },
+    {
+     "date": "2010-08-17",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "-0.5%"
+    },
+    {
+     "date": "2010-09-16",
+     "actual": "0.4%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2010-10-14",
+     "actual": "0.4%",
+     "forecast": "0.2%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2010-11-16",
+     "actual": "0.4%",
+     "forecast": "0.8%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2010-12-14",
+     "actual": "0.8%",
+     "forecast": "0.5%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2011-01-13",
+     "actual": "1.1%",
+     "forecast": "0.7%",
+     "previous": "0.8%"
+    },
+    {
+     "date": "2011-02-16",
+     "actual": "0.8%",
+     "forecast": "0.8%",
+     "previous": "1.1%"
+    },
+    {
+     "date": "2011-03-16",
+     "actual": "1.6%",
+     "forecast": "0.6%",
+     "previous": "0.8%"
+    },
+    {
+     "date": "2011-04-14",
+     "actual": "0.7%",
+     "forecast": "1%",
+     "previous": "1.6%"
+    },
+    {
+     "date": "2011-05-12",
+     "actual": "0.8%",
+     "forecast": "0.6%",
+     "previous": "0.7%"
+    },
+    {
+     "date": "2011-06-14",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0.8%"
+    },
+    {
+     "date": "2011-07-14",
+     "actual": "-0.4%",
+     "forecast": "-0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2011-08-17",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "-0.4%"
+    },
+    {
+     "date": "2011-09-14",
+     "actual": "0%",
+     "forecast": "0%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2011-10-18",
+     "actual": "0.8%",
+     "forecast": "0.2%",
+     "previous": "0%"
+    },
+    {
+     "date": "2011-11-15",
+     "actual": "-0.3%",
+     "forecast": "-0.2%",
+     "previous": "0.8%"
+    },
+    {
+     "date": "2011-12-15",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "-0.3%"
+    },
+    {
+     "date": "2012-01-18",
+     "actual": "-0.1%",
+     "forecast": "0.1%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2012-02-16",
+     "actual": "0.1%",
+     "forecast": "0.3%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2012-03-15",
+     "actual": "0.4%",
+     "forecast": "0.5%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2012-04-12",
+     "actual": "0%",
+     "forecast": "0.3%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2012-05-11",
+     "actual": "-0.2%",
+     "forecast": "0%",
+     "previous": "0%"
+    },
+    {
+     "date": "2012-06-13",
+     "actual": "-1%",
+     "forecast": "-0.6%",
+     "previous": "-0.2%"
+    },
+    {
+     "date": "2012-07-13",
+     "actual": "0.1%",
+     "forecast": "-0.5%",
+     "previous": "-1%"
+    },
+    {
+     "date": "2012-08-14",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2012-09-13",
+     "actual": "1.7%",
+     "forecast": "1.1%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2012-10-12",
+     "actual": "1.1%",
+     "forecast": "0.7%",
+     "previous": "1.7%"
+    },
+    {
+     "date": "2012-11-14",
+     "actual": "-0.2%",
+     "forecast": "0.2%",
+     "previous": "1.1%"
+    },
+    {
+     "date": "2012-12-13",
+     "actual": "-0.8%",
+     "forecast": "-0.5%",
+     "previous": "-0.2%"
+    },
+    {
+     "date": "2013-01-15",
+     "actual": "-0.2%",
+     "forecast": "-0.1%",
+     "previous": "-0.8%"
+    },
+    {
+     "date": "2013-02-20",
+     "actual": "0.2%",
+     "forecast": "0.4%",
+     "previous": "-0.2%"
+    },
+    {
+     "date": "2013-03-14",
+     "actual": "0.7%",
+     "forecast": "0.7%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2013-04-12",
+     "actual": "-0.6%",
+     "forecast": "-0.2%",
+     "previous": "0.7%"
+    },
+    {
+     "date": "2013-05-15",
+     "actual": "-0.7%",
+     "forecast": "-0.6%",
+     "previous": "-0.6%"
+    },
+    {
+     "date": "2013-06-14",
+     "actual": "0.5%",
+     "forecast": "0.1%",
+     "previous": "-0.7%"
+    },
+    {
+     "date": "2013-07-12",
+     "actual": "0.8%",
+     "forecast": "0.5%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2013-08-14",
+     "actual": "0%",
+     "forecast": "0.3%",
+     "previous": "0.8%"
+    },
+    {
+     "date": "2013-09-13",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0%"
+    },
+    {
+     "date": "2013-10-29",
+     "actual": "-0.1%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2013-11-21",
+     "actual": "-0.2%",
+     "forecast": "-0.2%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2013-12-13",
+     "actual": "-0.1%",
+     "forecast": "-0.1%",
+     "previous": "-0.2%"
+    },
+    {
+     "date": "2014-01-15",
+     "actual": "0.4%",
+     "forecast": "0.4%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2014-02-19",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2014-03-14",
+     "actual": "-0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2014-04-11",
+     "actual": "0.5%",
+     "forecast": "0.1%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2014-05-14",
+     "actual": "0.6%",
+     "forecast": "0.2%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2014-06-13",
+     "actual": "-0.2%",
+     "forecast": "0.1%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2014-07-16",
+     "actual": "0.4%",
+     "forecast": "0.2%",
+     "previous": "-0.2%"
+    },
+    {
+     "date": "2014-08-15",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2014-09-16",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2014-10-15",
+     "actual": "-0.1%",
+     "forecast": "0.1%",
+     "previous": "0%"
+    },
+    {
+     "date": "2014-11-18",
+     "actual": "0.2%",
+     "forecast": "-0.1%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2014-12-12",
+     "actual": "-0.2%",
+     "forecast": "-0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2015-01-15",
+     "actual": "-0.3%",
+     "forecast": "-0.4%",
+     "previous": "-0.2%"
+    },
+    {
+     "date": "2015-02-18",
+     "actual": "-0.8%",
+     "forecast": "-0.4%",
+     "previous": "-0.3%"
+    },
+    {
+     "date": "2015-03-13",
+     "actual": "-0.5%",
+     "forecast": "0.3%",
+     "previous": "-0.8%"
+    },
+    {
+     "date": "2015-04-14",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "-0.5%"
+    },
+    {
+     "date": "2015-05-14",
+     "actual": "-0.4%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2015-06-12",
+     "actual": "0.5%",
+     "forecast": "0.4%",
+     "previous": "-0.4%"
+    },
+    {
+     "date": "2015-07-15",
+     "actual": "0.4%",
+     "forecast": "0.2%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2015-08-14",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2015-09-11",
+     "actual": "0%",
+     "forecast": "-0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2015-10-14",
+     "actual": "-0.5%",
+     "forecast": "-0.2%",
+     "previous": "0%"
+    },
+    {
+     "date": "2015-11-13",
+     "actual": "-0.4%",
+     "forecast": "0.2%",
+     "previous": "-0.5%"
+    },
+    {
+     "date": "2015-12-11",
+     "actual": "0.3%",
+     "forecast": "-0.1%",
+     "previous": "-0.4%"
+    },
+    {
+     "date": "2016-01-15",
+     "actual": "-0.2%",
+     "forecast": "-0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2016-02-17",
+     "actual": "0.1%",
+     "forecast": "-0.2%",
+     "previous": "-0.2%"
+    },
+    {
+     "date": "2016-03-15",
+     "actual": "-0.2%",
+     "forecast": "-0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2016-04-13",
+     "actual": "-0.1%",
+     "forecast": "0.2%",
+     "previous": "-0.2%"
+    },
+    {
+     "date": "2016-05-13",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2016-06-15",
+     "actual": "0.4%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2016-07-14",
+     "actual": "0.5%",
+     "forecast": "0.3%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2016-08-12",
+     "actual": "-0.4%",
+     "forecast": "0.1%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2016-09-15",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "-0.4%"
+    },
+    {
+     "date": "2016-10-14",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0%"
+    },
+    {
+     "date": "2016-11-16",
+     "actual": "0%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2016-12-14",
+     "actual": "0.4%",
+     "forecast": "0.1%",
+     "previous": "0%"
+    },
+    {
+     "date": "2017-01-13",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2017-02-14",
+     "actual": "0.6%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2017-03-14",
+     "actual": "0.3%",
+     "forecast": "0.1%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2017-04-13",
+     "actual": "-0.1%",
+     "forecast": "0%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2017-05-11",
+     "actual": "0.5%",
+     "forecast": "0.2%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2017-06-13",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2017-07-13",
+     "actual": "0.1%",
+     "forecast": "-0.1%",
+     "previous": "0%"
+    },
+    {
+     "date": "2017-08-10",
+     "actual": "-0.1%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2017-09-13",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2017-10-12",
+     "actual": "0.4%",
+     "forecast": "0.4%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2017-11-14",
+     "actual": "0.4%",
+     "forecast": "0.1%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2017-12-12",
+     "actual": "0.4%",
+     "forecast": "0.4%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2018-01-11",
+     "actual": "-0.1%",
+     "forecast": "0.2%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2018-02-15",
+     "actual": "0.4%",
+     "forecast": "0.4%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2018-03-14",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2018-04-10",
+     "actual": "0.3%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2018-05-09",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2018-06-13",
+     "actual": "0.5%",
+     "forecast": "0.3%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2018-07-11",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2018-08-09",
+     "actual": "0%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2018-09-12",
+     "actual": "-0.1%",
+     "forecast": "0.2%",
+     "previous": "0%"
+    },
+    {
+     "date": "2018-10-10",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2018-11-09",
+     "actual": "0.6%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2018-12-11",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2019-01-15",
+     "actual": "-0.2%",
+     "forecast": "-0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2019-02-14",
+     "actual": "-0.1%",
+     "forecast": "0.1%",
+     "previous": "-0.2%"
+    },
+    {
+     "date": "2019-03-13",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2019-04-11",
+     "actual": "0.6%",
+     "forecast": "0.3%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2019-05-09",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2019-06-11",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2019-07-12",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2019-08-09",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2019-09-11",
+     "actual": "0.1%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2019-10-08",
+     "actual": "-0.3%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2019-11-14",
+     "actual": "0.4%",
+     "forecast": "0.3%",
+     "previous": "-0.3%"
+    },
+    {
+     "date": "2019-12-12",
+     "actual": "0%",
+     "forecast": "0.2%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2020-01-15",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0%"
+    },
+    {
+     "date": "2020-02-19",
+     "actual": "0.5%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2020-03-12",
+     "actual": "-0.6%",
+     "forecast": "-0.1%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2020-04-09",
+     "actual": "-0.2%",
+     "forecast": "-0.4%",
+     "previous": "-0.6%"
+    },
+    {
+     "date": "2020-05-13",
+     "actual": "-1.3%",
+     "forecast": "-0.5%",
+     "previous": "-0.2%"
+    },
+    {
+     "date": "2020-06-11",
+     "actual": "0.4%",
+     "forecast": "0.1%",
+     "previous": "-1.3%"
+    },
+    {
+     "date": "2020-07-10",
+     "actual": "-0.2%",
+     "forecast": "0.4%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2020-08-11",
+     "actual": "0.6%",
+     "forecast": "0.3%",
+     "previous": "-0.2%"
+    },
+    {
+     "date": "2020-09-10",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2020-10-14",
+     "actual": "0.4%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2020-11-13",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2020-12-11",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2021-01-15",
+     "actual": "0.3%",
+     "forecast": "0.4%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2021-02-17",
+     "actual": "1.3%",
+     "forecast": "0.4%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2021-03-12",
+     "actual": "0.5%",
+     "forecast": "0.5%",
+     "previous": "1.3%"
+    },
+    {
+     "date": "2021-04-09",
+     "actual": "1%",
+     "forecast": "0.5%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2021-05-13",
+     "actual": "0.6%",
+     "forecast": "0.3%",
+     "previous": "1%"
+    },
+    {
+     "date": "2021-06-15",
+     "actual": "0.8%",
+     "forecast": "0.6%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2021-07-14",
+     "actual": "1%",
+     "forecast": "0.6%",
+     "previous": "0.8%"
+    },
+    {
+     "date": "2021-08-12",
+     "actual": "1%",
+     "forecast": "0.6%",
+     "previous": "1%"
+    },
+    {
+     "date": "2021-09-10",
+     "actual": "0.7%",
+     "forecast": "0.6%",
+     "previous": "1%"
+    },
+    {
+     "date": "2021-10-14",
+     "actual": "0.5%",
+     "forecast": "0.6%",
+     "previous": "0.7%"
+    },
+    {
+     "date": "2021-11-09",
+     "actual": "0.6%",
+     "forecast": "0.6%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2021-12-14",
+     "actual": "0.8%",
+     "forecast": "0.5%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2022-01-13",
+     "actual": "0.2%",
+     "forecast": "0.4%",
+     "previous": "0.8%"
+    },
+    {
+     "date": "2022-02-15",
+     "actual": "1%",
+     "forecast": "0.5%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2022-03-15",
+     "actual": "0.8%",
+     "forecast": "0.9%",
+     "previous": "1%"
+    },
+    {
+     "date": "2022-04-13",
+     "actual": "1.4%",
+     "forecast": "1.1%",
+     "previous": "0.8%"
+    },
+    {
+     "date": "2022-05-12",
+     "actual": "0.5%",
+     "forecast": "0.5%",
+     "previous": "1.4%"
+    },
+    {
+     "date": "2022-06-14",
+     "actual": "0.8%",
+     "forecast": "0.8%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2022-07-14",
+     "actual": "1.1%",
+     "forecast": "0.8%",
+     "previous": "0.8%"
+    },
+    {
+     "date": "2022-08-11",
+     "actual": "-0.5%",
+     "forecast": "0.2%",
+     "previous": "1.1%"
+    },
+    {
+     "date": "2022-09-14",
+     "actual": "-0.1%",
+     "forecast": "-0.1%",
+     "previous": "-0.5%"
+    },
+    {
+     "date": "2022-10-12",
+     "actual": "0.4%",
+     "forecast": "0.2%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2022-11-15",
+     "actual": "0.2%",
+     "forecast": "0.4%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2022-12-09",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2023-01-18",
+     "actual": "-0.5%",
+     "forecast": "-0.1%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2023-02-16",
+     "actual": "0.7%",
+     "forecast": "0.4%",
+     "previous": "-0.5%"
+    },
+    {
+     "date": "2023-03-15",
+     "actual": "-0.1%",
+     "forecast": "0.3%",
+     "previous": "0.7%"
+    },
+    {
+     "date": "2023-04-13",
+     "actual": "-0.5%",
+     "forecast": "0.1%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2023-05-11",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "-0.5%"
+    },
+    {
+     "date": "2023-06-14",
+     "actual": "-0.3%",
+     "forecast": "-0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2023-07-13",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "-0.3%"
+    },
+    {
+     "date": "2023-08-11",
+     "actual": "0.3%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2023-09-14",
+     "actual": "0.7%",
+     "forecast": "0.4%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2023-10-11",
+     "actual": "0.5%",
+     "forecast": "0.3%",
+     "previous": "0.7%"
+    },
+    {
+     "date": "2023-11-15",
+     "actual": "-0.5%",
+     "forecast": "0.1%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2023-12-13",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "-0.5%"
+    },
+    {
+     "date": "2024-01-12",
+     "actual": "-0.1%",
+     "forecast": "0.1%",
+     "previous": "0%"
+    },
+    {
+     "date": "2024-02-16",
+     "actual": "0.3%",
+     "forecast": "0.1%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2024-03-14",
+     "actual": "0.6%",
+     "forecast": "0.3%",
+     "previous": "0.3%"
+    },
+    {
+     "date": "2024-04-11",
+     "actual": "0.2%",
+     "forecast": "0.3%",
+     "previous": "0.6%"
+    },
+    {
+     "date": "2024-05-14",
+     "actual": "0.5%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2024-06-13",
+     "actual": "-0.2%",
+     "forecast": "0.1%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2024-07-12",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "-0.2%"
+    },
+    {
+     "date": "2024-08-13",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2024-09-12",
+     "actual": "0.2%",
+     "forecast": "0.1%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2024-10-11",
+     "actual": "0%",
+     "forecast": "0.1%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2024-11-14",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0%"
+    },
+    {
+     "date": "2024-12-12",
+     "actual": "0.4%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2025-01-14",
+     "actual": "0.2%",
+     "forecast": "0.4%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2025-02-13",
+     "actual": "0.4%",
+     "forecast": "0.3%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2025-03-13",
+     "actual": "0%",
+     "forecast": "0.3%",
+     "previous": "0.4%"
+    },
+    {
+     "date": "2025-04-11",
+     "actual": "-0.4%",
+     "forecast": "0.2%",
+     "previous": "0%"
+    },
+    {
+     "date": "2025-05-15",
+     "actual": "-0.5%",
+     "forecast": "0.2%",
+     "previous": "-0.4%"
+    },
+    {
+     "date": "2025-06-12",
+     "actual": "0.1%",
+     "forecast": "0.2%",
+     "previous": "-0.5%"
+    },
+    {
+     "date": "2025-07-16",
+     "actual": "0%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2025-08-14",
+     "actual": "0.9%",
+     "forecast": "0.2%",
+     "previous": "0%"
+    },
+    {
+     "date": "2025-09-10",
+     "actual": "-0.1%",
+     "forecast": "0.3%",
+     "previous": "0.9%"
+    },
+    {
+     "date": "2025-11-25",
+     "actual": "0.3%",
+     "forecast": "0.3%",
+     "previous": "-0.1%"
+    },
+    {
+     "date": "2026-01-14",
+     "actual": "0.2%",
+     "forecast": "0.2%",
+     "previous": "0.1%"
+    },
+    {
+     "date": "2026-01-30",
+     "actual": "0.5%",
+     "forecast": "0.2%",
+     "previous": "0.2%"
+    },
+    {
+     "date": "2026-02-27",
+     "actual": "0.5%",
+     "forecast": "0.3%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2026-03-18",
+     "actual": "0.7%",
+     "forecast": "0.3%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2026-04-14",
+     "actual": "0.5%",
+     "forecast": "1.1%",
+     "previous": "0.7%"
+    },
+    {
+     "date": "2026-05-13",
+     "actual": "1.4%",
+     "forecast": "0.5%",
+     "previous": "0.5%"
+    },
+    {
+     "date": "2026-06-11",
+     "actual": "1.1%",
+     "forecast": "0.7%",
+     "previous": "1.4%"
+    },
+    {
+     "date": "2026-07-15",
+     "actual": "-0.3%",
+     "forecast": "0%",
+     "previous": "1.1%"
+    },
+    {
+     "date": "2026-08-13",
+     "actual": "",
+     "forecast": "0.2%",
+     "previous": "-0.3%"
+    }
+   ]
+  }
+ }
+}
