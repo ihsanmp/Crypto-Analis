@@ -1274,3 +1274,29 @@ def test_teks_kosong_tidak_mengaku_berhasil(teks, monkeypatch):
     assert bot.send_message("T", "1", teks) is False
     assert not terkirim
 
+
+
+def test_daemon_bongkar_sesuai_arity_actionable_messages():
+    """bot_daemon.py harus membongkar sebanyak nilai yang dikembalikan.
+
+    Regresi nyata: actionable_messages berubah dari 3 jadi 4 nilai saat dukungan foto
+    ditambahkan, tapi bot_daemon.py tetap membongkar 3 -> ValueError pada SETIAP pesan.
+    Tidak pernah ketahuan karena produksi memakai webhook, bukan daemon.
+    """
+    upd = [{"update_id": 1, "message": {"chat": {"id": "9"}, "text": "halo"}}]
+    arity = len(bot.actionable_messages(upd, {"9"})[0])
+
+    sumber = open(os.path.join(AKAR, "cloud", "bot_daemon.py"), encoding="utf-8").read()
+    m = re.search(r"for\s+(.+?)\s+in\s+actionable_messages\(", sumber)
+    assert m, "pola pembongkaran actionable_messages tidak ditemukan di bot_daemon.py"
+    assert len(m.group(1).split(",")) == arity, (
+        f"bot_daemon.py membongkar {len(m.group(1).split(','))} nilai, "
+        f"actionable_messages mengembalikan {arity}")
+
+
+def test_daemon_meneruskan_foto_ke_process():
+    """Foto tidak boleh hilang diam-diam di jalur daemon."""
+    sumber = open(os.path.join(AKAR, "cloud", "bot_daemon.py"), encoding="utf-8").read()
+    m = re.search(r"process\(token,\s*chat_id,\s*text([^)]*)\)", sumber)
+    assert m, "panggilan process() tidak ditemukan di bot_daemon.py"
+    assert m.group(1).strip(), "bot_daemon.py memanggil process() tanpa meneruskan foto"
