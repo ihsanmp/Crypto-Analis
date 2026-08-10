@@ -276,6 +276,57 @@ def arus_etf(jenis="us-btc-spot"):
                            "sebutkan konteks harganya.")}
 
 
+RIWAYAT_PATH = os.path.join(BASE_DIR, "data", "sosovalue_riwayat.json")
+
+
+def tarik_riwayat():
+    """Tarik riwayat konsensus keempat acara terbukti, simpan sebagai berkas data.
+
+    Kenapa disimpan, bukan dipanggil saat analisa: kuncinya hanya ada di GitHub Secrets,
+    sementara studi kejutan perlu jalan di setiap analisa. Dengan berkas ini, kejutan.py
+    tidak butuh kunci sama sekali — persis pola kejutan_cache.json. Datanya juga cuma
+    berubah sebulan sekali, jadi menariknya tiap analisa itu pemborosan sekaligus risiko
+    kena batas laju.
+    """
+    keluar = {"ditarik_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
+              "sumber": "SoSoValue OpenAPI /macro/events/{acara}/history",
+              "acara": {}}
+    for label, nama in ACARA_TERBUKTI.items():
+        semua, batas = [], None
+        # limit maksimum 100 per permintaan, jadi ditarik mundur per potongan sampai habis.
+        for _ in range(6):
+            params = {"limit": 100, "start_date": "2010-01-01"}
+            if batas:
+                params["end_date"] = batas
+            isi, _, err = panggil(f"/openapi/v1/macro/events/{urllib.parse.quote(nama)}"
+                                  "/history", "GET", None, params, pakai_cache=False)
+            if err:
+                keluar["acara"][label] = {"tidak_tersedia": err, "nama": nama}
+                break
+            baris = (isi or {}).get("data") or []
+            if not baris:
+                break
+            semua.extend(baris)
+            tanggal = sorted(b.get("date", "") for b in baris if b.get("date"))
+            if not tanggal or tanggal[0] == batas:
+                break
+            batas = tanggal[0]
+            if len(baris) < 100:
+                break
+        if label not in keluar["acara"]:
+            unik = {b.get("date"): b for b in semua if b.get("date")}
+            keluar["acara"][label] = {
+                "nama": nama, "jumlah": len(unik),
+                "rentang": (f"{min(unik)} s/d {max(unik)}" if unik else None),
+                "data": [unik[d] for d in sorted(unik)],
+            }
+    os.makedirs(os.path.dirname(RIWAYAT_PATH), exist_ok=True)
+    with open(RIWAYAT_PATH, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(keluar, f, ensure_ascii=False, indent=1)
+    return {k: {kk: vv for kk, vv in v.items() if kk != "data"}
+            for k, v in keluar["acara"].items()}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--periksa", action="store_true",
@@ -284,6 +335,8 @@ def main():
     ap.add_argument("--riwayat", help='nama acara makro, mis. "Nonfarm Payrolls"')
     ap.add_argument("--mulai", help="tanggal awal YYYY-MM-DD")
     ap.add_argument("--sampai", help="tanggal akhir YYYY-MM-DD")
+    ap.add_argument("--tarik-riwayat", dest="tarik_riwayat", action="store_true",
+                    help="tarik riwayat konsensus & simpan ke cloud/data/")
     ap.add_argument("--ringkas", action="store_true", help="buang panduan statis")
     args = ap.parse_args()
 
@@ -300,11 +353,13 @@ def main():
 
     if args.periksa:
         keluar["pemeriksaan"] = periksa()
+    if args.tarik_riwayat:
+        keluar["riwayat_tersimpan"] = tarik_riwayat()
     if args.etf:
         keluar["arus_etf"] = arus_etf(args.etf)
     if args.riwayat:
         keluar["riwayat_makro"] = riwayat_makro(args.riwayat, args.mulai, args.sampai)
-    if not (args.periksa or args.etf or args.riwayat):
+    if not (args.periksa or args.etf or args.riwayat or args.tarik_riwayat):
         keluar["catatan"] = "tidak ada yang diminta; pakai --periksa, --etf, atau --riwayat"
 
     if args.ringkas:
