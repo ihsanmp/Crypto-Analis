@@ -444,6 +444,15 @@ _RUMPUN = {
 }
 
 
+# Jenis aset -> blok yang relevan. Dipakai saat kosakata rumpun tidak cocok tapi asetnya
+# sudah dikenali dari pesan, supaya tidak jatuh ke gagal-aman "muat semua".
+_RUMPUN_JENIS = {
+    "crypto": {"institusi", "x-twitter"},
+    "forex": {"gold", "makro", "saham-forex"},
+    "saham": {"saham-forex", "makro"},
+}
+
+
 def _rumpun_cocok(low):
     """Blok mana yang relevan dengan pesan ini. Kosong = tidak ada rumpun yang cocok."""
     blok = set()
@@ -453,7 +462,7 @@ def _rumpun_cocok(low):
     return blok
 
 
-def rakit_chat(teks_prompt, pesan):
+def rakit_chat(teks_prompt, pesan, jenis_aset_terdeteksi=None):
     """Rakit prompt NGOBROL: bagian inti selalu ikut, blok domain hanya bila relevan.
 
     chat.md dikirim UTUH tiap pesan (23 rb karakter) padahal blok khusus jarang relevan
@@ -484,6 +493,12 @@ def rakit_chat(teks_prompt, pesan):
     # lebih merugikan daripada boros. Prinsip lamanya dipertahankan, ambangnya dipersempit.
     if _PASAR_UMUM.search(low):
         serumpun = _rumpun_cocok(low)
+        # Kalau kosakata rumpun tidak cocok TAPI jenis asetnya sudah dikenali dari pesan,
+        # pakai itu. "kalo buy pump di 0.0026" menyentuh kosakata pasar lewat kata "buy",
+        # tapi tidak menyebut satu pun kata rumpun — tanpa petunjuk ini gagal-aman memuat
+        # SEMUA blok (42 rb karakter) padahal jelas pertanyaan crypto.
+        if not serumpun and jenis_aset_terdeteksi:
+            serumpun = _RUMPUN_JENIS.get(jenis_aset_terdeteksi, set())
         if serumpun:
             dipakai.update(serumpun)
         else:
@@ -929,7 +944,9 @@ def aset_dari_pesan(teks):
 
 def build_chat_prompt(text, chat_id=None, brief=None):
     with open(CHAT_PROMPT, encoding="utf-8") as f:
-        base = rakit_chat(f.read(), text)
+        # Jenis aset ikut diberikan supaya pemilihan blok tidak jatuh ke "muat semua"
+        # hanya karena kalimatnya tidak memakai kosakata rumpun.
+        base = rakit_chat(f.read(), text, aset_dari_pesan(text)[0])
     # Aturan kalibrasi hanya untuk pertanyaan pasar. Buat "apa itu RAG?" atau sapaan,
     # aturan konviksi & bukti kontra tidak berguna dan cuma menambah beban.
     if _PASAR_UMUM.search((text or "").lower()):

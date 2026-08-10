@@ -1104,3 +1104,30 @@ def test_kosakata_transaksi_inggris_dikenali(pesan):
     """buy/sell/hold sempat tidak ada di kosakata pasar, padahal lazim dipakai."""
     assert bot._PASAR_UMUM.search(pesan.lower()), pesan
 
+
+
+def test_petunjuk_jenis_aset_mencegah_muat_semua():
+    """Kalimat transaksi sering tidak memakai satu pun kosakata rumpun.
+
+    "kalo buy pump di 0.0026" menyentuh kosakata pasar lewat kata "buy", tapi tidak
+    menyebut koin/token/saham/forex — sehingga gagal-aman memuat SEMUA blok (42 rb
+    karakter) padahal jenis asetnya jelas crypto dan sudah dikenali dari pesannya.
+    """
+    dengan = bot.build_chat_prompt("kalo buy pump di 0.0026 gimana?")
+    teks = _muat_chat_md()
+    semua = len(bot.rakit_chat(teks, "menurutmu pasar gimana"))
+    assert len(dengan) < semua, "petunjuk jenis aset tidak dipakai"
+    assert "RENCANA vs POSISI" in dengan, "aturan transaksi tetap harus ikut"
+
+
+def test_gagal_aman_masih_utuh_tanpa_petunjuk():
+    """Tanpa aset yang dikenali DAN tanpa rumpun yang cocok, semua blok tetap dimuat.
+
+    Itu jaring pengaman terakhir: kehilangan aturan lebih merugikan daripada boros.
+    """
+    teks = _muat_chat_md()
+    hasil = bot.rakit_chat(teks, "menurutmu pasar gimana", None)
+    semua = [n for n, _, _ in bot._BLOK_RE.findall(teks)]
+    aktif = _blok_aktif(hasil, semua, teks)
+    assert len(aktif) == len(semua), f"hanya {len(aktif)} dari {len(semua)} blok"
+
