@@ -154,9 +154,21 @@ def send_message(token, chat_id, text):
     """Kirim pesan (dipecah kalau melebihi batas Telegram). Return True kalau SEMUA
     potongan benar-benar terkirim — pemanggil wajib memeriksa hasilnya, jangan
     menganggap pengiriman pasti berhasil."""
+    # Disaring SEBELUM dipecah. Menyaring tiap potongan secara terpisah membuat token
+    # yang kebetulan terbelah di batas 3.900 karakter lolos — kedua belahannya tampak
+    # seperti teks biasa dan tidak cocok pola apa pun, padahal begitu digabung kembali
+    # di layar user token itu utuh.
+    text = tanpa_rahasia(text or "")
+    # Teks kosong TIDAK BOLEH dilaporkan berhasil. Perulangan di bawah tidak berjalan
+    # sama sekali untuk teks kosong, sehingga fungsi ini dulu mengembalikan True padahal
+    # tak satu pun pesan dikirim — persis kebalikan dari janji docstring, dan pemanggil
+    # lalu mencatat "TERKIRIM" ke log. Telegram juga menolak pesan berisi spasi saja.
+    if not text.strip():
+        print("[kirim] teks kosong — tidak ada yang dikirim", file=sys.stderr)
+        return False
     terkirim = True
     for i in range(0, len(text), 3900):
-        potong = tanpa_rahasia(text[i:i + 3900])
+        potong = text[i:i + 3900]
         resp = tg_api(token, "sendMessage", {"chat_id": chat_id, "text": potong})
         if not resp or not resp.get("ok"):
             terkirim = False

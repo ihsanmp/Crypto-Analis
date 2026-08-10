@@ -1229,3 +1229,48 @@ def test_pesan_gagal_tidak_memuat_stderr_mentah():
     assert "result.stderr or result.stdout or '')[-1500:]}\"" not in kode
     assert "Detailnya ada di log Actions" in kode
 
+
+
+# ---------------------- sapuan ke-13: pengiriman pesan (pecah, saring, kosong)
+
+def test_rahasia_terbelah_batas_potongan_tetap_tersaring(monkeypatch):
+    """Regresi yang KUPERKENALKAN SENDIRI di sapuan ke-12.
+
+    Penyaring dipasang per-potongan, sehingga token yang kebetulan terbelah di batas
+    3.900 karakter lolos: kedua belahannya tampak seperti teks biasa dan tidak cocok pola
+    apa pun, padahal begitu digabung kembali di layar user token itu utuh.
+    """
+    token = "ghp_AbCdEfGhIjKlMnOpQrStUvWxYz0123456"
+    isi = "x" * (3900 - len(token) // 2) + token + "y" * 100
+    terkirim = []
+    monkeypatch.setattr(bot, "tg_api",
+                        lambda tok, m, p: (terkirim.append(p["text"]), {"ok": True})[1])
+    bot.send_message("T", "1", isi)
+    gabung = "".join(terkirim)
+    assert token not in gabung, "token utuh setelah potongan disatukan kembali"
+    assert "[dirahasiakan]" in gabung
+
+
+def test_teks_panjang_biasa_tidak_rusak_saat_dipecah(monkeypatch):
+    """Menyaring sebelum memecah tidak boleh mengubah isi yang sah."""
+    normal = "Harga BTC $64.978. " * 400
+    terkirim = []
+    monkeypatch.setattr(bot, "tg_api",
+                        lambda tok, m, p: (terkirim.append(p["text"]), {"ok": True})[1])
+    assert bot.send_message("T", "1", normal) is True
+    assert "".join(terkirim) == normal
+
+
+@pytest.mark.parametrize("teks", ["", None, "   ", N + N])
+def test_teks_kosong_tidak_mengaku_berhasil(teks, monkeypatch):
+    """Perulangan pemecah tidak berjalan untuk teks kosong, sehingga fungsi ini dulu
+
+    mengembalikan True padahal tak satu pun pesan dikirim — kebalikan dari janji
+    docstring-nya, dan pemanggil lalu mencatat "TERKIRIM" ke log.
+    """
+    terkirim = []
+    monkeypatch.setattr(bot, "tg_api",
+                        lambda tok, m, p: (terkirim.append(p["text"]), {"ok": True})[1])
+    assert bot.send_message("T", "1", teks) is False
+    assert not terkirim
+
