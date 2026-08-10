@@ -1246,6 +1246,12 @@ def data_mentah_crypto(coin):
     # menjalankan script yang mustahil dijalankan, lalu targetnya dihitung di kepala.
     tugas.append(("PROYEKSI (proyeksi.py)",
                   ["cloud/proyeksi.py", coin, "--hari", "60", "--ringkas"], 0))
+    # Reaksi terhadap kejutan CPI. FOMC SENGAJA tidak ikut di jalur crypto: seri SF Fed
+    # berakhir 2023-12 sementara candle harian gratis paling jauh ~2,7 tahun ke belakang,
+    # jadi irisannya cuma segelintir rapat — bukan sampel tipis, tapi tidak ada.
+    tugas.append(("REAKSI HISTORIS RILIS CPI (kejutan.py)",
+                  ["cloud/kejutan.py", "--indikator", "CPI", "--simbol", coin,
+                   "--rezim", "--ringkas"], 0))
 
     bagian, gagal = [], []
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
@@ -1397,6 +1403,14 @@ def data_mentah_pasar(simbol, jenis):
         # Jadwal earnings: padanan aturan "jangan masuk menjelang rilis berdampak kuat"
         # yang sudah lama berlaku untuk emas. Tetap jalan tanpa FINNHUB_API_KEY.
         tugas.append(("EARNINGS & PEER (earnings.py)", ["cloud/earnings.py", simbol]))
+        # Riwayat Yahoo 15 tahun, jadi kedua studi punya sampel penuh di jalur saham —
+        # 154 rilis CPI dan 102 rapat FOMC, tidak seperti crypto yang riwayatnya pendek.
+        tugas.append(("REAKSI HISTORIS RILIS CPI (kejutan.py)",
+                      ["cloud/kejutan.py", "--indikator", "CPI", "--simbol", simbol,
+                       "--pasar", "--rezim", "--ringkas"]))
+        tugas.append(("SENSITIVITAS KEJUTAN FOMC (kejutan.py)",
+                      ["cloud/kejutan.py", "--indikator", "FOMC", "--simbol", simbol,
+                       "--pasar", "--rezim", "--ortogonal", "--ringkas"]))
     else:
         tugas.append(("MAKRO AS (makro.py, sumber FRED)", ["cloud/makro.py", "--ringkas"]))
         # Reaksi historis emas/FX terhadap kejutan CPI — pelengkap kalender.py, yang hanya

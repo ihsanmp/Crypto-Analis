@@ -63,6 +63,17 @@ Urutan yang dipakai, berhenti begitu cukup untuk menjawab:
    kontra-indikator. Boleh dipakai untuk menjelaskan KENAPA, jangan untuk menentukan target.
 5. Pasokan terjadwal (unlock, emisi) kalau relevan — ini kejadian yang bisa ditanggali.
 
+6. `kejutan.py --indikator CPI --simbol <KOIN> --rezim` — reaksi terhadap kejutan CPI.
+   **Periksa `peringatan_cakupan` lebih dulu.** Riwayat harian crypto gratis pendek, jadi
+   irisannya dengan 154 rilis CPI sering tinggal belasan kejadian. Kalau peringatan itu
+   muncul, bagian ini HANYA boleh dipakai untuk menyatakan rilisnya menaikkan volatilitas —
+   bukan untuk membaca arah.
+
+**Kenapa FOMC tidak ada di daftar ini:** seri kejutan SF Fed berakhir 2023-12, sedangkan
+candle harian crypto gratis paling jauh ~2,7 tahun ke belakang. Irisannya bukan sedikit,
+melainkan praktis tidak ada. Kalau ditanya dampak FOMC ke crypto, katakan datanya tidak
+tersedia — jangan meminjam angka dari emas atau saham seolah berlaku untuk koin.
+
 Peringatan khusus crypto: riwayat harian gratis hanya ~1 tahun untuk koin di luar BTC/ETH.
 Sebaran dari satu tahun **tidak memuat satu siklus penuh**. Sebut ini saat memberi target
 jangka panjang, dan turunkan keyakinan untuk horizon di atas 90 hari.
@@ -173,8 +184,15 @@ Kalau ditanya arah reaksi NFP/FOMC, jawabannya adalah batas datanya — bukan te
 3. Riwayat kejutan EPS dari `earnings.py` — pola melampaui estimasi berulang MENAIKKAN
    ekspektasi, sehingga sekadar "memenuhi" pun bisa dihukum. Ini menjelaskan arah reaksi.
 4. `stockfund.py` dan `konteks.py` — valuasi hanya bermakna dibandingkan emiten sebanding.
-5. `kejutan.py --simbol SPX --pasar` kalau pertanyaannya menyangkut reaksi indeks terhadap
-   rilis makro.
+5. `kejutan.py --indikator CPI --simbol <TICKER> --pasar --rezim` dan
+   `kejutan.py --indikator FOMC --simbol <TICKER> --pasar --rezim --ortogonal`.
+   Riwayat Yahoo 15 tahun, jadi kedua studi punya sampel penuh di sini — 154 rilis CPI dan
+   102 rapat FOMC — tidak seperti crypto. Aturan bacanya sama persis: uji rezim dulu, baru
+   angka gabungan, dan kejutan FOMC adalah SENSITIVITAS, bukan ramalan.
+
+   Untuk saham, kejutan makro bersaing dengan pendorong khusus emiten. Kalau tanggal
+   earnings dekat, itu biasanya mengalahkan efek CPI/FOMC — sebutkan yang mana yang kamu
+   anggap dominan, jangan menjumlahkan keduanya seolah berdiri sendiri.
 
 Untuk target berbasis valuasi, sebut asumsinya terbuka: multiple yang dipakai, dari mana
 angkanya, dan apa yang terjadi kalau multiple itu menyusut.

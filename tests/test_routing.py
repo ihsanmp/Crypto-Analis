@@ -1673,3 +1673,48 @@ def test_potongan_tipis_ditandai():
     hasil = _kejutan.reaksi_per_rezim("X", [], False, catatan=catatan,
                                       meta={"simbol": "X", "jendela_harga": "-"})
     assert hasil.get("potongan_bersampel_tipis"), "potongan bersampel tipis tidak ditandai"
+
+
+def test_peringatan_cakupan_saat_irisan_pendek():
+    """Riwayat harga pendek menghasilkan angka yang tetap terlihat rapi — itu bahayanya."""
+    kecil = [{"tanggal": f"2026-{i + 1:02d}-10", "kejutan_pp": 0.1 if i % 2 else -0.1,
+              "aktual": 0.2, "ret": {0: 0.0, 1: 0.3, 5: 0.5}} for i in range(10)]
+    h = _kejutan.reaksi_harga("BTC", [], False, catatan=kecil,
+                              meta={"simbol": "BTC", "jendela_harga": "-"})
+    assert "peringatan_cakupan" in h
+
+    besar = [{"tanggal": f"202{i // 12}-{i % 12 + 1:02d}-10",
+              "kejutan_pp": 0.1 if i % 2 else -0.1, "aktual": 0.2,
+              "ret": {0: 0.0, 1: 0.3, 5: 0.5}} for i in range(40)]
+    h2 = _kejutan.reaksi_harga("SPX", [], False, catatan=besar,
+                               meta={"simbol": "SPX", "jendela_harga": "-"})
+    assert "peringatan_cakupan" not in h2
+
+
+def test_fomc_tidak_dipasang_ke_jalur_crypto():
+    """Seri FOMC berakhir 2023-12; candle crypto gratis mulai jauh sesudahnya.
+
+    Irisannya bukan sedikit melainkan praktis nol, jadi memasangnya di jalur crypto hanya
+    menghasilkan bagian kosong yang memakan token — dan lebih buruk, mengundang model
+    meminjam angka dari emas.
+    """
+    sumber = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    awal = sumber.index("def data_mentah_crypto")
+    blok = sumber[awal:sumber.index("def data_mentah_pasar")]
+    assert '"--indikator", "CPI"' in blok, "studi CPI harus ada di jalur crypto"
+    assert '"FOMC"' not in blok, "FOMC tidak boleh dipasang di jalur crypto"
+
+
+def test_saham_membawa_kedua_studi():
+    """Riwayat Yahoo 15 tahun — sampelnya penuh, jadi keduanya layak dipasang."""
+    sumber = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    blok = sumber[sumber.index("def data_mentah_pasar"):]
+    blok = blok[:blok.index("ThreadPoolExecutor")]
+    assert blok.count("kejutan.py") >= 3, "CPI+FOMC untuk saham dan forex harus terpasang"
+
+
+def test_seed_menolak_meminjam_angka_fomc_untuk_crypto():
+    teks = " ".join(open(os.path.join(AKAR, "cloud", "prompts", "peran", "prediktor.md"),
+                         encoding="utf-8").read().split())
+    assert "jangan meminjam angka dari emas atau saham" in teks
+    assert "peringatan_cakupan` lebih dulu" in teks

@@ -298,6 +298,17 @@ def reaksi_harga(simbol, riwayat, pasar, rentang="15y", catatan=None, meta=None,
         if meta.get(k):
             hasil[k] = meta[k]
 
+    # Riwayat harga crypto gratis cuma ~1 tahun, jadi tumpang tindihnya dengan seri rilis
+    # bisa tinggal belasan kejadian — atau nol untuk FOMC yang berakhir 2023. Angka yang
+    # keluar tetap terlihat rapi, dan itu bahayanya. Batasi pembacaannya di sini.
+    if len(catatan) < 24:
+        hasil["peringatan_cakupan"] = (
+            f"Hanya {len(catatan)} rilis yang beririsan dengan riwayat harga "
+            f"({meta['jendela_harga']}). Itu TERLALU PENDEK untuk membaca arah — sampaikan "
+            "sebagai catatan cakupan, jangan sebagai temuan. Untuk aset dengan riwayat "
+            "harian pendek, pakai bagian ini hanya untuk menunjukkan bahwa rilisnya "
+            "menaikkan volatilitas.")
+
     # Label panjang dipertahankan di sini supaya bentuk keluaran tidak berubah; uji rezim
     # memakai label pendek karena tampil sebagai tabel banyak baris.
     selisih = {("H (hari rilis)" if k == "H" else k): v
