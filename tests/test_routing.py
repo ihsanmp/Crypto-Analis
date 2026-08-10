@@ -1189,3 +1189,43 @@ def test_pagar_kode_prompt_seimbang(berkas):
         isi = f.read()
     assert isi.count("```") % 2 == 0, f"{berkas}: pagar kode ganjil"
 
+
+
+# ------------------------ sapuan ke-12: pesan gagal & kebocoran ke Telegram
+
+@pytest.mark.parametrize("teks", [
+    "gagal auth: bot7525096497:AAF9xKqLmN3pQrS7tUvWxYz012345678ab",
+    "fatal: ghp_AbCdEfGhIjKlMnOpQrStUvWxYz0123456",
+    "OPENAI_API_KEY=sk-proj-AbCdEfGhIjKlMnOpQrStUvWx",
+])
+def test_rahasia_tidak_ikut_terkirim(teks):
+    """Pesan gagal kadang membawa potongan konfigurasi.
+
+    Repo ini publik dan chat ID pun sengaja di-hash, jadi membocorkan token lewat pesan
+    error ke Telegram akan membatalkan kehati-hatian itu.
+    """
+    assert "[dirahasiakan]" in bot.tanpa_rahasia(teks)
+
+
+@pytest.mark.parametrize("teks", [
+    "https://www.clevelandfed.org/-/media/files/webcharts/inflationnowcasting/nowcast_month.json",
+    "alamat kontrak 0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+    "Harga BTC $64.978 dengan RSI 58 pada 10 Agustus 2026",
+    "EMA13/EMA21/EMA33/EMA50/EMA100/EMA200 semuanya searah naik",
+])
+def test_penyaring_rahasia_tidak_salah_sasar(teks):
+    """Penyaring yang kelewat galak akan merusak isi analisa yang sah."""
+    assert bot.tanpa_rahasia(teks) == teks
+
+
+def test_pesan_gagal_tidak_memuat_stderr_mentah():
+    """Dulu sampai 1.500 karakter stderr dikirim apa adanya ke Telegram — tidak terbaca
+
+    oleh user, dan berpotensi membawa token, path, atau isi konfigurasi. Detail lengkap
+    tetap masuk log Actions, yang memang tempatnya.
+    """
+    with open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8") as f:
+        kode = f.read()
+    assert "result.stderr or result.stdout or '')[-1500:]}\"" not in kode
+    assert "Detailnya ada di log Actions" in kode
+

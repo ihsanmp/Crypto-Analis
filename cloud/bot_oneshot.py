@@ -135,13 +135,29 @@ def tg_api(token, method, params=None, timeout=60):
     return None
 
 
+# Pola rahasia yang TIDAK BOLEH ikut terkirim ke Telegram. Pesan error kadang membawa
+# potongan konfigurasi, dan repo ini publik — chat ID pun sengaja di-hash, jadi
+# membocorkan token lewat pesan gagal akan membatalkan kehati-hatian itu.
+_RAHASIA_RE = re.compile(
+    r"(?i)(bot[0-9]{6,}:[A-Za-z0-9_-]{20,}"          # token bot Telegram
+    r"|gh[pousr]_[A-Za-z0-9]{20,}"                   # token GitHub
+    r"|sk-[A-Za-z0-9_-]{20,}"                        # kunci bergaya sk-
+    r"|[A-Za-z0-9_-]{32,}\.[A-Za-z0-9_-]{16,})")    # token bertitik
+
+
+def tanpa_rahasia(teks):
+    """Ganti apa pun yang menyerupai token dengan penanda, sebelum dikirim ke user."""
+    return _RAHASIA_RE.sub("[dirahasiakan]", teks or "")
+
+
 def send_message(token, chat_id, text):
     """Kirim pesan (dipecah kalau melebihi batas Telegram). Return True kalau SEMUA
     potongan benar-benar terkirim — pemanggil wajib memeriksa hasilnya, jangan
     menganggap pengiriman pasti berhasil."""
     terkirim = True
     for i in range(0, len(text), 3900):
-        resp = tg_api(token, "sendMessage", {"chat_id": chat_id, "text": text[i:i + 3900]})
+        potong = tanpa_rahasia(text[i:i + 3900])
+        resp = tg_api(token, "sendMessage", {"chat_id": chat_id, "text": potong})
         if not resp or not resp.get("ok"):
             terkirim = False
         time.sleep(0.4)
@@ -1349,7 +1365,13 @@ def run_claude(prompt, timeout, max_turns, model=None, with_tools=True, tools_ov
     except subprocess.TimeoutExpired:
         return None, f"Waktu proses melebihi batas {timeout} detik."
     if result.returncode != 0:
-        return None, f"Claude gagal (exit {result.returncode}):\n{(result.stderr or result.stdout or '')[-1500:]}"
+        mentah = (result.stderr or result.stdout or "")
+        # Log dapat detail LENGKAP; user hanya ringkasannya. Dulu 1.500 karakter stderr
+        # mentah dikirim apa adanya ke Telegram — selain tak terbaca, keluaran seperti itu
+        # bisa memuat potongan token, path, atau isi konfigurasi. Repo ini publik dan
+        # chat ID pun sengaja di-hash; mengirim stderr mentah membatalkan kehati-hatian itu.
+        print(f"[claude] exit {result.returncode}:\n{mentah[-2000:]}", file=sys.stderr)
+        return None, f"Claude gagal (exit {result.returncode}). Detailnya ada di log Actions."
     return result.stdout.strip(), None
 
 
