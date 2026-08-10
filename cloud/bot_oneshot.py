@@ -1356,7 +1356,8 @@ def data_proyeksi(teks, jenis, simbol):
     low = (teks or "").lower()
     for pola, ind in _INDIKATOR_KEJUTAN:
         if re.search(pola, low):
-            k_args = ["cloud/kejutan.py", "--indikator", ind, "--simbol", simbol, "--ringkas"]
+            k_args = ["cloud/kejutan.py", "--indikator", ind, "--simbol", simbol,
+                      "--rezim", "--ringkas"]
             if jenis != "crypto":
                 k_args.append("--pasar")
             keluar2, err2 = _jalankan_terukur(f"KEJUTAN {ind} (kejutan.py)", k_args)
@@ -1402,7 +1403,7 @@ def data_mentah_pasar(simbol, jenis):
         # memberi jadwal & konsensus tanpa memberitahu apa yang BIASANYA terjadi sesudahnya.
         tugas.append(("REAKSI HISTORIS RILIS CPI (kejutan.py)",
                       ["cloud/kejutan.py", "--indikator", "CPI", "--simbol", simbol,
-                       "--pasar", "--ringkas"]))
+                       "--pasar", "--rezim", "--ringkas"]))
         # Konsensus & jadwal rilis — HANYA untuk forex/komoditas. Saham dinilai dari
         # fundamental emitennya, crypto tidak digerakkan kalender ekonomi AS.
         tugas.append(("KONSENSUS & JADWAL RILIS (kalender.py)",

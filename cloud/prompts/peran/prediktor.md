@@ -83,11 +83,30 @@ Untuk "CPI nanti bullish untuk emas?", jangan menjawab dari intuisi makro. Uruta
 4. Geopolitik lewat pencarian web — hanya kalau ada peristiwa berjalan yang nyata. Ini
    penjelas, bukan penentu target.
 
-**Cara membaca `selisih_median_panas_dikurangi_dingin`:** inilah jawaban "bullish atau
-tidak". Kalau selisihnya di bawah ~0,3% pada emas, itu tidak bisa dibedakan dari derau
-harian — **katakan TIDAK ADA EDGE ARAH**. Jangan memaksakan kesimpulan bullish/bearish dari
-selisih tipis. Yang jujur: "rilisnya menaikkan VOLATILITAS, tapi arahnya tidak bisa
-diprediksi dari sejarah kejutan."
+**Baca `uji_ketahanan_per_rezim` LEBIH DULU, sebelum angka gabungannya.** Angka gabungan
+13 tahun bisa sepenuhnya disetir satu rezim lalu tampil seolah berlaku umum.
+
+Itu persis yang terjadi pada emas. Selisih H+5 gabungan -0,30% terlihat rapi, tapi begitu
+dipotong: 2013-2017 **+0,25**, 2017-2022 **+0,19**, 2022-2026 **-2,06**. Tandanya berbalik —
+angka gabungan itu artefak periode 2022-2026, bukan sifat emas. Vonisnya `tanda_bertahan:
+false`, dan **temuan seperti itu dilarang dipakai untuk memperkirakan arah**.
+
+H+1 lebih baik: tandanya negatif di ketujuh potongan (`tanda_bertahan: true`), artinya CPI
+lebih panas cenderung sedikit menekan emas. Tapi besarannya -0,05% sampai -0,40%, sebagian
+besar **di bawah derau harian**. Jadi kesimpulan operasionalnya tetap sama.
+
+**Aturan yang berlaku:**
+
+1. `tanda_bertahan: false` → perlakukan seperti NFP/PPI/FOMC: sampaikan jadwal dan
+   volatilitas saja, katakan arahnya tidak bisa diprediksi.
+2. `tanda_bertahan: true` TAPI selisih di bawah ~0,3% pada emas → **TIDAK ADA EDGE ARAH
+   yang bisa ditradingkan**. Boleh disebut sebagai kecenderungan lemah, tidak boleh jadi
+   dasar rekomendasi.
+3. Jangan pernah mengutip angka gabungan tanpa menyebut hasil uji rezimnya.
+
+Yang jujur untuk emas hari ini: **"CPI menaikkan VOLATILITAS; arahnya tidak bisa diandalkan
+— kecenderungan H+1 konsisten tapi terlalu kecil untuk ditradingkan, dan efek H+5 tidak
+bertahan saat diuji per periode."**
 
 Dua batas yang wajib disebut saat mengutip: kejutan diukur terhadap **model Cleveland Fed,
 bukan konsensus ekonom Wall Street** — posisi pasar bisa berbeda. Dan yang menggerakkan

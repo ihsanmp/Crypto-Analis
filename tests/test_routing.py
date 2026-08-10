@@ -1563,3 +1563,67 @@ def test_arsip_dilindungi_workflow():
     tes_yml = open(os.path.join(AKAR, ".github", "workflows", "tes.yml"),
                    encoding="utf-8").read()
     assert "arsip_konsensus.jsonl" in tes_yml and "menyusut" in tes_yml
+
+
+import kejutan as _kejutan  # noqa: E402
+
+
+def _catatan(tanggal, kejutan_pp, ret_h1, aktual=0.2):
+    return {"tanggal": tanggal, "kejutan_pp": kejutan_pp, "aktual": aktual,
+            "ret": {0: 0.0, 1: ret_h1, 5: ret_h1}}
+
+
+def test_vonis_rezim_menandai_tanda_yang_berbalik(monkeypatch):
+    """Temuan yang tandanya berbalik antar potongan TIDAK boleh dipakai meramal.
+
+    Ini yang terjadi pada emas: selisih H+5 gabungan -0,30% ternyata artefak periode
+    2022-2026 (+0,25 / +0,19 / -2,06 saat dipotong kronologis).
+    """
+    # Paruh awal: panas lebih BAIK. Paruh akhir: panas lebih BURUK. Tanda pasti berbalik.
+    catatan = []
+    for i in range(30):
+        catatan.append(_catatan(f"2014-{i % 12 + 1:02d}-10", 0.1, 1.0))
+        catatan.append(_catatan(f"2015-{i % 12 + 1:02d}-10", -0.1, 0.0))
+    for i in range(30):
+        catatan.append(_catatan(f"2024-{i % 12 + 1:02d}-10", 0.1, -1.0))
+        catatan.append(_catatan(f"2025-{i % 12 + 1:02d}-10", -0.1, 0.0))
+    hasil = _kejutan.reaksi_per_rezim("X", [], False, catatan=catatan,
+                                      meta={"simbol": "X", "jendela_harga": "-"})
+    assert hasil["vonis_H+1"]["tanda_bertahan"] is False
+    assert "artefak" in hasil["vonis_H+1"]["arti"]
+
+
+def test_vonis_rezim_mengakui_tanda_yang_bertahan():
+    """Kalau tandanya sama di semua potongan, vonisnya harus mengakui — bukan menolak buta."""
+    catatan = []
+    for tahun in (2014, 2018, 2024):
+        for i in range(20):
+            catatan.append(_catatan(f"{tahun}-{i % 12 + 1:02d}-10", 0.1, -0.5))
+            catatan.append(_catatan(f"{tahun}-{i % 12 + 1:02d}-11", -0.1, 0.0))
+    hasil = _kejutan.reaksi_per_rezim("X", [], False, catatan=catatan,
+                                      meta={"simbol": "X", "jendela_harga": "-"})
+    assert hasil["vonis_H+1"]["tanda_bertahan"] is True
+
+
+def test_uji_rezim_menolak_sampel_terlalu_tipis():
+    """Memotong 20 rilis jadi tujuh bagian menghasilkan angka yang terlihat sah tapi kosong."""
+    catatan = [_catatan(f"2024-{i % 12 + 1:02d}-10", 0.1, 0.5) for i in range(20)]
+    hasil = _kejutan.reaksi_per_rezim("X", [], False, catatan=catatan,
+                                      meta={"simbol": "X", "jendela_harga": "-"})
+    assert "tidak_tersedia" in hasil
+
+
+def test_seed_menegakkan_hasil_uji_rezim():
+    """Temuan H+5 yang gugur harus tertulis, bukan hanya diketahui saat pengujian."""
+    teks = " ".join(open(os.path.join(AKAR, "cloud", "prompts", "peran", "prediktor.md"),
+                         encoding="utf-8").read().split())
+    assert "uji_ketahanan_per_rezim` LEBIH DULU" in teks
+    assert "tanda_bertahan: false" in teks
+    assert "TIDAK ADA EDGE ARAH" in teks
+
+
+def test_brief_forex_membawa_uji_rezim():
+    """Produksi harus melihat uji ketahanannya, bukan cuma angka gabungan."""
+    sumber = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    assert "--rezim" in sumber, "flag --rezim tidak dipakai di pengumpulan data"
+    assert sumber.count("--rezim") >= 2, "jalur analisa DAN jalur proyeksi harus memakainya"

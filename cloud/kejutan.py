@@ -187,8 +187,67 @@ def _sebaran(nilai):
     return r
 
 
-def reaksi_harga(simbol, riwayat, pasar, rentang="15y"):
-    """Sambungkan tanggal rilis dengan candle harian, pisahkan menurut arah kejutan."""
+def reaksi_harga(simbol, riwayat, pasar, rentang="15y", catatan=None, meta=None):
+    """Reaksi gabungan menurut arah kejutan. Angka POOLED — wajib dibaca bersama uji rezim.
+
+    `catatan`/`meta` boleh dioper supaya pemanggil yang juga menghitung per rezim tidak
+    menarik harga dua kali.
+    """
+    if catatan is None:
+        catatan, meta = _per_rilis(simbol, riwayat, pasar, rentang)
+        if catatan is None:
+            return meta
+
+    panas = {h: [] for h in HORIZON}
+    dingin = {h: [] for h in HORIZON}
+    semua = {h: [] for h in HORIZON}
+    for c in catatan:
+        sisi = panas if c["kejutan_pp"] > 0 else dingin
+        for h, v in c["ret"].items():
+            semua[h].append(v)
+            sisi[h].append(v)
+
+    def bungkus(d):
+        return {f"H+{h}" if h else "H (hari rilis)": _sebaran(v) for h, v in d.items()}
+
+    hasil = {
+        "simbol": meta["simbol"],
+        "rilis_terpakai": len(catatan),
+        "jendela_harga": meta["jendela_harga"],
+        "diukur": ("H = open->close hari rilis; H+1 dan H+5 = close hari rilis -> close "
+                   "n hari perdagangan berikutnya. Semua dalam persen."),
+        "semua_rilis": bungkus(semua),
+        "kejutan_lebih_panas": bungkus(panas),
+        "kejutan_lebih_dingin": bungkus(dingin),
+    }
+    for k in ("di_luar_jangkauan_harga", "tanpa_hari_perdagangan"):
+        if meta.get(k):
+            hasil[k] = meta[k]
+
+    # Label panjang dipertahankan di sini supaya bentuk keluaran tidak berubah; uji rezim
+    # memakai label pendek karena tampil sebagai tabel banyak baris.
+    selisih = {("H (hari rilis)" if k == "H" else k): v
+               for k, v in _selisih_median(catatan)["selisih"].items()}
+    if selisih:
+        hasil["selisih_median_panas_dikurangi_dingin_persen"] = selisih
+        hasil["cara_baca"] = (
+            "Angka ini GABUNGAN 13 tahun dan TIDAK BOLEH dikutip sendirian. Pada emas, "
+            "selisih H+5 gabungan ternyata artefak: tandanya berbalik saat data dipotong "
+            "per periode (2013-2017 dan 2017-2022 justru POSITIF, hanya 2022-2026 yang "
+            "sangat negatif). Baca 'uji_ketahanan_per_rezim' lebih dulu, dan pakai "
+            "vonisnya. Selisih di bawah ~0,3% pada emas tidak bisa dibedakan dari derau "
+            "harian — sebut TIDAK ADA EDGE ARAH. Ingat juga kejutan diukur terhadap model "
+            "Cleveland Fed, BUKAN konsensus ekonom.")
+    return hasil
+
+
+def _per_rilis(simbol, riwayat, pasar, rentang="15y"):
+    """Satu catatan per rilis: kejutan + return H/H+1/H+5. Dasar semua pengelompokan.
+
+    Dipisah dari agregasinya supaya data yang sama bisa dipotong menurut rezim tanpa
+    menarik ulang harga — dan supaya angka di pemotongan mana pun dijamin berasal dari
+    perhitungan yang persis sama.
+    """
     if pasar:
         from market import tarik
         KOM = {"GOLD": "GC=F", "EMAS": "GC=F", "XAUUSD": "GC=F", "SILVER": "SI=F",
@@ -201,84 +260,138 @@ def reaksi_harga(simbol, riwayat, pasar, rentang="15y"):
         s = simbol.upper()
         candles, _, _, err = fetch_base(s, resolve_cg_id(s), "1d")
     if err or not candles:
-        return {"tidak_tersedia": err or "candle kosong"}
+        return None, {"tidak_tersedia": err or "candle kosong"}
 
-    # (tanggal ISO -> indeks) supaya rilis bisa dipetakan ke hari perdagangan.
     baris, urut = {}, []
     for i, c in enumerate(candles):
-        ts = c[0]
-        tgl = datetime.fromtimestamp(ts / 1000, tz=timezone.utc).date().isoformat()
+        tgl = datetime.fromtimestamp(c[0] / 1000, tz=timezone.utc).date().isoformat()
         baris[tgl] = i
         urut.append(tgl)
     if not urut:
-        return {"tidak_tersedia": "candle kosong"}
+        return None, {"tidak_tersedia": "candle kosong"}
 
     awal, akhir = urut[0], urut[-1]
-    panas = {h: [] for h in HORIZON}
-    dingin = {h: [] for h in HORIZON}
-    semua = {h: [] for h in HORIZON}
-    dipakai, di_luar_jangkauan, tanpa_padanan = 0, 0, 0
-
+    catatan, di_luar, tanpa_padanan = [], 0, 0
     for r in riwayat:
         tgl = r["tanggal_rilis"]
         if tgl < awal or tgl > akhir:
-            di_luar_jangkauan += 1
+            di_luar += 1
             continue
         i = baris.get(tgl)
         if i is None:
-            # Rilis jatuh di hari libur bursa: pakai hari perdagangan BERIKUTNYA.
             berikut = [t for t in urut if t > tgl]
             if not berikut:
                 tanpa_padanan += 1
                 continue
             i = baris[berikut[0]]
-        dipakai += 1
+        ret = {}
         for h in HORIZON:
             j = i + h
             if j >= len(candles):
                 continue
             buka = candles[i][1] if h == 0 else candles[i][4]
             tutup = candles[j][4]
-            if not buka or not tutup:
-                continue
-            ret = (tutup - buka) / buka * 100
-            semua[h].append(ret)
-            (panas if r["kejutan_pp"] > 0 else dingin)[h].append(ret)
+            if buka and tutup:
+                ret[h] = (tutup - buka) / buka * 100
+        if ret:
+            catatan.append({"tanggal": tgl, "kejutan_pp": r["kejutan_pp"],
+                            "aktual": r.get("aktual_mom_persen"), "ret": ret})
+    meta = {"simbol": s, "jendela_harga": f"{awal} s/d {akhir}",
+            "di_luar_jangkauan_harga": di_luar, "tanpa_hari_perdagangan": tanpa_padanan}
+    return catatan, meta
 
-    def bungkus(d):
-        return {f"H+{h}" if h else "H (hari rilis)": _sebaran(v) for h, v in d.items()}
 
-    hasil = {
-        "simbol": s,
-        "rilis_terpakai": dipakai,
-        "jendela_harga": f"{awal} s/d {akhir}",
-        "diukur": ("H = open->close hari rilis; H+1 dan H+5 = close hari rilis -> close "
-                   "n hari perdagangan berikutnya. Semua dalam persen."),
-        "semua_rilis": bungkus(semua),
-        "kejutan_lebih_panas": bungkus(panas),
-        "kejutan_lebih_dingin": bungkus(dingin),
-    }
-    if di_luar_jangkauan:
-        hasil["di_luar_jangkauan_harga"] = di_luar_jangkauan
-    if tanpa_padanan:
-        hasil["tanpa_hari_perdagangan"] = tanpa_padanan
-
-    # Selisih arah inilah isi jawabannya. Kalau tipis, katakan tipis. Dihitung untuk SEMUA
-    # horizon: pada emas, selisih H+1 sering nyaris nol sementara H+5 baru terlihat — memakai
-    # satu horizon saja bisa menyembunyikan atau melebih-lebihkan efeknya.
-    selisih = {}
+def _selisih_median(catatan):
+    """median(panas) - median(dingin) per horizon, plus jumlah sampel tiap sisi."""
+    panas = {h: [] for h in HORIZON}
+    dingin = {h: [] for h in HORIZON}
+    for c in catatan:
+        sisi = panas if c["kejutan_pp"] > 0 else dingin
+        for h, v in c["ret"].items():
+            sisi[h].append(v)
+    keluar = {"n_panas": len(panas[1]), "n_dingin": len(dingin[1]), "selisih": {}}
     for h in HORIZON:
         if panas[h] and dingin[h]:
-            nama_h = f"H+{h}" if h else "H (hari rilis)"
-            selisih[nama_h] = round(median(panas[h]) - median(dingin[h]), 2)
-    if selisih:
-        hasil["selisih_median_panas_dikurangi_dingin_persen"] = selisih
-        hasil["cara_baca"] = (
-            "Selisih inilah yang menjawab 'bullish atau tidak'. Selisih di bawah ~0,3% pada "
-            "emas praktis tidak bisa dibedakan dari derau harian — sebut sebagai TIDAK ADA "
-            "EDGE ARAH, jangan dipaksa jadi kesimpulan. Ingat juga kejutan diukur terhadap "
-            "model Cleveland Fed, BUKAN konsensus ekonom, sehingga posisi pasar bisa "
-            "berbeda dari yang tersirat di sini.")
+            nama = f"H+{h}" if h else "H"
+            keluar["selisih"][nama] = round(median(panas[h]) - median(dingin[h]), 2)
+    return keluar
+
+
+def reaksi_per_rezim(simbol, riwayat, pasar, rentang="15y", catatan=None, meta=None):
+    """Apakah tandanya BERTAHAN kalau datanya dipotong? Ini uji ketahanan, bukan hiasan.
+
+    Satu temuan dari 154 rilis yang membentang 13 tahun bisa sepenuhnya digerakkan oleh
+    satu rezim — mis. guncangan inflasi 2021-2023 — lalu tampil seolah berlaku umum.
+    Kalau tandanya berbalik antar-potongan, temuan itu TIDAK bisa dipakai meramal.
+    """
+    if catatan is None:
+        catatan, meta = _per_rilis(simbol, riwayat, pasar, rentang)
+        if catatan is None:
+            return meta
+    if len(catatan) < 30:
+        return {"tidak_tersedia": f"hanya {len(catatan)} rilis cocok dengan riwayat harga — "
+                                  "terlalu sedikit untuk dipotong per rezim"}
+
+    urut = sorted(catatan, key=lambda c: c["tanggal"])
+    n = len(urut)
+    potongan = {}
+
+    # 1. Kronologis: sepertiga awal / tengah / akhir.
+    for nama, bagian in (("periode_awal", urut[:n // 3]),
+                         ("periode_tengah", urut[n // 3:2 * n // 3]),
+                         ("periode_akhir", urut[2 * n // 3:])):
+        potongan[f"{nama} ({bagian[0]['tanggal'][:7]}..{bagian[-1]['tanggal'][:7]})"] = bagian
+
+    # 2. Tingkat inflasi: aktual MoM di atas / di bawah median. Rezim inflasi tinggi dan
+    #    rendah adalah dua dunia berbeda bagi emas.
+    dengan_aktual = [c for c in urut if c.get("aktual") is not None]
+    if len(dengan_aktual) >= 30:
+        batas = median(c["aktual"] for c in dengan_aktual)
+        potongan[f"inflasi_tinggi (MoM > {batas:.2f}%)"] = [
+            c for c in dengan_aktual if c["aktual"] > batas]
+        potongan[f"inflasi_rendah (MoM <= {batas:.2f}%)"] = [
+            c for c in dengan_aktual if c["aktual"] <= batas]
+
+    # 3. Besar kejutan: kejutan kecil sebagian besar derau. Kalau ada sinyal, mestinya
+    #    paling terlihat pada kejutan besar.
+    batas_k = median(abs(c["kejutan_pp"]) for c in urut)
+    potongan[f"kejutan_besar (|kejutan| > {batas_k:.3f}pp)"] = [
+        c for c in urut if abs(c["kejutan_pp"]) > batas_k]
+    potongan[f"kejutan_kecil (|kejutan| <= {batas_k:.3f}pp)"] = [
+        c for c in urut if abs(c["kejutan_pp"]) <= batas_k]
+
+    hasil = {"simbol": meta["simbol"], "total_rilis": n,
+             "potongan": {nama: _selisih_median(b) for nama, b in potongan.items()
+                          if len(b) >= 8},
+             "batas_metode": (
+                 "Ketiga cara memotong memakai RILIS YANG SAMA, jadi potongannya tumpang "
+                 "tindih dan bukan tujuh uji independen. Ini uji ketahanan sederhana: "
+                 "kalau tanda saja sudah berbalik antar potongan, temuannya jelas rapuh. "
+                 "Tanda yang bertahan TIDAK otomatis berarti efeknya nyata — besarannya "
+                 "tetap harus di atas derau.")}
+
+    # Vonis ketahanan. Yang dinilai hanya H+1 dan H+5 — H (hari rilis) terlalu berisik.
+    for horizon in ("H+1", "H+5"):
+        tanda = [p["selisih"].get(horizon) for p in hasil["potongan"].values()
+                 if p["selisih"].get(horizon) is not None]
+        if len(tanda) < 3:
+            continue
+        positif = sum(1 for t in tanda if t > 0)
+        negatif = sum(1 for t in tanda if t < 0)
+        konsisten = positif == 0 or negatif == 0
+        hasil[f"vonis_{horizon}"] = {
+            "potongan_diuji": len(tanda),
+            "tanda_positif": positif, "tanda_negatif": negatif,
+            "nilai": tanda,
+            "tanda_bertahan": konsisten,
+            "arti": ("Tanda BERTAHAN di semua potongan — temuannya lebih bisa dipercaya, "
+                     "walau besarannya tetap kecil."
+                     if konsisten else
+                     "Tanda BERBALIK antar potongan. Temuan gabungan itu artefak "
+                     "pengelompokan, BUKAN sifat yang bisa dipakai meramal. Perlakukan "
+                     "seperti NFP/PPI/FOMC: sampaikan jadwal dan volatilitas saja, dan "
+                     "katakan arahnya tidak bisa diprediksi."),
+        }
     return hasil
 
 
@@ -289,6 +402,8 @@ def main():
     ap.add_argument("--simbol", help="aset yang diukur reaksinya, mis. GOLD / BTC / SPX")
     ap.add_argument("--pasar", action="store_true",
                     help="simbol berupa komoditas/saham/forex (via market.py)")
+    ap.add_argument("--rezim", action="store_true",
+                    help="uji apakah tanda selisih bertahan saat data dipotong per rezim")
     ap.add_argument("--ringkas", action="store_true",
                     help="buang panduan statis (dipakai saat dikirim ke model)")
     args = ap.parse_args()
@@ -325,7 +440,17 @@ def main():
         "kejutan_12_terakhir": riwayat[-12:],
     }
     if args.simbol:
-        keluar["reaksi_harga"] = reaksi_harga(args.simbol, riwayat, args.pasar)
+        # Harga ditarik SEKALI lalu dipakai kedua analisis, supaya angka gabungan dan angka
+        # per rezim dijamin berasal dari deret yang persis sama.
+        catatan, meta = _per_rilis(args.simbol, riwayat, args.pasar)
+        if catatan is None:
+            keluar["reaksi_harga"] = meta
+        else:
+            keluar["reaksi_harga"] = reaksi_harga(args.simbol, riwayat, args.pasar,
+                                                  catatan=catatan, meta=meta)
+            if args.rezim:
+                keluar["uji_ketahanan_per_rezim"] = reaksi_per_rezim(
+                    args.simbol, riwayat, args.pasar, catatan=catatan, meta=meta)
 
     if args.ringkas:
         from backtest import buang_panduan
