@@ -12,5 +12,19 @@
    "ema21=0,00214",
    "rsi=72,6"
   ]
+ },
+ {
+  "chat": "1242dcf6b322d4c6",
+  "waktu": 1786360892.1743562,
+  "waktu_utc": "2026-08-10 11:21",
+  "pesan": "tapi kenapa harga btc stagnan?",
+  "balasan": "🕒 Data live per 10 Agustus 2026, 18:19 WIB\n\nYang kubaca di gambar\n\nPostingan bot Kalimasada di Discord, tanggal 8/5/2026 10:35 AM (format AS = 5 Agustus 2026). Judulnya \"Likuiditas Global Kembali Mendukung Bitcoin\", chart Blockworks Research \"Bitcoin\n[...dipangkas...]\nkan kalau penutupan mingguan di bawah $60.000; kurangi kalau harga mentok berkali-kali di $66.000 sambil volume terus mengering.\n\nSingkatnya: gambarnya benar, tapi dia menjelaskan LATAR, bukan PEMICU. Likuiditas sudah longgar, korek apinya belum ada.",
+  "angka_kunci": [
+   "harga=66.000",
+   "ema13=66.513",
+   "ema21=69.339",
+   "ema50=77.653",
+   "rsi=40,95"
+  ]
  }
 ]
