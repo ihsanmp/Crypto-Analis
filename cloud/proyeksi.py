@@ -206,7 +206,9 @@ def main():
             "puncak_tercapai": ke_harga(tercapai),
             "dasar_tercapai": ke_harga(terdalam),
             "harga_penutup": ke_harga(tertutup),
-            "cara_baca": (f"Sebaran gerakan {args.hari} hari sepanjang riwayat yang ada. Ini "
+            # Bukan "cara_baca" — dibuang --ringkas. Peringatan "ini BUKAN ramalan" dan
+            # "frekuensi, bukan probabilitas" harus sampai ke model.
+            "wajib_dibaca": (f"Sebaran gerakan {args.hari} hari sepanjang riwayat yang ada. Ini "
                           "BUKAN ramalan — ini rentang yang wajar secara historis. p90 "
                           "puncak berarti hanya 10% jendela yang mencapai lebih tinggi. "
                           "Jendela tumpang tindih, jadi ini frekuensi, bukan probabilitas."),

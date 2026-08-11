@@ -389,7 +389,10 @@ def reaksi_harga(simbol, riwayat, pasar, rentang="15y", catatan=None, meta=None,
                for k, v in _selisih_median(catatan)["selisih"].items()}
     if selisih:
         hasil["selisih_median_panas_dikurangi_dingin_persen"] = selisih
-        hasil["cara_baca"] = (
+        # BUKAN "cara_baca": nama itu ada di _PANDUAN_STATIS dan dibuang oleh --ringkas,
+        # padahal --ringkas justru yang dipakai produksi. Aturan yang menentukan boleh
+        # tidaknya angka ini dikutip TIDAK BOLEH ikut terbuang.
+        hasil["wajib_dibaca"] = (
             "Angka ini GABUNGAN 13 tahun dan TIDAK BOLEH dikutip sendirian. Pada emas, "
             "selisih H+5 gabungan ternyata artefak: tandanya berbalik saat data dipotong "
             "per periode (2013-2017 dan 2017-2022 justru POSITIF, hanya 2022-2026 yang "
@@ -559,7 +562,9 @@ def reaksi_per_rezim(simbol, riwayat, pasar, rentang="15y", catatan=None, meta=N
             "tanda_positif": positif, "tanda_negatif": negatif,
             "nilai": tanda,
             "tanda_bertahan": konsisten,
-            "arti": ("Tanda BERTAHAN di semua potongan — temuannya lebih bisa dipercaya, "
+            # "arti" juga dibuang --ringkas. Tanpa kalimat ini model cuma menerima boolean
+            # telanjang dan harus menebak sendiri apa yang mesti dilakukan.
+            "tindakan": ("Tanda BERTAHAN di semua potongan — temuannya lebih bisa dipercaya, "
                      "walau besarannya tetap kecil."
                      if konsisten else
                      "Tanda BERBALIK antar potongan. Temuan gabungan itu artefak "

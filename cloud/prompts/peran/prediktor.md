@@ -49,6 +49,9 @@ divalidasi" di berkas inti.
 - Kalau `kualitas: approx_close_only`, high/low harian bukan angka asli dan jangkauan
   cenderung DIREMEHKAN. Sebutkan.
 - Rezim bisa berubah. Sebaran dari pasar ranging tidak berlaku di pasar trending.
+- **Target di atas resisten terdekat HARUS melewatinya dulu.** Sebutkan urutan levelnya —
+  jangan melompat langsung ke target seolah tidak ada apa-apa di antaranya. Level di
+  `level_struktural` pernah benar-benar diuji pasar, jadi lebih bermakna daripada angka bulat.
 
 <!-- BLOK: prediktor-crypto | pemicu: crypto -->
 ## Proyeksi CRYPTO

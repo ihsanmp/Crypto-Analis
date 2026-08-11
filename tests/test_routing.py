@@ -1595,7 +1595,7 @@ def test_vonis_rezim_menandai_tanda_yang_berbalik(monkeypatch):
     hasil = _kejutan.reaksi_per_rezim("X", [], False, catatan=catatan,
                                       meta={"simbol": "X", "jendela_harga": "-"})
     assert hasil["vonis_H+1"]["tanda_bertahan"] is False
-    assert "artefak" in hasil["vonis_H+1"]["arti"]
+    assert "artefak" in hasil["vonis_H+1"]["tindakan"]
 
 
 def test_vonis_rezim_mengakui_tanda_yang_bertahan():
@@ -1831,8 +1831,10 @@ def test_etf_menghitung_dari_data_nyata(monkeypatch):
     assert h["arus_5_hari"]["persentil"] is not None
     assert 0 <= h["arus_5_hari"]["persentil"] <= 100
     # Umur data ETF selalu beberapa hari; peringatannya harus menyala.
-    assert h["umur_data_hari"] >= 1
-    assert "peringatan_kesegaran" in h
+    # Peringatan kesegaran hanya menyala di atas 3 hari, jadi tes TIDAK boleh menuntutnya
+    # selalu ada — data yang baru disegarkan justru membuatnya diam. Yang diuji: ambangnya.
+    assert h["umur_data_hari"] >= 0
+    assert ("peringatan_kesegaran" in h) == (h["umur_data_hari"] >= 3)
 
 
 def test_etf_menandai_divergensi_harga_vs_arus(monkeypatch):
@@ -1932,3 +1934,57 @@ def test_penyegaran_menyimpan_kedua_berkas():
                 encoding="utf-8").read()
     for berkas in ("cloud/data/sosovalue_riwayat.json", "cloud/data/sosovalue_etf.json"):
         assert alur.count(berkas) == 2, f"{berkas} harus ada di pemeriksaan DAN git add"
+
+
+# Field yang dibuang --ringkas TAPI memuat kalimat imperatif. Boleh ada HANYA kalau aturannya
+# sudah ditulis di seed, sehingga model tetap menerimanya. Daftar ini adalah ratchet: setiap
+# tambahan baru menggagalkan tes sampai diputuskan secara sadar.
+_IMPERATIF_DIIZINKAN = {
+    ("proyeksi.py", "cara_pakai"),    # urutan level -> sudah ada di "Batas yang WAJIB disebut"
+    ("sosovalue.py", "cara_pakai"),   # batas vintage -> sudah ada di blok forex
+}
+
+
+def test_aturan_keras_tidak_hilang_saat_ringkas():
+    """--ringkas dipakai PRODUKSI, jadi apa pun yang dibuangnya tidak pernah sampai ke model.
+
+    Bug nyata: aturan "angka gabungan TIDAK BOLEH dikutip sendirian" ditaruh di field
+    bernama `cara_baca`, dan kalimat yang memberitahu model harus berbuat apa saat vonis
+    gugur ditaruh di `arti`. Keduanya ada di _PANDUAN_STATIS, jadi produksi hanya menerima
+    angka dan boolean telanjang.
+    """
+    from backtest import _PANDUAN_STATIS
+    imperatif = ("TIDAK BOLEH", "WAJIB", "JANGAN", "Jangan", "jangan", "harus")
+    temuan = []
+    for berkas in ("kejutan.py", "proyeksi.py", "jadwal.py", "etf.py", "arsip.py",
+                   "sosovalue.py", "indicators.py", "backtest.py", "makro.py", "kalender.py"):
+        teks = open(os.path.join(AKAR, "cloud", berkas), encoding="utf-8").read()
+        for nama in _PANDUAN_STATIS:
+            for m in re.finditer('"' + nama + r'":\s*\(?((?:\s*"[^"]*")+)', teks):
+                if any(k in m.group(1) for k in imperatif):
+                    if (berkas, nama) not in _IMPERATIF_DIIZINKAN:
+                        temuan.append(f"{berkas}:{nama}")
+    assert not temuan, ("aturan keras berada di field yang dibuang --ringkas: "
+                        + ", ".join(sorted(set(temuan))))
+
+
+def test_field_mutu_bukan_nama_yang_dibuang():
+    """Nama-nama ini sengaja dipilih supaya lolos dari _PANDUAN_STATIS."""
+    from backtest import _PANDUAN_STATIS
+    for nama in ("wajib_dibaca", "tindakan", "satuan", "peringatan_cakupan",
+                 "peringatan_kesegaran", "peringatan_metode", "batas_wajib_disebut"):
+        assert nama not in _PANDUAN_STATIS, nama
+    for berkas, harus in (("kejutan.py", ("wajib_dibaca", "tindakan")),
+                          ("proyeksi.py", ("wajib_dibaca", "peringatan_metode")),
+                          ("jadwal.py", ("satuan",)),
+                          ("etf.py", ("peringatan_kesegaran",))):
+        teks = open(os.path.join(AKAR, "cloud", berkas), encoding="utf-8").read()
+        for h in harus:
+            assert f'"{h}"' in teks, f"{berkas} tidak memakai {h}"
+
+
+def test_aturan_urutan_level_ada_di_seed():
+    """Dipindah ke seed karena field aslinya memang dibuang --ringkas."""
+    teks = " ".join(open(os.path.join(AKAR, "cloud", "prompts", "peran", "prediktor.md"),
+                         encoding="utf-8").read().split())
+    assert "HARUS melewatinya dulu" in teks

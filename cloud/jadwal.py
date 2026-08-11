@@ -227,7 +227,9 @@ def nilai_terbaru(paksa=False):
         except (KeyError, ValueError):
             hasil[nama] = {"tidak_tersedia": "nilai tidak terbaca"}
             continue
-        item = {"seri": sid, "arti": arti,
+        # "arti" dibuang --ringkas; satuannya wajib ikut supaya 158858 tidak dibaca
+        # sebagai dolar atau persen.
+        item = {"seri": sid, "satuan": arti,
                 "periode": f"{baru.get('periodName')} {baru.get('year')}",
                 "nilai": n_baru}
         if nama == "NFP":
