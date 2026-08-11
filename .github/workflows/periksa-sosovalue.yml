@@ -38,20 +38,20 @@ jobs:
             echo "::error::SOSOVALUE_API_KEY belum terpasang di repository secrets"
             exit 1
           fi
-          python cloud/sosovalue.py --periksa --tarik-riwayat
+          python cloud/sosovalue.py --tarik-etf
 
-      - name: Simpan riwayat konsensus
+      - name: Simpan data ETF
         run: |
-          if [ -z "$(git status --porcelain cloud/data/sosovalue_riwayat.json)" ]; then
-            echo "riwayat tidak berubah — lewati commit"
+          if [ -z "$(git status --porcelain cloud/data/sosovalue_etf.json)" ]; then
+            echo "data ETF tidak berubah — lewati commit"
             exit 0
           fi
           git config user.name "crypto-analis-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add cloud/data/sosovalue_riwayat.json
-          git commit -m "Riwayat konsensus SoSoValue dari run ${GITHUB_RUN_ID}"
+          git add cloud/data/sosovalue_etf.json
+          git commit -m "Data ETF SoSoValue dari run ${GITHUB_RUN_ID}"
           for i in 1 2 3; do
             git pull --rebase --autostash origin main && git push origin HEAD:main && exit 0
             sleep 3
           done
-          echo "::warning::riwayat gagal disimpan setelah 3 percobaan"
+          echo "::warning::data ETF gagal disimpan setelah 3 percobaan"

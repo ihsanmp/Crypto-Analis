@@ -327,6 +327,49 @@ def tarik_riwayat():
             for k, v in keluar["acara"].items()}
 
 
+ETF_HISTORIS = "/openapi/v2/etf/historicalInflowChart"
+ETF_PATH = os.path.join(BASE_DIR, "data", "sosovalue_etf.json")
+ETF_JENIS = ("us-btc-spot", "us-eth-spot")
+
+
+def tarik_etf():
+    """Tarik metrik & arus historis ETF, simpan mentah + laporkan BENTUKNYA.
+
+    Bentuk balasan belum pernah dilihat, dan menebak struktur JSON adalah cara tercepat
+    menghasilkan pembacaan yang salah tapi terlihat benar. Jadi putaran ini menyimpan apa
+    adanya dan melaporkan kunci-kuncinya, bukan langsung mengurai.
+    """
+    keluar = {"ditarik_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"), "data": {}}
+    ringkas = {}
+    for jenis in ETF_JENIS:
+        for nama, jalur in (("metrik", ETF_METRIK), ("historis", ETF_HISTORIS)):
+            isi, _, err = panggil(jalur, "POST", {"type": jenis}, None, pakai_cache=False)
+            kunci = f"{jenis}/{nama}"
+            if err:
+                keluar["data"][kunci] = {"tidak_tersedia": err}
+                ringkas[kunci] = f"GAGAL: {err}"
+                continue
+            keluar["data"][kunci] = isi
+            badan = isi.get("data") if isinstance(isi, dict) else isi
+            bentuk = {"tipe": type(badan).__name__}
+            if isinstance(badan, dict):
+                bentuk["kunci"] = list(badan)[:14]
+            elif isinstance(badan, list):
+                bentuk["jumlah"] = len(badan)
+                if badan and isinstance(badan[0], dict):
+                    bentuk["kunci_baris"] = list(badan[0])[:14]
+                    bentuk["baris_pertama"] = json.dumps(badan[0], ensure_ascii=False)[:220]
+                    bentuk["baris_terakhir"] = json.dumps(badan[-1], ensure_ascii=False)[:220]
+            awal, akhir = _tanggal_terjauh(isi)
+            if awal:
+                bentuk["rentang_tanggal"] = f"{awal} s/d {akhir}"
+            ringkas[kunci] = bentuk
+    os.makedirs(os.path.dirname(ETF_PATH), exist_ok=True)
+    with open(ETF_PATH, "w", encoding="utf-8", newline=chr(10)) as f:
+        json.dump(keluar, f, ensure_ascii=False, indent=1)
+    return ringkas
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--periksa", action="store_true",
@@ -337,6 +380,8 @@ def main():
     ap.add_argument("--sampai", help="tanggal akhir YYYY-MM-DD")
     ap.add_argument("--tarik-riwayat", dest="tarik_riwayat", action="store_true",
                     help="tarik riwayat konsensus & simpan ke cloud/data/")
+    ap.add_argument("--tarik-etf", dest="tarik_etf", action="store_true",
+                    help="tarik data ETF & laporkan bentuknya")
     ap.add_argument("--ringkas", action="store_true", help="buang panduan statis")
     args = ap.parse_args()
 
@@ -355,11 +400,13 @@ def main():
         keluar["pemeriksaan"] = periksa()
     if args.tarik_riwayat:
         keluar["riwayat_tersimpan"] = tarik_riwayat()
+    if args.tarik_etf:
+        keluar["bentuk_etf"] = tarik_etf()
     if args.etf:
         keluar["arus_etf"] = arus_etf(args.etf)
     if args.riwayat:
         keluar["riwayat_makro"] = riwayat_makro(args.riwayat, args.mulai, args.sampai)
-    if not (args.periksa or args.etf or args.riwayat or args.tarik_riwayat):
+    if not (args.periksa or args.etf or args.riwayat or args.tarik_riwayat or args.tarik_etf):
         keluar["catatan"] = "tidak ada yang diminta; pakai --periksa, --etf, atau --riwayat"
 
     if args.ringkas:
