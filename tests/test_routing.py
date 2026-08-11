@@ -12,6 +12,7 @@ Semua tes berbentuk TABEL supaya menambah kasus baru cukup satu baris.
 Menjalankan:  pytest tests/ -v
 """
 
+import json
 import os
 import re
 import sys
@@ -1796,3 +1797,84 @@ def test_vonis_menyertakan_hari_rilis():
                                       meta={"simbol": "X", "jendela_harga": "-"})
     assert "vonis_H" in hasil, "hari rilis harus ikut divonis"
     assert hasil["vonis_H"]["tanda_bertahan"] is True
+
+
+# ------------------------------------------------------------------ arus ETF spot
+import etf as _etf  # noqa: E402
+
+
+def _muat_etf_tersimpan(jenis):
+    """Data ETF asli yang ditarik CI — dipakai supaya tes menguji angka nyata, bukan karangan."""
+    berkas = os.path.join(AKAR, "cloud", "data", "sosovalue_etf.json")
+    with open(berkas, encoding="utf-8") as f:
+        simpan = json.load(f)
+    isi = simpan["data"].get(f"{jenis}/historis")
+    baris = isi.get("data") if isinstance(isi, dict) else isi
+    baris = [b for b in baris if isinstance(b, dict) and b.get("date")]
+    baris.sort(key=lambda b: b["date"])
+    return baris, None
+
+
+def test_etf_hanya_btc_dan_eth():
+    """Koin lain TIDAK punya ETF spot AS. Meminjam angka BTC untuk SOL itu karangan."""
+    h = _etf.analisa("SOL")
+    assert "tidak_tersedia" in h
+    assert "JANGAN" in h["tidak_tersedia"]
+
+
+def test_etf_menghitung_dari_data_nyata(monkeypatch):
+    """Diuji terhadap balasan API yang sebenarnya, bukan data buatan."""
+    import sosovalue
+    monkeypatch.setattr(sosovalue, "historis_etf", _muat_etf_tersimpan)
+    h = _etf.analisa("BTC")
+    assert h["hari_terekam"] == 300
+    assert h["arus_5_hari"]["persentil"] is not None
+    assert 0 <= h["arus_5_hari"]["persentil"] <= 100
+    # Umur data ETF selalu beberapa hari; peringatannya harus menyala.
+    assert h["umur_data_hari"] >= 1
+    assert "peringatan_kesegaran" in h
+
+
+def test_etf_menandai_divergensi_harga_vs_arus(monkeypatch):
+    """Bagian paling bernilai: harga dan arus berpisah.
+
+    Ini yang tidak terlihat dari chart maupun on-chain, dan justru sinyal yang dicari
+    kerangka kesehatan pasar.
+    """
+    import sosovalue
+    baris = [{"date": f"2026-0{i // 28 + 1}-{i % 28 + 1:02d}",
+              "totalNetInflow": -50_000_000.0, "totalNetAssets": 1e10,
+              "cumNetInflow": 1e9} for i in range(60)]
+    monkeypatch.setattr(sosovalue, "historis_etf", lambda j="us-btc-spot": (baris, None))
+    monkeypatch.setattr(_etf, "_gerak_harga", lambda s, n: 8.0)   # harga NAIK
+    h = _etf.analisa("BTC")
+    assert "distribusi" in h["divergensi_20_hari"]["pola"].lower()
+
+    monkeypatch.setattr(_etf, "_gerak_harga", lambda s, n: -8.0)  # harga TURUN
+    for b in baris:
+        b["totalNetInflow"] = 50_000_000.0
+    h2 = _etf.analisa("BTC")
+    assert "akumulasi" in h2["divergensi_20_hari"]["pola"].lower()
+
+
+def test_etf_tanpa_kunci_tidak_mati(monkeypatch):
+    """Pola yang sama dengan Finnhub: lapor tidak tersedia, analisa crypto tetap jalan."""
+    monkeypatch.delenv("SOSOVALUE_API_KEY", raising=False)
+    import sosovalue
+    monkeypatch.setattr(sosovalue, "_muat_cache", dict)
+    h = _etf.analisa("BTC")
+    assert "tidak_tersedia" in h
+
+
+def test_etf_hanya_dijalankan_untuk_btc_eth():
+    """Koin lain akan menolak dengan pesan yang sama tiap kali — jangan buang waktu."""
+    sumber = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    blok = sumber[sumber.index("def data_mentah_crypto"):sumber.index("def data_mentah_pasar")]
+    assert 'if t in ("BTC", "ETH"):' in blok
+    assert "cloud/etf.py" in blok
+
+
+def test_kunci_sosovalue_dioper_ke_runner():
+    """Arus ETF berubah tiap hari, jadi harus ditarik saat analisa — bukan berkas tersimpan."""
+    alur = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"), encoding="utf-8").read()
+    assert "SOSOVALUE_API_KEY: ${{ secrets.SOSOVALUE_API_KEY }}" in alur

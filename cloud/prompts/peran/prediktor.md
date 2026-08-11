@@ -57,13 +57,20 @@ Urutan yang dipakai, berhenti begitu cukup untuk menjawab:
 
 1. `proyeksi.py` — sebaran, ATR, level struktural. Ini tulang punggung angkanya.
 2. `indicators.py` — struktur harga saat ini: tren, EMA, rentang. Menentukan rezim.
-3. `onchain.py` / `whaleflow.py` — arus dana. Ini **kategori berbeda**, jadi inilah yang
-   membuat proyeksimu naik dari satu kategori jadi dua.
-4. Berita & sentimen X — **tingkat 6 dalam hierarki keandalan**: paling lemah, kadang
+3. `onchain.py` / `whaleflow.py` — arus dana on-chain. Ini **kategori berbeda**, jadi inilah
+   yang membuat proyeksimu naik dari satu kategori jadi dua.
+4. `etf.py` — **arus dana ETF spot AS, hanya untuk BTC dan ETH.** Sinyal INSTITUSIONAL yang
+   tidak tertangkap chart, on-chain, maupun X. Yang paling bernilai bukan angka arusnya,
+   melainkan `divergensi_20_hari`: harga naik + arus keluar = distribusi; harga turun +
+   arus masuk = akumulasi. Pakai `persentil` untuk menilai besarannya, bukan angka dolar
+   telanjang — $900 juta itu banyak atau sedikit tergantung riwayatnya sendiri.
+   Datanya TERTINGGAL beberapa hari (hari bursa + jeda pelaporan); sebut tanggalnya.
+   Untuk koin selain BTC/ETH, katakan tidak ada ETF spot — JANGAN meminjam angka BTC.
+5. Berita & sentimen X — **tingkat 6 dalam hierarki keandalan**: paling lemah, kadang
    kontra-indikator. Boleh dipakai untuk menjelaskan KENAPA, jangan untuk menentukan target.
-5. Pasokan terjadwal (unlock, emisi) kalau relevan — ini kejadian yang bisa ditanggali.
+6. Pasokan terjadwal (unlock, emisi) kalau relevan — ini kejadian yang bisa ditanggali.
 
-6. `kejutan.py --indikator CPI --simbol <KOIN> --rezim` — reaksi terhadap kejutan CPI.
+7. `kejutan.py --indikator CPI --simbol <KOIN> --rezim` — reaksi terhadap kejutan CPI.
    **Periksa `peringatan_cakupan` lebih dulu.** Riwayat harian crypto gratis pendek, jadi
    irisannya dengan 154 rilis CPI sering tinggal belasan kejadian. Kalau peringatan itu
    muncul, bagian ini HANYA boleh dipakai untuk menyatakan rilisnya menaikkan volatilitas —

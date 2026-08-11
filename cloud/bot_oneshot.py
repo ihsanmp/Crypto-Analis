@@ -1244,6 +1244,13 @@ def data_mentah_crypto(coin):
     # Sebaran historis + level struktural. Analisa penuh selalu memuat seed FORECASTER, dan
     # tahap sintesisnya berjalan TANPA tool — tanpa angka ini, seed itu memerintahkan
     # menjalankan script yang mustahil dijalankan, lalu targetnya dihitung di kepala.
+    # Arus dana ETF spot — KATEGORI SINYAL BARU (institusional), bukan sekadar angka
+    # tambahan. Hanya BTC dan ETH yang punya ETF spot AS; koin lain akan mengembalikan
+    # penolakan yang sama tiap kali, jadi tidak perlu dijalankan sama sekali.
+    if t in ("BTC", "ETH"):
+        tugas.append(("ARUS DANA ETF SPOT (etf.py)", ["cloud/etf.py", coin, "--ringkas"], 0))
+    else:
+        lewat.append(f"etf.py ({t} tidak punya ETF spot AS)")
     tugas.append(("PROYEKSI (proyeksi.py)",
                   ["cloud/proyeksi.py", coin, "--hari", "60", "--ringkas"], 0))
     # Reaksi terhadap kejutan CPI. FOMC SENGAJA tidak ikut di jalur crypto: seri SF Fed

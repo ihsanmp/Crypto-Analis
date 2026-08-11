@@ -370,6 +370,23 @@ def tarik_etf():
     return ringkas
 
 
+def historis_etf(jenis="us-btc-spot"):
+    """Arus harian ETF ~300 hari ke belakang. Return (baris, error).
+
+    Diurutkan NAIK menurut tanggal di sini supaya pemakainya tidak perlu tahu bahwa API
+    mengembalikan yang terbaru lebih dulu — sumber kekeliruan yang mudah terjadi.
+    """
+    isi, _, err = panggil(ETF_HISTORIS, "POST", {"type": jenis})
+    if err:
+        return None, err
+    baris = isi.get("data") if isinstance(isi, dict) else isi
+    if not isinstance(baris, list):
+        return None, "bentuk balasan tidak dikenali"
+    bersih = [b for b in baris if isinstance(b, dict) and b.get("date")]
+    bersih.sort(key=lambda b: b["date"])
+    return bersih, None
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--periksa", action="store_true",
