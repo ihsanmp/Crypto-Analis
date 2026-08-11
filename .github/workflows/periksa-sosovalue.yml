@@ -1,20 +1,27 @@
-# Pemeriksaan sekali jalan untuk SoSoValue. Dijalankan MANUAL, bukan terjadwal.
+# Penyegaran data SoSoValue. Awalnya alat pemeriksaan sekali jalan untuk menemukan alamat
+# endpoint yang benar; setelah semuanya ketahuan, tugasnya berubah jadi PENYEGAR BERKALA.
 #
-# Kenapa perlu workflow sendiri: nama endpoint SoSoValue tidak bisa diverifikasi tanpa kunci
-# — auth dicek SEBELUM routing, jadi path yang jelas tidak ada pun membalas 401, bukan 404.
-# Kuncinya hanya ada di GitHub Secrets dan TIDAK boleh keluar dari sana, jadi pemeriksaannya
-# harus berjalan di sini, bukan di mesin lokal.
+# Kenapa harus lewat workflow, bukan dijalankan saat analisa: kuncinya hanya ada di GitHub
+# Secrets. Riwayat konsensus disimpan sebagai berkas supaya kejutan.py bisa memakainya TANPA
+# kunci — datanya cuma berubah saat ada rilis baru, jadi menariknya tiap analisa itu
+# pemborosan sekaligus risiko kena batas laju.
 #
-# Yang dijawab sekali jalan: endpoint mana yang hidup, bentuk balasannya, dan — untuk riwayat
-# makro — sedalam apa datanya ke belakang. Setelah itu ketahuan, KANDIDAT di cloud/sosovalue.py
-# dirapikan dan workflow ini boleh dihapus.
+# Mingguan sudah cukup: NFP terbit sebulan sekali, CPI dan PPI juga. Jadwal Minggu 05:00 UTC
+# = 12:00 WIB. Data ETF harian ikut ditarik di sini hanya sebagai cadangan — jalur analisa
+# memanggilnya langsung karena arusnya berubah tiap hari.
+#
+# Catatan: GitHub menonaktifkan workflow terjadwal setelah 60 hari repo tidak aktif, dan
+# waktu mulainya bisa meleset beberapa menit saat antrean padat. Keduanya tidak masalah di
+# sini karena datanya bulanan.
 #
 # CATATAN KEAMANAN: repo ini publik, jadi log Actions ikut terbaca publik. cloud/sosovalue.py
 # tidak pernah mencetak kuncinya, dan GitHub menyamarkan nilai secret yang terdaftar. Jangan
 # menambahkan `echo` apa pun terhadap kunci di sini.
-name: Periksa SoSoValue
+name: Segarkan data SoSoValue
 
 on:
+  schedule:
+    - cron: "0 5 * * 0"       # Minggu 05:00 UTC = 12:00 WIB
   workflow_dispatch:
 
 permissions:
@@ -38,18 +45,21 @@ jobs:
             echo "::error::SOSOVALUE_API_KEY belum terpasang di repository secrets"
             exit 1
           fi
-          python cloud/sosovalue.py --periksa --tarik-riwayat --tarik-etf
+          # --periksa sengaja TIDAK ikut: penemuan endpoint sudah selesai, dan menjalankannya
+          # tiap minggu berarti membuang belasan panggilan kuota untuk pertanyaan yang sudah
+          # terjawab. Jalankan manual dengan --periksa kalau ada yang tiba-tiba 404.
+          python cloud/sosovalue.py --tarik-riwayat --tarik-etf
 
-      - name: Simpan data ETF
+      - name: Simpan riwayat & data ETF
         run: |
           if [ -z "$(git status --porcelain cloud/data/sosovalue_riwayat.json cloud/data/sosovalue_etf.json)" ]; then
-            echo "data ETF tidak berubah — lewati commit"
+            echo "data tidak berubah — lewati commit"
             exit 0
           fi
           git config user.name "crypto-analis-bot"
           git config user.email "bot@users.noreply.github.com"
           git add cloud/data/sosovalue_riwayat.json cloud/data/sosovalue_etf.json
-          git commit -m "Data ETF SoSoValue dari run ${GITHUB_RUN_ID}"
+          git commit -m "Segarkan riwayat konsensus & data ETF SoSoValue dari run ${GITHUB_RUN_ID}"
           for i in 1 2 3; do
             git pull --rebase --autostash origin main && git push origin HEAD:main && exit 0
             sleep 3

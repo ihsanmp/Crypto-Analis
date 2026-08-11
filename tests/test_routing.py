@@ -1909,3 +1909,26 @@ def test_perbedaan_antar_sumber_cpi_tercatat():
                          encoding="utf-8").read().split())
     assert "BERBALIK tergantung ekspektasi siapa" in teks
     assert "TIDAK punya edge arah untuk emas" in teks
+
+
+def test_penyegaran_sosovalue_terjadwal_mingguan():
+    """Riwayat konsensus disimpan sebagai berkas, jadi ia HANYA segar kalau ditarik ulang.
+
+    Tanpa jadwal, rilis NFP/CPI/PPI baru tidak akan pernah masuk dan studi kejutan
+    diam-diam memakai data yang makin tua tanpa tanda apa pun.
+    """
+    alur = open(os.path.join(AKAR, ".github", "workflows", "periksa-sosovalue.yml"),
+                encoding="utf-8").read()
+    assert 'cron: "0 5 * * 0"' in alur, "Minggu 05:00 UTC = 12:00 WIB"
+    assert "workflow_dispatch" in alur, "harus tetap bisa dijalankan manual"
+    assert "--tarik-riwayat" in alur and "--tarik-etf" in alur
+    # Penemuan endpoint sudah selesai; menjalankannya mingguan membuang kuota.
+    assert "--periksa --tarik" not in alur
+
+
+def test_penyegaran_menyimpan_kedua_berkas():
+    """Menarik tanpa menyimpan berarti runner ephemeral membuangnya begitu selesai."""
+    alur = open(os.path.join(AKAR, ".github", "workflows", "periksa-sosovalue.yml"),
+                encoding="utf-8").read()
+    for berkas in ("cloud/data/sosovalue_riwayat.json", "cloud/data/sosovalue_etf.json"):
+        assert alur.count(berkas) == 2, f"{berkas} harus ada di pemeriksaan DAN git add"
