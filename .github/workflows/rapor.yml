@@ -35,6 +35,17 @@ jobs:
         with:
           python-version: "3.11"
 
+      # kalender.py sudah tidak ikut di brief analisa (konsensusnya kini dari SoSoValue),
+      # tapi menjalankannya tetap perlu: tiap panggilan mengarsipkan konsensus Forex Factory
+      # ke arsip_konsensus.jsonl. Itu satu-satunya salinan INDEPENDEN yang kita punya, dan
+      # gunanya justru untuk mengaudit angka SoSoValue yang tidak punya jejak vintage.
+      # Mingguan sudah cukup — feed FF memuat pekan berjalan dan pekan depan.
+      - name: Arsipkan konsensus mingguan
+        run: |
+          python cloud/kalender.py --ringkas > /dev/null
+          python cloud/kalender.py --pekan-depan --ringkas > /dev/null || true
+          python cloud/arsip.py --status
+
       - name: Nilai panggilan yang masih terbuka
         run: python cloud/rapor.py nilai
 
@@ -43,12 +54,12 @@ jobs:
 
       - name: Simpan hasil penilaian
         run: |
-          if [ -z "$(git status --porcelain cloud/data/rapor.jsonl)" ]; then
+          if [ -z "$(git status --porcelain cloud/data/rapor.jsonl cloud/data/arsip_konsensus.jsonl cloud/data/kalender_cache.json)" ]; then
             echo "tidak ada perubahan — lewati commit"; exit 0
           fi
           git config user.name "crypto-analis-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add cloud/data/rapor.jsonl
+          git add cloud/data/rapor.jsonl cloud/data/arsip_konsensus.jsonl cloud/data/kalender_cache.json
           git commit -m "Penilaian rapor rekomendasi ${GITHUB_RUN_ID}"
           for i in 1 2 3; do
             git pull --rebase --autostash origin main && git push origin HEAD:main && exit 0

@@ -91,11 +91,11 @@ jangka panjang, dan turunkan keyakinan untuk horizon di atas 90 hari.
 
 Untuk "CPI nanti bullish untuk emas?", jangan menjawab dari intuisi makro. Urutannya:
 
-1. `python cloud/kejutan.py --indikator CPI --simbol GOLD --pasar --ringkas`
-   Memberi: nowcast yang berlaku untuk rilis berikutnya, sejarah kejutan (aktual dikurangi
-   nowcast) sejak 2013, dan **reaksi harga historis dipisah menurut arah kejutan** —
+1. `kejutan.py --indikator CPI --sumber sosovalue --simbol GOLD --pasar --rezim`
+   Memberi: konsensus PASAR untuk rilis berikutnya, sejarah kejutan (aktual dikurangi
+   konsensus) sejak 2010, dan **reaksi harga historis dipisah menurut arah kejutan** —
    H, H+1, H+5, lengkap dengan median, persen naik, dan sebarannya.
-2. `kalender.py` — jadwal rilis, konsensus Forex Factory, dan angka sebelumnya.
+2. `jadwal.py` — tanggal rilis RESMI dari BLS dan tanggal keputusan FOMC.
 3. `makro.py` — yield riil, DXY, spread kredit. Emas paling terikat pada **yield riil**;
    sebut jalur transmisinya secara eksplisit.
 4. Geopolitik lewat pencarian web — hanya kalau ada peristiwa berjalan yang nyata. Ini
@@ -125,6 +125,27 @@ besar **di bawah derau harian**. Jadi kesimpulan operasionalnya tetap sama.
    satu-satunya horizon yang bertahan; menghakimi dari H+1/H+5 saja akan menyimpulkan
    "tidak ada apa-apa" pada kejadian yang jelas ada apa-apanya. Rilis sering menggerakkan
    harga seketika lalu ditelan derau harian — itu pola yang sah, bukan ketiadaan efek.
+
+### Arah CPI BERBALIK tergantung ekspektasi siapa yang dipakai
+
+Ini alasan terkuat untuk tidak memakai CPI sebagai penentu arah, dan ditemukan dengan
+menghitung dua kali memakai definisi kejutan yang berbeda:
+
+| ukuran kejutan | selisih H+1 | vonis rezim |
+|---|---|---|
+| terhadap nowcast model Cleveland Fed | **-0,17%** | 7 dari 7 potongan NEGATIF |
+| terhadap konsensus pasar SoSoValue | **+0,20%** | 7 dari 7 potongan POSITIF |
+
+Dua-duanya "konsisten", ke arah yang BERLAWANAN. Artinya tanda itu bukan sifat emas,
+melainkan artefak dari memilih pembanding. Besarannya juga sama-sama di bawah derau.
+
+**Kesimpulan yang berlaku: CPI TIDAK punya edge arah untuk emas, titik.** Kalau ditanya,
+sampaikan bahwa rilisnya menaikkan volatilitas dan arahnya tidak bisa diandalkan — dan
+kalau perlu alasannya, sebut temuan ini.
+
+Yang dipakai di brief adalah konsensus PASAR (SoSoValue), karena yang menggerakkan harga
+adalah selisih terhadap ekspektasi pasar, bukan terhadap model. Nowcast Cleveland Fed tetap
+tersedia sebagai cadangan lewat `--sumber nowcast`.
 
 Yang jujur untuk emas hari ini: **"CPI menaikkan VOLATILITAS; arahnya tidak bisa diandalkan
 — kecenderungan H+1 konsisten tapi terlalu kecil untuk ditradingkan, dan efek H+5 tidak

@@ -1878,3 +1878,34 @@ def test_kunci_sosovalue_dioper_ke_runner():
     """Arus ETF berubah tiap hari, jadi harus ditarik saat analisa — bukan berkas tersimpan."""
     alur = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"), encoding="utf-8").read()
     assert "SOSOVALUE_API_KEY: ${{ secrets.SOSOVALUE_API_KEY }}" in alur
+
+
+def test_satu_sumber_kejutan_per_acara():
+    """Menjalankan dua sumber untuk acara yang sama itu membayar dua kali.
+
+    CPI kini memakai konsensus pasar SoSoValue di ketiga jalur; nowcast Cleveland Fed
+    tetap ada sebagai cadangan lewat --sumber nowcast, tapi tidak ikut di brief.
+    """
+    sumber = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    assert sumber.count('"--indikator", "CPI"') == 3, "CPI dipanggil di crypto, forex, saham"
+    # Setiap pemanggilan CPI harus menyertakan sumber sosovalue.
+    for potong in sumber.split('"--indikator", "CPI"')[1:]:
+        assert '"sosovalue"' in potong[:120], "ada jalur CPI yang belum pakai konsensus pasar"
+
+
+def test_kalender_tidak_lagi_di_brief_tapi_tetap_dijadwalkan():
+    """Konsensusnya sudah dari SoSoValue, tapi arsip independen harus tetap tumbuh."""
+    sumber = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    assert '"cloud/kalender.py", "--ringkas"' not in sumber, "kalender.py masih di brief"
+    rapor = open(os.path.join(AKAR, ".github", "workflows", "rapor.yml"),
+                 encoding="utf-8").read()
+    assert "cloud/kalender.py" in rapor, "arsip konsensus tidak akan tumbuh lagi"
+    assert "cloud/data/arsip_konsensus.jsonl" in rapor
+
+
+def test_perbedaan_antar_sumber_cpi_tercatat():
+    """Dua definisi kejutan memberi tanda BERLAWANAN — itu temuan, bukan detail teknis."""
+    teks = " ".join(open(os.path.join(AKAR, "cloud", "prompts", "peran", "prediktor.md"),
+                         encoding="utf-8").read().split())
+    assert "BERBALIK tergantung ekspektasi siapa" in teks
+    assert "TIDAK punya edge arah untuk emas" in teks

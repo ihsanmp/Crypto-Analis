@@ -296,8 +296,20 @@ def deret_soso(label):
         riwayat.append({"tanggal_rilis": tgl, "kejutan_pp": round(a - f_, 4),
                         "aktual_mom_persen": a if sa == "%" else None,
                         "aktual": a, "konsensus": f_})
+    # Baris dengan aktual KOSONG adalah rilis yang belum keluar — di situlah konsensus untuk
+    # rilis BERIKUTNYA berada. Ini yang menggantikan peran kalender.py di brief.
+    menunggu = []
+    for baris in acara["data"]:
+        tgl = (baris.get("date") or "").strip()
+        a2, _ = _nilai_soso(baris.get("actual"))
+        f2, _ = _nilai_soso(baris.get("forecast"))
+        if a2 is None and f2 is not None and tgl:
+            menunggu.append({"tanggal": tgl, "konsensus": baris.get("forecast"),
+                             "sebelumnya": baris.get("previous")})
+    menunggu.sort(key=lambda x: x["tanggal"])
+
     riwayat.sort(key=lambda x: x["tanggal_rilis"])
-    return ({"riwayat": riwayat, "belum_rilis": [],
+    return ({"riwayat": riwayat, "belum_rilis": menunggu[:2],
              "ditarik_utc": berkas.get("ditarik_utc"),
              "nama_acara": acara.get("nama")}, True, None)
 
@@ -575,6 +587,8 @@ def main_soso(args, label):
 
     riwayat = data["riwayat"]
     keluar["nama_acara"] = data.get("nama_acara")
+    if data.get("belum_rilis"):
+        keluar["rilis_berikutnya"] = data["belum_rilis"]
     keluar["data_ditarik_utc"] = data.get("ditarik_utc")
     keluar["jumlah_rilis"] = len(riwayat)
     keluar["jendela"] = (f"{riwayat[0]['tanggal_rilis']} s/d {riwayat[-1]['tanggal_rilis']}"

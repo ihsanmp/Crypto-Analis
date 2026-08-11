@@ -1256,9 +1256,9 @@ def data_mentah_crypto(coin):
     # Reaksi terhadap kejutan CPI. FOMC SENGAJA tidak ikut di jalur crypto: seri SF Fed
     # berakhir 2023-12 sementara candle harian gratis paling jauh ~2,7 tahun ke belakang,
     # jadi irisannya cuma segelintir rapat — bukan sampel tipis, tapi tidak ada.
-    tugas.append(("REAKSI HISTORIS RILIS CPI (kejutan.py)",
-                  ["cloud/kejutan.py", "--indikator", "CPI", "--simbol", coin,
-                   "--rezim", "--ringkas"], 0))
+    tugas.append(("KEJUTAN CPI (kejutan.py, konsensus pasar)",
+                  ["cloud/kejutan.py", "--indikator", "CPI", "--sumber", "sosovalue",
+                   "--simbol", coin, "--rezim", "--ringkas"], 0))
 
     bagian, gagal = [], []
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
@@ -1412,9 +1412,9 @@ def data_mentah_pasar(simbol, jenis):
         tugas.append(("EARNINGS & PEER (earnings.py)", ["cloud/earnings.py", simbol]))
         # Riwayat Yahoo 15 tahun, jadi kedua studi punya sampel penuh di jalur saham —
         # 154 rilis CPI dan 102 rapat FOMC, tidak seperti crypto yang riwayatnya pendek.
-        tugas.append(("REAKSI HISTORIS RILIS CPI (kejutan.py)",
-                      ["cloud/kejutan.py", "--indikator", "CPI", "--simbol", simbol,
-                       "--pasar", "--rezim", "--ringkas"]))
+        tugas.append(("KEJUTAN CPI (kejutan.py, konsensus pasar)",
+                      ["cloud/kejutan.py", "--indikator", "CPI", "--sumber", "sosovalue",
+                       "--simbol", simbol, "--pasar", "--rezim", "--ringkas"]))
         tugas.append(("SENSITIVITAS KEJUTAN FOMC (kejutan.py)",
                       ["cloud/kejutan.py", "--indikator", "FOMC", "--simbol", simbol,
                        "--pasar", "--rezim", "--ortogonal", "--ringkas"]))
@@ -1430,13 +1430,14 @@ def data_mentah_pasar(simbol, jenis):
         tugas.append(("MAKRO AS (makro.py, sumber FRED)", ["cloud/makro.py", "--ringkas"]))
         # Reaksi historis emas/FX terhadap kejutan CPI — pelengkap kalender.py, yang hanya
         # memberi jadwal & konsensus tanpa memberitahu apa yang BIASANYA terjadi sesudahnya.
-        tugas.append(("REAKSI HISTORIS RILIS CPI (kejutan.py)",
-                      ["cloud/kejutan.py", "--indikator", "CPI", "--simbol", simbol,
-                       "--pasar", "--rezim", "--ringkas"]))
-        # Konsensus & jadwal rilis — HANYA untuk forex/komoditas. Saham dinilai dari
-        # fundamental emitennya, crypto tidak digerakkan kalender ekonomi AS.
-        tugas.append(("KONSENSUS & JADWAL RILIS (kalender.py)",
-                      ["cloud/kalender.py", "--ringkas"]))
+        tugas.append(("KEJUTAN CPI (kejutan.py, konsensus pasar)",
+                      ["cloud/kejutan.py", "--indikator", "CPI", "--sumber", "sosovalue",
+                       "--simbol", simbol, "--pasar", "--rezim", "--ringkas"]))
+        # kalender.py (Forex Factory) TIDAK lagi ikut di brief. Konsensus untuk rilis
+        # berikutnya kini datang dari baris ber-aktual-kosong di riwayat SoSoValue, dan
+        # tanggal resminya dari jadwal.py — menjalankannya berarti membayar 4.028 karakter
+        # untuk informasi yang sudah ada. Script-nya tetap dipakai secara terjadwal supaya
+        # arsip konsensus independen kita terus tumbuh (lihat arsip.py).
         # Jadwal RESMI + angka aktual NFP/PPI. kalender.py memberi konsensus tapi feednya
         # tidak resmi dan pernah berpindah host; untuk aturan "jangan masuk menjelang
         # rilis", tanggalnya sebaiknya datang dari BLS dan The Fed sendiri.
