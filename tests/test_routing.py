@@ -2294,3 +2294,18 @@ def test_ticker_kapital_tetap_dikenali():
 def test_niat_banding_membuka_ticker_saham():
     assert sorted(bot._semua_aset("bandingkan nvda dan amd")) == ["AMD", "NVDA"]
     assert sorted(bot._semua_aset("bandingkan saham nvda dan amd")) == ["AMD", "NVDA"]
+
+
+def test_penjelasan_lubang_ditulis_sekali():
+    """Kalimat 132 karakter yang sama sempat diulang ~38 kali dalam satu keluaran.
+
+    Penandanya memang harus per-titik (maknanya per-titik), tapi PENJELASANNYA cukup
+    sekali. Ini bentuk pemborosan yang paling murah diperbaiki: nol kehilangan informasi.
+    """
+    teks = open(os.path.join(AKAR, "cloud", "stockfund.py"), encoding="utf-8").read()
+    assert 'catatan = f"lubang {selisih} hari"' in teks
+    assert "arti_lubang" in teks
+    # Kalimat panjangnya tidak boleh kembali ke jalur per-titik.
+    i = teks.index("def deret(")
+    blok = teks[i:i + 2000]
+    assert "kemungkinan kuartal itu" not in blok, "penjelasan panjang kembali ke per-titik"

@@ -169,9 +169,11 @@ def deret(entri, n, kuartalan):
             if jarak_wajar[0] <= selisih <= jarak_wajar[1]:
                 ubah = tumbuh(e["nilai"], d[i - 1]["nilai"])
             else:
-                catatan = (f"periode sebelumnya terpaut {selisih} hari — tidak berurutan, "
-                           "pertumbuhan tidak dihitung (kemungkinan kuartal itu hanya ada "
-                           "di 10-K tahunan)")
+                # Penjelasan lengkapnya ditulis SEKALI di tingkat atas (lihat arti_lubang),
+                # bukan diulang di tiap titik. Kalimat 132 karakter ini sebelumnya muncul
+                # ~38 kali dalam satu keluaran — hampir 5 rb karakter untuk mengatakan hal
+                # yang persis sama. Penandanya tetap per-titik karena maknanya per-titik.
+                catatan = f"lubang {selisih} hari"
         baris = {"periode": str(e["akhir"]), "nilai": e["nilai"],
                  "perubahan_persen": ubah, "form": e["form"]}
         if catatan:
@@ -240,6 +242,18 @@ def main():
         }
 
     hasil["metrik"] = data
+    # Penjelasan penanda "lubang N hari" ditulis SEKALI di sini. Sebelumnya kalimat penuh
+    # diulang di setiap titik yang periodenya berlubang — dan sebuah emiten bisa punya
+    # puluhan titik seperti itu.
+    if any("lubang" in str(t.get("catatan", "")) for m in data.values()
+           if isinstance(m, dict)
+           for deret in (m.get("kuartalan"), m.get("tahunan")) if isinstance(deret, list)
+           for t in deret if isinstance(t, dict)):
+        hasil["arti_lubang"] = (
+            "Penanda 'lubang N hari' pada sebuah titik berarti periode sebelumnya TIDAK "
+            "berurutan, jadi pertumbuhannya sengaja tidak dihitung — kemungkinan kuartal itu "
+            "hanya ada di 10-K tahunan. JANGAN menghitung sendiri pertumbuhan dari dua titik "
+            "berjauhan seperti itu; angkanya akan menyesatkan.")
     hasil["tag_xbrl_terpakai"] = tag_terpakai
     if kosong:
         hasil["tidak_tersedia"] = kosong
