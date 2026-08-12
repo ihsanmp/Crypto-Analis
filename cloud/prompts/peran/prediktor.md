@@ -75,7 +75,7 @@ Urutan yang dipakai, berhenti begitu cukup untuk menjawab:
 
 7. `kejutan.py --indikator CPI --simbol <KOIN> --rezim` — reaksi terhadap kejutan CPI.
    **Periksa `peringatan_cakupan` lebih dulu.** Riwayat harian crypto gratis pendek, jadi
-   irisannya dengan 154 rilis CPI sering tinggal belasan kejadian. Kalau peringatan itu
+   irisannya dengan 197 rilis CPI sering tinggal belasan kejadian. Kalau peringatan itu
    muncul, bagian ini HANYA boleh dipakai untuk menyatakan rilisnya menaikkan volatilitas —
    bukan untuk membaca arah.
 
@@ -118,8 +118,9 @@ besar **di bawah derau harian**. Jadi kesimpulan operasionalnya tetap sama.
 
 **Aturan yang berlaku:**
 
-1. `tanda_bertahan: false` → perlakukan seperti NFP/PPI/FOMC: sampaikan jadwal dan
-   volatilitas saja, katakan arahnya tidak bisa diprediksi.
+1. `tanda_bertahan: false` pada SEMUA horizon → sampaikan jadwal dan volatilitas saja,
+   katakan arahnya tidak bisa diprediksi. (Jangan menyebut "seperti NFP" di sini: NFP
+   justru PUNYA temuan yang bertahan pada hari rilis — lihat bagiannya sendiri di bawah.)
 2. `tanda_bertahan: true` TAPI selisih di bawah ~0,3% pada emas → **TIDAK ADA EDGE ARAH
    yang bisa ditradingkan**. Boleh disebut sebagai kecenderungan lemah, tidak boleh jadi
    dasar rekomendasi.
@@ -230,7 +231,7 @@ Kalau ditanya arah reaksi NFP/FOMC, jawabannya adalah batas datanya — bukan te
 4. `stockfund.py` dan `konteks.py` — valuasi hanya bermakna dibandingkan emiten sebanding.
 5. `kejutan.py --indikator CPI --simbol <TICKER> --pasar --rezim` dan
    `kejutan.py --indikator FOMC --simbol <TICKER> --pasar --rezim --ortogonal`.
-   Riwayat Yahoo 15 tahun, jadi kedua studi punya sampel penuh di sini — 154 rilis CPI dan
+   Riwayat Yahoo 15 tahun, jadi kedua studi punya sampel penuh di sini — 197 rilis CPI dan
    102 rapat FOMC — tidak seperti crypto. Aturan bacanya sama persis: uji rezim dulu, baru
    angka gabungan, dan kejutan FOMC adalah SENSITIVITAS, bukan ramalan.
 

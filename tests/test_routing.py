@@ -1988,3 +1988,42 @@ def test_aturan_urutan_level_ada_di_seed():
     teks = " ".join(open(os.path.join(AKAR, "cloud", "prompts", "peran", "prediktor.md"),
                          encoding="utf-8").read().split())
     assert "HARUS melewatinya dulu" in teks
+
+
+def test_jadwal_tidak_membantah_studi_kejutan():
+    """Brief yang sama memuat studi kejutan NFP DAN FOMC.
+
+    jadwal.py pernah mengirim "reaksi menurut ARAH KEJUTAN tidak bisa diukur untuk NFP,
+    PPI, maupun FOMC" ke setiap brief forex dan saham — perintah yang membantah data yang
+    sedang dipegang model. Prompt yang berkontradiksi menghasilkan perilaku acak.
+    """
+    teks = open(os.path.join(AKAR, "cloud", "jadwal.py"), encoding="utf-8").read()
+    # Hanya baris yang benar-benar dicetak (bukan komentar) yang dipermasalahkan.
+    kode = "\n".join(b for b in teks.split("\n")
+                   if not b.strip().startswith("#"))
+    for klaim in ("tidak bisa diukur untuk NFP", "TIDAK BISA dibuat untuk NFP",
+                  "TIDAK ADA konsensus historis di sumber gratis mana pun"):
+        assert klaim not in kode, f"klaim usang masih dikirim: {klaim}"
+
+
+def test_pesan_bersama_tidak_menyebut_satu_sumber():
+    """wajib_dibaca dipakai tiga sumber sekaligus.
+
+    Menyebut "kejutan diukur terhadap model Cleveland Fed" di dalamnya membuat kalimat itu
+    SALAH saat sumbernya konsensus pasar SoSoValue atau seri SF Fed — dan itu pernah
+    terkirim ke produksi.
+    """
+    teks = open(os.path.join(AKAR, "cloud", "kejutan.py"), encoding="utf-8").read()
+    awal = teks.index('hasil["wajib_dibaca"]')
+    blok = teks[awal:awal + 900]
+    for sumber in ("Cleveland Fed", "SoSoValue", "SF Fed", "Bauer"):
+        assert sumber not in blok, f"pesan bersama menyebut sumber spesifik: {sumber}"
+
+
+def test_seed_tidak_menyamakan_nfp_dengan_yang_nihil():
+    """NFP PUNYA temuan yang bertahan (hari rilis), jadi tidak boleh dipakai sebagai
+    contoh 'tidak ada apa-apa' di aturan lain pada berkas yang sama."""
+    teks = " ".join(open(os.path.join(AKAR, "cloud", "prompts", "peran", "prediktor.md"),
+                         encoding="utf-8").read().split())
+    assert "perlakukan seperti NFP/PPI/FOMC" not in teks
+    assert "NFP justru PUNYA temuan yang bertahan" in teks

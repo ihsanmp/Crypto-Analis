@@ -1,13 +1,16 @@
 """Arsip konsensus & aktual rilis ekonomi — menumbuhkan data yang tidak dijual gratis.
 
-MASALAH YANG DIPECAHKAN: kejutan.py bisa mengukur reaksi harga menurut arah kejutan untuk
-CPI karena Cleveland Fed kebetulan menerbitkan nowcast beserta aktualnya sejak 2013. Untuk
-NFP, PPI, dan FOMC tidak ada padanannya — tidak satu pun sumber gratis menyimpan KONSENSUS
-HISTORIS. Feed Forex Factory memuat konsensus, tapi hanya untuk pekan berjalan; begitu
-pekannya lewat, angkanya hilang selamanya.
+SAAT DIBUAT, berkas ini adalah satu-satunya jalan: NFP/PPI/FOMC tidak punya konsensus
+historis di sumber gratis mana pun, sementara feed Forex Factory hanya memuat pekan
+berjalan — begitu pekannya lewat, angkanya hilang selamanya.
 
-Solusinya bukan mencari sumber baru, melainkan BERHENTI MEMBUANG yang sudah lewat. Tiap kali
-kalender.py menarik feed, rilis berdampak tinggi dicatat ke sini. Satu acara muncul dua kali
+ITU SUDAH BERUBAH. Riwayat SoSoValue ternyata menyimpan konsensus sejak 2010, dan kejutan.py
+kini memakainya. Peran arsip ini bergeser, TIDAK hilang: ia jadi SALINAN INDEPENDEN untuk
+mengaudit angka SoSoValue, yang tidak punya jejak vintage sama sekali. Kalau suatu saat
+keduanya berbeda jauh pada rilis yang sama, itu pertanda salah satunya sudah di-backfill.
+
+Prinsipnya tetap sama — bukan mencari sumber baru, melainkan BERHENTI MEMBUANG yang sudah
+lewat. Tiap kali kalender.py menarik feed, rilis berdampak tinggi dicatat ke sini. Satu acara muncul dua kali
 dalam siklus hidupnya — sebelum rilis (aktual kosong) dan sesudah (aktual terisi) — jadi
 pencatatannya UPSERT, dan aktual yang sudah terisi TIDAK BOLEH tertimpa kosong oleh cache
 lama.

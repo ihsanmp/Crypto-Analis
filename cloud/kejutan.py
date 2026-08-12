@@ -392,14 +392,18 @@ def reaksi_harga(simbol, riwayat, pasar, rentang="15y", catatan=None, meta=None,
         # BUKAN "cara_baca": nama itu ada di _PANDUAN_STATIS dan dibuang oleh --ringkas,
         # padahal --ringkas justru yang dipakai produksi. Aturan yang menentukan boleh
         # tidaknya angka ini dikutip TIDAK BOLEH ikut terbuang.
+        # Atribusi sumber SENGAJA tidak diulang di sini. Kalimat ini dipakai ketiga sumber
+        # (nowcast Cleveland Fed, konsensus pasar SoSoValue, seri SF Fed), jadi menyebut
+        # satu sumber di dalamnya membuatnya SALAH pada dua sumber lainnya — dan itu pernah
+        # terjadi. Sumber yang benar sudah tercetak di field "sumber" tiap keluaran.
         hasil["wajib_dibaca"] = (
-            "Angka ini GABUNGAN 13 tahun dan TIDAK BOLEH dikutip sendirian. Pada emas, "
-            "selisih H+5 gabungan ternyata artefak: tandanya berbalik saat data dipotong "
-            "per periode (2013-2017 dan 2017-2022 justru POSITIF, hanya 2022-2026 yang "
-            "sangat negatif). Baca 'uji_ketahanan_per_rezim' lebih dulu, dan pakai "
-            "vonisnya. Selisih di bawah ~0,3% pada emas tidak bisa dibedakan dari derau "
-            "harian — sebut TIDAK ADA EDGE ARAH. Ingat juga kejutan diukur terhadap model "
-            "Cleveland Fed, BUKAN konsensus ekonom.")
+            "Angka ini GABUNGAN seluruh riwayat dan TIDAK BOLEH dikutip sendirian. Contoh "
+            "nyata pada emas: selisih H+5 gabungan ternyata artefak — tandanya berbalik "
+            "saat data dipotong per periode (2013-2017 dan 2017-2022 POSITIF, hanya "
+            "2022-2026 sangat negatif). Baca 'uji_ketahanan_per_rezim' LEBIH DULU dan "
+            "pakai vonisnya. Selisih di bawah ~0,3% pada emas tidak bisa dibedakan dari "
+            "derau harian — sebut TIDAK ADA EDGE ARAH. Sebutkan juga terhadap APA kejutan "
+            "diukur; lihat field 'sumber', karena arah efeknya bisa berbeda antar sumber.")
     return hasil
 
 

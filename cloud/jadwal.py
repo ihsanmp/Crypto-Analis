@@ -11,12 +11,13 @@ Tiga sumber, semuanya gratis dan tanpa pendaftaran:
   - api.bls.gov v1             angka aktual; tanpa kunci dibatasi 25 permintaan/hari
   - federalreserve.gov         tanggal rapat FOMC, termasuk penanda rapat berproyeksi
 
-BATAS YANG TIDAK BISA DITEMBUS SUMBER GRATIS — dan harus dikatakan apa adanya:
-tidak ada satu pun dari sumber ini yang menyimpan KONSENSUS HISTORIS. Karena itu studi
-reaksi menurut arah kejutan seperti kejutan.py untuk CPI TIDAK BISA dibuat untuk NFP, PPI,
-atau FOMC. Yang tersedia hanya jadwal, angka aktual, dan perubahannya terhadap bulan lalu.
-Jangan menyajikan "perubahan terhadap bulan lalu" seolah itu kejutan terhadap ekspektasi —
-yang menggerakkan harga adalah selisih terhadap konsensus, bukan terhadap bulan sebelumnya.
+LINGKUPNYA SEMPIT DENGAN SENGAJA: berkas ini TIDAK menghitung kejutan. Ketiga sumber di
+atas memang tidak menyimpan konsensus historis, tapi itu bukan lagi jalan buntu — konsensus
+pasar sejak 2010 tersedia lewat riwayat SoSoValue, dan kejutan FOMC lewat seri SF Fed.
+Keduanya diolah kejutan.py, bukan di sini.
+
+Yang harus dijaga: "perubahan terhadap bulan lalu" pada nilai_terbaru BUKAN kejutan terhadap
+ekspektasi. Yang menggerakkan harga adalah selisih terhadap konsensus.
 
 Pemakaian:
     python cloud/jadwal.py
@@ -251,13 +252,19 @@ def main():
         "rilis_bls": rilis_bls(args.paksa),
         "fomc": fomc(args.paksa),
         "nilai_terbaru": nilai_terbaru(args.paksa),
-        "batas_penting": (
-            "TIDAK ADA konsensus historis di sumber gratis mana pun, jadi reaksi harga "
-            "menurut ARAH KEJUTAN tidak bisa diukur untuk NFP, PPI, maupun FOMC — beda "
-            "dengan CPI yang punya nowcast Cleveland Fed (lihat kejutan.py). Untuk ketiga "
-            "acara ini sampaikan JADWAL dan ANGKA AKTUAL saja, dan katakan terus terang "
-            "bahwa arah reaksinya tidak bisa diprediksi dari data yang ada. 'Perubahan "
-            "terhadap bulan lalu' BUKAN kejutan terhadap ekspektasi."),
+        # KLAIM DI SINI PERNAH USANG DAN BERTABRAKAN dengan isi brief yang sama: dulu
+        # tertulis bahwa studi kejutan NFP/PPI/FOMC mustahil, padahal kejutan.py sudah
+        # menyediakan ketiganya di brief yang persis sama. Model menerima perintah yang
+        # membantah data yang sedang dipegangnya. Sekarang isinya menunjuk ke sumbernya.
+        "lingkup": (
+            "Berkas ini memberi JADWAL RESMI dan ANGKA AKTUAL saja — bukan kejutan. "
+            "Reaksi menurut arah kejutan ADA dan dihitung terpisah oleh kejutan.py: NFP "
+            "dan CPI/PPI dari konsensus pasar tersimpan, FOMC dari seri SF Fed. Pakai "
+            "angka dari sana, jangan menyimpulkan arah dari berkas ini."),
+        "jebakan": (
+            "'Perubahan terhadap bulan lalu' di bagian nilai_terbaru BUKAN kejutan "
+            "terhadap ekspektasi. NFP -23 ribu bisa disambut naik kalau konsensus "
+            "memperkirakan lebih buruk. Untuk arah, baca keluaran kejutan.py."),
     }
     if args.ringkas:
         from backtest import buang_panduan
