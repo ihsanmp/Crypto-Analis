@@ -2081,3 +2081,40 @@ def test_peringatan_kesegaran_sampai_ke_keluaran():
     blok = teks[i:i + 2000]
     assert 'keluar["umur_data_hari"]' in blok
     assert 'peringatan_kesegaran' in blok
+
+
+@pytest.mark.parametrize("gerak,arus,harus", [
+    (8.0, -200e6, "distribusi"),
+    (-8.0, 200e6, "akumulasi"),
+    (0.4, -200e6, "menyamping"),
+    (-0.8, -200e6, "menyamping"),
+    (8.0, 200e6, "sejalan"),
+    (-8.0, -200e6, "sejalan"),
+])
+def test_label_divergensi_etf(monkeypatch, gerak, arus, harus):
+    """Harga DATAR bukan berarti sejalan.
+
+    Versi sebelumnya melabeli "harga dan arus SEJALAN, konfirmasi biasa" untuk harga
+    +0,4% dengan arus keluar $4 miliar. Itu pernyataan yang keliru, dan justru menghapus
+    keadaan paling menarik: harga bertahan padahal uang institusi keluar besar-besaran.
+    """
+    import sosovalue
+    baris = [{"date": f"2026-{i // 28 + 1:02d}-{i % 28 + 1:02d}", "totalNetInflow": arus,
+              "totalNetAssets": 1e10, "cumNetInflow": 1e9} for i in range(60)]
+    monkeypatch.setattr(sosovalue, "historis_etf", lambda j="us-btc-spot": (baris, None))
+    monkeypatch.setattr(_etf, "_gerak_harga", lambda s, n: gerak)
+    pola = _etf.analisa("BTC")["divergensi_20_hari"]["pola"].lower()
+    assert harus in pola, pola
+
+
+def test_divergensi_datar_tidak_mengaku_konfirmasi(monkeypatch):
+    """Kata 'konfirmasi biasa' tidak boleh muncul saat harga menyamping."""
+    import sosovalue
+    baris = [{"date": f"2026-{i // 28 + 1:02d}-{i % 28 + 1:02d}",
+              "totalNetInflow": -200e6, "totalNetAssets": 1e10,
+              "cumNetInflow": 1e9} for i in range(60)]
+    monkeypatch.setattr(sosovalue, "historis_etf", lambda j="us-btc-spot": (baris, None))
+    monkeypatch.setattr(_etf, "_gerak_harga", lambda s, n: 0.4)
+    pola = _etf.analisa("BTC")["divergensi_20_hari"]["pola"]
+    assert "Konfirmasi biasa" not in pola
+    assert "BUKAN konfirmasi" in pola

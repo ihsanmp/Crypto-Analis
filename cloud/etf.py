@@ -141,17 +141,28 @@ def analisa(simbol):
             "perubahan_harga_persen": gerak,
             "arus_bersih_usd": round(arus20),
         }
-        if gerak > 2 and arus20 < 0:
-            hasil["divergensi_20_hari"]["pola"] = (
-                "HARGA NAIK + ARUS KELUAR — pola distribusi. Kenaikan tidak didukung uang "
-                "institusi; turunkan keyakinan pada kelanjutan tren.")
-        elif gerak < -2 and arus20 > 0:
-            hasil["divergensi_20_hari"]["pola"] = (
-                "HARGA TURUN + ARUS MASUK — pola akumulasi. Institusi menyerap penurunan.")
+        # Harga DATAR bukan berarti sejalan. Versi sebelumnya melabeli "harga dan arus
+        # SEJALAN, konfirmasi biasa" untuk harga +0,4% dengan arus keluar $4 miliar —
+        # pernyataan yang keliru, dan justru menghapus keadaan yang paling menarik:
+        # harga bertahan padahal uang institusi keluar besar-besaran.
+        naik, turun = gerak > 2, gerak < -2
+        masuk = arus20 > 0
+        arah_arus = "MASUK" if masuk else "KELUAR"
+        if naik and not masuk:
+            pola = ("HARGA NAIK + ARUS KELUAR — pola distribusi. Kenaikan tidak didukung "
+                    "uang institusi; turunkan keyakinan pada kelanjutan tren.")
+        elif turun and masuk:
+            pola = ("HARGA TURUN + ARUS MASUK — pola akumulasi. Institusi menyerap "
+                    "penurunan.")
+        elif not naik and not turun:
+            pola = (f"HARGA MENYAMPING ({gerak:+.2f}%) sementara arus {arah_arus}. Ini "
+                    "BUKAN konfirmasi dan BUKAN divergensi klasik — harga yang bertahan "
+                    "saat arus keluar besar berarti ada penyerap lain, dan sebaliknya. "
+                    "Nilai besarannya dari persentil, jangan dari angka dolarnya.")
         else:
-            hasil["divergensi_20_hari"]["pola"] = (
-                "Harga dan arus SEJALAN — tidak ada divergensi. Ini konfirmasi biasa, "
-                "bukan sinyal tambahan.")
+            pola = (f"Harga dan arus SEJALAN (harga {gerak:+.2f}%, arus {arah_arus}) — "
+                    "tidak ada divergensi. Konfirmasi biasa, bukan sinyal tambahan.")
+        hasil["divergensi_20_hari"]["pola"] = pola
 
     hasil["cara_pakai"] = (
         "Arus ETF adalah KATEGORI SINYAL TERSENDIRI (arus dana institusional), terpisah dari "
