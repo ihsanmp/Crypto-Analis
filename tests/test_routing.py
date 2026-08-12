@@ -2195,3 +2195,102 @@ def test_readme_mencantumkan_semua_secret_yang_dipakai():
     teks = _readme()
     hilang = sorted(s for s in dipakai if s not in teks)
     assert not hilang, f"secret dipakai bot.yml tapi tidak ada di README: {hilang}"
+
+
+# --------------------------------------------------------------- perbandingan aset
+import banding as _banding  # noqa: E402
+
+
+@pytest.mark.parametrize("pesan,harap", [
+    ("bandingkan btc dan eth", ["BTC", "ETH"]),
+    ("bandingkan nvda dan amd", ["AMD", "NVDA"]),
+    ("perbandingan sol vs avax", ["AVAX", "SOL"]),
+    ("bandingkan solana dan ethereum", ["ETH", "SOL"]),
+    ("bagusan mana sol atau eth", ["ETH", "SOL"]),
+])
+def test_deteksi_perbandingan(pesan, harap):
+    """Saham dulu tidak terdeteksi sama sekali, dan 'mana' terbaca sebagai koin MANA."""
+    assert sorted(bot._semua_aset(pesan)) == harap
+
+
+@pytest.mark.parametrize("pesan,harap", [
+    ("harga btc berapa sekarang", ("crypto", "BTC")),
+    ("prospek eth minggu ini", ("crypto", "ETH")),
+    ("analisa solana", ("crypto", "SOL")),
+])
+def test_potongan_kata_bukan_ticker(pesan, harap):
+    """Peta SEK berisi 10 ribu ticker pendek; mencocokkan POTONGAN kata pasti salah.
+
+    Regex kata di _semua_aset dibuat tanpa batas kata, jadi "sekarang" terpotong jadi
+    "sekara"+"ng" — dan NG adalah ticker sah. Akibatnya pertanyaan SATU koin terbaca dua
+    aset, brief-nya batal dikumpulkan, dan jawabannya kehilangan seluruh datanya.
+    """
+    assert bot.aset_dari_pesan(pesan) == harap
+    assert len(bot._semua_aset(pesan)) == 1
+
+
+def test_jenis_banding():
+    assert bot.jenis_banding(["BTC", "ETH"]) == "crypto"
+    assert bot.jenis_banding(["NVDA", "AMD"]) == "pasar"
+    assert bot.jenis_banding(["BTC", "NVDA"]) == "pasar"
+
+
+def test_banding_baris_setara_untuk_semua_aset():
+    """Perbandingan hanya sah kalau tiap aset diukur dengan cara yang sama.
+
+    Aset yang gagal diambil TIDAK boleh hilang dari daftar — kolomnya harus tetap ada
+    dengan penanda tidak tersedia, supaya tabelnya tidak diam-diam kehilangan satu aset.
+    """
+    hasil = _banding.banding(["ZZZZTIDAKADA", "YYYYTIDAKADA"], False, 60)
+    assert len(hasil["aset"]) == 2
+    assert all("tidak_tersedia" in b for b in hasil["aset"])
+    assert hasil.get("gagal_diambil") == ["ZZZZTIDAKADA", "YYYYTIDAKADA"]
+
+
+def test_banding_membatasi_jumlah_aset():
+    """Tabel dengan tujuh kolom tidak terbaca di Telegram, dan briefnya membengkak."""
+    hasil = _banding.banding(["A", "B", "C", "D", "E", "F"], False, 60)
+    assert len(hasil["aset"]) == _banding.MAKS_ASET
+
+
+def test_seed_perbandingan_mewajibkan_tabel():
+    teks = " ".join(open(os.path.join(AKAR, "cloud", "prompts", "chat.md"),
+                         encoding="utf-8").read().split())
+    assert "PERBANDINGAN ANTAR-ASET — SAJIKAN SEBAGAI TABEL" in teks
+    assert "| Perbandingan | BTC | ETH |" in teks
+    assert "diisi `tidak tersedia`" in teks
+    assert "PADA DIMENSI APA" in teks
+
+
+def test_brief_perbandingan_dikumpulkan_kode():
+    """Tanpa cabang ini, tabel perbandingan diisi dari pencarian web — bukan dari kode."""
+    sumber = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    assert "def data_banding" in sumber
+    assert "aset_banding = sorted(bot._semua_aset(text))" in sumber or            "aset_banding = sorted(_semua_aset(text))" in sumber
+    assert "cloud/banding.py" in sumber
+
+
+@pytest.mark.parametrize("pesan", [
+    "rsi eth di daily berapa?",          # RSI = ticker Rush Street Interactive
+    "apa dampaknya ke harga gold?",      # GOLD = ticker Barrick Gold
+    "harga btc berapa sekarang",         # "sekaraNG" -> NG = Northrop Grumman
+])
+def test_kosakata_pasar_tidak_jadi_ticker_saham(pesan):
+    """Peta SEC berisi 10.398 ticker pendek — mencocokkannya ke kalimat Indonesia bebas
+    SELALU menemukan aset palsu, dan daftar pengecualian tidak akan pernah selesai.
+
+    Jalur SEC karena itu hanya dibuka saat konteksnya menuntut: ada niat membandingkan,
+    kata "saham" disebut, atau tickernya ditulis kapital. Ketiga pesan ini tidak memenuhi
+    satu pun, jadi hanya boleh menghasilkan SATU aset.
+    """
+    assert len(bot._semua_aset(pesan)) == 1
+
+
+def test_ticker_kapital_tetap_dikenali():
+    """Orang sering menulis ticker saham dengan huruf kapital tanpa kata 'saham'."""
+    assert "NVDA" in bot._semua_aset("gimana prospek NVDA tahun ini")
+
+
+def test_niat_banding_membuka_ticker_saham():
+    assert sorted(bot._semua_aset("bandingkan nvda dan amd")) == ["AMD", "NVDA"]
+    assert sorted(bot._semua_aset("bandingkan saham nvda dan amd")) == ["AMD", "NVDA"]

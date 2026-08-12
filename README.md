@@ -146,6 +146,7 @@ membawa aturan risiko forex.
 | [cloud/indicators.py](cloud/indicators.py) | Penarik OHLC + kalkulator indikator deterministik (EMA/RSI/Stoch/BB/ATR/SuperTrend/Pivot/Fibonacci untuk 1w/1d/4h). Sumber Binance→Kraken→Coinbase→OKX→CoinGecko; weekly dibangun eksak dari candle harian. Kualitas `approx_close_only` ditandai saat high/low bukan angka asli |
 | [cloud/market.py](cloud/market.py) | OHLC + indikator **saham & forex** (Yahoo, tanpa key), memakai ulang mesin `indicators.py` apa adanya |
 | [cloud/proyeksi.py](cloud/proyeksi.py) | **Proyeksi target dari data**: sebaran gerakan N hari (p10–p90 untuk puncak tercapai, dasar tercapai, harga penutup), ATR, level struktural, ekstensi Fibonacci — sudah dalam satuan harga. `--target` **menguji harga yang diajukan user**: jarak dalam ATR, peluang historis, jendela yang diuji, gerakan terekstrem yang pernah terjadi |
+| [cloud/banding.py](cloud/banding.py) | **Perbandingan 2–4 aset** dalam metrik yang dijamin setara — tiap aset dilewatkan jalur yang sama persis, sehingga tabelnya apples-to-apples. Menandai sendiri saat panjang riwayat antar-aset timpang atau kualitas sumbernya campur. Jauh lebih kecil daripada menempelkan dua brief penuh (~2 rb vs ~50 rb karakter) |
 | [cloud/backtest.py](cloud/backtest.py) | Uji balik sinyal terhadap riwayat aset itu sendiri (golden/death cross, RSI ekstrem, pullback EMA21) + tolok ukur beli-dan-tahan. Kejadian <10 ditandai sampel kecil |
 
 ### Rilis ekonomi & reaksi harga

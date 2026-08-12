@@ -920,7 +920,21 @@ _ALIAS_KOIN = {
     "algorand": "ALGO", "render": "RNDR", "bittensor": "TAO", "uniswap": "UNI",
     "shiba inu": "SHIB", "binance coin": "BNB", "tron": "TRX", "filecoin": "FIL",
 }
-_KATA_BUKAN_TICKER = {"ADA", "OP", "ATAU", "INI", "ITU", "DAN", "APA", "KE", "DI"}
+_KATA_BUKAN_TICKER = {"ADA", "OP", "ATAU", "INI", "ITU", "DAN", "APA", "KE", "DI",
+                      # "MANA" adalah ticker Decentraland SEKALIGUS kata tanya Indonesia.
+                      # "bagusan mana sol atau eth" sempat terbaca menyebut tiga aset.
+                      # Bentuk "$MANA" tetap dikenali lewat jalur dolar di bawah.
+                      "MANA"}
+
+# Kata Indonesia yang KEBETULAN terdaftar sebagai ticker saham AS di berkas SEC. Peta SEC
+# memuat 10.398 ticker termasuk "DAN", "VS", "MANA", "GOLD" — mencocokkannya mentah ke
+# kalimat Indonesia akan menghasilkan aset palsu di hampir setiap pertanyaan.
+_BUKAN_TICKER_SAHAM = {
+    "DAN", "VS", "MANA", "ATAU", "INI", "ITU", "APA", "KE", "DI", "YANG", "JADI", "BUAT",
+    "PADA", "DARI", "AKAN", "BISA", "LAGI", "SAJA", "JUGA", "TAPI", "ANTARA", "SAMA",
+    "LEBIH", "BAGUS", "MASIH", "SUDAH", "BELUM", "NANTI", "SAAT", "KALAU", "ADA", "AKU",
+    "KAMU", "SAYA", "GIMANA", "KENAPA", "BERAPA", "HARGA", "PASAR", "KOIN", "BELI", "JUAL",
+}
 # Kata yang lazim MENGIKUTI kata kerja transaksi tapi jelas bukan nama aset.
 # Tanpa daftar ini, "beli banyak" terbaca sebagai koin BANYAK, "entry lagi" jadi koin
 # LAGI, dan "buy the dip" jadi koin THE — bot lalu mengumpulkan data untuk aset yang
@@ -935,6 +949,13 @@ _SETELAH_TRANSAKSI_BUKAN_ASET = {
 }
 
 
+# Niat MEMBANDINGKAN. Dipakai dua tempat: membuka pencocokan ticker SEC (yang terlalu
+# berisiko dibuka untuk kalimat bebas) dan menandai pesan yang butuh brief perbandingan.
+_BANDING_RE = re.compile(
+    r"(?:banding|bandingkan|perbandingan|dibanding|dibandingkan|"
+    r"\bvs\b|versus|lebih (?:baik|bagus)|bagusan|mendingan|pilih mana|mana yang)", re.I)
+
+
 def _semua_aset(teks):
     """Kumpulan aset berbeda yang disebut dalam satu pesan. Dipakai untuk mendeteksi
     pertanyaan PERBANDINGAN, yang tidak bisa dilayani satu brief."""
@@ -944,12 +965,48 @@ def _semua_aset(teks):
     for alias, simbol in _ALIAS_FX.items():
         if re.search(r"\b" + alias.lower() + r"\b", low):
             ketemu.add(simbol)
+    for nama, tik in _ALIAS_KOIN.items():
+        if re.search(r"\b" + re.escape(nama) + r"\b", low):
+            ketemu.add(tik)
     for k in kata:
         atas = k.upper()
         if _PASANGAN_FX.match(atas):
             ketemu.add(atas)
         elif atas in _TICKER_UMUM and atas not in _KATA_BUKAN_TICKER:
             ketemu.add(atas)
+
+    # Saham: dicocokkan ke peta ticker SEC, dengan penyaring kata Indonesia. Tanpa ini,
+    # "bandingkan nvda dan amd" tidak terdeteksi sebagai perbandingan sama sekali.
+    if not ketemu or len(ketemu) < 2:
+        try:
+            from sec_tickers import peta_ticker
+            hasil = peta_ticker()
+            peta = hasil[0] if isinstance(hasil, tuple) else hasil
+        except Exception:
+            peta = {}
+        # KATA UTUH saja. `kata` dibuat tanpa batas kata, jadi "sekarang" terpotong jadi
+        # "sekara"+"ng" — dan "NG" adalah ticker SEC yang sah (Northrop Grumman). Akibatnya
+        # "harga btc berapa sekarang" terbaca menyebut DUA aset, brief-nya batal dikumpulkan,
+        # dan pertanyaan satu koin kehilangan datanya. Peta SEC berisi 10 ribu ticker pendek,
+        # jadi pencocokan potongan kata pasti menghasilkan aset palsu.
+        # Kata yang SUDAH punya arti lain tidak boleh dicocokkan ulang ke SEC. "gold" alias
+        # emas sekaligus ticker Barrick; "rsi" indikator sekaligus ticker Rush Street.
+        sudah_punya_arti = ({a.upper() for a in _ALIAS_FX} | {a.upper() for a in _ALIAS_KOIN}
+                            | set(_TICKER_UMUM))
+        # Peta SEC berisi 10.398 ticker pendek, jadi mencocokkannya ke kalimat Indonesia
+        # bebas akan SELALU menemukan aset palsu — sudah terbukti pada "sekarang" (NG),
+        # "gold" (Barrick), dan "rsi" (Rush Street). Daftar pengecualian tidak akan pernah
+        # selesai. Karena itu jalur ini hanya dibuka saat konteksnya memang menuntutnya:
+        # ada niat MEMBANDINGKAN, kata "saham" disebut, atau tickernya ditulis KAPITAL.
+        petunjuk = bool(re.search(r"\b(saham|stock|emiten|ticker)\b", low)
+                        or _BANDING_RE.search(low))
+        for k in re.findall(r"\b[A-Za-z]{2,6}\b", teks or ""):
+            atas = k.upper()
+            if (atas in peta and atas not in _BUKAN_TICKER_SAHAM
+                    and atas not in _KATA_BUKAN_TICKER
+                    and atas not in sudah_punya_arti
+                    and (petunjuk or k.isupper())):
+                ketemu.add(atas)
     return ketemu
 
 
@@ -1378,6 +1435,32 @@ def data_proyeksi(teks, jenis, simbol):
                           + (keluar2 if not err2 else f"tidak tersedia: {err2}"))
             break
     return "\n\n".join(bagian)
+
+
+def jenis_banding(aset):
+    """crypto kalau SEMUA aset crypto; selain itu lewat market.py (saham/forex/komoditas)."""
+    kripto = set(_TICKER_UMUM) | set(_ALIAS_KOIN.values())
+    return "crypto" if all(a in kripto for a in aset) else "pasar"
+
+
+def data_banding(aset):
+    """Brief PERBANDINGAN. Sebelumnya pertanyaan dua aset tidak dapat data sama sekali.
+
+    aset_dari_pesan sengaja mengembalikan None saat lebih dari satu aset disebut, supaya
+    brief tidak berisi aset PERTAMA saja lalu angka aset kedua tertandai "tidak terlacak"
+    oleh audit. Akibatnya perbandingan dijawab tanpa satu angka pun dari kode — persis
+    keadaan yang paling rawan karangan.
+
+    banding.py menutup itu dengan mengukur semua aset lewat SATU jalur yang sama, dan
+    keluarannya jauh lebih kecil daripada menempelkan dua brief penuh.
+    """
+    jenis = jenis_banding(aset)
+    args = ["cloud/banding.py"] + list(aset) + ["--hari", "60", "--ringkas"]
+    if jenis != "crypto":
+        args.append("--pasar")
+    keluar, err = _jalankan_terukur(f"BANDING {'+'.join(aset)} (banding.py)", args)
+    return ("### PERBANDINGAN ANTAR-ASET (banding.py)\n"
+            + (keluar if not err else f"tidak tersedia: {err}"))
 
 
 def data_mentah_pasar(simbol, jenis):
@@ -1830,7 +1913,19 @@ def process(token, chat_id, text, photo_file_id=None):
         # angka berjalan di sini juga — sebelumnya mode ini keluar tanpa pemeriksaan,
         # padahal justru paling rawan karangan karena model menjawab lebih bebas.
         jenis_chat, simbol_chat = aset_dari_pesan(text)
-        if simbol_chat:
+        # Dua aset atau lebih -> pertanyaan PERBANDINGAN. aset_dari_pesan sengaja menolak
+        # memilih salah satu, jadi tanpa cabang ini brief-nya kosong sama sekali.
+        aset_banding = sorted(_semua_aset(text)) if len(_semua_aset(text)) >= 2 else []
+        if not simbol_chat and aset_banding:
+            try:
+                brief = data_banding(aset_banding)
+                print(f"[proses] chat: perbandingan {'+'.join(aset_banding)} dikumpulkan "
+                      f"kode ({len(brief)} karakter)", file=sys.stderr)
+            except Exception as e:
+                brief = None
+                print(f"[proses] chat: perbandingan gagal ({type(e).__name__})",
+                      file=sys.stderr)
+        elif simbol_chat:
             try:
                 brief = (data_mentah_crypto(simbol_chat) if jenis_chat == "crypto"
                          else data_mentah_pasar(simbol_chat, jenis_chat))

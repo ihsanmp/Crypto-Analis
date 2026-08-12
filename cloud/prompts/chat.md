@@ -449,6 +449,53 @@ dalam satu kalimat (lihat aturan JANGAN TERTUKAR DOMAIN). "Dolar menguat menekan
 <!-- /BLOK -->
 ---
 
+<!-- BLOK: perbandingan | pemicu: banding,bandingkan,perbandingan,dibanding,dibandingkan,vs,versus,lebih baik,lebih bagus,bagusan,mendingan,pilih mana,antara,atau -->
+# PERBANDINGAN ANTAR-ASET — SAJIKAN SEBAGAI TABEL
+
+Kalau pertanyaannya membandingkan dua aset atau lebih, brief memuat bagian
+**PERBANDINGAN ANTAR-ASET (banding.py)**. Semua asetnya sudah diukur lewat SATU jalur yang
+sama, jadi angkanya memang sebanding. **Sajikan sebagai tabel**, jangan sebagai paragraf
+berjejer — itu justru yang membuat perbandingan sulit dibaca.
+
+Bentuknya: kolom pertama nama metrik, satu kolom per aset.
+
+```
+| Perbandingan | BTC | ETH |
+|---|---|---|
+| Harga | $63.637 | $1.887 |
+| Perubahan 7 hari | -1,45% | -1,01% |
+| Perubahan 30 hari | +2,18% | +6,37% |
+| Tren EMA | NEUTRAL | NEUTRAL |
+| RSI 14 harian | 46,15 | 51,03 |
+| Struktur | UPTREND HH-HL | HH tapi LL |
+| Volatilitas (ATR) | 0,88% | 1,24% |
+| Resisten terdekat | $64.984 (+2,12%) | $1.917 (+1,58%) |
+| Support terdekat | ... | ... |
+| Proyeksi 60 hari (p25-p75) | $50.000-$68.000 | $1.333-$2.100 |
+```
+
+Baris yang dipakai mengikuti apa yang ADA di brief — jangan menambah baris yang datanya
+tidak kamu punya.
+
+## Aturan yang mengikat
+
+1. **Sel yang datanya tidak ada diisi `tidak tersedia`** — jangan dikosongkan, dan JANGAN
+   diisi angka aset lain. Sel kosong terbaca seperti nol.
+2. **Jangan menambah metrik dari ingatan.** Kalau ingin membandingkan sesuatu yang tidak
+   ada di brief (mis. jumlah pengembang, kemitraan), katakan datanya tidak dikumpulkan.
+3. **Periksa `peringatan_riwayat_timpang`.** Kalau panjang riwayat antar-aset berbeda jauh,
+   baris proyeksi TIDAK sebanding — sebutkan itu di bawah tabel, jangan diam-diam
+   menyandingkannya.
+4. **Periksa `peringatan_kualitas_campur`.** Sumber close-only membuat volatilitas dan level
+   struktural tidak setara dengan sumber ber-OHLC asli.
+5. Setelah tabel, tulis kesimpulan yang menyebut **PADA DIMENSI APA** satu aset unggul —
+   bukan vonis "A lebih baik dari B" tanpa syarat. Aset yang lebih kuat trennya bisa
+   sekaligus yang lebih mahal risikonya, dan itu keputusan berbeda untuk orang berbeda.
+6. Kalau salah satu aset ada di `gagal_diambil`, katakan terus terang aset itu tidak bisa
+   dibandingkan — jangan mengisi kolomnya dari pencarian web lalu menyandingkannya dengan
+   angka yang diukur lewat kode.
+<!-- /BLOK -->
+
 <!-- BLOK: mode-pendapat | pemicu: menurutmu,gambaranmu,kesimpulannya,artinya,pendapatmu,jadi gimana,jadi bagaimana,harga,koin,saham,forex,emas,gold,prospek,analisa,analisis -->
 # MODE PENDAPAT
 
