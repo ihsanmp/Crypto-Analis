@@ -2027,3 +2027,57 @@ def test_seed_tidak_menyamakan_nfp_dengan_yang_nihil():
                          encoding="utf-8").read().split())
     assert "perlakukan seperti NFP/PPI/FOMC" not in teks
     assert "NFP justru PUNYA temuan yang bertahan" in teks
+
+
+def test_cadangan_nowcast_dipakai_saat_riwayat_hilang(tmp_path, monkeypatch, capsys):
+    """Hilangnya satu berkas TIDAK boleh menghapus bagian CPI dari brief.
+
+    Komentar di bot_oneshot.py menjanjikan Cleveland Fed sebagai cadangan, tapi tidak ada
+    yang mengimplementasikannya: kejutan.py hanya mengembalikan tidak_tersedia dan bagian
+    itu lenyap tanpa pengganti — padahal nowcast masih ada dan tidak butuh kunci.
+    """
+    monkeypatch.setattr(_kejutan, "SOSO_PATH", str(tmp_path / "tidak-ada.json"))
+    data, _, err = _kejutan.deret_soso("CPI")
+    assert data is None and err, "berkas hilang harus melapor error, bukan diam"
+    # Sumber cadangan memang tersedia untuk indikator ini.
+    assert "CPI" in _kejutan.INDIKATOR
+
+
+def test_pergantian_sumber_diberitahukan():
+    """Arah efek CPI BERBEDA antar sumber, jadi pergantian diam-diam itu menyesatkan."""
+    teks = open(os.path.join(AKAR, "cloud", "kejutan.py"), encoding="utf-8").read()
+    assert "cadangan_dipakai" in teks
+    i = teks.index('keluar["cadangan_dipakai"]')
+    blok = teks[i:i + 500]
+    assert "arah efeknya bisa" in blok, "pergantian sumber harus menyebut risikonya"
+
+
+def test_riwayat_basi_ditandai(tmp_path, monkeypatch):
+    """Kalau penyegaran mingguan mati diam-diam, studi jalan terus dengan data beku.
+
+    Tanpa penanda umur, rilis baru hilang tanpa jejak dan angkanya tetap terlihat rapi —
+    kelas bug paling berbahaya di sistem ini.
+    """
+    from datetime import datetime, timedelta, timezone as tz
+    berkas = tmp_path / "riwayat.json"
+    tua = (datetime.now(tz.utc) - timedelta(days=30)).strftime("%Y-%m-%d %H:%M")
+    berkas.write_text(json.dumps({
+        "ditarik_utc": tua,
+        "acara": {"NFP": {"nama": "Nonfarm Payrolls", "data": [
+            {"date": "2026-01-09", "actual": "100", "forecast": "80", "previous": "50"}]}},
+    }), encoding="utf-8")
+    monkeypatch.setattr(_kejutan, "SOSO_PATH", str(berkas))
+    data, _, err = _kejutan.deret_soso("NFP")
+    assert err is None
+    assert data["umur_data_hari"] == 30
+    assert "peringatan_kesegaran" in data
+    assert "MINGGUAN" in data["peringatan_kesegaran"]
+
+
+def test_peringatan_kesegaran_sampai_ke_keluaran():
+    """Peringatan yang dihitung lalu tidak disalin ke keluaran sama saja dengan tidak ada."""
+    teks = open(os.path.join(AKAR, "cloud", "kejutan.py"), encoding="utf-8").read()
+    i = teks.index("def main_soso")
+    blok = teks[i:i + 2000]
+    assert 'keluar["umur_data_hari"]' in blok
+    assert 'peringatan_kesegaran' in blok

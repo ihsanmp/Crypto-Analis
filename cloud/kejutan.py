@@ -30,6 +30,7 @@ import argparse
 import json
 import os
 import re
+import sys
 import time
 import urllib.request
 from datetime import datetime, timezone
@@ -256,6 +257,19 @@ def deret_fomc(paksa=False, ortogonal=False):
     return {"riwayat": riwayat, "belum_rilis": []}, dari_cache, err
 
 
+def _umur_hari(waktu_utc):
+    """Umur cap waktu 'YYYY-MM-DD HH:MM' dalam hari. None kalau tidak terbaca."""
+    if not waktu_utc:
+        return None
+    for pola in ("%Y-%m-%d %H:%M", "%Y-%m-%d"):
+        try:
+            t = datetime.strptime(waktu_utc[:16], pola).replace(tzinfo=timezone.utc)
+            return (datetime.now(timezone.utc) - t).days
+        except ValueError:
+            continue
+    return None
+
+
 def _nilai_soso(v):
     """'85' -> (85.0, '') · '0.1%' -> (0.1, '%') · '' -> (None, None)."""
     t = (v or "").strip()
@@ -309,9 +323,23 @@ def deret_soso(label):
     menunggu.sort(key=lambda x: x["tanggal"])
 
     riwayat.sort(key=lambda x: x["tanggal_rilis"])
-    return ({"riwayat": riwayat, "belum_rilis": menunggu[:2],
+    hasil = {"riwayat": riwayat, "belum_rilis": menunggu[:2],
              "ditarik_utc": berkas.get("ditarik_utc"),
-             "nama_acara": acara.get("nama")}, True, None)
+             "nama_acara": acara.get("nama")}
+
+    # Berkas ini disegarkan workflow mingguan. Kalau jadwalnya mati diam-diam — kunci
+    # kedaluwarsa, tier gratis dicabut, atau GitHub menonaktifkan cron setelah 60 hari repo
+    # menganggur — studi tetap berjalan dengan data beku dan TIDAK ada yang memberi tahu.
+    # Rilis baru hilang tanpa jejak, dan angkanya tetap terlihat rapi.
+    umur = _umur_hari(berkas.get("ditarik_utc"))
+    hasil["umur_data_hari"] = umur
+    if umur is not None and umur > 14:
+        hasil["peringatan_kesegaran"] = (
+            f"Riwayat konsensus terakhir ditarik {umur} hari lalu, padahal penyegaran "
+            "dijadwalkan MINGGUAN. Berarti sudah dua jadwal terlewat — rilis terbaru "
+            "kemungkinan belum masuk. Sebutkan tanggal penarikannya saat mengutip, dan "
+            "periksa workflow 'Segarkan data SoSoValue'.")
+    return (hasil, True, None)
 
 
 def _sebaran(nilai):
@@ -582,6 +610,18 @@ def reaksi_per_rezim(simbol, riwayat, pasar, rentang="15y", catatan=None, meta=N
 def main_soso(args, label):
     """Jalur konsensus pasar tersimpan. Menutup NFP dan PPI yang tak punya nowcast model."""
     data, _, err = deret_soso(label)
+    # CADANGAN OTOMATIS. Tanpa ini, hilangnya satu berkas membuat bagian CPI LENYAP dari
+    # brief tanpa penggantinya — padahal nowcast Cleveland Fed masih ada dan tidak butuh
+    # kunci apa pun. Yang diganti hanya pembandingnya, dan itu DISEBUTKAN.
+    if err and label in INDIKATOR:
+        data2, cache2, err2 = deret_kejutan(label)
+        if not err2 and data2:
+            print(f"[kejutan] riwayat SoSoValue tidak tersedia ({err}) — "
+                  f"jatuh ke nowcast Cleveland Fed", file=sys.stderr)
+            args.sumber = "nowcast"
+            main_nowcast(args, label, data2, cache2,
+                         alasan_cadangan=err)
+            return
     keluar = {
         "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
         "indikator": label,
@@ -599,6 +639,11 @@ def main_soso(args, label):
     if data.get("belum_rilis"):
         keluar["rilis_berikutnya"] = data["belum_rilis"]
     keluar["data_ditarik_utc"] = data.get("ditarik_utc")
+    # Diteruskan dari deret_soso. Kalau tidak disalin ke sini, peringatan kesegaran dihitung
+    # lalu dibuang — persis pola bug "aturan ada tapi tidak pernah terkirim".
+    keluar["umur_data_hari"] = data.get("umur_data_hari")
+    if data.get("peringatan_kesegaran"):
+        keluar["peringatan_kesegaran"] = data["peringatan_kesegaran"]
     keluar["jumlah_rilis"] = len(riwayat)
     keluar["jendela"] = (f"{riwayat[0]['tanggal_rilis']} s/d {riwayat[-1]['tanggal_rilis']}"
                          if riwayat else None)
@@ -698,6 +743,11 @@ def main():
         return
 
     data, dari_cache, err = deret_kejutan(ind)
+    main_nowcast(args, ind, data, dari_cache, err)
+
+
+def main_nowcast(args, ind, data, dari_cache, err=None, alasan_cadangan=None):
+    """Jalur nowcast Cleveland Fed. Dipisah supaya bisa dipakai sebagai CADANGAN otomatis."""
     keluar = {
         "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
         "indikator": ind,
@@ -705,6 +755,11 @@ def main():
                    "ekonom Wall Street. Sebut demikian saat mengutip."),
         "dari_cache": dari_cache,
     }
+    if alasan_cadangan:
+        keluar["cadangan_dipakai"] = (
+            f"Sumber utama (konsensus pasar) gagal: {alasan_cadangan}. Angka di bawah "
+            "diukur terhadap NOWCAST MODEL, bukan konsensus pasar — arah efeknya bisa "
+            "BERBEDA. Sebutkan pergantian sumber ini saat mengutip.")
     if err or not data:
         keluar["tidak_tersedia"] = err or "gagal mengurai berkas nowcast"
         print(json.dumps(keluar, indent=2, ensure_ascii=False))
