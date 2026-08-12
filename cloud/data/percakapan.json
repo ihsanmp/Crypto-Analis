@@ -1,40 +1,19 @@
 [
  {
   "chat": "1242dcf6b322d4c6",
-  "waktu": 1786431737.7977026,
-  "waktu_utc": "2026-08-11 07:02",
-  "pesan": "apa proyeksi kamu untuk gold pada CPI nanti, bullish atau bearish?",
-  "balasan": "CPI besok (12 Agustus 2026, data Juli) akan menaikkan volatilitas gold, tapi arahnya — bullish atau bearish — tidak bisa aku proyeksikan dari histori. Sudah diuji: kejutan CPI panas vs dingin pada GC=F (178 rilis, 2011-2026) tandanya BERBALIK antar p\n[...dipangkas...]\nke EMA21 daily ~4.150, bukan kejar harga di zona overbought sekarang.\nSudah pegang: TAHAN, kurangi sebagian kalau close daily gagal tembus resisten 4.377-4.421 pasca-CPI; waspada kalau close daily turun ke bawah EMA21 4.149,97 (sinyal tren berubah).",
+  "waktu": 1786549634.7160428,
+  "waktu_utc": "2026-08-12 15:47",
+  "pesan": "analisa koin skyai",
+  "balasan": "🕒 Data per 12 Agustus 2026 22:42 WIB · sumber harga CoinGecko (1D & 1W approx_close_only — tanpa high/low asli, jadi Stoch kurang presisi dan ATR/SuperTrend/Pivot harian TIDAK dihitung; 4H native)\n\n📊 PASAR\nFear & Greed 27 (Fear, kemarin 29 · stabil)\n[...dipangkas...]\nndustries; (3) apakah pekan ini tutup di bawah $0,10 — kalau ya, struktur mingguan resmi patah.\n\nAlokasi: maksimal 2–3% modal untuk aset dengan drawdown historis 97%, bukan 5%. Dan karena arah BTC tidak terverifikasi hari ini, potong lagi separuhnya.",
   "angka_kunci": [
-   "rsi=76,3"
-  ]
- },
- {
-  "chat": "1242dcf6b322d4c6",
-  "waktu": 1786432108.7901328,
-  "waktu_utc": "2026-08-11 07:08",
-  "pesan": "menurut saya gold akan naik ketika data actualnya rilis",
-  "balasan": "🕒 Data per 11 Agustus 2026, 14:08 WIB\n\nBelum tentu naik — justru itu bagian paling tidak bisa diandalkan. Arah reaksi gold PADA HARI RILIS CPI itu sendiri (H) sudah diuji ke 178 rilis GC=F, dan tandanya BERBALIK-BALIK antar periode (positif di 4 poto\n[...dipangkas...]\nSPOT\nBelum punya : TUNGGU rilis besok, jangan kejar entry baru saat RSI overbought begini\nSudah pegang: TAHAN, kurangi sebagian kalau close daily gagal bertahan di atas $4.377-4.421 pasca-CPI; waspada kalau close daily turun ke bawah EMA21 $4.149,97",
-  "angka_kunci": [
-   "harga=4.422,7",
-   "ema21=4.149,97",
-   "rsi=76,3"
-  ]
- },
- {
-  "chat": "1242dcf6b322d4c6",
-  "waktu": 1786432324.755593,
-  "waktu_utc": "2026-08-11 07:12",
-  "pesan": "tapi secara teknikal bagaimana?",
-  "balasan": "Update per 11 Agustus 2026, 14:11 WIB (data TradingView, simbol GOLD/XAUUSD CFD):\n\nTimeframe saling tarik-menarik jelang CPI besok — belum ada keselarasan arah antar timeframe, jadi ini bukan saat ideal cari entry baru.\n\n• Weekly: bias bullish, harga\n[...dipangkas...]\nnyal MIXED, confidence rendah.\n\n✅ KESIMPULAN SPOT\nBelum punya: TUNGGU rilis CPI besok, jangan entry di tengah sinyal campur aduk begini\nSudah pegang: TAHAN, waspada kalau daily close turun ke bawah EMA20 $4.173 (bisa perdalam koreksi ke EMA50 $4.214)",
-  "angka_kunci": [
-   "harga=4.362",
-   "ema200=3.177",
-   "ema20=4.173",
-   "ema50=4.214",
-   "ema200=4.280",
-   "ema20=4.378",
-   "rsi=26,7"
+   "harga=0,1415",
+   "invalid=0,0480",
+   "ema13=0,1415",
+   "ema21=0,1524",
+   "ema50=0,0941",
+   "ema100=0,1332",
+   "ema200=0,1360",
+   "ema21=0,0674"
   ]
  }
 ]
