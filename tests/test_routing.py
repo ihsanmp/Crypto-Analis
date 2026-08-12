@@ -1709,12 +1709,32 @@ def test_fomc_tidak_dipasang_ke_jalur_crypto():
     assert '"FOMC"' not in blok, "FOMC tidak boleh dipasang di jalur crypto"
 
 
-def test_saham_membawa_kedua_studi():
-    """Riwayat Yahoo 15 tahun — sampelnya penuh, jadi keduanya layak dipasang."""
+def test_saham_hanya_membawa_cpi():
+    """FOMC dan NFP dibuang dari jalur saham demi muatan.
+
+    Prompt sintesis saham mencapai ~27.700 token; untuk saham individual tanggal earnings
+    hampir selalu mengalahkan kejutan makro, jadi dua studi tambahan itu pertukaran buruk.
+    Jalur FOREX tetap membawa ketiganya karena di sana makro justru penggeraknya.
+    """
     sumber = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
     blok = sumber[sumber.index("def data_mentah_pasar"):]
     blok = blok[:blok.index("ThreadPoolExecutor")]
-    assert blok.count("kejutan.py") >= 3, "CPI+FOMC untuk saham dan forex harus terpasang"
+    saham = blok[blok.index('if jenis == "saham":'):blok.index("    else:")]
+    assert '"CPI"' in saham
+    assert '"FOMC"' not in saham, "FOMC seharusnya sudah dibuang dari jalur saham"
+    assert '"NFP"' not in saham, "NFP seharusnya sudah dibuang dari jalur saham"
+    # Forex TIDAK ikut dipangkas.
+    forex = blok[blok.index("    else:"):]
+    for ind in ('"FOMC"', '"NFP"', '"CPI"'):
+        assert ind in forex, f"{ind} hilang dari jalur forex"
+
+
+def test_seed_melarang_meminjam_angka_makro_untuk_saham():
+    """Tidak diukur BUKAN berarti boleh dikarang atau dipinjam dari emas."""
+    teks = " ".join(open(os.path.join(AKAR, "cloud", "prompts", "peran", "prediktor.md"),
+                         encoding="utf-8").read().split())
+    assert "SENGAJA TIDAK ada di brief saham" in teks
+    assert "jangan meminjam angka emas" in teks
 
 
 def test_seed_menolak_meminjam_angka_fomc_untuk_crypto():

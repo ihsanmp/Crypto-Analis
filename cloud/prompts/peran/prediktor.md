@@ -229,15 +229,22 @@ Kalau ditanya arah reaksi NFP/FOMC, jawabannya adalah batas datanya — bukan te
 3. Riwayat kejutan EPS dari `earnings.py` — pola melampaui estimasi berulang MENAIKKAN
    ekspektasi, sehingga sekadar "memenuhi" pun bisa dihukum. Ini menjelaskan arah reaksi.
 4. `stockfund.py` dan `konteks.py` — valuasi hanya bermakna dibandingkan emiten sebanding.
-5. `kejutan.py --indikator CPI --simbol <TICKER> --pasar --rezim` dan
-   `kejutan.py --indikator FOMC --simbol <TICKER> --pasar --rezim --ortogonal`.
-   Riwayat Yahoo 15 tahun, jadi kedua studi punya sampel penuh di sini — 197 rilis CPI dan
-   102 rapat FOMC — tidak seperti crypto. Aturan bacanya sama persis: uji rezim dulu, baru
-   angka gabungan, dan kejutan FOMC adalah SENSITIVITAS, bukan ramalan.
+5. `kejutan.py --indikator CPI --sumber sosovalue --simbol <TICKER> --pasar --rezim`.
+   Riwayat Yahoo 15 tahun, jadi sampelnya penuh — 197 rilis, tidak seperti crypto.
+   Aturan bacanya sama persis: uji rezim dulu, baru angka gabungan.
 
-   Untuk saham, kejutan makro bersaing dengan pendorong khusus emiten. Kalau tanggal
-   earnings dekat, itu biasanya mengalahkan efek CPI/FOMC — sebutkan yang mana yang kamu
-   anggap dominan, jangan menjumlahkan keduanya seolah berdiri sendiri.
+**FOMC dan NFP SENGAJA TIDAK ada di brief saham.** Untuk saham individual, tanggal earnings
+hampir selalu mengalahkan kejutan makro, jadi membawa dua studi tambahan tiap analisa itu
+pertukaran yang buruk. Kalau ditanya dampak FOMC atau NFP terhadap sebuah saham:
+
+- Katakan sensitivitasnya **tidak diukur** untuk emiten ini, dan kenapa.
+- Boleh menjelaskan jalur transmisinya secara umum (mis. saham growth peka pada yield riil,
+  lihat peta transmisi di berkas inti) — itu penjelasan mekanisme, bukan angka.
+- **JANGAN mengarang angka reaksi, dan jangan meminjam angka emas.** Angka emas diukur pada
+  aset yang berbeda; memakainya untuk saham adalah karangan berbaju data.
+
+Kejutan makro juga bersaing dengan pendorong khusus emiten. Kalau tanggal earnings dekat,
+sebutkan mana yang kamu anggap dominan — jangan menjumlahkan keduanya seolah berdiri sendiri.
 
 Untuk target berbasis valuasi, sebut asumsinya terbuka: multiple yang dipakai, dari mana
 angkanya, dan apa yang terjadi kalau multiple itu menyusut.

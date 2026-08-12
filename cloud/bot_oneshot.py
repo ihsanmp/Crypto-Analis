@@ -1410,21 +1410,15 @@ def data_mentah_pasar(simbol, jenis):
         # Jadwal earnings: padanan aturan "jangan masuk menjelang rilis berdampak kuat"
         # yang sudah lama berlaku untuk emas. Tetap jalan tanpa FINNHUB_API_KEY.
         tugas.append(("EARNINGS & PEER (earnings.py)", ["cloud/earnings.py", simbol]))
-        # Riwayat Yahoo 15 tahun, jadi kedua studi punya sampel penuh di jalur saham —
-        # 154 rilis CPI dan 102 rapat FOMC, tidak seperti crypto yang riwayatnya pendek.
+        # HANYA CPI. FOMC dan NFP dibuang dari jalur saham setelah muatannya diukur: prompt
+        # sintesis saham mencapai 110.911 karakter (~27.700 token), 2,5 kali angka yang jadi
+        # acuan rencana hemat token. Untuk saham individual, tanggal earnings hampir selalu
+        # mengalahkan kejutan makro — seed sudah menyatakan itu — jadi membayar ~10 rb
+        # karakter tiap analisa untuk dua studi yang kalah dominan adalah pertukaran buruk.
+        # Jalur FOREX tetap membawa ketiganya, karena di sana makro justru penggeraknya.
+        # Keduanya masih bisa dijalankan manual: kejutan.py menerima ticker saham apa pun.
         tugas.append(("KEJUTAN CPI (kejutan.py, konsensus pasar)",
                       ["cloud/kejutan.py", "--indikator", "CPI", "--sumber", "sosovalue",
-                       "--simbol", simbol, "--pasar", "--rezim", "--ringkas"]))
-        tugas.append(("SENSITIVITAS KEJUTAN FOMC (kejutan.py)",
-                      ["cloud/kejutan.py", "--indikator", "FOMC", "--simbol", simbol,
-                       "--pasar", "--rezim", "--ortogonal", "--ringkas"]))
-        # NFP dipasang, PPI TIDAK. Keduanya sudah punya konsensus historis sejak 2010 lewat
-        # riwayat SoSoValue, tapi hanya NFP yang menghasilkan temuan bertahan (hari rilis,
-        # konsisten di kelima potongan). PPI gugur di ketiga horizon, dan membayar ~4 rb
-        # karakter tiap analisa untuk mengatakan "tidak ada apa-apa" itu pemborosan —
-        # hasil nolnya dicatat statis di seed.
-        tugas.append(("KEJUTAN NFP (kejutan.py, konsensus pasar)",
-                      ["cloud/kejutan.py", "--indikator", "NFP", "--sumber", "sosovalue",
                        "--simbol", simbol, "--pasar", "--rezim", "--ringkas"]))
     else:
         tugas.append(("MAKRO AS (makro.py, sumber FRED)", ["cloud/makro.py", "--ringkas"]))
