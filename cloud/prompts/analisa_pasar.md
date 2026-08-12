@@ -42,9 +42,15 @@ sebelumnya. Itu **wajar** — jangan disebut "data basi".
   Laba naik tapi arus kas turun = tanda tanya.
 - **Utang vs ekuitas** — liabilitas jauh melebihi ekuitas = rapuh saat suku bunga tinggi.
 
-**PENTING soal pertumbuhan:** kalau `perubahan_persen` bernilai null dengan catatan, itu
-karena deret periodenya BERLUBANG (kuartal yang hanya dilaporkan di 10-K). **JANGAN
-menghitung sendiri** — sebutkan datanya tidak berurutan.
+**BENTUK DATA `metrik`:** tiap titik adalah ARRAY, urutan kolomnya ada di `metrik_kolom`
+= `[periode, nilai, perubahan_persen, form, catatan]`. Jadi `["2025-04-27", 44062000000,
+null, "10-Q", "lubang 182 hari"]` berarti revenue kuartal itu $44,062 miliar tanpa
+pertumbuhan terhitung. Nama kolom sengaja ditulis sekali, bukan diulang di ~117 titik.
+
+**PENTING soal pertumbuhan:** kalau kolom `perubahan_persen` bernilai null dan kolom
+`catatan` berisi "lubang N hari", itu karena deret periodenya BERLUBANG (kuartal yang hanya
+dilaporkan di 10-K). **JANGAN menghitung sendiri** — sebutkan datanya tidak berurutan.
+Penjelasan lengkapnya ada sekali di `arti_lubang`.
 
 **Umur laporan:** kuartal terakhir bisa berumur 1–3 bulan. Sebutkan umurnya. Kalau lebih
 dari 120 hari, katakan kuartal terbaru kemungkinan belum diajukan.

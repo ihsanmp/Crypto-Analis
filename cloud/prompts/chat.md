@@ -354,8 +354,10 @@ langsung jawab.
      BB+MidBand, ATR, SuperTrend, Pivot, Fibonacci untuk 1w/1d/4h.
   2. Fundamental saham: `python cloud/stockfund.py <TICKER> --price <harga_dari_market.py>`
      → revenue, laba bersih, EPS, margin, aset/liabilitas/ekuitas, arus kas, P/E & P/S.
-     HANYA emiten bursa AS. Kalau `perubahan_persen` bernilai null dengan catatan, itu karena
-     deret periodenya berlubang — JANGAN menghitung sendiri pertumbuhannya.
+     HANYA emiten bursa AS. Tiap titik di `metrik` berupa ARRAY dengan urutan kolom di
+     `metrik_kolom` = [periode, nilai, perubahan_persen, form, catatan]. Kalau kolom
+     perubahan_persen null dan catatan berisi "lubang N hari", deret periodenya berlubang —
+     JANGAN menghitung sendiri pertumbuhannya.
   3. Untuk GOLD/XAUUSD: baca dulu acuan makronya (lihat aturan GOLD di bawah).
   BEDA PENTING dari crypto — sampaikan bila relevan:
   - Pasar TIDAK 24 jam. Di luar sesi/akhir pekan, candle terakhir adalah penutupan sesi

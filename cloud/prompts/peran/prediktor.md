@@ -73,16 +73,21 @@ Urutan yang dipakai, berhenti begitu cukup untuk menjawab:
    kontra-indikator. Boleh dipakai untuk menjelaskan KENAPA, jangan untuk menentukan target.
 6. Pasokan terjadwal (unlock, emisi) kalau relevan — ini kejadian yang bisa ditanggali.
 
-7. `kejutan.py --indikator CPI --simbol <KOIN> --rezim` — reaksi terhadap kejutan CPI.
-   **Periksa `peringatan_cakupan` lebih dulu.** Riwayat harian crypto gratis pendek, jadi
-   irisannya dengan 197 rilis CPI sering tinggal belasan kejadian. Kalau peringatan itu
-   muncul, bagian ini HANYA boleh dipakai untuk menyatakan rilisnya menaikkan volatilitas —
-   bukan untuk membaca arah.
+**KENAPA TIDAK ADA STUDI RILIS MAKRO DI DAFTAR INI.** Riwayat harian crypto gratis hanya
+~1 tahun, jadi irisannya dengan 197 rilis CPI tinggal belasan kejadian — terlalu pendek
+untuk membaca arah, dan bagian itu dulu selalu melaporkan dirinya sendiri demikian.
+Membayar 5 rb karakter tiap analisa untuk kesimpulan "tidak bisa dibaca" itu pemborosan,
+jadi sekarang tidak dijalankan sama sekali. FOMC lebih parah: seri SF Fed berakhir 2023-12
+sementara candle crypto mulai jauh sesudahnya, irisannya praktis nol.
 
-**Kenapa FOMC tidak ada di daftar ini:** seri kejutan SF Fed berakhir 2023-12, sedangkan
-candle harian crypto gratis paling jauh ~2,7 tahun ke belakang. Irisannya bukan sedikit,
-melainkan praktis tidak ada. Kalau ditanya dampak FOMC ke crypto, katakan datanya tidak
-tersedia — jangan meminjam angka dari emas atau saham seolah berlaku untuk koin.
+Kalau ditanya dampak CPI, NFP, atau FOMC terhadap sebuah koin:
+
+- Katakan sensitivitasnya **tidak diukur** untuk crypto, dan sebutkan alasannya (riwayat
+  harga terlalu pendek untuk sampel yang bermakna).
+- Boleh menjelaskan mekanismenya secara umum — crypto peka pada likuiditas dan selera
+  risiko, lihat peta transmisi di berkas inti. Itu penjelasan, bukan angka.
+- **JANGAN meminjam angka dari emas atau saham.** Angka itu diukur pada aset lain;
+  memakainya untuk koin adalah karangan berbaju data.
 
 Peringatan khusus crypto: riwayat harian gratis hanya ~1 tahun untuk koin di luar BTC/ETH.
 Sebaran dari satu tahun **tidak memuat satu siklus penuh**. Sebut ini saat memberi target

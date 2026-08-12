@@ -1310,12 +1310,14 @@ def data_mentah_crypto(coin):
         lewat.append(f"etf.py ({t} tidak punya ETF spot AS)")
     tugas.append(("PROYEKSI (proyeksi.py)",
                   ["cloud/proyeksi.py", coin, "--hari", "60", "--ringkas"], 0))
-    # Reaksi terhadap kejutan CPI. FOMC SENGAJA tidak ikut di jalur crypto: seri SF Fed
-    # berakhir 2023-12 sementara candle harian gratis paling jauh ~2,7 tahun ke belakang,
-    # jadi irisannya cuma segelintir rapat — bukan sampel tipis, tapi tidak ada.
-    tugas.append(("KEJUTAN CPI (kejutan.py, konsensus pasar)",
-                  ["cloud/kejutan.py", "--indikator", "CPI", "--sumber", "sosovalue",
-                   "--simbol", coin, "--rezim", "--ringkas"], 0))
+    # STUDI KEJUTAN CPI TIDAK ikut di jalur crypto. Riwayat harian gratis untuk koin cuma
+    # ~1 tahun, jadi irisannya dengan 197 rilis CPI tinggal belasan kejadian dan
+    # peringatan_cakupan SELALU menyala — bagian itu melaporkan dirinya sendiri terlalu
+    # pendek untuk dibaca arahnya. Membayar 5 rb karakter tiap analisa untuk kesimpulan
+    # "tidak bisa dibaca" adalah pemborosan yang sama persis dengan PPI, dan hasil nolnya
+    # dicatat statis di seed. FOMC apalagi: seri SF Fed berakhir 2023-12 sementara candle
+    # crypto mulai jauh sesudahnya, jadi irisannya praktis nol.
+    lewat.append("kejutan.py (riwayat harga crypto terlalu pendek untuk studi rilis)")
 
     bagian, gagal = [], []
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:

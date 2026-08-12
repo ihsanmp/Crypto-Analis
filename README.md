@@ -82,7 +82,7 @@ Cloudflare Worker  ── memverifikasi secret + chat ID (fail-closed)
 GitHub Actions  →  cloud/bot_oneshot.py
    │
    ├─ TAHAP 1  pengumpulan data OLEH KODE (paralel, 2 pekerja)
-   │    crypto : indicators · backtest · proyeksi · kejutan(CPI) · etf(BTC/ETH)
+   │    crypto : indicators · backtest · proyeksi · etf(BTC/ETH)
    │             onchain · fundamentals · investors · sentiment · memori
    │    forex  : market · backtest · proyeksi · kejutan(CPI/FOMC/NFP) · jadwal
    │             makro · memori
@@ -107,7 +107,7 @@ Balasan ke Telegram
 (sapaan & pertanyaan konseptual). Mode ngobrol memilih tingkatnya sendiri dari isi pesan,
 jadi "halo" tidak membayar harga yang sama dengan "bandingkan btc dan eth secara detail".
 
-Ukuran muatan sintesis saat ini: **crypto ~79 rb · forex ~109 rb · saham ~98 rb karakter**.
+Ukuran muatan sintesis saat ini: **crypto ~76 rb · forex ~109 rb · saham ~90 rb karakter**.
 
 ---
 

@@ -150,6 +150,28 @@ def tumbuh(baru, lama):
         return None
 
 
+# Urutan kolom untuk tiap titik di dalam `metrik`. Ditulis SEKALI di keluaran.
+KOLOM_METRIK = ["periode", "nilai", "perubahan_persen", "form", "catatan"]
+
+
+def ke_kolom(data):
+    """Ubah deret dict -> baris array, HANYA saat serialisasi.
+
+    Bentuk internalnya sengaja dibiarkan dict: ada 25 tempat di berkas ini yang membaca
+    titik lewat nama kolom, dan mengubah semuanya cuma mengundang bug halus demi
+    penghematan yang bisa didapat tanpa risiko itu. Isinya identik — yang hilang hanya
+    pengulangan nama kolom di setiap titik (117 titik untuk satu emiten).
+    """
+    for m in (data or {}).values():
+        if not isinstance(m, dict):
+            continue
+        for periode in ("kuartalan", "tahunan"):
+            deret_ = m.get(periode)
+            if isinstance(deret_, list) and deret_ and isinstance(deret_[0], dict):
+                m[periode] = [[t.get(k) for k in KOLOM_METRIK] for t in deret_]
+    return data
+
+
 def deret(entri, n, kuartalan):
     """Deret periode + pertumbuhan. Pertumbuhan HANYA dihitung bila periodenya benar-benar
     berurutan.
@@ -241,6 +263,7 @@ def main():
             "satuan": entri[0]["unit"],
         }
 
+    hasil["metrik_kolom"] = KOLOM_METRIK
     hasil["metrik"] = data
     # Penjelasan penanda "lubang N hari" ditulis SEKALI di sini. Sebelumnya kalimat penuh
     # diulang di setiap titik yang periodenya berlubang — dan sebuah emiten bisa punya
@@ -496,6 +519,8 @@ def main():
         for k in ("tag_xbrl_terpakai",):
             hasil.pop(k, None)
 
+    if isinstance(hasil.get("metrik"), dict):
+        hasil["metrik"] = ke_kolom(hasil["metrik"])
     print(json.dumps(hasil, indent=2, ensure_ascii=False))
 
 

@@ -1695,7 +1695,7 @@ def test_peringatan_cakupan_saat_irisan_pendek():
     assert "peringatan_cakupan" not in h2
 
 
-def test_fomc_tidak_dipasang_ke_jalur_crypto():
+def test_studi_rilis_tidak_dipasang_ke_jalur_crypto():
     """Seri FOMC berakhir 2023-12; candle crypto gratis mulai jauh sesudahnya.
 
     Irisannya bukan sedikit melainkan praktis nol, jadi memasangnya di jalur crypto hanya
@@ -1705,7 +1705,9 @@ def test_fomc_tidak_dipasang_ke_jalur_crypto():
     sumber = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
     awal = sumber.index("def data_mentah_crypto")
     blok = sumber[awal:sumber.index("def data_mentah_pasar")]
-    assert '"--indikator", "CPI"' in blok, "studi CPI harus ada di jalur crypto"
+    assert '"--indikator", "CPI"' not in blok, (
+        "studi CPI dibuang dari crypto: irisannya belasan kejadian, peringatan_cakupan "
+        "selalu menyala, dan 5 rb karakter dibayar untuk kesimpulan 'tidak bisa dibaca'")
     assert '"FOMC"' not in blok, "FOMC tidak boleh dipasang di jalur crypto"
 
 
@@ -1738,10 +1740,15 @@ def test_seed_melarang_meminjam_angka_makro_untuk_saham():
 
 
 def test_seed_menolak_meminjam_angka_fomc_untuk_crypto():
+    """Larangannya tetap, kalimatnya berubah saat studi CPI dibuang dari jalur crypto.
+
+    Dulu seed menyuruh memeriksa `peringatan_cakupan` lebih dulu; bagian itu kini tidak
+    dijalankan sama sekali untuk crypto, jadi yang tersisa adalah larangan meminjam.
+    """
     teks = " ".join(open(os.path.join(AKAR, "cloud", "prompts", "peran", "prediktor.md"),
                          encoding="utf-8").read().split())
-    assert "jangan meminjam angka dari emas atau saham" in teks
-    assert "peringatan_cakupan` lebih dulu" in teks
+    assert "meminjam angka dari emas atau saham" in teks
+    assert "tidak diukur" in teks
 
 
 # ------------------------------------------------------------ adapter SoSoValue
@@ -1909,7 +1916,7 @@ def test_satu_sumber_kejutan_per_acara():
     tetap ada sebagai cadangan lewat --sumber nowcast, tapi tidak ikut di brief.
     """
     sumber = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
-    assert sumber.count('"--indikator", "CPI"') == 3, "CPI dipanggil di crypto, forex, saham"
+    assert sumber.count('"--indikator", "CPI"') == 2, "CPI hanya di forex & saham"
     # Setiap pemanggilan CPI harus menyertakan sumber sosovalue.
     for potong in sumber.split('"--indikator", "CPI"')[1:]:
         assert '"sosovalue"' in potong[:120], "ada jalur CPI yang belum pakai konsensus pasar"
@@ -2309,3 +2316,37 @@ def test_penjelasan_lubang_ditulis_sekali():
     i = teks.index("def deret(")
     blok = teks[i:i + 2000]
     assert "kemungkinan kuartal itu" not in blok, "penjelasan panjang kembali ke per-titik"
+
+
+def test_stockfund_deret_berbentuk_kolom():
+    """Nama kolom ditulis sekali, bukan diulang di ~117 titik.
+
+    Bentuk internalnya sengaja tetap dict — ada 25 tempat di stockfund.py yang membaca
+    titik lewat nama kolom, dan mengubah semuanya cuma mengundang bug halus demi
+    penghematan yang bisa didapat tanpa risiko itu. Transformasinya di serialisasi.
+    """
+    import stockfund
+    data = {"revenue": {"kuartalan": [
+        {"periode": "2026-01-01", "nilai": 100, "perubahan_persen": 5.0, "form": "10-Q"},
+        {"periode": "2026-04-01", "nilai": 110, "perubahan_persen": None,
+         "form": "10-Q", "catatan": "lubang 182 hari"}]}}
+    hasil = stockfund.ke_kolom(data)["revenue"]["kuartalan"]
+    assert hasil[0] == ["2026-01-01", 100, 5.0, "10-Q", None]
+    assert hasil[1] == ["2026-04-01", 110, None, "10-Q", "lubang 182 hari"]
+    assert stockfund.KOLOM_METRIK == ["periode", "nilai", "perubahan_persen", "form",
+                                      "catatan"]
+
+
+def test_prompt_menjelaskan_bentuk_kolom():
+    """Model harus tahu urutan kolomnya, kalau tidak array itu tak terbaca."""
+    for berkas in ("analisa_pasar.md", "chat.md"):
+        teks = open(os.path.join(AKAR, "cloud", "prompts", berkas), encoding="utf-8").read()
+        assert "metrik_kolom" in teks, f"{berkas} belum menjelaskan bentuk kolom"
+
+
+def test_seed_crypto_menolak_pinjam_angka_makro():
+    """Studi rilis dibuang dari crypto — lubangnya tidak boleh diisi karangan."""
+    teks = " ".join(open(os.path.join(AKAR, "cloud", "prompts", "peran", "prediktor.md"),
+                         encoding="utf-8").read().split())
+    assert "TIDAK ADA STUDI RILIS MAKRO DI DAFTAR INI" in teks
+    assert "JANGAN meminjam angka dari emas atau saham" in teks
