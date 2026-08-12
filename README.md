@@ -1,94 +1,221 @@
-# Bot Riset Koin (Telegram + Claude Code, jalan di Cloud)
+# Bot Riset Pasar (Telegram + Claude Code, jalan di Cloud)
 
-Sistem riset **crypto (spot, jangka menengah) + perkembangan AI**, analisa multi-timeframe,
-jalan **24 jam di GitHub Actions — tanpa perlu laptop menyala**. Khusus spot: tidak
-memberi saran short/leverage/futures; data derivatif dipakai hanya sebagai sentimen timing.
+Sistem riset **crypto · forex & emas · saham AS**, plus pemantauan perkembangan AI.
+Jalan **24 jam di GitHub Actions — tanpa perlu laptop menyala**, dipicu langsung oleh pesan
+Telegram lewat Cloudflare Worker.
 
-Tiga cara pakai di Telegram:
-- `analisa <koin>` → analisa lengkap terstruktur (skor 0-100, fundamental+teknikal, rencana akumulasi)
-- `carikan koin dengan narasi privacy yang menarik` → screening satu narasi yang kamu sebut:
-  cari koin di dalamnya, cek katalisnya, nilai kesehatan narasinya dengan jujur
-  (ganti `privacy` dengan AI, RWA, DePIN, gaming, meme, DeFi, L2, storage, dll)
-- `carikan koin narasi yang menarik` → tanpa menyebut narasi: bot memetakan sendiri sektor
-  mana yang sedang bergerak, lalu pilih koin terbaik di dalamnya
-- ngobrol bebas, mis. "bagaimana pendapatmu tentang bitcoin?" → jawaban santai tapi tetap berbasis data
-- **kirim FOTO/screenshot** (chart, data, pengumuman) + caption → mode analis visual: bot
-  membaca gambar, mencari kaitannya dengan koin/project, menggali info, dan memberi rekomendasi
-- `/help` → bantuan
+Khusus spot: tidak memberi saran short/leverage/futures; data derivatif dipakai hanya
+sebagai sentimen timing.
 
-Claude menarik data CoinMarketCap, CoinGlass, berita web, dan indikator teknikal yang
-dihitung sendiri (EMA/RSI/Stoch/Fibonacci multi-timeframe), lalu membalas ke Telegram.
+## Cara pakai di Telegram
 
-> **Catatan penting soal hosting.** Awalnya memakai cron GitHub Actions, tapi GitHub
-> **tidak menjamin jadwal**: `*/5` kenyataannya berjalan ~1 jam sekali, kadang 3 jam,
-> sehingga balasan terasa hilang. Sekarang cron dibuang dan diganti **webhook**:
-> Telegram → Cloudflare Worker → langsung memicu Actions. Tanpa server, tetap gratis,
-> balasan datang beberapa menit setelah kamu kirim. Lihat **"Deploy: Webhook + Actions"**.
-> (Alternatif tanpa Actions: jalankan `cloud/bot_daemon.py` di perangkat always-on —
-> lihat **"Alternatif: Deploy ke Server"**.)
+| Ketik | Yang terjadi |
+|---|---|
+| `analisa sol` · `analisa gold` · `analisa nvda` | Analisa lengkap terstruktur: skor 0–100, fundamental + teknikal, proyeksi berhorizon, rencana akumulasi |
+| `solana berpotensi naik sampai $200?` | Target yang kamu ajukan **diuji**, bukan diiyakan — berapa ATR jauhnya, berapa persen jendela historis pernah mencapainya |
+| `carikan koin dengan narasi privacy yang menarik` | Screening satu narasi: cari koin di dalamnya, cek katalisnya, nilai kesehatan narasinya |
+| `carikan koin narasi yang menarik` | Bot memetakan sendiri sektor yang sedang bergerak, lalu pilih koin terbaik |
+| ngobrol bebas | "menurutmu btc gimana?" — jawaban santai, tetap berbasis data yang ditarik saat itu |
+| **kirim FOTO/screenshot** + caption | Mode analis visual: baca chart/pengumuman, cari kaitannya, gali data, beri penilaian |
+| `/help` | Bantuan |
+
+---
+
+## Konsep yang membentuk sistem ini
+
+Tiga prinsip yang menjelaskan hampir semua keputusan desain di repo ini.
+
+### 1. Data dikumpulkan KODE, bukan kepatuhan model
+
+Tahap pengumpulan data **tidak diminta** ke model. `bot_oneshot.py` menjalankan sendiri
+script yang relevan lalu menyusun DATA BRIEF, dan model hanya menafsirkannya.
+
+Alasannya konkret: dulu tahap gather pernah mengembalikan brief 759 karakter untuk
+`analisa gold` padahal keempat scriptnya sehat dan menghasilkan ~20 rb karakter — modelnya
+saja yang tidak menjalankan langkahnya. Selama pengumpulan data bergantung pada kepatuhan,
+kegagalan diam-diam seperti itu akan terulang.
+
+Konsekuensinya: pada mode ngobrol yang briefnya sudah ada, model dijalankan **tanpa akses
+shell** sama sekali. Kalau sebuah angka perlu ada, kodelah yang harus menyediakannya.
+
+### 2. Proyeksi boleh, ramalan tidak
+
+Menyebut angka target itu boleh — asal disertai **metode, horizon, rentang, pembatal, dan
+basis kejadian**. Yang dilarang adalah angka telanjang.
+
+```
+❌ "Solana berpotensi naik sampai $200."
+✅ "Horizon 60 hari: rentang wajar $75–$93 (p10–p90 dari 306 jendela, Ags 2025–Ags 2026).
+    $200 berjarak +164% atau 120 ATR — 0 dari 306 jendela pernah mencapainya; gerakan
+    60-hari terbesar dalam rentang itu +41,5%. Batal kalau close harian di bawah $62."
+```
+
+Keduanya menyebut $200. Hanya yang kedua bisa dinilai benar atau salah.
+
+### 3. Temuan wajib lolos uji ketahanan
+
+Angka gabungan belasan tahun bisa sepenuhnya disetir satu rezim lalu tampil seolah berlaku
+umum. Setiap studi reaksi rilis karena itu dipotong tiga cara — kronologis, tingkat inflasi,
+dan besar kejutan — dan **tandanya harus bertahan**.
+
+Ini bukan hiasan. Contoh nyata yang ditemukan lewat uji itu: reaksi emas terhadap kejutan
+CPI di H+5 terlihat −0,30% saat digabung, tapi begitu dipotong ternyata **berbalik tanda**
+(2013–2017 +0,25 · 2017–2022 +0,19 · 2022–2026 −2,06). Temuan itu artefak periode, bukan
+sifat emas — dan seed melarangnya dipakai untuk memperkirakan arah.
+
+Lebih jauh lagi: arah efek CPI **berbeda tergantung ekspektasi siapa** yang dipakai sebagai
+pembanding (nowcast model −0,17% vs konsensus pasar +0,20%, dua-duanya "konsisten" di
+ketujuh potongan). Kesimpulan yang berlaku sekarang: **CPI tidak punya edge arah untuk
+emas, titik.**
+
+---
 
 ## Arsitektur
 
 ```
-Telegram ("analisa sol")
+Telegram ("analisa gold")
    │
    ▼
-GitHub Actions (cron tiap 5 menit)
-   ├─ cek dulu: ada perintah "analisa" baru? (cepat, ~20 detik; kalau kosong berhenti)
-   └─ kalau ada → claude -p (Claude Code headless)
-        ├─ cloud/indicators.py  ← SUMBER UTAMA TEKNIKAL (dihitung dengan kode,
-        │     EMA13/21 · RSI14 · Stoch 5,3,3 · Fibonacci · struktur, untuk 1w/1d/4h;
-        │     OHLC dari Binance→Kraken→Coinbase→OKX→CoinGecko, weekly dibangun
-        │     eksak dari candle harian)
-        ├─ MCP tradingview    (versi data — cross-check arah saja)
-        ├─ MCP coinmarketcap  (harga, mcap, FDV, volume, kategori, listings/top movers,
-        │     Fear & Greed, global metrics) — shinzo-labs/coinmarketcap-mcp, butuh API key gratis
-        ├─ MCP coinglass   (funding, OI, long/short, likuidasi) — butuh API key
-        ├─ DefiLlama API   (TVL, fees, revenue — pengganti Token Terminal)
-        └─ WebSearch       (berita & katalis)
+Cloudflare Worker  ── memverifikasi secret + chat ID (fail-closed)
+   │  repository_dispatch (pesan ikut di payload — tanpa polling sama sekali)
+   ▼
+GitHub Actions  →  cloud/bot_oneshot.py
+   │
+   ├─ TAHAP 1  pengumpulan data OLEH KODE (paralel, 2 pekerja)
+   │    crypto : indicators · backtest · proyeksi · kejutan(CPI) · etf(BTC/ETH)
+   │             onchain · fundamentals · investors · sentiment · memori
+   │    forex  : market · backtest · proyeksi · kejutan(CPI/FOMC/NFP) · jadwal
+   │             makro · memori
+   │    saham  : market · backtest · proyeksi · kejutan(CPI) · stockfund
+   │             konteks · earnings · memori
+   │         └─ model murah (haiku) hanya untuk bagian yang butuh PENILAIAN:
+   │            mencari berita & katalis terbaru
+   │
+   ├─ TAHAP 2  sintesis oleh model pintar (opus) — TANPA tool
+   │    seed peran (inti · analis · risk · portofolio · trader · prediktor)
+   │    + DATA BRIEF + metodologi skor
+   │
+   └─ AUDIT sebelum kirim: keterlacakan angka, kesegaran data, sumber
+        └─ peringatan disisipkan ke balasan bila ada yang mencurigakan
    │
    ▼
-Hasil analisa dikirim balik ke Telegram (~5-15 menit setelah kamu ketik)
+Balasan ke Telegram
 ```
 
-> Catatan: teknikal pakai MCP TradingView versi data
-> ([atilaahmettaner/tradingview-mcp](https://github.com/atilaahmettaner/tradingview-mcp)),
-> bukan aplikasi TradingView Desktop — karena cloud tidak punya layar/GUI. Fundamental
-> fees/revenue/TVL diambil dari DefiLlama (gratis), pengganti Token Terminal.
+**Penjenjangan model.** `MODEL_GATHER=claude-haiku-4-5` (mekanis) · `MODEL_SYNTH=claude-opus-5`
+(analisa) · `MODEL_NARASI=claude-sonnet-5` (screening) · `MODEL_RINGAN=claude-sonnet-5`
+(sapaan & pertanyaan konseptual). Mode ngobrol memilih tingkatnya sendiri dari isi pesan,
+jadi "halo" tidak membayar harga yang sama dengan "bandingkan btc dan eth secara detail".
+
+Ukuran muatan sintesis saat ini: **crypto ~79 rb · forex ~109 rb · saham ~98 rb karakter**.
+
+---
+
+## Seed peran
+
+Enam berkas di `cloud/prompts/peran/`, dirakit sesuai sektor — analisa crypto tidak ikut
+membawa aturan risiko forex.
+
+| Seed | Isi |
+|---|---|
+| `inti.md` | Aturan kalibrasi keras: data tidak ada → tulis tidak ada · konviksi maks 60 bila <3 kategori searah · bukti kontra tidak boleh kosong · label FAKTA/INFERENSI/SPEKULASI · **hipotesis user DIUJI, bukan divalidasi** |
+| `analis.md` | Struktur tesis 6 komponen, top-down, pembaruan Bayesian |
+| `risk.md` | Matematika drawdown, risk of ruin, VaR vs CVaR |
+| `portofolio.md` | Expectancy, sizing, korelasi palsu |
+| `trader.md` | Edge, R-multiple, biaya eksekusi |
+| `prediktor.md` | **FORECASTER** — lima syarat proyeksi, protokol per pasar, dan catatan temuan yang sudah teruji (mana yang bertahan, mana yang gugur) |
+
+---
 
 ## File
 
+### Otak & alur
+
 | File | Fungsi |
 |---|---|
-| [.github/workflows/bot.yml](.github/workflows/bot.yml) | Workflow cron: cek Telegram tiap 5 menit, jalankan analisa |
-| [cloud/bot_oneshot.py](cloud/bot_oneshot.py) | Bot "sekali jalan": ambil pesan tertunda, proses, balas, keluar |
-| [cloud/indicators.py](cloud/indicators.py) | Penarik OHLC + kalkulator indikator deterministik (EMA/RSI/Stoch/Fibonacci untuk 1w/1d/4h). Tanpa dependensi eksternal |
-| [cloud/fundamentals.py](cloud/fundamentals.py) | "Laporan keuangan" protokol dari DefiLlama: revenue & fees per **bulan** dan **kuartal**, pertumbuhan MoM/QoQ/YoY, TVL, volume DEX, rasio MC/TVL & P/S & P/F |
-| [cloud/investors.py](cloud/investors.py) | Kepemilikan on-chain **multi-chain**: 10 holder teratas + kategori otomatis (bursa/kontrak/dana) + konsentrasi riil. **Ethereum** via Ethplorer + label lokal (tanpa key); **BSC/Base/Arbitrum/Polygon/Optimism/Avalanche/Solana** via Moralis (butuh `MORALIS_API_KEY` gratis). Chain auto-deteksi dari CoinGecko, atau `--chain <nama>` |
-| `cloud/data/eth_labels.json.gz` | 29.772 label alamat Ethereum, disimpan terkompresi (1,94 MB → 0,99 MB). Berkas terbesar di repo dan ikut ditarik setiap checkout, termasuk di tiap run Actions, padahal isinya nyaris tidak berubah |
-| [cloud/wallet.py](cloud/wallet.py) | **Pelacak wallet address** (ala Arkham, gratis): isi dompet + nilai USD tiap aset + % portofolio + nilai bersih + identitas alamat bila dikenal (mis. "Binance 8"). Multi-chain via Moralis; token spam dibuang |
-| `cloud/data/percakapan.json` | **Ingatan percakapan pendek** (chat ID di-hash bersama garam dari token bot — repo ini publik) — 3 pasang tanya-jawab terakhir per chat (kedaluwarsa 6 jam) supaya pesan lanjutan seperti "lanjutkan dengan acuan news" tidak kehilangan konteks. Balasan dipangkas 500 karakter; isi yang memuat alamat dompet/saldo pribadi **ditolak di level kode** |
-| [cloud/memori.py](cloud/memori.py) | **Ingatan terverifikasi** — fakta yang sudah dicek kebenarannya lewat riset disimpan ke `cloud/data/memori.jsonl` (ikut ter-commit, jadi bertahan antar-run). Tiap entri diberi jenis (`volatil`/`semi`/`stabil`) yang menentukan kapan ia **wajib dicek ulang**; saat dipanggil otomatis divonis SEGAR / MULAI TUA / KEDALUWARSA. Data pribadi (alamat dompet, saldo) **ditolak di level kode** karena repo publik |
-| [cloud/onchain.py](cloud/onchain.py) | **Valuasi on-chain** (CoinMetrics Community — gratis, tanpa API key): MVRV + zona penilaian siklus, alamat aktif, jumlah transaksi, tren 30 hari. Pengganti CryptoQuant yang akses API-nya butuh paket ~$99/bulan. Paling lengkap untuk BTC & ETH; metrik yang tak ada di tier gratis dilaporkan kosong, tidak dikarang |
-| [cloud/market.py](cloud/market.py) | **OHLC + indikator SAHAM & FOREX** (Yahoo Finance, gratis tanpa key). Memakai ulang mesin indikator `indicators.py` apa adanya — EMA 13/21/33/50/100/200, RSI, Stoch, BB+MidBand, ATR, SuperTrend, Pivot, Fibonacci untuk 1w/1d/4h. Yahoo API tidak resmi; kegagalan dilaporkan, tidak dikarang |
-| [cloud/stockfund.py](cloud/stockfund.py) | **Fundamental saham dari SEC EDGAR** (resmi, gratis, tanpa key): revenue, laba bersih, EPS, aset, liabilitas, ekuitas, arus kas operasi — kuartalan & tahunan + pertumbuhan, plus P/E & P/S bila harga diberikan. Hanya emiten bursa AS. Pertumbuhan TIDAK dihitung saat deret periodenya berlubang (kuartal yang hanya ada di 10-K) |
-| [cloud/data/gold_drivers.md](cloud/data/gold_drivers.md) | **Acuan analisa GOLD (XAUUSD)** — daftar data ekonomi penggerak gold (inflasi, tenaga kerja, The Fed, aktivitas ekonomi), arah dampak saat actual > forecast, jadwal rilis, dan peringkat kekuatan. Memuat dua pengecualian arah (Unemployment Rate & Claims) yang sering tertukar |
-| `cloud/prompts/peran/` | **Seed identitas profesional** — empat disiplin yang dipakai saat menganalisa: `inti.md` (aturan kalibrasi keras: data tidak ada → tulis tidak ada, konviksi maks 60 bila <3 kategori searah, bukti kontra tidak boleh kosong, label FAKTA/INFERENSI/SPEKULASI), `analis.md` (struktur tesis 6 komponen), `risk.md` (matematika drawdown, risk of ruin, VaR vs CVaR), `portofolio.md` (expectancy, sizing, korelasi palsu), `trader.md` (edge, R-multiple, biaya eksekusi). Tiap berkas punya blok per sektor — analisa crypto tidak ikut membawa aturan risiko forex/saham |
-| [tests/test_routing.py](tests/test_routing.py) | **Tes otomatis routing & pengaman mutu** (126 kasus, pytest, berbentuk tabel): `classify`, `jenis_aset`, `is_narasi`, `topik_ai`, `rakit_chat`, `bobot_chat`, `aset_dari_pesan`, `_cocok_angka`, `audit_angka`, `peringatan_audit`, `angka_kunci`, dan penyaring privasi `memori.masalah_privasi` (positif DAN negatif). Dijalankan CI lewat `.github/workflows/tes.yml`, dan job-nya SENGAJA merah kalau ada yang gagal |
-| [cloud/sec_tickers.py](cloud/sec_tickers.py) | **Cache peta ticker → CIK dari SEC**, dipakai bersama `stockfund.py` dan `konteks.py`. Berkas aslinya ~777 KB dan dulu diunduh ULANG setiap analisa — dua kali malah, karena keduanya memintanya sendiri-sendiri. Di runner GitHub itu terukur 42,9 detik dan langsung memotong jatah tahap analisa. Cache 7 hari, ikut di-commit |
-| [cloud/konteks.py](cloud/konteks.py) | **Konteks pasar & sektor untuk saham** (Yahoo lewat `market.py`, tanpa key): indeks S&P/Nasdaq/Russell + VIX, peringkat 11 ETF sektor berdasar kinerja RELATIF terhadap S&P (1 & 3 bulan), dan pemetaan emiten ke sektornya lewat kode SIC dari SEC. Pemetaan SIC ditulis eksplisit dan TIDAK menebak — kode di luar peta dilaporkan tidak terpetakan |
-| [cloud/earnings.py](cloud/earnings.py) | **Jadwal & kejutan earnings + emiten sebanding** (Finnhub tier gratis, butuh `FINNHUB_API_KEY` opsional). Menutup padanan aturan "jangan masuk menjelang rilis berdampak kuat" yang selama ini hanya berlaku untuk emas, dan memungkinkan aturan pembanding sektor yang sebelumnya MUSTAHIL dipenuhi. Tanpa kunci, bagian ini dilaporkan tidak tersedia dan analisa saham tetap jalan |
-| [cloud/rapor.py](cloud/rapor.py) | **Rapor rekomendasi** — mencatat PANGGILAN bot (bias, skor, harga saat itu, level invalidasi & target) lalu menilainya belakangan terhadap harga yang benar-benar terjadi. Diekstraksi oleh kode dari teks balasan, jadi tidak bisa dilewatkan. `nilai` menentukan TARGET_KENA / INVALID_KENA / MASIH_TERBUKA plus return 7/30/90 hari dan MAE; `ringkas` melaporkan keberhasilan per bias, per jenis aset, dan **per rentang skor** — kalau panggilan berskor 75 tidak lebih sering benar daripada yang 45, sistem skornya belum bermakna. Sadar arah: HINDARI yang diikuti harga turun dihitung BENAR. Kelompok di bawah 10 kejadian ditandai sampel kecil. Rapor hanya MENGAMATI — kalibrasi tetap keputusan manusia |
-| [cloud/kalender.py](cloud/kalender.py) | **Konsensus & jadwal rilis ekonomi** — melengkapi `makro.py` yang hanya punya angka aktual. **Cleveland Fed Inflation Nowcasting** (resmi Fed, tanpa key) sebagai penopang untuk CPI & PCE m/m dan y/y; **Forex Factory** sebagai pelengkap untuk semua rilis lengkap dengan kolom forecast/previous/actual. Cache 6 jam wajib (Forex Factory membatasi 2 unduhan per 5 menit dan membalas HTML saat terlampaui). Nowcast diurai sebelum disimpan supaya cache tetap ratusan byte, bukan belasan MB |
-| [cloud/makro.py](cloud/makro.py) | **Data makro AS dari FRED** (Federal Reserve — resmi, gratis, TANPA API key): CPI, Core CPI, Core PCE, NFP, pengangguran, klaim mingguan, Fed Funds Rate, yield 2y & 10y, indeks dolar, plus kurva imbal hasil 10y-2y. Tiap indikator disertai arah dampaknya ke emas sesuai `gold_drivers.md` (termasuk dua pengecualian arah). Memberi angka **aktual**, bukan konsensus — konsensus tetap diminta ke user |
-| [cloud/backtest.py](cloud/backtest.py) | **Uji balik sinyal** terhadap riwayat aset itu sendiri: golden/death cross (dengan konfirmasi separasi), RSI ekstrem, pullback EMA21 — jumlah kejadian, win-rate, return rata2/median, dan MAE (nyeri maksimum). Disertai **tolok ukur** beli-dan-tahan + peluang dasar harga naik, supaya angkanya tidak salah tafsir. Untuk forex/komoditas ada uji makro: besar gerakan pada hari rilis terjadwal vs hari biasa. Kejadian <10 ditandai sampel kecil |
-| [cloud/ainews.py](cloud/ainews.py) | **Perkembangan AI** dari RSS resmi (OpenAI, DeepMind, Hugging Face, TechCrunch AI, VentureBeat, The Decoder, MIT Tech Review, Ars Technica) — gratis, tanpa API key, tanpa server tambahan. Ada saringan `--crypto` untuk berita yang menyinggung chip/compute/token. Katalis sektor AI (TAO, RENDER, FET) sering lahir di dunia AI, bukan crypto |
-| [cloud/sentiment.py](cloud/sentiment.py) | **Sentimen sosial & pasar** (gratis, keyless): Fear & Greed Index + arah, dan per-koin sentiment votes komunitas, ukuran audiens (X/Reddit/Telegram), watchlist, aktivitas developer (pengganti LunarCrush yang kini berbayar) |
-| [cloud/whaleflow.py](cloud/whaleflow.py) | Aliran whale pasar (Deep Blue Alpha, gratis, tanpa key): Whale Sentiment Index 0–100 + top-10 token dengan arah AKUMULASI/DISTRIBUSI whale 24h. Hanya ETH, atribusi CC-BY-4.0 |
-| [cloud/.mcp.cloud.json](cloud/.mcp.cloud.json) | Konfigurasi MCP: CoinMarketCap, CoinGlass, TradingView-data, dan **Blockscout** (block explorer ~100 chain EVM, gratis tanpa API key — untuk melacak aliran masuk/keluar sebuah alamat) |
-| [cloud/prompts/analisa.md](cloud/prompts/analisa.md) | **Mesin metodologi analisa** — sistem skor 0–100 (fundamental+teknikal), aturan veto, dan setting indikator persis punyamu (EMA 13/21, RSI 14, Stoch 5,3,3, Fibonacci Golden Pocket) |
-| [cloud/prompts/narasi.md](cloud/prompts/narasi.md) | Prompt mode NARASI — screening sektor via `cryptoCategories`, verifikasi katalis, lalu pilih koin untuk akumulasi spot |
-| [cloud/prompts/chat.md](cloud/prompts/chat.md) | Prompt mode NGOBROL — jawaban santai untuk pertanyaan bebas, tetap ambil data sebelum berpendapat |
+| [cloud/bot_oneshot.py](cloud/bot_oneshot.py) | Bot "sekali jalan": ambil pesan, routing, kumpulkan data lewat kode, sintesis, audit, balas, keluar |
+| [cloud/bot_daemon.py](cloud/bot_daemon.py) | Alternatif polling untuk server always-on (balasan hitungan detik) |
+| [cloud/memori.py](cloud/memori.py) | **Ingatan terverifikasi** — fakta yang sudah dicek disimpan dengan jenis (`volatil`/`semi`/`stabil`) yang menentukan kapan wajib dicek ulang; saat dipanggil divonis SEGAR / MULAI TUA / KEDALUWARSA. Data pribadi (alamat dompet, saldo) **ditolak di level kode** karena repo publik |
+| `cloud/data/percakapan.json` | Ingatan percakapan pendek — 3 pasang tanya-jawab terakhir per chat (kedaluwarsa 6 jam). Chat ID di-hash bersama garam dari token bot |
+| [cloud/rapor.py](cloud/rapor.py) | **Rapor rekomendasi** — mencatat panggilan bot lalu menilainya terhadap harga yang benar-benar terjadi. Melaporkan keberhasilan per bias, per jenis aset, dan **per rentang skor**: kalau panggilan berskor 75 tidak lebih sering benar daripada yang 45, sistem skornya belum bermakna |
+
+### Harga, indikator, proyeksi
+
+| File | Fungsi |
+|---|---|
+| [cloud/indicators.py](cloud/indicators.py) | Penarik OHLC + kalkulator indikator deterministik (EMA/RSI/Stoch/BB/ATR/SuperTrend/Pivot/Fibonacci untuk 1w/1d/4h). Sumber Binance→Kraken→Coinbase→OKX→CoinGecko; weekly dibangun eksak dari candle harian. Kualitas `approx_close_only` ditandai saat high/low bukan angka asli |
+| [cloud/market.py](cloud/market.py) | OHLC + indikator **saham & forex** (Yahoo, tanpa key), memakai ulang mesin `indicators.py` apa adanya |
+| [cloud/proyeksi.py](cloud/proyeksi.py) | **Proyeksi target dari data**: sebaran gerakan N hari (p10–p90 untuk puncak tercapai, dasar tercapai, harga penutup), ATR, level struktural, ekstensi Fibonacci — sudah dalam satuan harga. `--target` **menguji harga yang diajukan user**: jarak dalam ATR, peluang historis, jendela yang diuji, gerakan terekstrem yang pernah terjadi |
+| [cloud/backtest.py](cloud/backtest.py) | Uji balik sinyal terhadap riwayat aset itu sendiri (golden/death cross, RSI ekstrem, pullback EMA21) + tolok ukur beli-dan-tahan. Kejadian <10 ditandai sampel kecil |
+
+### Rilis ekonomi & reaksi harga
+
+| File | Fungsi |
+|---|---|
+| [cloud/kejutan.py](cloud/kejutan.py) | **Studi peristiwa** — reaksi harga dipisah menurut arah KEJUTAN, lengkap dengan **uji ketahanan per rezim**. Tiga sumber: konsensus pasar SoSoValue (CPI/Core CPI/PPI/NFP, sejak 2010) · nowcast Cleveland Fed (cadangan otomatis) · seri SF Fed Bauer-Swanson untuk FOMC (kejutan dalam basis poin, **berakhir 2023-12**). Menandai sendiri saat irisan data terlalu pendek atau berkasnya basi |
+| [cloud/jadwal.py](cloud/jadwal.py) | **Jadwal rilis RESMI tanpa API key**: kalender ICS BLS (NFP/CPI/PPI), tanggal keputusan FOMC beserta penanda rapat berproyeksi, dan angka aktual NFP/PPI dari BLS |
+| [cloud/kalender.py](cloud/kalender.py) | Konsensus & jadwal Forex Factory. **Tidak lagi ikut di brief** (konsensusnya kini dari SoSoValue) — dijalankan mingguan lewat `rapor.yml` untuk menumbuhkan arsip |
+| [cloud/arsip.py](cloud/arsip.py) | **Arsip konsensus independen** — merekam konsensus & aktual Forex Factory setiap kali kalender ditarik, karena feed itu membuang pekan yang sudah lewat. Gunanya mengaudit angka SoSoValue yang tidak punya jejak vintage. Aktual yang sudah terisi TIDAK PERNAH tertimpa kosong |
+| [cloud/makro.py](cloud/makro.py) | Data makro AS dari FRED (resmi, tanpa key): CPI, Core PCE, NFP, pengangguran, Fed Funds, yield 2y/10y, DXY, kurva 10y-2y — beserta arah dampaknya ke emas dan **persentil** terhadap sejarahnya |
+| [cloud/data/gold_drivers.md](cloud/data/gold_drivers.md) | Acuan analisa emas: data penggerak, arah dampak saat actual > forecast, dan dua pengecualian arah yang sering tertukar |
+
+### Crypto
+
+| File | Fungsi |
+|---|---|
+| [cloud/etf.py](cloud/etf.py) | **Arus dana ETF spot AS** (BTC & ETH saja) — kategori sinyal INSTITUSIONAL yang tidak tertangkap chart, on-chain, maupun sentimen. Yang paling bernilai bukan angka arusnya melainkan **divergensi harga vs arus**: harga naik + arus keluar = distribusi; harga turun + arus masuk = akumulasi. Besaran dinilai lewat persentil, bukan angka dolar telanjang |
+| [cloud/onchain.py](cloud/onchain.py) | Valuasi on-chain (CoinMetrics Community, tanpa key): MVRV + zona siklus, alamat aktif, tren 30 hari. Metrik yang tak ada di tier gratis dilaporkan kosong, tidak dikarang |
+| [cloud/fundamentals.py](cloud/fundamentals.py) | "Laporan keuangan" protokol dari DefiLlama: revenue & fees per bulan/kuartal, pertumbuhan MoM/QoQ/YoY, TVL, rasio MC/TVL & P/S & P/F |
+| [cloud/investors.py](cloud/investors.py) | Kepemilikan on-chain multi-chain: 10 holder teratas + kategori otomatis + konsentrasi riil. Ethereum via Ethplorer (tanpa key); chain lain via Moralis |
+| [cloud/wallet.py](cloud/wallet.py) | Pelacak wallet address: isi dompet, nilai USD, % portofolio, identitas alamat bila dikenal |
+| [cloud/whaleflow.py](cloud/whaleflow.py) | Whale Sentiment Index + top-10 token dengan arah akumulasi/distribusi whale 24 jam (ETH saja) |
+| [cloud/sentiment.py](cloud/sentiment.py) | Fear & Greed + sentimen komunitas, ukuran audiens, aktivitas developer |
+| [cloud/ainews.py](cloud/ainews.py) | Perkembangan AI dari RSS resmi (OpenAI, DeepMind, HF, TechCrunch AI, dll) — katalis sektor AI sering lahir di dunia AI, bukan crypto |
+
+### Saham
+
+| File | Fungsi |
+|---|---|
+| [cloud/stockfund.py](cloud/stockfund.py) | Fundamental dari SEC EDGAR (resmi, tanpa key): revenue, laba, EPS, aset, ekuitas, arus kas — kuartalan & tahunan + pertumbuhan, plus P/E & P/S. Pertumbuhan TIDAK dihitung saat deret periodenya berlubang |
+| [cloud/konteks.py](cloud/konteks.py) | Konteks pasar & sektor: indeks + VIX, peringkat 11 ETF sektor berdasar kinerja RELATIF terhadap S&P, pemetaan emiten ke sektor lewat kode SIC. Kode di luar peta dilaporkan tidak terpetakan |
+| [cloud/earnings.py](cloud/earnings.py) | Jadwal & kejutan earnings + emiten sebanding (Finnhub, key opsional). Tanpa kunci, bagian ini dilaporkan tidak tersedia dan analisa saham tetap jalan |
+| [cloud/sec_tickers.py](cloud/sec_tickers.py) | Cache peta ticker → CIK dari SEC (7 hari, ikut di-commit). Dulu diunduh ulang tiap analisa — terukur 42,9 detik di runner |
+
+### Sumber berbayar-opsional
+
+| File | Fungsi |
+|---|---|
+| [cloud/sosovalue.py](cloud/sosovalue.py) | **Adapter tunggal SoSoValue** — semua akses lewat sini supaya kalau tier gratisnya dicabut, yang dibuang cukup satu berkas. Menarik riwayat konsensus (disimpan jadi berkas, sehingga `kejutan.py` tidak butuh kunci saat analisa) dan arus ETF. Kunci tidak pernah masuk keluaran mana pun — repo ini publik dan log Actions ikut terbaca publik |
+| [cloud/.mcp.cloud.json](cloud/.mcp.cloud.json) | Konfigurasi MCP: CoinMarketCap, CoinGlass, TradingView-data, Blockscout |
+
+### Prompt & tes
+
+| File | Fungsi |
+|---|---|
+| [cloud/prompts/analisa.md](cloud/prompts/analisa.md) | Metodologi skor 0–100, aturan veto, setting indikator |
+| [cloud/prompts/analisa_pasar.md](cloud/prompts/analisa_pasar.md) | Metodologi untuk forex/emas/saham |
+| [cloud/prompts/analisa_sumber.md](cloud/prompts/analisa_sumber.md) | Instruksi sumber data — sengaja dipisah supaya tidak ikut terkirim ke tahap sintesis yang tidak punya tool |
+| [cloud/prompts/chat.md](cloud/prompts/chat.md) | Mode ngobrol, berblok: aturan domain dimuat hanya bila pemicunya cocok |
+| [cloud/prompts/narasi.md](cloud/prompts/narasi.md) · [foto.md](cloud/prompts/foto.md) | Mode screening narasi & mode analis visual |
+| [tests/test_routing.py](tests/test_routing.py) | **357 tes** (pytest, tabel, hermetis — jaringan diblokir): routing, bobot, perakitan prompt, audit angka, penyaring privasi, uji rezim, label divergensi, dan **penjaga struktural** seperti "aturan keras tidak boleh berada di field yang dibuang `--ringkas`". Job CI-nya SENGAJA merah kalau ada yang gagal |
+
+---
+
+## Workflow
+
+| Workflow | Pemicu | Tugas |
+|---|---|---|
+| [bot.yml](.github/workflows/bot.yml) | `repository_dispatch` (webhook) + manual | Menjalankan bot. **Tidak ada cron** — lihat catatan hosting di bawah |
+| [tes.yml](.github/workflows/tes.yml) | push & PR | Seluruh suite tes + penjaga "berkas hanya-tambah tidak boleh menyusut" |
+| [rapor.yml](.github/workflows/rapor.yml) | Senin 09:00 WIB + manual | Menilai panggilan lama, menyusun rapor, dan mengarsipkan konsensus mingguan |
+| [periksa-sosovalue.yml](.github/workflows/periksa-sosovalue.yml) | Minggu 12:00 WIB + manual | Menyegarkan riwayat konsensus & data ETF, lalu commit balik |
+| [mcp-security-scan.yml](.github/workflows/mcp-security-scan.yml) | terjadwal + manual | Audit keamanan konfigurasi MCP |
+
+> **Catatan hosting.** Awalnya memakai cron GitHub Actions, tapi GitHub **tidak menjamin
+> jadwal**: `*/5` kenyataannya berjalan ~1 jam sekali, kadang 3 jam, sehingga balasan
+> terasa hilang. Cron dibuang dan diganti **webhook**: Telegram → Cloudflare Worker →
+> langsung memicu Actions. Tanpa server, tetap gratis, balasan datang beberapa menit
+> setelah kamu kirim.
 
 ## Deploy: Webhook + Actions (cara utama, gratis, tanpa server)
 
@@ -115,7 +242,7 @@ Alur: Telegram → Cloudflare Worker (gratis) → `repository_dispatch` → work
    | Nama | Isi |
    |---|---|
    | `GITHUB_TOKEN` | token dari langkah 1 |
-   | `TELEGRAM_SECRET` | string acak buatanmu (mis. hasil `openssl rand -hex 16`) — bebas, asal sulit ditebak |
+   | `TELEGRAM_SECRET` | string acak buatanmu (mis. hasil `openssl rand -hex 16`) |
    | `GITHUB_REPO` | `ihsanmp/Crypto-Analis` |
    | `ALLOWED_CHAT_IDS` | chat ID kamu |
 
@@ -130,18 +257,36 @@ bash deploy/set-webhook.sh https://xxx.workers.dev RAHASIA_YANG_SAMA_DENGAN_TELE
 Cek hasilnya: `bash deploy/set-webhook.sh --status` — kalau `"url"` sudah terisi dan
 `"pending_update_count"` kecil, berarti sudah aktif.
 
-Selesai. Kirim pesan ke bot, workflow akan langsung jalan (lihat tab **Actions**).
-
 > ⚠️ Selama webhook aktif, Telegram **menonaktifkan** `getUpdates`. Jadi mode polling
 > (`workflow_dispatch` manual) tidak akan menemukan pesan. Kalau mau kembali ke polling:
 > `bash deploy/set-webhook.sh --delete`.
+
+### 4. Isi GitHub Secrets
+
+Settings → Secrets and variables → Actions → **New repository secret**:
+
+| Nama secret | Wajib? | Isi |
+|---|---|---|
+| `TELEGRAM_BOT_TOKEN` | **wajib** | Token dari @BotFather |
+| `TELEGRAM_CHAT_ID` | **wajib** | Chat ID kamu. Bot menolak jalan tanpa ini (fail-closed), supaya orang lain yang menemukan bot tidak bisa menghabiskan kuota Claude-mu |
+| `CLAUDE_CODE_OAUTH_TOKEN` | **wajib** | Hasil `claude setup-token` (butuh Claude Pro/Max) |
+| `COINMARKETCAP_API_KEY` | **wajib** | Gratis di [pro.coinmarketcap.com](https://pro.coinmarketcap.com/signup) — paket Basic ~10.000 kredit/bulan |
+| `SOSOVALUE_API_KEY` | opsional | Gratis di [sosovalue.com/developer/dashboard](https://sosovalue.com/developer/dashboard). Tanpa ini: arus ETF tidak tersedia, dan studi kejutan jatuh ke nowcast Cleveland Fed |
+| `FINNHUB_API_KEY` | opsional | Gratis. Tanpa ini: jadwal earnings & daftar peer tidak tersedia, analisa saham tetap jalan |
+| `MORALIS_API_KEY` | opsional | Gratis, 40.000 CU/hari. Dibutuhkan untuk holder/wallet **selain** Ethereum |
+| `COINGLASS_API_KEY` | opsional | Tanpa ini: funding/OI/likuidasi dilewati, analisa spot tetap penuh |
+
+> Pakai repo **PUBLIC** supaya menit GitHub Actions gratis tanpa batas. Rahasia tetap aman
+> karena disimpan di GitHub Secrets (bukan di kode); `.gitignore` menahan `.env`.
+>
+> Semua kunci opsional memakai pola yang sama: **tanpa kunci, bagian itu dilaporkan tidak
+> tersedia — bukan dikarang, dan bukan mematikan analisa.**
 
 ---
 
 ## Alternatif: Deploy ke Server (balasan hitungan detik)
 
-Butuh satu VPS Linux kecil (Ubuntu/Debian). Spesifikasi minim sudah cukup: 1 vCPU / 1 GB RAM.
-Pilihan murah: Hetzner CX22 (~€4/bln), Contabo, atau Oracle Cloud Always Free kalau dapat kapasitas.
+Butuh satu VPS Linux kecil (Ubuntu/Debian). 1 vCPU / 1 GB RAM sudah cukup.
 
 ```bash
 # 1) Login ke server, ambil kodenya
@@ -152,111 +297,52 @@ cd Crypto-Analis
 bash deploy/setup-server.sh
 
 # 3) Isi kredensial
-nano .env        # isi TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
+nano .env        # TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
                  # COINMARKETCAP_API_KEY, CLAUDE_CODE_OAUTH_TOKEN
 
 # 4) Uji jalan dulu di depan mata (Ctrl+C untuk berhenti)
 python3 cloud/bot_daemon.py
 
-# 5) Kalau sudah benar, jadikan service (otomatis hidup lagi kalau crash/reboot)
+# 5) Kalau sudah benar, jadikan service
 bash deploy/install-service.sh
 ```
 
-Perintah harian:
 ```bash
 sudo journalctl -u crypto-analis -f      # lihat log langsung
 sudo systemctl restart crypto-analis     # restart
-sudo systemctl stop crypto-analis        # berhenti
 ```
 
-> ⚠️ **Jangan jalankan daemon dan cron GitHub Actions bersamaan** — keduanya berebut
-> membaca pesan Telegram yang sama sehingga pesan bisa hilang acak. Cron di `bot.yml`
-> sudah dimatikan; workflow itu kini hanya bisa dipicu manual sebagai cadangan.
+> ⚠️ **Jangan jalankan daemon dan webhook bersamaan** — keduanya berebut membaca pesan
+> Telegram yang sama sehingga pesan bisa hilang acak.
 
 ---
 
-## Deploy ke GitHub Actions (cadangan)
-
-### 1. Kredensial yang perlu disiapkan
-
-- **Token bot Telegram**: chat @BotFather → `/newbot` → salin token.
-- **Chat ID**: kirim pesan apa saja ke bot barumu, buka
-  `https://api.telegram.org/bot<TOKEN>/getUpdates` di browser → catat `chat.id`.
-- **API key CoinGlass**: daftar di https://www.coinglass.com/pricing (paket Hobbyist
-  cukup). Boleh dikosongkan kalau tak butuh data futures (funding/OI/likuidasi).
-- **Token langganan Claude** (butuh Claude Pro/Max). Di terminal yang sudah login
-  Claude Code, jalankan `claude setup-token`, salin token yang keluar.
-
-### 2. Push ke repo GitHub
-
-```powershell
-cd D:\Screening
-git init
-git add .
-git commit -m "Bot riset koin"
-git branch -M main
-git remote add origin https://github.com/<user>/<repo>.git
-git push -u origin main
-```
-
-> Pakai repo **PUBLIC** supaya menit GitHub Actions gratis tanpa batas. Rahasia tetap
-> aman karena disimpan di GitHub Secrets (bukan di kode); `.gitignore` menahan `.env`.
-
-### 3. Isi GitHub Secrets
-
-Settings → Secrets and variables → Actions → **New repository secret**:
-
-| Nama secret | Isi |
-|---|---|
-| `TELEGRAM_BOT_TOKEN` | token dari @BotFather — **wajib** |
-| `TELEGRAM_CHAT_ID` | chat ID kamu — **wajib**. Bot menolak jalan tanpa ini (fail-closed), supaya orang lain yang menemukan bot tidak bisa menghabiskan kuota Claude-mu |
-| `COINGLASS_API_KEY` | API key CoinGlass (boleh dikosongkan; tanpa ini sentimen derivatif — funding/OI — dilewati, analisa spot tetap jalan penuh) |
-| `COINMARKETCAP_API_KEY` | **Wajib** — ambil gratis di https://pro.coinmarketcap.com/signup (paket Basic gratis, ~10.000 kredit/bulan). Tanpa ini semua data pasar tidak jalan |
-| `MORALIS_API_KEY` | Opsional — ambil gratis di https://moralis.com (40.000 CU/hari). Dibutuhkan untuk holder/wallet **selain Ethereum** (BSC, Base, Arbitrum, Polygon, Optimism, Avalanche, Solana). Tanpa ini, chain Ethereum tetap jalan (Ethplorer); chain lain memberi pesan jelas |
-| `CLAUDE_CODE_OAUTH_TOKEN` | token dari `claude setup-token` — **wajib** |
-
-### 4. Aktifkan & pakai
-
-- Buka tab **Actions** di repo, izinkan workflow jalan.
-- Tes langsung: pilih workflow "Bot Riset Koin (Telegram)" → **Run workflow**.
-- Di Telegram ketik `analisa (nama koin)`, contoh:
-  - `analisa` — scan pasar, cari 3-5 koin menarik, pilih 1-2 setup terbaik
-  - `analisa sol` — analisa mendalam satu koin
-
-Balasan datang ~5-15 menit setelah kamu ketik (sesuai jadwal cron per-5-menit).
-
 ## Catatan
 
-- Jadwal cron GitHub kadang meleset beberapa menit saat jam sibuk — normal.
-- Maksimal **2 pesan per run** (job Actions dibatasi 30 menit, satu analisa bisa 15 menit).
-  Pesan berlebih tidak hilang — tetap mengantre dan dikerjakan run berikutnya.
-- **Mode ngobrol bersifat single-turn** — tiap pesan diproses independen tanpa memori
-  percakapan sebelumnya (GitHub Actions stateless). Pertanyaan lanjutan sebaiknya menyebut
-  ulang koin yang dimaksud.
-- Kalau ada Secret wajib yang kosong, workflow berhenti tenang (exit 0) dengan pesan
-  jelas di log, bukan gagal merah tiap 5 menit.
-- **Penjenjangan model (model tiering).** Analisa satu koin dipecah dua tahap: model
-  murah/cepat (`claude-haiku-4-5`) mengumpulkan data (jalankan semua script + MCP + web —
-  bagian terberat & terbanyak round-trip), lalu model pintar (`claude-opus-4-8`) menafsirkan
-  & menyusun laporan dari data itu. Hemat kuota + lebih cepat, kualitas setara. Bisa diatur
-  lewat env `MODEL_GATHER` / `MODEL_SYNTH`. Mode scan/narasi/ngobrol tetap satu model pintar
-  (butuh penemuan/penilaian, bukan sekadar pengumpulan).
-- **Kalau menguji di Windows lokal**, ada dua jebakan yang TIDAK ada di GitHub Actions:
-  1. `python` sering mengarah ke alias Microsoft Store — Claude Code tidak bisa
-     menjalankannya sebagai server MCP (MCP-nya diam-diam tidak muncul, tanpa error).
-     Pakai path Python asli atau venv.
-  2. `npm install -g` bisa gagal separuh jalan karena cache npm terkunci (EPERM) —
-     shim terbuat tapi paketnya kosong. Install ke direktori bersih dengan
-     `--cache <folder-lain>`, atau panggil langsung `node <path>/index.js`.
-- Konfigurasi MCP sengaja **tidak memakai blok `env` dengan `${...}`**. Kalau variabelnya
-  tidak di-set, Claude Code meneruskan teks harfiah `${NAMA}` sebagai nilai, dan server MCP
-  menganggapnya kunci sungguhan lalu gagal dengan error auth yang menyesatkan. Semua kunci
-  diwariskan lewat environment job di `bot.yml`.
+- **Maksimal 2 pesan per run** (job Actions dibatasi 30 menit, satu analisa bisa 15 menit).
+  Pesan berlebih tetap mengantre dan dikerjakan run berikutnya.
+- **Audit sebelum kirim.** Tiap balasan diperiksa: apakah angkanya terlacak ke data yang
+  dikumpulkan, apakah datanya masih segar, apakah sumbernya disebut. Bila mencurigakan,
+  peringatan disisipkan ke balasan yang kamu terima — bukan disembunyikan di log.
+- **Berkas data punya umur.** Riwayat konsensus disegarkan mingguan; kalau jadwalnya mati
+  diam-diam, keluaran menandai sendiri bahwa datanya sudah lebih dari 14 hari. Data ETF
+  tertinggal beberapa hari dari harga (hari bursa + jeda pelaporan) dan umurnya selalu
+  dicetak.
+- **Batas yang disebut apa adanya, bukan disembunyikan:** riwayat harian crypto gratis
+  hanya ~1 tahun untuk koin di luar BTC/ETH · seri kejutan FOMC berakhir 2023-12 · konsensus
+  SoSoValue tidak punya jejak vintage · ETF spot hanya ada untuk BTC dan ETH.
+- Kalau ada Secret wajib yang kosong, workflow berhenti tenang (exit 0) dengan pesan jelas
+  di log, bukan gagal merah.
 - Workflow terjadwal otomatis nonaktif kalau repo 60 hari tanpa aktivitas — cukup push
   commit apa saja untuk mengaktifkan lagi.
-- Mau lebih jarang/hemat? Ubah `cron: "*/5 * * * *"` di `bot.yml` (mis. `*/15`).
-- Metodologi analisa (bobot skor, threshold, aturan veto, setting indikator) ada di
+- Konfigurasi MCP sengaja **tidak memakai blok `env` dengan `${...}`**. Kalau variabelnya
+  tidak di-set, Claude Code meneruskan teks harfiah `${NAMA}` sebagai nilai dan server MCP
+  gagal dengan error auth yang menyesatkan. Semua kunci diwariskan lewat environment job.
+- **Kalau menguji di Windows lokal**, dua jebakan yang tidak ada di GitHub Actions:
+  `python` sering mengarah ke alias Microsoft Store (MCP diam-diam tidak muncul, tanpa
+  error), dan `npm install -g` bisa gagal separuh jalan karena cache terkunci (EPERM).
+- Metodologi analisa (bobot skor, threshold, aturan veto) ada di
   [cloud/prompts/analisa.md](cloud/prompts/analisa.md) — semua ambang batas adalah titik
-  awal wajar dan sebaiknya dikalibrasi ulang lewat backtest pada koin yang kamu analisa.
+  awal wajar dan sebaiknya dikalibrasi ulang lewat backtest.
 
 ⚠️ Output bot adalah riset pasar berbasis data, bukan saran keuangan. DYOR.

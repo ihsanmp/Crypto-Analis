@@ -2138,3 +2138,60 @@ def test_divergensi_datar_tidak_mengaku_konfirmasi(monkeypatch):
     pola = _etf.analisa("BTC")["divergensi_20_hari"]["pola"]
     assert "Konfirmasi biasa" not in pola
     assert "BUKAN konfirmasi" in pola
+
+
+# ------------------------------------------------------------------------ README
+def _readme():
+    return open(os.path.join(AKAR, "README.md"), encoding="utf-8").read()
+
+
+def test_readme_semua_tautan_lokal_ada():
+    """Tautan mati di README menyesatkan orang yang baru membaca repo ini."""
+    import re as _re
+    tautan = {t for t in _re.findall(r"\]\((?!https?://)([^)#]+)\)", _readme())}
+    hilang = sorted(t for t in tautan if not os.path.exists(os.path.join(AKAR, t)))
+    assert not hilang, f"tautan README menunjuk berkas yang tidak ada: {hilang}"
+
+
+def test_readme_menyebut_setiap_modul():
+    """Modul yang tidak tercatat di README praktis tidak diketahui siapa pun.
+
+    Repo ini tumbuh cepat; tanpa penjaga, README selalu tertinggal beberapa modul.
+    """
+    teks = _readme()
+    modul = [f for f in os.listdir(os.path.join(AKAR, "cloud")) if f.endswith(".py")]
+    hilang = sorted(m for m in modul if m not in teks)
+    assert not hilang, f"modul belum dicatat di README: {hilang}"
+
+
+def test_readme_menyebut_setiap_workflow():
+    teks = _readme()
+    alur = [f for f in os.listdir(os.path.join(AKAR, ".github", "workflows"))
+            if f.endswith(".yml")]
+    hilang = sorted(a for a in alur if a not in teks)
+    assert not hilang, f"workflow belum dicatat di README: {hilang}"
+
+
+def test_readme_tidak_memuat_klaim_yang_sudah_gugur():
+    """Klaim usang di README adalah versi dokumen dari bug yang ditemukan sapuan 16.
+
+    Ketiganya pernah benar dan sekarang tidak: cron sudah dibuang demi webhook, mode
+    ngobrol sudah punya ingatan percakapan, dan bot bukan lagi khusus koin.
+    """
+    teks = _readme()
+    for klaim in ("cron tiap 5 menit",
+                  "sesuai jadwal cron per-5-menit",
+                  "Mode ngobrol bersifat single-turn",
+                  'cron: "*/5 * * * *"'):
+        assert klaim not in teks, f"klaim usang masih ada di README: {klaim}"
+
+
+def test_readme_mencantumkan_semua_secret_yang_dipakai():
+    """Secret yang dipakai workflow tapi tak terdokumentasi = orang tidak tahu harus mengisi."""
+    import re as _re
+    alur = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"),
+                encoding="utf-8").read()
+    dipakai = set(_re.findall(r"secrets\.([A-Z_]+)", alur))
+    teks = _readme()
+    hilang = sorted(s for s in dipakai if s not in teks)
+    assert not hilang, f"secret dipakai bot.yml tapi tidak ada di README: {hilang}"
