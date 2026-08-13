@@ -2350,3 +2350,38 @@ def test_seed_crypto_menolak_pinjam_angka_makro():
                          encoding="utf-8").read().split())
     assert "TIDAK ADA STUDI RILIS MAKRO DI DAFTAR INI" in teks
     assert "JANGAN meminjam angka dari emas atau saham" in teks
+
+
+def test_uji_luar_sampel_ada_di_keluaran():
+    """Uji rezim memotong data yang SAMA yang melahirkan temuannya — itu belum menjawab
+    apakah efeknya bertahan pada data yang belum pernah dilihat.
+
+    Diukur langsung: ketiga temuan di repo ini menyusut tajam di paruh kedua (FOMC H+1
+    -1,76 -> -0,09). Tanpa uji ini, besaran yang dikutip selalu optimistis.
+    """
+    catatan = []
+    for i in range(60):
+        tahun = 2014 + i // 30
+        # Paruh awal efeknya besar, paruh akhir mengecil — pola overfitting yang khas.
+        besar = -2.0 if i < 30 else -0.1
+        catatan.append({"tanggal": f"{tahun}-{i % 12 + 1:02d}-10", "kejutan_pp": 1.0,
+                        "aktual": None, "ret": {0: besar, 1: besar, 5: besar}})
+        catatan.append({"tanggal": f"{tahun}-{i % 12 + 1:02d}-11", "kejutan_pp": -1.0,
+                        "aktual": None, "ret": {0: 0.0, 1: 0.0, 5: 0.0}})
+    hasil = _kejutan.reaksi_per_rezim("X", [], False, catatan=catatan,
+                                      meta={"simbol": "X", "jendela_harga": "-"})
+    luar = hasil.get("uji_luar_sampel")
+    assert luar, "uji luar sampel tidak ada di keluaran"
+    h1 = luar["per_horizon"]["H+1"]
+    assert h1["menyusut"] is True
+    assert abs(h1["paruh_akhir"]) < abs(h1["paruh_awal"])
+
+
+def test_seed_mencatat_penyusutan_luar_sampel():
+    """Angka -1,21% yang sempat kutulis sebagai 'jauh di atas derau' ternyata didominasi
+    paruh lama. Koreksinya harus tertulis, bukan hanya diketahui saat pengujian."""
+    teks = " ".join(open(os.path.join(AKAR, "cloud", "prompts", "peran", "prediktor.md"),
+                         encoding="utf-8").read().split())
+    assert "PENYUSUTAN DI LUAR SAMPEL" in teks
+    assert "-0,09%" in teks
+    assert "menyusut 61%" in teks

@@ -571,6 +571,36 @@ def reaksi_per_rezim(simbol, riwayat, pasar, rentang="15y", catatan=None, meta=N
                  "Tanda yang bertahan TIDAK otomatis berarti efeknya nyata — besarannya "
                  "tetap harus di atas derau.")}
 
+    # UJI LUAR SAMPEL. Uji rezim menjawab "apakah tandanya bertahan saat dipotong", tapi
+    # SEMUA potongan itu berasal dari data yang sama yang melahirkan temuannya — itu belum
+    # menjawab apakah efeknya bertahan pada data yang BELUM pernah dilihat. Diukur langsung:
+    # ketiga temuan di repo ini menyusut tajam di paruh kedua (NFP -0,80 -> -0,31; FOMC H+1
+    # -1,76 -> -0,09). Besaran yang dikutip dari seluruh riwayat karena itu OPTIMISTIS.
+    urut2 = sorted(catatan, key=lambda c: c["tanggal"])
+    potong = len(urut2) // 2
+    if potong >= 15:
+        awal = _selisih_median(urut2[:potong])["selisih"]
+        akhir = _selisih_median(urut2[potong:])["selisih"]
+        susut = {}
+        for h in awal:
+            a_, b_ = awal.get(h), akhir.get(h)
+            if a_ is None or b_ is None:
+                continue
+            susut[h] = {"paruh_awal": a_, "paruh_akhir": b_,
+                        "tanda_bertahan": (a_ > 0) == (b_ > 0),
+                        "menyusut": abs(b_) < abs(a_)}
+        hasil["uji_luar_sampel"] = {
+            "dibelah_pada": urut2[potong]["tanggal"],
+            "per_horizon": susut,
+            "wajib_dibaca": (
+                "Paruh awal adalah tempat temuan LAHIR; paruh akhir BELUM pernah dilihat "
+                "saat temuan disusun. Kalau besarannya menyusut tajam atau tandanya "
+                "berbalik di paruh akhir, angka dari seluruh riwayat terlalu optimistis — "
+                "kutip yang PARUH AKHIR sebagai perkiraan yang lebih jujur, dan sebutkan "
+                "penyusutannya. Belahan ini kronologis, jadi memang menguji ketahanan "
+                "terhadap perubahan rezim, bukan sekadar mengacak data."),
+        }
+
     tipis = [n for n, p in hasil["potongan"].items() if p.get("peringatan")]
     if tipis:
         hasil["potongan_bersampel_tipis"] = tipis

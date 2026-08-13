@@ -129,7 +129,10 @@ besar **di bawah derau harian**. Jadi kesimpulan operasionalnya tetap sama.
 2. `tanda_bertahan: true` TAPI selisih di bawah ~0,3% pada emas → **TIDAK ADA EDGE ARAH
    yang bisa ditradingkan**. Boleh disebut sebagai kecenderungan lemah, tidak boleh jadi
    dasar rekomendasi.
-3. Jangan pernah mengutip angka gabungan tanpa menyebut hasil uji rezimnya.
+3. Jangan pernah mengutip angka gabungan tanpa menyebut hasil uji rezimnya DAN hasil
+   `uji_luar_sampel`. Uji rezim menjawab "bertahan saat dipotong"; uji luar sampel menjawab
+   "bertahan pada data yang belum pernah dilihat". Yang kedua jauh lebih keras, dan
+   ketiga temuan di berkas ini menyusut tajam di situ.
 4. **Periksa vonis untuk H (hari rilis), bukan hanya H+1 dan H+5.** Pada NFP, H adalah
    satu-satunya horizon yang bertahan; menghakimi dari H+1/H+5 saja akan menyimpulkan
    "tidak ada apa-apa" pada kejadian yang jelas ada apa-apanya. Rilis sering menggerakkan
@@ -174,6 +177,8 @@ Hasilnya pada emas, 179 rilis yang beririsan dengan harga:
 
 - **Hari rilis (H): -0,57% gabungan, dan NEGATIF di kelima potongan** (-0,24% s/d -1,30%).
   Lapangan kerja lebih kuat dari perkiraan menekan emas seketika. `tanda_bertahan: true`.
+  **TAPI di luar sampel menyusut 61%**: paruh awal -0,80%, paruh akhir -0,31%. Pakai angka
+  paruh akhir kalau menyebut besaran.
 - **H+1 dan H+5: gugur, tandanya berbalik-balik.** Jadi efeknya TIDAK berlanjut.
 
 Cara menyampaikannya: "NFP di atas perkiraan historisnya menekan emas pada hari itu juga,
@@ -200,6 +205,20 @@ terikat pada yield riil: kejutan hawkish -> emas naik hanya 43,8% (median H+1 -0
 kejutan dovish -> naik 75,9% (median H+1 +0,85%). Selisih H+1 -1,21%, jauh di atas derau.
 Dengan ukuran ortogonal, tanda H+1 bertahan di kelima potongan; **H+5 TIDAK bertahan**, jadi
 hanya reaksi satu hari yang boleh dipakai.
+
+**PENYUSUTAN DI LUAR SAMPEL — baca `uji_luar_sampel` sebelum mengutip besaran mana pun.**
+Angka -1,21% di atas dihitung dari SELURUH riwayat, yaitu data yang sama yang melahirkan
+temuannya. Saat riwayat dibelah kronologis, efeknya runtuh:
+
+| horizon | paruh awal | paruh akhir (belum pernah dilihat) |
+|---|---|---|
+| H+1 | **-1,76%** | **-0,09%** |
+| H+5 | -1,31% | -0,61% |
+
+Tandanya bertahan, besarannya tidak. H+1 di paruh akhir praktis nol — tidak bisa dibedakan
+dari derau. **Kutip angka paruh akhir sebagai perkiraan yang lebih jujur, dan sebutkan
+penyusutannya.** Pola yang sama terjadi pada NFP (-0,80 -> -0,31) dan CPI (H+5 berbalik
+tanda), jadi ini bukan kekhususan FOMC melainkan sifat semua temuan di sini.
 
 **TIGA batas yang wajib disebut, dan yang ketiga paling sering dilanggar:**
 
