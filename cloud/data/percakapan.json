@@ -15,5 +15,22 @@
    "rsi=48,7",
    "skor=58"
   ]
+ },
+ {
+  "chat": "1242dcf6b322d4c6",
+  "waktu": 1786807650.02724,
+  "waktu_utc": "2026-08-15 15:27",
+  "pesan": "carikan altcoin yang menarik, yang berpotensi menjadi alpha ketika btc turun",
+  "balasan": "📊 PASAR\nBTC $62.988 · Dominasi 58,38% (naik tipis dari 58,37% kemarin, BUKAN tanda rotasi ke altcoin) · Fear & Greed 36 (Fear)\nData per 15 Agustus 2026, 15:26 UTC (22:26 WIB). BTC 7d -3,15%, 90d -19,26% — rezim masih koreksi/takut, bukan altseason lu\n[...dipangkas...]\nu entitas (OKX) — regulasi atau masalah operasional exchange langsung pukul harga token\n• Weekly tidak bisa diverifikasi — jangan anggap tren jangka panjang otomatis aman\n• Katalis ICE (Maret 2026) sudah agak lama, sebagian mungkin sudah ter-price-in",
+  "angka_kunci": [
+   "harga=8,18",
+   "invalid=8,00",
+   "invalid=86,6",
+   "ema21=8,96",
+   "ema13=8,48",
+   "ema21=8,43",
+   "ema13=8,52",
+   "ema21=8,91"
+  ]
  }
 ]
