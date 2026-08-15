@@ -1,35 +1,19 @@
 [
  {
   "chat": "1242dcf6b322d4c6",
-  "waktu": 1786549634.7160428,
-  "waktu_utc": "2026-08-12 15:47",
-  "pesan": "analisa koin skyai",
-  "balasan": "🕒 Data per 12 Agustus 2026 22:42 WIB · sumber harga CoinGecko (1D & 1W approx_close_only — tanpa high/low asli, jadi Stoch kurang presisi dan ATR/SuperTrend/Pivot harian TIDAK dihitung; 4H native)\n\n📊 PASAR\nFear & Greed 27 (Fear, kemarin 29 · stabil)\n[...dipangkas...]\nndustries; (3) apakah pekan ini tutup di bawah $0,10 — kalau ya, struktur mingguan resmi patah.\n\nAlokasi: maksimal 2–3% modal untuk aset dengan drawdown historis 97%, bukan 5%. Dan karena arah BTC tidak terverifikasi hari ini, potong lagi separuhnya.",
-  "angka_kunci": [
-   "harga=0,1415",
-   "invalid=0,0480",
-   "ema13=0,1415",
-   "ema21=0,1524",
-   "ema50=0,0941",
-   "ema100=0,1332",
-   "ema200=0,1360",
-   "ema21=0,0674"
-  ]
- },
- {
-  "chat": "1242dcf6b322d4c6",
-  "waktu": 1786549984.1284542,
-  "waktu_utc": "2026-08-12 15:53",
+  "waktu": 1786802793.0088968,
+  "waktu_utc": "2026-08-15 14:06",
   "pesan": "analisa hyperliquid",
-  "balasan": "🕒 Data per 12 Agu 2026 22:49 WIB · sumber harga CoinGecko (approx_close_only untuk 1D & 1W, 4H native)\n\n⚠️ MUTU DATA: high/low asli tidak tersedia di 1D/1W → ATR, SuperTrend, dan Pivot HARIAN tidak dipakai; Stochastic kurang presisi. Volume 4H kosong\n[...dipangkas...]\nmingguan di bawah $49,99 (EMA33 mingguan) → kurangi separuh; di bawah $45,10 → keluar, tesis gugur.\nPantau      : (1) unlock 29 Agu 2026 dan reaksi harga sepekan sesudahnya (2) apakah harian bisa close di atas $56,20 dengan volume di atas rata-rata.",
+  "balasan": "🕒 Data per 15 Agu 2026, 21:03 WIB · sumber harga CoinGecko (approx_close_only — high/low harian bukan asli, Stochastic kurang presisi; 4H native)\n\n📊 PASAR\nBTC tidak tersedia · Dominasi tidak tersedia · Whale Index tidak tersedia · Fear & Greed 34 (Fe\n[...dipangkas...]\n$53,52. Di bawah itu kurangi separuh; di bawah $49,70 keluar.\nPantau      : (1) reaksi di $57,46 — ditolak lagi berarti lower-high kedua dan skenario turun ke $52–53 menguat; (2) unlock rutin 6 September; (3) kondisi BTC yang hari ini tidak terbaca.",
   "angka_kunci": [
-   "harga=55,08",
-   "invalid=45,10",
+   "harga=12,6",
+   "invalid=49,70",
+   "ema21=56,32",
+   "ema50=58,29",
    "ema21=53,52",
-   "ema21=56,20",
-   "ema200=51,57",
-   "rsi=43,1",
-   "skor=43"
+   "rsi=52,8",
+   "rsi=48,7",
+   "skor=58"
   ]
  }
 ]
