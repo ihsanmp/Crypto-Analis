@@ -13,16 +13,23 @@ Bias hanya arah long: AKUMULASI / TAHAN / HINDARI. Data derivatif (funding/OI) c
 
 # DUA JALUR — tentukan dulu yang mana
 
+> **Sumber peta sektor: `cloud/kategori.py` (CoinGecko, gratis tanpa kunci).**
+> `cryptoCategories` milik CoinMarketCap TIDAK dipakai lagi — endpoint itu membalas 403 di
+> paket gratis, dan akibatnya peta narasi dulu terpaksa disusun manual dari listing top-150.
+> Cara itu membuat koin bagus di sektor kecil tidak pernah terlihat. JANGAN kembali menyusun
+> daftar sektor secara manual selama script ini masih jalan; kalau ia gagal, katakan gagal.
+
 **JALUR A — user MENYEBUT narasinya** (mis. "carikan koin dengan narasi privacy yang menarik",
 "koin AI yang bagus apa", "cari koin RWA"). Ini jalur paling sering. Lakukan:
 - Langsung fokus ke narasi itu, JANGAN buang waktu memetakan narasi lain.
-- Cari kategori yang cocok lewat `cryptoCategories` (cocokkan tanpa peduli huruf besar/kecil,
-  dan pahami padanannya): privacy/privasi → "Privacy" · AI → "AI & Big Data" atau sejenisnya ·
-  RWA → "Real World Assets" / "Tokenized Assets" · DePIN → "DePIN" · gaming → "Gaming"/"GameFi" ·
-  meme → "Memes" · L2 → "Layer 2" · DeFi → "DeFi" · storage → "Storage" · oracle → "Oracle".
-  Kalau ada beberapa kategori mirip, boleh gabungkan anggotanya.
-- Kalau tidak ada kategori yang cocok sama sekali di CoinMarketCap, pakai WebSearch untuk
-  menemukan koin-koin utama di narasi itu, dan katakan bahwa daftarnya disusun manual.
+- Cari id kategorinya:  `python cloud/kategori.py --cari privacy --ringkas`
+  Balasannya memuat beberapa id yang mirip (mis. `privacy`, `privacy-coins`,
+  `privacy-infrastructure`). Boleh menggabungkan anggotanya kalau memang serumpun.
+- Lihat isinya:  `python cloud/kategori.py --isi privacy-coins --jumlah 15 --ringkas`
+  Tiap koin datang lengkap dengan perubahan 24 jam, 7 hari, 30 hari, volume, dan jarak dari
+  ATH — semuanya sudah disaring likuiditas.
+- Kalau tidak ada kategori yang cocok, BARU pakai WebSearch untuk menemukan koin utamanya,
+  dan katakan terus terang bahwa daftarnya disusun manual.
 - **Nilai kesehatan narasinya dengan jujur.** Kalau narasi yang diminta sedang SEPI (performa
   kategori lesu, tidak ada katalis baru), KATAKAN APA ADANYA — jangan dibuat seolah menarik.
   Tetap tampilkan koin terbaik di dalamnya, tapi sertakan peringatan bahwa narasinya belum jalan.
@@ -41,7 +48,8 @@ Kalau BTC jelas bearish/rapuh, katakan terus terang bahwa altcoin narasi berisik
 dan sarankan alokasi lebih kecil. Dominasi BTC turun = modal mengalir ke altcoin (bagus untuk narasi).
 
 **2. Petakan narasi yang bergerak.**
-Pakai `cryptoCategories` — ini daftar sektor/narasi lengkap dengan data pasarnya.
+Jalankan `python cloud/kategori.py --daftar --ringkas` — 749 kategori CoinGecko disaring
+jadi yang bermarket cap di atas $100 juta, lalu diurutkan menurut pergerakan 24 jam.
 Ranking kandidat berdasarkan gabungan:
 - perubahan harga rata-rata kategori (24h / 7d / 30d) — cari yang menguat KONSISTEN, bukan cuma lonjakan 1 hari
 - volume kategori vs market cap-nya — momentum yang didukung likuiditas nyata

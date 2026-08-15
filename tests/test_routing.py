@@ -2385,3 +2385,45 @@ def test_seed_mencatat_penyusutan_luar_sampel():
     assert "PENYUSUTAN DI LUAR SAMPEL" in teks
     assert "-0,09%" in teks
     assert "menyusut 61%" in teks
+
+
+# ------------------------------------------------------------ peta sektor / narasi
+import kategori as _kategori  # noqa: E402
+
+
+def test_kategori_menyaring_mcap_mungil():
+    """Kategori bermarket cap mungil bergerak liar karena satu transaksi.
+
+    Tanpa saringan, peringkat teratas selalu diisi sektor berisi dua koin tak likuid —
+    dan itulah yang akan dikira 'narasi yang sedang bergerak'.
+    """
+    assert _kategori.MCAP_MINIMUM >= 100_000_000
+    assert _kategori.VOLUME_MINIMUM >= 1_000_000
+
+
+def test_prompt_tidak_lagi_menyuruh_cryptocategories():
+    """Endpoint itu 403 di paket gratis; menyuruh memakainya = menyuruh gagal.
+
+    Bot sendiri sudah melaporkan keterbatasan ini ke user, lalu menyusun peta narasi
+    manual dari top-150 — cakupan sempit, dan sektor kecil tak pernah terlihat.
+    """
+    narasi = open(os.path.join(AKAR, "cloud", "prompts", "narasi.md"),
+                  encoding="utf-8").read()
+    assert "cloud/kategori.py" in narasi
+    # Satu-satunya penyebutan yang boleh tersisa adalah larangan memakainya.
+    for baris in narasi.splitlines():
+        if "cryptoCategories" in baris:
+            assert "TIDAK dipakai" in baris, baris
+    sumber = open(os.path.join(AKAR, "cloud", "prompts", "analisa_sumber.md"),
+                  encoding="utf-8").read()
+    for baris in sumber.splitlines():
+        if "cryptoCategories" in baris:
+            assert "JANGAN" in baris, baris
+
+
+def test_kategori_mewajibkan_baca_7_dan_30_hari():
+    """Koin naik 7 hari tapi turun 30 hari itu pantulan di dalam tren turun, bukan narasi
+    baru — pembedaan yang paling mudah terlewat saat screening."""
+    teks = open(os.path.join(AKAR, "cloud", "kategori.py"), encoding="utf-8").read()
+    assert "Bandingkan ubah_7h dan ubah_30h" in teks
+    assert "dari_ath_persen" in teks

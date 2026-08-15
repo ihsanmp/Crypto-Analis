@@ -23,7 +23,9 @@ memboroskan token tanpa bisa dipakai. Yang membacanya hanya mode SCAN.
    - `cryptoQuotesLatest` — harga, market cap, FDV, volume 24h, perubahan 24h/7d/30d ← inti
    - `allCryptocurrencyListings` — daftar pasar / top movers ← untuk mode SCAN
    - `getCryptoMetadata` — profil koin, kategori, tautan resmi (termasuk repo GitHub)
-   - `cryptoCategories`, `cryptoCategory` — kategori & narasi
+   - kategori & narasi: JANGAN pakai `cryptoCategories`/`cryptoCategory` — endpoint itu
+     membalas 403 di paket gratis. Pakai `python cloud/kategori.py --daftar --ringkas`
+     (CoinGecko, gratis tanpa kunci, 749 kategori).
    - `globalMetricsLatest` — total mcap, dominasi BTC ← market filter
    - `fearAndGreedLatest`, `fearAndGreedHistorical` — sentimen pasar
    - `cryptoCurrencyMap` — pemetaan ticker ke id CMC · `priceConversion` · `keyInfo`

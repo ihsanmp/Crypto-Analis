@@ -170,6 +170,7 @@ membawa aturan risiko forex.
 | [cloud/investors.py](cloud/investors.py) | Kepemilikan on-chain multi-chain: 10 holder teratas + kategori otomatis + konsentrasi riil. Ethereum via Ethplorer (tanpa key); chain lain via Moralis |
 | [cloud/wallet.py](cloud/wallet.py) | Pelacak wallet address: isi dompet, nilai USD, % portofolio, identitas alamat bila dikenal |
 | [cloud/whaleflow.py](cloud/whaleflow.py) | Whale Sentiment Index + top-10 token dengan arah akumulasi/distribusi whale 24 jam (ETH saja) |
+| [cloud/kategori.py](cloud/kategori.py) | **Peta sektor/narasi** (CoinGecko, gratis tanpa key) — pengganti `cryptoCategories` CoinMarketCap yang membalas 403 di paket gratis, sehingga peta narasi dulu terpaksa disusun manual dari top-150 dan sektor kecil tak pernah terlihat. 749 kategori disaring mcap >$100 juta, plus isi tiap kategori dengan perubahan 7 & 30 hari dan jarak dari ATH. Balasan mentah 358 rb karakter dipangkas jadi ~1,6 rb |
 | [cloud/sentiment.py](cloud/sentiment.py) | Fear & Greed + sentimen komunitas, ukuran audiens, aktivitas developer |
 | [cloud/ainews.py](cloud/ainews.py) | Perkembangan AI dari RSS resmi (OpenAI, DeepMind, HF, TechCrunch AI, dll) — katalis sektor AI sering lahir di dunia AI, bukan crypto |
 
