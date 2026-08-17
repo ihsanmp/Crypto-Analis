@@ -1,36 +1,15 @@
 [
  {
   "chat": "1242dcf6b322d4c6",
-  "waktu": 1786802793.0088968,
-  "waktu_utc": "2026-08-15 14:06",
-  "pesan": "analisa hyperliquid",
-  "balasan": "🕒 Data per 15 Agu 2026, 21:03 WIB · sumber harga CoinGecko (approx_close_only — high/low harian bukan asli, Stochastic kurang presisi; 4H native)\n\n📊 PASAR\nBTC tidak tersedia · Dominasi tidak tersedia · Whale Index tidak tersedia · Fear & Greed 34 (Fe\n[...dipangkas...]\n$53,52. Di bawah itu kurangi separuh; di bawah $49,70 keluar.\nPantau      : (1) reaksi di $57,46 — ditolak lagi berarti lower-high kedua dan skenario turun ke $52–53 menguat; (2) unlock rutin 6 September; (3) kondisi BTC yang hari ini tidak terbaca.",
+  "waktu": 1786947576.7788155,
+  "waktu_utc": "2026-08-17 06:19",
+  "pesan": "bagaimana menurutmu?",
+  "balasan": "Sudah saya baca gambarnya. Ini isinya:\n\n• Postingan akun \"Xander Tyrone Xu\" (label APP, jam 09:44) berisi kalimat singkat: \"$SOL should be good ya di kala market boring seperti ini\", plus dua tag role.\n• Chart TradingView SOLUSDT.P (Solana perpetual\n[...dipangkas...]\nsebagian, jangan rata-rata turun buta. Kalau tembus $77,71 dengan volume, baru boleh tambah.\n\nSatu pertanyaan biar saya bisa lebih tajam: kamu ini sudah pegang SOL, atau lagi menimbang mau masuk karena postingan itu? Jawabannya beda arah cukup jauh.",
   "angka_kunci": [
-   "harga=12,6",
-   "invalid=49,70",
-   "ema21=56,32",
-   "ema50=58,29",
-   "ema21=53,52",
-   "rsi=52,8",
-   "rsi=48,7",
-   "skor=58"
-  ]
- },
- {
-  "chat": "1242dcf6b322d4c6",
-  "waktu": 1786807650.02724,
-  "waktu_utc": "2026-08-15 15:27",
-  "pesan": "carikan altcoin yang menarik, yang berpotensi menjadi alpha ketika btc turun",
-  "balasan": "📊 PASAR\nBTC $62.988 · Dominasi 58,38% (naik tipis dari 58,37% kemarin, BUKAN tanda rotasi ke altcoin) · Fear & Greed 36 (Fear)\nData per 15 Agustus 2026, 15:26 UTC (22:26 WIB). BTC 7d -3,15%, 90d -19,26% — rezim masih koreksi/takut, bukan altseason lu\n[...dipangkas...]\nu entitas (OKX) — regulasi atau masalah operasional exchange langsung pukul harga token\n• Weekly tidak bisa diverifikasi — jangan anggap tren jangka panjang otomatis aman\n• Katalis ICE (Maret 2026) sudah agak lama, sebagian mungkin sudah ter-price-in",
-  "angka_kunci": [
-   "harga=8,18",
-   "invalid=8,00",
-   "invalid=86,6",
-   "ema21=8,96",
-   "ema13=8,48",
-   "ema21=8,43",
-   "ema13=8,52",
-   "ema21=8,91"
+   "harga=74",
+   "ema200=89,36",
+   "rsi=47,66",
+   "rsi=39,76"
   ]
  }
 ]
