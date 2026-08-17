@@ -9,3 +9,11 @@
 {"waktu": "2026-08-13T02:00:00-04:00", "mata_uang": "GBP", "nama": "GDP m/m", "dampak": "tinggi", "konsensus": "-0.1%", "sebelumnya": "0.1%", "aktual": null, "dicatat_utc": "2026-08-10 16:33"}
 {"waktu": "2026-08-13T08:30:00-04:00", "mata_uang": "USD", "nama": "Core PPI m/m", "dampak": "tinggi", "konsensus": "0.3%", "sebelumnya": "0.2%", "aktual": null, "dicatat_utc": "2026-08-10 16:33"}
 {"waktu": "2026-08-13T08:30:00-04:00", "mata_uang": "USD", "nama": "PPI m/m", "dampak": "tinggi", "konsensus": "0.2%", "sebelumnya": "-0.3%", "aktual": null, "dicatat_utc": "2026-08-10 16:33"}
+{"waktu": "2026-08-17T08:30:00-04:00", "mata_uang": "CAD", "nama": "CPI m/m", "dampak": "tinggi", "konsensus": "0.4%", "sebelumnya": "-0.4%", "aktual": null, "dicatat_utc": "2026-08-17 03:00"}
+{"waktu": "2026-08-17T08:30:00-04:00", "mata_uang": "CAD", "nama": "Median CPI y/y", "dampak": "tinggi", "konsensus": "2.0%", "sebelumnya": "1.9%", "aktual": null, "dicatat_utc": "2026-08-17 03:00"}
+{"waktu": "2026-08-17T08:30:00-04:00", "mata_uang": "CAD", "nama": "Trimmed CPI y/y", "dampak": "tinggi", "konsensus": "1.8%", "sebelumnya": "1.8%", "aktual": null, "dicatat_utc": "2026-08-17 03:00"}
+{"waktu": "2026-08-18T02:00:00-04:00", "mata_uang": "GBP", "nama": "Claimant Count Change", "dampak": "tinggi", "konsensus": "11.2K", "sebelumnya": "6.7K", "aktual": null, "dicatat_utc": "2026-08-17 03:00"}
+{"waktu": "2026-08-19T02:00:00-04:00", "mata_uang": "GBP", "nama": "CPI y/y", "dampak": "tinggi", "konsensus": "2.9%", "sebelumnya": "2.6%", "aktual": null, "dicatat_utc": "2026-08-17 03:00"}
+{"waktu": "2026-08-19T14:00:00-04:00", "mata_uang": "USD", "nama": "FOMC Meeting Minutes", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-08-17 03:00"}
+{"waktu": "2026-08-19T21:30:00-04:00", "mata_uang": "AUD", "nama": "Employment Change", "dampak": "tinggi", "konsensus": "11.4K", "sebelumnya": "76.3K", "aktual": null, "dicatat_utc": "2026-08-17 03:00"}
+{"waktu": "2026-08-19T21:30:00-04:00", "mata_uang": "AUD", "nama": "Unemployment Rate", "dampak": "tinggi", "konsensus": "4.4%", "sebelumnya": "4.4%", "aktual": null, "dicatat_utc": "2026-08-17 03:00"}
