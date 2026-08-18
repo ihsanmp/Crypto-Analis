@@ -2427,3 +2427,60 @@ def test_kategori_mewajibkan_baca_7_dan_30_hari():
     teks = open(os.path.join(AKAR, "cloud", "kategori.py"), encoding="utf-8").read()
     assert "Bandingkan ubah_7h dan ubah_30h" in teks
     assert "dari_ath_persen" in teks
+
+
+# ------------------------------------------------- alpha & penilaian ulang rapor
+def test_tolok_ukur_tidak_membandingkan_aset_dengan_dirinya():
+    """BTC vs BTC selalu menghasilkan alpha nol — angka yang terlihat sah tapi kosong."""
+    assert rapor._tolok_ukur("SOL", "crypto") == "BTC"
+    assert rapor._tolok_ukur("BTC", "crypto") is None
+    assert rapor._tolok_ukur("NVDA", "saham") == "SPY"
+    # Emas & forex sengaja tanpa tolok ukur: tidak ada indeks yang jelas jadi "pasarnya".
+    assert rapor._tolok_ukur("GC=F", "forex") is None
+
+
+def test_panggilan_terbuka_bisa_dinilai_ULANG():
+    """Bug nyata: penyaring memakai status "TERBUKA", padahal nilai_satu mengubahnya jadi
+    "MASIH_TERBUKA" begitu dinilai sekali.
+
+    Akibatnya tiap panggilan dinilai TEPAT SEKALI lalu beku selamanya — yang belakangan
+    menyentuh target atau invalidasi tidak pernah tercatat, dan rapor mingguan berjalan
+    tanpa memperbarui apa pun. Saat ditemukan: 0 dari 11 panggilan masih bisa dinilai.
+    """
+    assert "MASIH_TERBUKA" not in rapor.STATUS_FINAL
+    assert set(rapor.STATUS_FINAL) == {"TARGET_KENA", "INVALID_KENA"}
+    sumber = open(os.path.join(AKAR, "cloud", "rapor.py"), encoding="utf-8").read()
+    assert 'e.get("status") == "TERBUKA"' not in sumber, (
+        "penyaring lama membekukan panggilan setelah penilaian pertama")
+
+
+def test_menghindar_dinilai_dari_alpha_bukan_return_mentah():
+    """Menghindari koin yang naik 5% saat pasar naik 20% adalah saran yang BENAR.
+
+    Aturan lama (return mentah < 0) menghitungnya SALAH.
+    """
+    e = {"bias": "HINDARI", "return_30h_persen": 5.0, "alpha_30h_persen": -15.0}
+    assert rapor._benar(e) is True
+    # Tanpa alpha, kembali ke aturan lama dan itu memang batasnya.
+    assert rapor._benar({"bias": "HINDARI", "return_30h_persen": 5.0}) is False
+
+
+def test_alpha_tidak_pernah_diam():
+    """Kalau tolok ukurnya ada tapi tidak terukur, itu harus DIKATAKAN — bukan hilang."""
+    berkas = os.path.join(AKAR, "cloud", "data", "rapor.jsonl")
+    if not os.path.exists(berkas):
+        pytest.skip("belum ada panggilan tercatat")
+    with open(berkas, encoding="utf-8") as f:
+        entri = [json.loads(b) for b in f if b.strip()]
+    diam = [e for e in entri
+            if e.get("status") not in rapor.STATUS_FINAL
+            and not e.get("tolok_ukur") and not e.get("alpha_tidak_tersedia")
+            and not e.get("catatan_penilaian")]
+    assert not diam, f"panggilan tidak melaporkan alpha maupun alasannya: {diam[:2]}"
+
+
+def test_rapor_menandai_menang_tapi_alpha_negatif():
+    """Menang 70% saat pasar naik terus bukan prestasi — itu harus dinyatakan."""
+    sumber = open(os.path.join(AKAR, "cloud", "rapor.py"), encoding="utf-8").read()
+    assert "peringatan_alpha" in sumber
+    assert "mengikuti pasar naik, bukan" in sumber

@@ -174,6 +174,28 @@ def catat(balasan, aset, jenis, mode="analisa"):
 
 # -------------------------------------------------------------- penilaian
 
+# TOLOK UKUR PASAR per jenis aset. Diambil dari TradingAgents, yang menilai keputusannya
+# terhadap ALPHA (kelebihan atas benchmark), bukan return mentah.
+#
+# Kenapa ini memperbaiki cacat nyata: di pasar naik, hampir SEMUA panggilan AKUMULASI
+# otomatis tercatat "benar" — return 30 hari positif — padahal koin yang naik 5% saat BTC
+# naik 20% adalah panggilan yang BURUK. Tanpa pembanding pasar, rapor mengukur arah pasar,
+# bukan keahlian.
+#
+# Emas dan forex sengaja TIDAK diberi tolok ukur: tidak ada indeks yang jelas menjadi
+# "pasarnya", dan memaksakan satu pembanding hanya melahirkan angka yang terlihat sah tapi
+# tidak berarti. Untuk keduanya alpha dilaporkan tidak tersedia, apa adanya.
+TOLOK_UKUR = {"crypto": "BTC", "saham": "SPY"}
+
+
+def _tolok_ukur(aset, jenis):
+    """Simbol pembanding, atau None kalau memang tidak ada yang layak."""
+    bench = TOLOK_UKUR.get(jenis)
+    if not bench or (aset or "").upper() == bench:
+        return None                     # BTC tidak dibandingkan dengan dirinya sendiri
+    return bench
+
+
 def _riwayat_harga(aset, jenis):
     """Ambil candle harian. MEMAKAI ULANG penarik yang sudah ada — jangan menulis baru."""
     try:
@@ -292,20 +314,69 @@ def nilai_satu(entri):
         kembali["beli_dan_tahan_persen"] = pasar
         kembali["hasil_ikut_saran_persen"] = round(ikut, 2)
         kembali["selisih_vs_beli_tahan"] = round(ikut - pasar, 2)
+    # ALPHA — return panggilan DIKURANGI return pasar pada jendela yang sama persis.
+    # Ini yang memisahkan keahlian dari arus pasar.
+    bench = _tolok_ukur(entri["aset"], entri.get("jenis", "crypto"))
+    if bench:
+        b_candles, b_err = _riwayat_harga(bench, entri.get("jenis", "crypto"))
+        b_jalan = _sejak(b_candles, entri["tanggal_utc"]) if b_candles else []
+        if b_jalan and len(b_jalan) >= 2:
+            b_awal = b_jalan[0][1][4]
+            kembali["tolok_ukur"] = bench
+            for h in HORIZON:
+                if kembali.get(f"return_{h}h_persen") is None:
+                    continue
+                sampai = [x for x in b_jalan if x[0] <= mulai + timedelta(days=h)]
+                if len(sampai) < 2 or not b_awal:
+                    continue
+                b_ret = (sampai[-1][1][4] - b_awal) / b_awal * 100
+                kembali[f"pasar_{h}h_persen"] = round(b_ret, 2)
+                kembali[f"alpha_{h}h_persen"] = round(
+                    kembali[f"return_{h}h_persen"] - b_ret, 2)
+            kembali["arti_alpha"] = (
+                f"alpha = return panggilan dikurangi return {bench} pada jendela yang sama. "
+                "Positif berarti unggul atas pasar; NEGATIF berarti kalah meski harganya "
+                "naik. Panggilan yang naik 5% saat pasar naik 20% adalah panggilan buruk, "
+                "dan hanya alpha yang menunjukkannya.")
+        else:
+            # JANGAN diam. Kalau tolok ukurnya ada tapi tidak bisa diukur, itu harus
+            # terlihat — bukan menghilang begitu saja seperti versi pertama perbaikan ini,
+            # yang membuat SOL dan ETH tidak melaporkan angka MAUPUN alasannya.
+            kembali["alpha_tidak_tersedia"] = (
+                f"harga {bench} gagal diambil: {b_err}" if b_err else
+                f"riwayat {bench} sejak panggilan belum cukup panjang untuk dibandingkan")
+    else:
+        kembali["alpha_tidak_tersedia"] = (
+            "tidak ada tolok ukur pasar yang layak untuk jenis aset ini (emas/forex), atau "
+            "asetnya adalah tolok ukurnya sendiri. Nilai dari return mentah, dan sebutkan "
+            "bahwa pembandingnya tidak ada.")
+
     kembali["dinilai_utc"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
     return kembali
 
 
+# Status AKHIR — tidak perlu dinilai ulang karena hasilnya sudah terjadi.
+STATUS_FINAL = ("TARGET_KENA", "INVALID_KENA")
+
+
 def perintah_nilai():
+    """Nilai ulang SEMUA panggilan yang belum final.
+
+    BUG YANG DIPERBAIKI: dulu penyaringnya `status == "TERBUKA"`, padahal nilai_satu
+    mengubah status jadi "MASIH_TERBUKA" begitu dinilai sekali. Akibatnya tiap panggilan
+    dinilai TEPAT SEKALI lalu beku selamanya — panggilan yang belakangan menyentuh target
+    atau level invalidasinya tidak pernah tercatat, dan rapor mingguan berjalan tanpa
+    memperbarui apa pun. Diukur saat ditemukan: 0 dari 11 panggilan masih bisa dinilai.
+    """
     entri = _muat()
-    terbuka = [e for e in entri if e.get("status") == "TERBUKA"]
+    terbuka = [e for e in entri if e.get("status") not in STATUS_FINAL]
     if not terbuka:
-        print(json.dumps({"pesan": "tidak ada panggilan berstatus TERBUKA",
+        print(json.dumps({"pesan": "semua panggilan sudah final",
                           "total_entri": len(entri)}, indent=2, ensure_ascii=False))
         return
     diperbarui = 0
     for e in entri:
-        if e.get("status") != "TERBUKA":
+        if e.get("status") in STATUS_FINAL:
             continue
         ubah = nilai_satu(e)
         if ubah:
@@ -331,7 +402,14 @@ def _benar(e):
     """Apakah panggilan ini terbukti benar? None kalau belum bisa dinilai."""
     bias = e.get("bias")
     if bias in _BIAS_TURUN:
-        # Menghindar terbukti benar kalau harganya memang turun setelah itu.
+        # Menghindar terbukti benar kalau asetnya TERTINGGAL DARI PASAR — bukan sekadar
+        # turun. Menghindari koin yang naik 5% saat pasar naik 20% adalah saran yang BENAR,
+        # dan aturan lama menghitungnya salah. Alpha dipakai kalau ada; kalau tidak (emas,
+        # forex, atau BTC itu sendiri), kembali ke return mentah dan itu memang batasnya.
+        for h in (30, 7):
+            a_ = e.get(f"alpha_{h}h_persen")
+            if a_ is not None:
+                return a_ < 0
         r = e.get("return_30h_persen")
         if r is None:
             r = e.get("return_7h_persen")
@@ -377,6 +455,18 @@ def _hitung(kelompok):
     sel = [e.get("selisih_vs_beli_tahan") for e in kelompok
            if e.get("selisih_vs_beli_tahan") is not None]
     h["selisih_vs_beli_tahan_rata2"] = round(sum(sel) / len(sel), 2) if sel else None
+
+    # ALPHA rata-rata terhadap pasar. Ini yang memisahkan keahlian dari arus pasar:
+    # menang 70% saat pasar naik terus bukan prestasi kalau alphanya negatif.
+    alp = [e.get("alpha_30h_persen") for e in kelompok
+           if e.get("alpha_30h_persen") is not None]
+    h["alpha_30h_rata2_persen"] = round(sum(alp) / len(alp), 2) if alp else None
+    h["alpha_terhitung_dari"] = len(alp)
+    if alp and h["menang_persen"] is not None and h["alpha_30h_rata2_persen"] < 0:
+        h["peringatan_alpha"] = (
+            f"menang {h['menang_persen']}% TAPI alpha rata-rata "
+            f"{h['alpha_30h_rata2_persen']}% — panggilan ini mengikuti pasar naik, bukan "
+            "mengunggulinya. Tingkat menang yang tinggi di sini BUKAN bukti keahlian.")
     if n < SAMPEL_MINIMUM:
         h["peringatan"] = (f"SAMPEL KECIL ({n} panggilan) — angka ini TIDAK bermakna secara "
                            "statistik. Jangan dipakai mengubah ambang apa pun.")

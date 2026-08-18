@@ -137,7 +137,7 @@ membawa aturan risiko forex.
 | [cloud/bot_daemon.py](cloud/bot_daemon.py) | Alternatif polling untuk server always-on (balasan hitungan detik) |
 | [cloud/memori.py](cloud/memori.py) | **Ingatan terverifikasi** — fakta yang sudah dicek disimpan dengan jenis (`volatil`/`semi`/`stabil`) yang menentukan kapan wajib dicek ulang; saat dipanggil divonis SEGAR / MULAI TUA / KEDALUWARSA. Data pribadi (alamat dompet, saldo) **ditolak di level kode** karena repo publik |
 | `cloud/data/percakapan.json` | Ingatan percakapan pendek — 3 pasang tanya-jawab terakhir per chat (kedaluwarsa 6 jam). Chat ID di-hash bersama garam dari token bot |
-| [cloud/rapor.py](cloud/rapor.py) | **Rapor rekomendasi** — mencatat panggilan bot lalu menilainya terhadap harga yang benar-benar terjadi. Melaporkan keberhasilan per bias, per jenis aset, dan **per rentang skor**: kalau panggilan berskor 75 tidak lebih sering benar daripada yang 45, sistem skornya belum bermakna |
+| [cloud/rapor.py](cloud/rapor.py) | **Rapor rekomendasi** — mencatat panggilan bot lalu menilainya terhadap harga yang benar-benar terjadi. Dinilai terhadap **alpha** — return dikurangi return pasar (BTC untuk crypto, SPY untuk saham) pada jendela yang sama; tanpa itu, di pasar naik hampir semua panggilan AKUMULASI otomatis tercatat benar tanpa keahlian apa pun. Melaporkan keberhasilan per bias, per jenis aset, dan **per rentang skor**: kalau panggilan berskor 75 tidak lebih sering benar daripada yang 45, sistem skornya belum bermakna |
 
 ### Harga, indikator, proyeksi
 
