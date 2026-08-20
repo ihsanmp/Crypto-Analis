@@ -13,5 +13,21 @@
    "rsi=72,1",
    "skor=58"
   ]
+ },
+ {
+  "chat": "1242dcf6b322d4c6",
+  "waktu": 1787219993.8456469,
+  "waktu_utc": "2026-08-20 09:59",
+  "pesan": "analisa aster",
+  "balasan": "🕒 Data per 20 Agu 2026 16:56 WIB · sumber harga Kraken (native) · candle harian terakhir tutup 19 Agu, mingguan 10 Agu\n\n📊 PASAR\nFear & Greed 62 (Greed, naik dari 46 kemarin). Harga BTC, dominasi, dan Whale Index TIDAK diambil di sesi ini — jadi filte\n[...dipangkas...]\n19–0,7000 ditembus dengan volume >1,5x SMA20 atau justru ditolak, (2) fee bulan Agustus — sampai 20 Agu baru $2,78 juta, kalau tidak melampaui Juli ($4,77 juta) penurunan berlanjut ke kuartal keempat, (3) identitas tiga kontrak pemegang 68,7% supply.",
+  "angka_kunci": [
+   "harga=0,6715",
+   "invalid=0,5700",
+   "ema21=0,6070",
+   "rsi=37,6",
+   "rsi=88,7",
+   "rsi=61,3",
+   "skor=45"
+  ]
  }
 ]
