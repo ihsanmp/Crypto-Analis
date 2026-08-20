@@ -1286,9 +1286,11 @@ def data_mentah_crypto(coin):
     # HYPERLIQUID tidak ditemukan", kepemilikan gagal, berita gagal, dan balasannya jadi
     # daftar panjang "tidak tersedia". Dengan HYPE, protokolnya ketemu beserta TVL $6,2 M.
     catatan_nama = None
+    cg_id = None
     try:
         from indicators import resolve_ticker
         tik, _cid, nama_resmi = resolve_ticker(coin)
+        cg_id = _cid
         if tik and tik.upper() != coin.upper():
             catatan_nama = (f"Masukan '{coin}' adalah NAMA PROYEK; tickernya {tik} "
                             f"({nama_resmi}). Seluruh data di bawah diambil untuk {tik}. "
@@ -1299,6 +1301,19 @@ def data_mentah_crypto(coin):
     except Exception as e:
         print(f"[data] normalisasi ticker dilewati ({type(e).__name__})", file=sys.stderr)
 
+    # MCAP diambil DULU, karena fundamentals.py memerlukannya untuk MC/TVL, P/S, dan P/F.
+    # Selama ini tidak pernah dioper: DefiLlama sering mengembalikan mcap kosong (melekat
+    # pada token induk), sehingga SEMUA rasio valuasi keluar "n/a" — dan fundamental itu
+    # justru bagian yang menentukan. Satu panggilan CoinGecko gratis menutupnya.
+    mcap = None
+    try:
+        sys.path.insert(0, os.path.join(REPO_ROOT, "cloud"))
+        from kategori import data_koin
+        pasar_koin = data_koin(cg_id or coin)
+        mcap = pasar_koin.get("mcap_usd")
+    except Exception as e:
+        pasar_koin = {"tidak_tersedia": f"{type(e).__name__}"}
+
     t = coin.upper()
     tugas = [("TEKNIKAL (indicators.py)", ["cloud/indicators.py", coin, "--ringkas"], 2500),
              ("INGATAN (memori.py)", ["cloud/memori.py", "cari", coin], 0),
@@ -1308,7 +1323,10 @@ def data_mentah_crypto(coin):
     if t in _TANPA_PROTOKOL:
         lewat.append(f"fundamentals.py ({t} tidak punya protokol berpendapatan)")
     else:
-        tugas.append(("FUNDAMENTAL PROTOKOL (fundamentals.py)", ["cloud/fundamentals.py", coin], 0))
+        arg_f = ["cloud/fundamentals.py", coin]
+        if mcap:
+            arg_f += ["--mcap", f"{mcap:.0f}"]
+        tugas.append(("FUNDAMENTAL PROTOKOL (fundamentals.py)", arg_f, 0))
     if t in _KOIN_NATIF:
         lewat.append(f"investors.py & whaleflow.py ({t} koin natif, bukan token kontrak)")
     else:
@@ -1356,6 +1374,9 @@ def data_mentah_crypto(coin):
             bagian.append(f"[{label}]\nGAGAL DIAMBIL — {err}")
         else:
             bagian.append(f"[{label}]\n{keluar}")
+    # Data pasar koin ditaruh di brief apa adanya — mcap, FDV, volume, pasokan.
+    bagian.insert(0, "[DATA PASAR KOIN (kategori.py, CoinGecko)]" + chr(10)
+                  + json.dumps(pasar_koin, ensure_ascii=False, indent=1))
     if catatan_nama:
         # Penukaran nama HARUS terlihat. Menormalkan diam-diam berarti user bertanya soal
         # satu hal dan menerima jawaban soal hal lain tanpa pernah diberi tahu.

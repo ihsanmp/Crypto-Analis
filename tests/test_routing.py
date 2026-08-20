@@ -2472,8 +2472,12 @@ def test_alpha_tidak_pernah_diam():
         pytest.skip("belum ada panggilan tercatat")
     with open(berkas, encoding="utf-8") as f:
         entri = [json.loads(b) for b in f if b.strip()]
+    # Entri yang BELUM pernah dinilai (dinilai_utc kosong) memang belum punya alpha
+    # maupun alasannya — itu bukan kebisuan, itu antrean. Yang diuji adalah entri yang
+    # sudah melewati penilaian.
     diam = [e for e in entri
             if e.get("status") not in rapor.STATUS_FINAL
+            and e.get("dinilai_utc")
             and not e.get("tolok_ukur") and not e.get("alpha_tidak_tersedia")
             and not e.get("catatan_penilaian")]
     assert not diam, f"panggilan tidak melaporkan alpha maupun alasannya: {diam[:2]}"
@@ -2528,3 +2532,46 @@ def test_normalisasi_nama_diberitahukan():
     assert "NAMA DINORMALKAN" in blok, "penukaran nama tidak diberitahukan ke model"
     # Normalisasi harus terjadi SEBELUM daftar tugas dibangun, bukan sesudah.
     assert blok.index("resolve_ticker") < blok.index("cloud/indicators.py")
+
+
+def test_data_koin_menghitung_rasio_pasokan(monkeypatch):
+    """Tanpa mcap, SEMUA rasio valuasi mati: MC/TVL, P/S, P/F, FDV/MC, volume/mcap.
+
+    FDV/MC 4,49 dengan hanya 23% beredar bukan angka hiasan — itu tekanan jual terjadwal,
+    dan justru fakta fundamental yang bisa mengubah kesimpulan.
+    """
+    balasan = [{"id": "hyperliquid", "symbol": "hype", "current_price": 73.1,
+                "market_cap": 16_240_355_174, "market_cap_rank": 10,
+                "fully_diluted_valuation": 72_996_142_007,
+                "total_volume": 1_684_000_000,
+                "circulating_supply": 222_445_714.0, "total_supply": 955_307_079.0,
+                "max_supply": 1_000_000_000.0, "ath_change_percentage": -4.86}]
+    monkeypatch.setattr(_kategori, "ambil", lambda j, p=None: (balasan, False, None))
+    d = _kategori.data_koin("hyperliquid")
+    assert d["simbol"] == "HYPE"
+    assert d["mcap_usd"] == 16_240_355_174
+    assert d["fdv_per_mcap"] == 4.49
+    assert d["beredar_per_total_persen"] == 23.3
+    assert d["volume_per_mcap"] == round(1_684_000_000 / 16_240_355_174, 4)
+    assert "tekanan jual terjadwal" in d["wajib_dibaca"]
+
+
+def test_mcap_dioper_ke_fundamentals():
+    """fundamentals.py sudah bisa menghitung MC/TVL, P/S, P/F dan menerima --mcap, tapi
+    tidak pernah diberi angkanya — DefiLlama sering mengembalikan mcap kosong karena
+    melekat pada token induk, jadi rasionya keluar n/a terus."""
+    sumber = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    blok = sumber[sumber.index("def data_mentah_crypto"):sumber.index("def jenis_banding")]
+    assert '"--mcap"' in blok, "mcap tidak dioper ke fundamentals.py"
+    assert "data_koin" in blok, "mcap tidak diambil dari CoinGecko"
+    assert "DATA PASAR KOIN" in blok, "data pasar koin tidak masuk brief"
+    # Harus diambil SEBELUM daftar tugas dibangun, kalau tidak mcap-nya belum ada.
+    assert blok.index("data_koin") < blok.index('"cloud/fundamentals.py"')
+
+
+def test_data_koin_melapor_saat_gagal(monkeypatch):
+    """Kalau mcap gagal diambil, rasionya ikut kosong — dan itu harus terbaca sebagai data
+    hilang, BUKAN sebagai valuasi murah."""
+    monkeypatch.setattr(_kategori, "ambil", lambda j, p=None: (None, False, "HTTP 429"))
+    d = _kategori.data_koin("hyperliquid")
+    assert "tidak_tersedia" in d
