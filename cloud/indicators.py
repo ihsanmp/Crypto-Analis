@@ -59,6 +59,45 @@ def resolve_cg_id(ticker):
         return None
 
 
+def resolve_ticker(masukan):
+    """Ubah NAMA PROYEK jadi TICKER resminya. Return (ticker, cg_id, nama) atau (None,..).
+
+    Kenapa ini perlu: pengguna menulis "analisa hyperliquid", dan nama itu dipakai apa
+    adanya sebagai ticker ke SELURUH script. Harga masih jalan karena CoinGecko mengenali
+    namanya, tapi sisanya rontok — DefiLlama membalas "Protokol untuk HYPERLIQUID tidak
+    ditemukan", kepemilikan gagal, berita gagal. Dengan ticker yang benar (HYPE) protokolnya
+    ketemu beserta TVL $6,2 miliar. Jadi bedanya bukan sedikit; itu beda antara analisa
+    fundamental penuh dan laporan "semuanya tidak tersedia".
+
+    SENGAJA KONSERVATIF: hanya menerima hasil teratas yang PUNYA peringkat market cap dan
+    benar-benar cocok dengan yang diketik. Kalau ragu, kembalikan None dan biarkan masukan
+    aslinya dipakai — menukar aset diam-diam jauh lebih berbahaya daripada tidak menukar.
+    """
+    q = (masukan or "").strip()
+    if not q:
+        return None, None, None
+    try:
+        data = http_json("https://api.coingecko.com/api/v3/search?query="
+                         + urllib.parse.quote(q))
+    except Exception:
+        return None, None, None
+    koin = data.get("coins") or []
+    if not koin:
+        return None, None, None
+
+    low = q.lower()
+    for c in koin:
+        sym = (c.get("symbol") or "").upper()
+        nama = (c.get("nama") or c.get("name") or "")
+        cid = c.get("id") or ""
+        # Cocok kalau yang diketik memang tickernya, ATAU namanya/idnya persis.
+        if sym == q.upper() or nama.lower() == low or cid.lower() == low:
+            if c.get("market_cap_rank") is None:
+                continue          # tanpa peringkat = koin obskur; jangan ditebak
+            return sym or None, cid or None, nama or None
+    return None, None, None
+
+
 # ------------------------------------------------------------- adapter sumber
 # Setiap adapter mengembalikan list candle terurut lama->baru:
 #   [ts_ms, open, high, low, close, volume]

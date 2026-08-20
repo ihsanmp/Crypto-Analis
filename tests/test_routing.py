@@ -2484,3 +2484,47 @@ def test_rapor_menandai_menang_tapi_alpha_negatif():
     sumber = open(os.path.join(AKAR, "cloud", "rapor.py"), encoding="utf-8").read()
     assert "peringatan_alpha" in sumber
     assert "mengikuti pasar naik, bukan" in sumber
+
+
+# --------------------------------------------------- nama proyek -> ticker resmi
+def test_resolusi_ticker_konservatif(monkeypatch):
+    """Menukar aset diam-diam jauh lebih berbahaya daripada tidak menukar.
+
+    Hasil tanpa peringkat market cap = koin obskur; jangan ditebak. Masukan ngawur harus
+    mengembalikan None supaya masukan asli tetap dipakai apa adanya.
+    """
+    import indicators
+    balasan = {"coins": [
+        {"symbol": "HYPE", "id": "hyperliquid", "name": "Hyperliquid",
+         "market_cap_rank": 10},
+        {"symbol": "CZ", "id": "cz-on-hyperliquid", "name": "CZ", "market_cap_rank": 4801},
+    ]}
+    monkeypatch.setattr(indicators, "http_json", lambda u: balasan)
+    assert indicators.resolve_ticker("hyperliquid") == ("HYPE", "hyperliquid", "Hyperliquid")
+    assert indicators.resolve_ticker("HYPE") == ("HYPE", "hyperliquid", "Hyperliquid")
+
+    # Tanpa peringkat -> tidak dipakai.
+    monkeypatch.setattr(indicators, "http_json",
+                        lambda u: {"coins": [{"symbol": "ZZZ", "id": "zzz", "name": "Zzz",
+                                              "market_cap_rank": None}]})
+    assert indicators.resolve_ticker("zzz") == (None, None, None)
+
+    # Tidak ada hasil sama sekali.
+    monkeypatch.setattr(indicators, "http_json", lambda u: {"coins": []})
+    assert indicators.resolve_ticker("koinngawur") == (None, None, None)
+
+
+def test_normalisasi_nama_diberitahukan():
+    """User bertanya "hyperliquid" lalu menerima data HYPE — penukaran itu harus disebut.
+
+    Bug nyata: nama proyek diteruskan apa adanya ke SELURUH script. Harga tetap jalan
+    (CoinGecko mengenali namanya) tapi DefiLlama membalas "Protokol untuk HYPERLIQUID
+    tidak ditemukan", kepemilikan gagal, berita gagal — balasannya jadi daftar panjang
+    "tidak tersedia" padahal dengan HYPE protokolnya ketemu beserta TVL $6,2 miliar.
+    """
+    sumber = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    blok = sumber[sumber.index("def data_mentah_crypto"):sumber.index("def jenis_banding")]
+    assert "resolve_ticker" in blok, "normalisasi ticker tidak dipasang di jalur crypto"
+    assert "NAMA DINORMALKAN" in blok, "penukaran nama tidak diberitahukan ke model"
+    # Normalisasi harus terjadi SEBELUM daftar tugas dibangun, bukan sesudah.
+    assert blok.index("resolve_ticker") < blok.index("cloud/indicators.py")

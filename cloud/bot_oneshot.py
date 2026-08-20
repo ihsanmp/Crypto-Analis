@@ -1280,6 +1280,25 @@ def data_mentah_crypto(coin):
     kosong dibuang dari brief — model tidak perlu membaca blok 'tidak tersedia' yang
     panjang, dan tidak tergoda mengarang isinya.
     """
+    # NAMA PROYEK -> TICKER, sebelum apa pun dijalankan. Tanpa ini "analisa hyperliquid"
+    # meneruskan "HYPERLIQUID" ke seluruh script: harga tetap jalan karena CoinGecko
+    # mengenali namanya, tapi sisanya rontok — DefiLlama membalas "Protokol untuk
+    # HYPERLIQUID tidak ditemukan", kepemilikan gagal, berita gagal, dan balasannya jadi
+    # daftar panjang "tidak tersedia". Dengan HYPE, protokolnya ketemu beserta TVL $6,2 M.
+    catatan_nama = None
+    try:
+        from indicators import resolve_ticker
+        tik, _cid, nama_resmi = resolve_ticker(coin)
+        if tik and tik.upper() != coin.upper():
+            catatan_nama = (f"Masukan '{coin}' adalah NAMA PROYEK; tickernya {tik} "
+                            f"({nama_resmi}). Seluruh data di bawah diambil untuk {tik}. "
+                            "Sebutkan penyesuaian ini sekali saat menjawab.")
+            print(f"[data] nama proyek '{coin}' dinormalkan jadi ticker {tik}",
+                  file=sys.stderr)
+            coin = tik
+    except Exception as e:
+        print(f"[data] normalisasi ticker dilewati ({type(e).__name__})", file=sys.stderr)
+
     t = coin.upper()
     tugas = [("TEKNIKAL (indicators.py)", ["cloud/indicators.py", coin, "--ringkas"], 2500),
              ("INGATAN (memori.py)", ["cloud/memori.py", "cari", coin], 0),
@@ -1337,6 +1356,10 @@ def data_mentah_crypto(coin):
             bagian.append(f"[{label}]\nGAGAL DIAMBIL — {err}")
         else:
             bagian.append(f"[{label}]\n{keluar}")
+    if catatan_nama:
+        # Penukaran nama HARUS terlihat. Menormalkan diam-diam berarti user bertanya soal
+        # satu hal dan menerima jawaban soal hal lain tanpa pernah diberi tahu.
+        bagian.insert(0, "[NAMA DINORMALKAN]" + chr(10) + catatan_nama)
     if lewat:
         bagian.append("[SENGAJA TIDAK DIAMBIL]\n" + "\n".join("- " + x for x in lewat)
                       + "\nPerlakukan sebagai tidak berlaku untuk koin ini, BUKAN sebagai "
