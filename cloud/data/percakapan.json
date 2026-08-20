@@ -1,15 +1,17 @@
 [
  {
   "chat": "1242dcf6b322d4c6",
-  "waktu": 1786947576.7788155,
-  "waktu_utc": "2026-08-17 06:19",
-  "pesan": "bagaimana menurutmu?",
-  "balasan": "Sudah saya baca gambarnya. Ini isinya:\n\n• Postingan akun \"Xander Tyrone Xu\" (label APP, jam 09:44) berisi kalimat singkat: \"$SOL should be good ya di kala market boring seperti ini\", plus dua tag role.\n• Chart TradingView SOLUSDT.P (Solana perpetual\n[...dipangkas...]\nsebagian, jangan rata-rata turun buta. Kalau tembus $77,71 dengan volume, baru boleh tambah.\n\nSatu pertanyaan biar saya bisa lebih tajam: kamu ini sudah pegang SOL, atau lagi menimbang mau masuk karena postingan itu? Jawabannya beda arah cukup jauh.",
+  "waktu": 1787198979.4114718,
+  "waktu_utc": "2026-08-20 04:09",
+  "pesan": "analisa hyperliquid",
+  "balasan": "🕒 Data per 20 Agu 2026, 11:02 WIB · sumber harga CoinGecko (1D & 1W: approx_close_only — tanpa high/low asli; 4H: native)\n\n⚠️ CATATAN MUTU DATA (baca dulu)\n• Fundamental protokol GAGAL total: DefiLlama tidak menemukan HYPERLIQUID, data kepemilikan ga\n[...dipangkas...]\n· konfirmasi volume pada percobaan tembus $71,60 · jadwal unlock HYPE (cek manual, datanya kosong di sini)\n\nAlokasi maks ~5% modal untuk altcoin setingkat ini, dan itu pun dengan catatan fundamentalnya belum terverifikasi sama sekali di analisa ini.",
   "angka_kunci": [
-   "harga=74",
-   "ema200=89,36",
-   "rsi=47,66",
-   "rsi=39,76"
+   "harga=69,60",
+   "invalid=57,40",
+   "ema21=58,03",
+   "rsi=86,8",
+   "rsi=72,1",
+   "skor=58"
   ]
  }
 ]
