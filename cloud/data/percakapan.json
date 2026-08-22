@@ -1,33 +1,15 @@
 [
  {
   "chat": "1242dcf6b322d4c6",
-  "waktu": 1787198979.4114718,
-  "waktu_utc": "2026-08-20 04:09",
-  "pesan": "analisa hyperliquid",
-  "balasan": "🕒 Data per 20 Agu 2026, 11:02 WIB · sumber harga CoinGecko (1D & 1W: approx_close_only — tanpa high/low asli; 4H: native)\n\n⚠️ CATATAN MUTU DATA (baca dulu)\n• Fundamental protokol GAGAL total: DefiLlama tidak menemukan HYPERLIQUID, data kepemilikan ga\n[...dipangkas...]\n· konfirmasi volume pada percobaan tembus $71,60 · jadwal unlock HYPE (cek manual, datanya kosong di sini)\n\nAlokasi maks ~5% modal untuk altcoin setingkat ini, dan itu pun dengan catatan fundamentalnya belum terverifikasi sama sekali di analisa ini.",
+  "waktu": 1787400833.885463,
+  "waktu_utc": "2026-08-22 12:13",
+  "pesan": "bagaimana pandanganmu terhadap btc untuk seminggu kedepan?",
+  "balasan": "🕒 Data per 22 Agustus 2026, 19:13 WIB\n\nBTC saat ini $77.222 (CoinGecko) — momentum kuat, +22,5% dalam 7 hari, tapi udah masuk zona sangat overbought. Untuk minggu depan aku condong ke KONSOLIDASI/pullback sehat dulu, bukan pembalikan tren besar — soa\n[...dipangkas...]\nMPULAN SPOT\nBelum punya: TUNGGU DULU / masuk bertahap kalau ada koreksi ke zona $74.900–76.600, jangan kejar di harga sekarang\nSudah pegang: TAHAN — kurangi sebagian kalau daily close tembus di bawah $73.000 (EMA21 4H), itu tanda pullback mulai dalam",
   "angka_kunci": [
-   "harga=69,60",
-   "invalid=57,40",
-   "ema21=58,03",
-   "rsi=86,8",
-   "rsi=72,1",
-   "skor=58"
-  ]
- },
- {
-  "chat": "1242dcf6b322d4c6",
-  "waktu": 1787219993.8456469,
-  "waktu_utc": "2026-08-20 09:59",
-  "pesan": "analisa aster",
-  "balasan": "🕒 Data per 20 Agu 2026 16:56 WIB · sumber harga Kraken (native) · candle harian terakhir tutup 19 Agu, mingguan 10 Agu\n\n📊 PASAR\nFear & Greed 62 (Greed, naik dari 46 kemarin). Harga BTC, dominasi, dan Whale Index TIDAK diambil di sesi ini — jadi filte\n[...dipangkas...]\n19–0,7000 ditembus dengan volume >1,5x SMA20 atau justru ditolak, (2) fee bulan Agustus — sampai 20 Agu baru $2,78 juta, kalau tidak melampaui Juli ($4,77 juta) penurunan berlanjut ke kuartal keempat, (3) identitas tiga kontrak pemegang 68,7% supply.",
-  "angka_kunci": [
-   "harga=0,6715",
-   "invalid=0,5700",
-   "ema21=0,6070",
-   "rsi=37,6",
-   "rsi=88,7",
-   "rsi=61,3",
-   "skor=45"
+   "harga=77.222",
+   "ema21=66.362",
+   "ema21=73.280",
+   "rsi=85,9"
   ]
  }
 ]
