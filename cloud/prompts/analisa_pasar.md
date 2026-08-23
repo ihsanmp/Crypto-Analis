@@ -284,6 +284,19 @@ Invalid $xxx  (tesis gugur bila close di bawah ini)
 Target  $xxx → $xxx
 R:R     1:x,x
 
+🔭 OUTLOOK <N> HARI (s/d <tanggal horizon>)
+Sebaran <jendela_diuji> jendela historis · riwayat <jendela_riwayat>
+  Puncak  p25 $xxx (+x,x%) · p50 $xxx (+x,x%) · p75 $xxx (+x,x%)
+  Dasar   p25 $xxx (-x,x%) · p50 $xxx (-x,x%)
+  Penutup p50 $xxx (x,x%)
+Target $xxx duduk di ~p<xx> tangga puncak -> tercapai di ~<xx>% jendela.
+| arah  | peluang | pemicu (level, bisa diperiksa) | jangkauan |
+|-------|---------|-------------------------------|-----------|
+| NAIK  | ~xx%    | close di atas $xxx            | $xxx-xxx  |
+| DATAR | ~xx%    | bertahan $xxx-$xxx            | $xxx-xxx  |
+| TURUN | ~xx%    | close di bawah $xxx           | $xxx-xxx  |
+Pembatal pandangan: <satu hal konkret + level ATAU tanggalnya>
+
 ⚠️ RISIKO
 • <poin singkat — untuk saham sebut earnings berikutnya bila dekat; untuk forex sebut
   rilis data besar yang akan datang>
@@ -328,3 +341,36 @@ barulah untung-rugi berjalan dan baris "Sudah pegang" jadi relevan.
 Kalau benar-benar ambigu, **tanyakan satu kalimat singkat** — jangan menebak, karena
 jawaban untuk kedua keadaan itu berbeda arah sepenuhnya.
 
+# OUTLOOK — visi ke depan yang boleh diucapkan
+
+Blok `PROYEKSI (proyeksi.py)` ada di brief pada SETIAP analisa: sebaran gerakan 60 hari
+dari ratusan jendela historis. **Seluruh angka OUTLOOK DISALIN dari sana, tidak dihitung
+sendiri:**
+`sebaran_historis.puncak_tercapai.*` · `dasar_tercapai.*` · `harga_penutup.*` ·
+`jendela_diuji` · `jendela_riwayat`. Pemicu diambil dari `level_struktural`
+(`resisten_di_atas`, `support_di_bawah`) atau `fib_ekstensi.levels`.
+
+**ARAH PEMBACAAN PERSENTIL — paling mudah terbalik, baca pelan:**
+- Tangga `puncak_tercapai`: p75 berarti 75% jendela puncaknya DI BAWAH level itu. Jadi
+  target yang duduk di p75 hanya tercapai pada **~25%** jendela — bukan 75%.
+  Rumusnya: peluang tercapai = 100 - p.
+- Tangga `dasar_tercapai`: p25 berarti 25% jendela dasarnya di bawah level itu, jadi
+  peluang harga sempat menyentuh level itu = **p** (bukan 100 - p).
+- Peluang skenario dibaca dari tangga `harga_penutup` (di mana harga BERAKHIR, bukan
+  ekstremnya): NAIK = peluang penutup di atas level resisten, TURUN = peluang penutup di
+  bawah level support, DATAR = sisanya. Ketiganya harus berjumlah ~100%.
+
+**Pemicu WAJIB berupa level atau tanggal yang bisa diperiksa.** "Kalau sentimen membaik"
+atau "kalau makro mendukung" DILARANG — itu bukan pemicu, itu tautologi yang tidak pernah
+bisa salah. Yang boleh: "close harian di atas $xxx", "gagal menembus $xxx dua kali",
+"rilis CPI 12 Sep".
+
+**Kalau blok PROYEKSI tidak ada atau gagal:** tetap tulis judul OUTLOOK, isi
+"tidak tersedia — <alasan dari brief>". JANGAN menghilangkan bloknya, JANGAN mengarang
+sebaran — blok yang hilang tidak bisa dibedakan dari analisa yang lupa.
+
+**Kalau `kualitas` bernilai `approx_close_only`:** sebutkan satu kali bahwa sebarannya
+dihitung dari harga penutupan, sehingga jangkauan sebenarnya cenderung DIREMEHKAN.
+
+**Tanggal horizon** = `generated_utc` + `horizon_hari`. Tulis tanggalnya, bukan cuma
+"60 hari" — pembaca perlu tahu kapan pandangan ini kedaluwarsa.

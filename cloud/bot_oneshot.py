@@ -2066,8 +2066,9 @@ def process(token, chat_id, text, photo_file_id=None):
     jejak = audit_angka(brief, body)
     asal = audit_sumber(brief)
     imbalan = audit_imbalan(body)
+    outlook = audit_outlook(brief, body)
     if not body.startswith("❌"):
-        catatan = peringatan_audit(jejak, asal, kesegaran, imbalan)
+        catatan = peringatan_audit(jejak, asal, kesegaran, imbalan, outlook)
         if catatan:
             body = sisipkan_peringatan(body, catatan)
             print(f"[audit] peringatan DIKIRIM ke user: {catatan[:70]}", file=sys.stderr)
@@ -2141,7 +2142,32 @@ def audit_imbalan(body):
         return None
 
 
-def peringatan_audit(jejak, asal, kesegaran, imbalan=None):
+def audit_outlook(brief, body):
+    """Apakah jawaban memuat OUTLOOK, padahal briefnya membawa data proyeksi?
+
+    proyeksi.py jalan di SETIAP analisa dan menghasilkan sebaran p10-p90 ke depan. Sebelum
+    ini format outputnya tidak pernah menyebutnya sama sekali, jadi data itu dikumpulkan,
+    dibayar tokennya, lalu dibuang — dan kesimpulannya berhenti pada "Target $x" tanpa satu
+    pun angka peluang.
+
+    Blok yang dilewatkan tidak bisa dibedakan dari analisa yang memang tidak punya datanya,
+    kecuali kalau keduanya diperiksa bersama. Return None kalau tidak ada yang perlu
+    dikatakan; "HILANG" kalau datanya ada tapi bloknya tidak.
+    """
+    if not brief or not body:
+        return None
+    # Penandanya "proyeksi.py" saja, BUKAN judul lengkap: jalur analisa menulis
+    # "PROYEKSI (proyeksi.py)" sedangkan jalur chat menulis
+    # "PROYEKSI (proyeksi.py, horizon 60 hari)". Mencocokkan judul penuh berarti separuh
+    # jalur tidak pernah terperiksa.
+    if "proyeksi.py" not in brief:
+        return None                      # tidak ada datanya, jadi tidak ada yang dilewatkan
+    if "sebaran_historis" not in brief:
+        return None                      # scriptnya jalan tapi gagal mengisi
+    return None if "OUTLOOK" in body else "HILANG"
+
+
+def peringatan_audit(jejak, asal, kesegaran, imbalan=None, outlook=None):
     """Ubah hasil audit jadi MAKSIMAL SATU baris peringatan untuk user, atau None.
 
     Ketiga audit sudah menghitung vonis nyata sejak lama, tapi hasilnya hanya dicetak ke
@@ -2182,6 +2208,11 @@ def peringatan_audit(jejak, asal, kesegaran, imbalan=None):
     if "BURUK" in kesegaran:
         return ("⚠️ Balasan ini memuat angka tanpa satu pun tanggal — ada kemungkinan sebagian "
                 "berasal dari ingatan, bukan data baru.")
+    # Paling akhir: ini soal KELENGKAPAN, bukan kebenaran. Analisa tanpa outlook tetap sahih,
+    # hanya berhenti lebih awal daripada yang datanya izinkan.
+    if outlook == "HILANG":
+        return ("⚠️ Sebaran 60 hari ke depan sudah dihitung tapi tidak dipakai di jawaban ini — "
+                "kesimpulannya berhenti pada level, tanpa peluang.")
     return None
 
 

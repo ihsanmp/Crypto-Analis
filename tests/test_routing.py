@@ -2721,3 +2721,54 @@ def test_peringatan_ekspektansi_menyebut_sandarannya_saat_tipis():
     banyak = ([{"hasil_ikut_saran_persen": 1.0, "bias": "TAHAN", "status": "TARGET_KENA"}] * 9
               + [{"hasil_ikut_saran_persen": -9.0, "bias": "TAHAN", "status": "INVALID_KENA"}] * 3)
     assert "arah, bukan vonis" not in _rapor._hitung(banyak)["peringatan_ekspektansi"]
+
+
+# ------------------------------------------------- outlook: visi ke depan yang punya dasar
+
+def test_outlook_wajib_saat_datanya_ada():
+    """proyeksi.py jalan di SETIAP analisa, tapi format outputnya dulu tidak menyebutnya
+    sekali pun — datanya dikumpulkan, dibayar tokennya, lalu dibuang."""
+    # Kedua jalur menulis judul yang BERBEDA; keduanya harus terperiksa.
+    for judul in ("PROYEKSI (proyeksi.py)",                        # jalur analisa
+                  "### PROYEKSI (proyeksi.py, horizon 60 hari)"):  # jalur chat
+        brief = judul + "\n{'sebaran_historis': {'p50': 8.1}}"
+        assert bot.audit_outlook(brief, "Target $100 -> $120") == "HILANG", judul
+    assert bot.audit_outlook(brief, "🔭 OUTLOOK 60 HARI\nPuncak p50 $83.661") is None
+
+
+def test_outlook_diam_saat_datanya_memang_tidak_ada():
+    """Analisa tanpa data proyeksi tidak boleh diperingatkan — tidak ada yang dilewatkan.
+
+    Blok yang hilang dan blok yang tak punya sumber hanya bisa dibedakan kalau brief dan
+    balasan diperiksa BERSAMA."""
+    assert bot.audit_outlook("teknikal saja, tanpa proyeksi", "Target $100") is None
+    # Script jalan tapi gagal mengisi: bukan kelalaian model.
+    assert bot.audit_outlook("### PROYEKSI (proyeksi.py)\n{'tidak_tersedia': 'timeout'}",
+                             "Target $100") is None
+    assert bot.audit_outlook("", "") is None
+
+
+def test_outlook_paling_akhir_dalam_urutan_peringatan():
+    """Ini soal KELENGKAPAN, bukan kebenaran. Analisa tanpa outlook tetap sahih — ia hanya
+    berhenti lebih awal daripada yang diizinkan datanya, jadi tidak boleh menggeser vonis
+    tentang data yang salah atau setup yang merugikan."""
+    assert "berhenti pada level" in bot.peringatan_audit("", "", "", None, "HILANG")
+    # Vonis data mana pun mengalahkannya.
+    assert "CLOSE-ONLY" not in bot.peringatan_audit("", "CLOSE-ONLY", "", None, "HILANG")
+    assert "penutupan" in bot.peringatan_audit("", "CLOSE-ONLY", "", None, "HILANG")
+    imb = {"risiko_persen": 30.0, "imbalan_persen": 2.0, "rasio_imbalan_risiko": 0.07,
+           "di_bawah_ambang": True, "perlu_benar_persen": 93.5}
+    assert "Risikonya lebih besar" in bot.peringatan_audit("", "", "", imb, "HILANG")
+
+
+def test_format_output_menuntut_outlook_di_kedua_pasar():
+    """Arah pembacaan persentil paling mudah terbalik: p75 pada tangga puncak berarti target
+    itu hanya tercapai di ~25% jendela, bukan 75%. Kalau terbalik, angka peluangnya
+    terdengar berdasar padahal justru menyesatkan."""
+    for nama in ("analisa.md", "analisa_pasar.md"):
+        t = open(os.path.join(AKAR, "cloud", "prompts", nama), encoding="utf-8").read()
+        assert "OUTLOOK" in t, nama
+        assert "100 - p" in t, f"{nama}: arah pembacaan persentil harus disebut eksplisit"
+        assert "harga_penutup" in t, f"{nama}: peluang skenario harus dari tangga penutup"
+        # Pemicu tautologis membuat skenario tidak pernah bisa salah.
+        assert "sentimen membaik" in t, f"{nama}: contoh pemicu terlarang harus ada"
