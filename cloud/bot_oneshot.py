@@ -1273,6 +1273,24 @@ def _jalankan_terukur(label, args, min_kar=0):
     return keluar, err
 
 
+def _sisipkan_jejak(bagian):
+    """Selipkan jejak rekam SENDIRI ke kepala brief, kalau ada yang perlu diperbaiki.
+
+    Rapor selama ini jalan satu arah: panggilan dicatat, lalu tidak pernah dibaca lagi
+    saat panggilan berikutnya disusun. Akibatnya cacat yang sama — level dengan risiko
+    lebih besar daripada imbalannya — terulang di SELURUH panggilan tanpa pernah sampai
+    ke matanya. Hanya muncul saat ada peringatan nyata, jadi biayanya nol di hari biasa.
+    """
+    try:
+        sys.path.insert(0, os.path.join(REPO_ROOT, "cloud"))
+        from rapor import catatan_untuk_brief
+        t = catatan_untuk_brief()
+        if t:
+            bagian.insert(0, "[JEJAK REKAM SENDIRI (rapor.py)]" + chr(10) + t)
+    except Exception as e:
+        print(f"[jejak] dilewati ({type(e).__name__})", file=sys.stderr)
+
+
 def data_mentah_crypto(coin):
     """Kumpulkan data koin dengan KODE, hanya yang RELEVAN untuk koin itu.
 
@@ -1381,6 +1399,7 @@ def data_mentah_crypto(coin):
         # Penukaran nama HARUS terlihat. Menormalkan diam-diam berarti user bertanya soal
         # satu hal dan menerima jawaban soal hal lain tanpa pernah diberi tahu.
         bagian.insert(0, "[NAMA DINORMALKAN]" + chr(10) + catatan_nama)
+    _sisipkan_jejak(bagian)
     if lewat:
         bagian.append("[SENGAJA TIDAK DIAMBIL]\n" + "\n".join("- " + x for x in lewat)
                       + "\nPerlakukan sebagai tidak berlaku untuk koin ini, BUKAN sebagai "
@@ -1608,6 +1627,8 @@ def data_mentah_pasar(simbol, jenis):
                 bagian.append("[ACUAN PENGGERAK EMAS]\n" + f.read())
         except OSError as e:
             gagal.append(f"gold_drivers.md: {e}")
+
+    _sisipkan_jejak(bagian)
 
     for g in gagal:
         print(f"[data] GAGAL {g}", file=sys.stderr)
@@ -2044,8 +2065,9 @@ def process(token, chat_id, text, photo_file_id=None):
     # Audit lain dijalankan SEBELUM pengiriman supaya vonisnya bisa ikut ke user.
     jejak = audit_angka(brief, body)
     asal = audit_sumber(brief)
+    imbalan = audit_imbalan(body)
     if not body.startswith("❌"):
-        catatan = peringatan_audit(jejak, asal, kesegaran)
+        catatan = peringatan_audit(jejak, asal, kesegaran, imbalan)
         if catatan:
             body = sisipkan_peringatan(body, catatan)
             print(f"[audit] peringatan DIKIRIM ke user: {catatan[:70]}", file=sys.stderr)
@@ -2087,7 +2109,39 @@ _TGL_RE = re.compile(
     re.IGNORECASE)
 
 
-def peringatan_audit(jejak, asal, kesegaran):
+def audit_imbalan(body):
+    """Hitung rasio imbalan:risiko dari level yang BARU SAJA ditulis. None kalau tak lengkap.
+
+    analisa.md sudah lama mewajibkan R:R minimal 1:2, dan seluruh 10 panggilan pertama yang
+    tercatat melanggarnya — median 0,33. Itu bukan alasan menambah kalimat baru ke prompt:
+    aturannya sudah ada dan tetap dilewati. Sesuai prinsip proyek ini, yang bergantung pada
+    KEPATUHAN model harus dipindah ke kode.
+
+    Dihitung dari teks balasan, memakai pengurai yang sama dengan rapor.py, supaya angka
+    yang diperiksa persis angka yang nanti dinilai.
+    """
+    try:
+        sys.path.insert(0, os.path.join(REPO_ROOT, "cloud"))
+        import rapor
+        import statistik
+        p = rapor.urai_panggilan(body or "")
+        if not p:
+            return None
+        rr = statistik.imbalan_risiko(p.get("harga_saat_panggilan"),
+                                      p.get("level_target"), p.get("level_invalid"))
+        if not rr:
+            return None
+        # Vonisnya diputuskan DI SINI, bersama datanya. peringatan_audit tetap fungsi murni
+        # yang hanya memilih kalimat, tanpa perlu mengimpor apa pun.
+        rr["di_bawah_ambang"] = rr["rasio_imbalan_risiko"] < statistik.RASIO_MINIMUM
+        rr["perlu_benar_persen"] = statistik.perlu_benar_persen(rr["rasio_imbalan_risiko"])
+        return rr
+    except Exception as e:
+        print(f"[audit] imbalan dilewati ({type(e).__name__})", file=sys.stderr)
+        return None
+
+
+def peringatan_audit(jejak, asal, kesegaran, imbalan=None):
     """Ubah hasil audit jadi MAKSIMAL SATU baris peringatan untuk user, atau None.
 
     Ketiga audit sudah menghitung vonis nyata sejak lama, tapi hasilnya hanya dicetak ke
@@ -2105,6 +2159,16 @@ def peringatan_audit(jejak, asal, kesegaran):
     asal = asal or ""
     jejak = jejak or ""
     kesegaran = kesegaran or ""
+
+    # Didahulukan karena ini satu-satunya vonis tentang MUTU SARANNYA, bukan mutu datanya.
+    # Data segar yang dipakai menyusun level dengan risiko sepuluh kali imbalannya tetap
+    # menghasilkan saran yang merugikan, dan itu tidak akan pernah tertangkap audit lain.
+    if imbalan and imbalan.get("di_bawah_ambang"):
+        perlu = imbalan["perlu_benar_persen"]
+        return (f"⚠️ Risikonya lebih besar daripada imbalannya: turun {imbalan['risiko_persen']}% "
+                f"ke level invalidasi vs naik {imbalan['imbalan_persen']}% ke target pertama "
+                f"(rasio {imbalan['rasio_imbalan_risiko']}). Setup ini harus benar ~{perlu}% kali "
+                "hanya untuk impas.")
 
     if "CLOSE-ONLY" in asal:
         return ("⚠️ Sebagian data hanya harga penutupan — ATR, SuperTrend, dan Pivot di atas "

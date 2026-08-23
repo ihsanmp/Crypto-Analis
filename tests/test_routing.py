@@ -2575,3 +2575,134 @@ def test_data_koin_melapor_saat_gagal(monkeypatch):
     monkeypatch.setattr(_kategori, "ambil", lambda j, p=None: (None, False, "HTTP 429"))
     d = _kategori.data_koin("hyperliquid")
     assert "tidak_tersedia" in d
+
+
+# ------------------------------------------------- statistik jejak rekam (nautilus_trader)
+
+import statistik as _stat                                                   # noqa: E402
+import rapor as _rapor                                                      # noqa: E402
+
+
+def test_menang_sering_tapi_tetap_merugi():
+    """Perangkap yang tidak bisa dilihat tingkat menang: benar 75%, tetap rugi.
+
+    Ini bukan kasus karangan — ini persis pola panggilan yang tercatat di rapor.jsonl:
+    target +1,9% dengan invalidasi -30%. Rapor lama menyebutnya 'menang 75%' dan berhenti
+    di situ, sehingga pola yang menghabiskan modal terbaca sebagai keahlian.
+    """
+    hasil = [1.9, 1.9, 1.9, -30.7]
+    r = _stat.ringkas(hasil)
+    assert r["menang_persen"] == 75.0
+    assert r["ekspektansi_persen"] < 0, "ekspektansi harus negatif meski menang 75%"
+    assert r["faktor_untung"] < 1
+
+
+def test_nol_adalah_impas_bukan_menang():
+    """Mengikuti nautilus: nol tidak menambah kemenangan dan tidak menambah kekalahan.
+
+    Kalau nol dihitung menang, tingkat menang bisa digelembungkan hanya dengan panggilan
+    yang tidak menghasilkan apa-apa."""
+    r = _stat.ringkas([0.0, 0.0, 5.0, -5.0])
+    assert r["menang"] == 1 and r["kalah"] == 1 and r["impas"] == 2
+    assert r["menang_persen"] == 50.0
+
+
+def test_faktor_untung_tanpa_kekalahan_bukan_tak_terhingga():
+    """Rangkaian menang tanpa satu pun kalah belum membuktikan apa pun.
+
+    Mengembalikan tak terhingga (atau angka besar) akan membuat rapor terbaca seperti
+    strategi sempurna padahal besar kerugiannya memang belum pernah teruji."""
+    assert _stat.faktor_untung([1.0, 2.0, 3.0]) is None
+    assert _stat.ringkas([]) ["ekspektansi_persen"] is None
+
+
+def test_penurunan_maksimum_menumpuk_berurutan():
+    """Tiga kekalahan beruntun lebih dalam daripada kekalahan terbesarnya sendiri."""
+    d = _stat.penurunan_maksimum([-10.0, -10.0, -10.0])
+    assert d < -27 and d > -28          # 0,9^3 = 0,729 -> -27,1%
+    assert _stat.penurunan_maksimum([5.0, 5.0]) == 0.0
+
+
+def test_imbalan_risiko_dan_ambang_impas():
+    """Angka PUMP yang sebenarnya: mempertaruhkan 30,7% untuk mengejar 2,1%."""
+    rr = _stat.imbalan_risiko(0.002683, [0.00274], 0.00186)
+    assert rr["rasio_imbalan_risiko"] == 0.07
+    # Diterjemahkan jadi kalimat yang bisa diuji: harus benar 93,5% kali hanya untuk impas.
+    assert _stat.perlu_benar_persen(rr["rasio_imbalan_risiko"]) > 93
+    # Level tidak lengkap adalah keadaan SAH, bukan kegagalan — jangan melempar.
+    assert _stat.imbalan_risiko(100, [], 90) is None
+    assert _stat.imbalan_risiko(None, [110], 90) is None
+    assert _stat.imbalan_risiko(100, [110], 100) is None      # risiko nol, bukan bagi-nol
+
+
+def test_catat_menyimpan_rasio_imbalan_risiko(tmp_path, monkeypatch):
+    """Rasio dihitung SAAT panggilan dibuat, bukan saat dinilai.
+
+    Kalau ditunda sampai penilaian, panggilan yang tak pernah selesai tak pernah
+    terperiksa — padahal di situlah level buruk paling sering bersembunyi."""
+    monkeypatch.setattr(_rapor, "RAPOR_PATH", str(tmp_path / "r.jsonl"))
+    balasan = ("BIAS: TAHAN\nSKOR: 55\nHarga $100\nInvalidasi $70\nTarget: 105")
+    rid = _rapor.catat(balasan, "UJI", "crypto")
+    assert rid
+    e = json.loads(open(str(tmp_path / "r.jsonl"), encoding="utf-8").read().strip())
+    assert e["risiko_persen"] == 30.0 and e["imbalan_persen"] == 5.0
+    assert e["rasio_imbalan_risiko"] == 0.17
+
+
+def test_jejak_rekam_masuk_ke_kedua_jalur_brief():
+    """Rapor dulu jalan satu arah: ditulis, tak pernah dibaca saat analisa berikutnya.
+
+    Akibatnya cacat yang sama terulang di SELURUH panggilan tanpa pernah sampai ke mata
+    yang menyusunnya."""
+    s = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    panggilan = s.count(chr(10) + "    _sisipkan_jejak(bagian)")
+    assert panggilan == 2, "harus dipasang di crypto DAN saham/forex"
+    assert "def _sisipkan_jejak" in s
+
+
+def test_catatan_diri_diam_saat_sampel_kecil(monkeypatch):
+    """Sampel kecil tidak boleh melahirkan peringatan — dan hari tanpa masalah tidak boleh
+    membakar token untuk mengabarkan bahwa semuanya baik-baik saja."""
+    monkeypatch.setattr(_rapor, "_muat", lambda: [{"status": "TERBUKA"}] * 3)
+    assert _rapor.catatan_untuk_brief() is None
+
+
+def test_audit_imbalan_menandai_setup_yang_tak_sepadan():
+    """Dijalankan pada panggilan HYPERLIQUID yang sungguh pernah dikirim.
+
+    analisa.md sudah mewajibkan R:R minimal 1:2 sejak lama, dan panggilan ini tetap keluar
+    dengan 0,15. Menambah kalimat ke prompt tidak akan memperbaikinya — aturannya sudah ada
+    dan tetap dilewati, jadi pemeriksaannya dipindah ke kode."""
+    balasan = ("SKOR: 55\nBIAS: TAHAN\nHarga $56.46\nInvalidasi $49.7\nTarget: 57.5 -> 62\n\n"
+               "⚠️ Riset, bukan saran keuangan.")
+    imb = bot.audit_imbalan(balasan)
+    assert imb["rasio_imbalan_risiko"] == 0.15 and imb["di_bawah_ambang"] is True
+    p = bot.peringatan_audit("", "", "", imb)
+    assert "Risikonya lebih besar" in p and "87.0%" in p
+
+
+def test_audit_imbalan_diam_saat_setup_sepadan():
+    """Setup yang memang layak tidak boleh diperingatkan — peringatan yang selalu menyala
+    akan berhenti dibaca, dan peringatan yang diabaikan sama dengan tidak ada."""
+    balasan = "SKOR: 70\nBIAS: AKUMULASI\nHarga $100\nInvalidasi $95\nTarget: 120"
+    imb = bot.audit_imbalan(balasan)
+    assert imb["rasio_imbalan_risiko"] == 4.0 and imb["di_bawah_ambang"] is False
+    assert bot.peringatan_audit("", "", "", imb) is None
+
+
+def test_imbalan_didahulukan_atas_vonis_data():
+    """Ini satu-satunya vonis tentang MUTU SARANNYA, bukan mutu datanya.
+
+    Data segar dan terlacak yang dipakai menyusun level dengan risiko sepuluh kali
+    imbalannya tetap menghasilkan saran yang merugikan."""
+    imb = {"risiko_persen": 30.0, "imbalan_persen": 2.0,
+           "rasio_imbalan_risiko": 0.07, "di_bawah_ambang": True, "perlu_benar_persen": 93.5}
+    p = bot.peringatan_audit("MENCURIGAKAN", "CLOSE-ONLY", "BURUK", imb)
+    assert "Risikonya lebih besar" in p
+
+
+def test_audit_imbalan_tahan_balasan_tanpa_level():
+    """Balasan chat biasa tidak punya level, dan itu keadaan sah — jangan melempar."""
+    assert bot.audit_imbalan("Halo, apa kabar?") is None
+    assert bot.audit_imbalan("") is None
+    assert bot.audit_imbalan(None) is None

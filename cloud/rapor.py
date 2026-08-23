@@ -27,6 +27,9 @@ import secrets
 import sys
 from datetime import datetime, timedelta, timezone
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import statistik
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RAPOR_PATH = os.path.join(BASE_DIR, "data", "rapor.jsonl")
 
@@ -166,6 +169,13 @@ def catat(balasan, aset, jenis, mode="analisa"):
         "status": "TERBUKA",
         **p,
     }
+    # Rasio imbalan:risiko dihitung SEKARANG, bukan saat penilaian. Levelnya sudah ada di
+    # sini, dan menundanya berarti panggilan yang tak pernah selesai tak pernah terperiksa
+    # — padahal justru di situ kelemahannya paling sering bersembunyi.
+    rr = statistik.imbalan_risiko(p.get("harga_saat_panggilan"),
+                                  p.get("level_target"), p.get("level_invalid"))
+    if rr:
+        entri.update(rr)
     os.makedirs(os.path.dirname(RAPOR_PATH), exist_ok=True)
     with open(RAPOR_PATH, "a", encoding="utf-8") as f:
         f.write(json.dumps(entri, ensure_ascii=False) + "\n")
@@ -467,10 +477,75 @@ def _hitung(kelompok):
             f"menang {h['menang_persen']}% TAPI alpha rata-rata "
             f"{h['alpha_30h_rata2_persen']}% — panggilan ini mengikuti pasar naik, bukan "
             "mengunggulinya. Tingkat menang yang tinggi di sini BUKAN bukti keahlian.")
+    # EKSPEKTANSI dan kawan-kawannya (dari crates/analysis nautilus_trader). Tingkat menang
+    # sendirian menyesatkan: benar 75% dengan imbalan +1,9% dan salah 25% dengan rugi -30%
+    # menghasilkan ekspektansi -6,25% per panggilan. Rapor yang hanya melaporkan "menang
+    # 75%" akan menyebut pola yang merugi itu sebagai keahlian.
+    hasil = [e.get("hasil_ikut_saran_persen") for e in kelompok]
+    st = statistik.ringkas(hasil)
+    for k in ("ekspektansi_persen", "faktor_untung", "rasio_imbalan",
+              "menang_rata2_persen", "kalah_rata2_persen", "kalah_terburuk_persen",
+              "penurunan_maksimum_persen"):
+        h[k] = st[k]
+    if st["ekspektansi_persen"] is not None and st["ekspektansi_persen"] < 0:
+        h["peringatan_ekspektansi"] = (
+            f"dari hasil mengikuti saran: menang {st['menang_persen']}%, TAPI ekspektansi {st['ekspektansi_persen']}% per "
+            f"panggilan — menangnya kecil ({st['menang_rata2_persen']}%), kalahnya besar "
+            f"({st['kalah_rata2_persen']}%). Mengulang pola ini MERUGI meski sering benar.")
+
+    # Rasio imbalan:risiko yang DIMINTA saat panggilan dibuat. Ini kelemahan yang tidak
+    # terlihat dari hasil mana pun: panggilan bisa kena target dan tercatat menang, sambil
+    # sepanjang waktu mempertaruhkan sepuluh kali lipat imbalannya.
+    rr = [e.get("rasio_imbalan_risiko") for e in kelompok
+          if e.get("rasio_imbalan_risiko") is not None]
+    if rr:
+        rr_urut = sorted(rr)
+        tengah = rr_urut[len(rr_urut) // 2]
+        h["rasio_imbalan_risiko_tengah"] = tengah
+        h["rasio_di_bawah_1"] = sum(1 for x in rr if x < statistik.RASIO_MINIMUM)
+        if h["rasio_di_bawah_1"] == len(rr):
+            perlu = statistik.perlu_benar_persen(tengah)
+            h["peringatan_rasio"] = (
+                f"SELURUH {len(rr)} panggilan menaruh risiko lebih besar daripada imbalannya "
+                f"(rasio tengah {tengah}). Pada rasio itu panggilan harus benar {perlu}% kali "
+                "hanya untuk IMPAS. Levelnya, bukan analisanya, yang perlu diperbaiki.")
+
     if n < SAMPEL_MINIMUM:
         h["peringatan"] = (f"SAMPEL KECIL ({n} panggilan) — angka ini TIDAK bermakna secara "
                            "statistik. Jangan dipakai mengubah ambang apa pun.")
     return h
+
+
+def catatan_untuk_brief():
+    """Satu paragraf pendek tentang jejak rekam SENDIRI, atau None kalau tak ada yang perlu.
+
+    Rapor selama ini hanya DITULIS, tidak pernah DIBACA saat analisa berikutnya disusun —
+    jadi kelemahan yang sama terulang tanpa pernah sampai ke matanya. Ini menutup lingkaran
+    itu, dan sengaja hanya muncul kalau ada peringatan nyata supaya tidak membakar token
+    untuk mengabarkan bahwa semuanya baik-baik saja.
+    """
+    try:
+        entri = _muat()
+    except Exception:
+        return None
+    if len(entri) < 5:
+        return None                      # terlalu sedikit untuk disimpulkan apa pun
+    h = _hitung(entri)
+    baris = []
+    if h.get("peringatan_rasio"):
+        baris.append(h["peringatan_rasio"])
+    if h.get("peringatan_ekspektansi"):
+        baris.append(h["peringatan_ekspektansi"])
+    if h.get("peringatan_alpha"):
+        baris.append(h["peringatan_alpha"])
+    if not baris:
+        return None
+    return ("JEJAK REKAM SENDIRI (" + str(h["panggilan"]) + " panggilan, dihitung dari "
+            "rapor.jsonl — ini tentang panggilanmu sendiri, bukan tentang asetnya):"
+            + chr(10) + chr(10).join("- " + b for b in baris) + chr(10)
+            + "Perbaiki ini pada panggilan sekarang: level target dan invalidasi harus "
+              "dipilih supaya imbalannya SEPADAN dengan risikonya, bukan sekadar menempel "
+              "pada support/resistance terdekat.")
 
 
 def perintah_ringkas(hari):
