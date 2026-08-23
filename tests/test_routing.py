@@ -2706,3 +2706,18 @@ def test_audit_imbalan_tahan_balasan_tanpa_level():
     assert bot.audit_imbalan("Halo, apa kabar?") is None
     assert bot.audit_imbalan("") is None
     assert bot.audit_imbalan(None) is None
+
+
+def test_peringatan_ekspektansi_menyebut_sandarannya_saat_tipis():
+    """Penjaga SAMPEL_MINIMUM memakai jumlah SEMUA panggilan, bukan yang punya hasil.
+
+    Tanpa penjaga terpisah, ekspektansi dari empat hasil akan terdengar sekuat vonis
+    hanya karena rapornya berisi tiga belas entri."""
+    kecil = ([{"hasil_ikut_saran_persen": 1.0, "bias": "TAHAN", "status": "TARGET_KENA"}] * 3
+             + [{"hasil_ikut_saran_persen": -9.0, "bias": "TAHAN", "status": "INVALID_KENA"}])
+    p = _rapor._hitung(kecil)["peringatan_ekspektansi"]
+    assert "arah, bukan vonis" in p and "4 panggilan" in p
+
+    banyak = ([{"hasil_ikut_saran_persen": 1.0, "bias": "TAHAN", "status": "TARGET_KENA"}] * 9
+              + [{"hasil_ikut_saran_persen": -9.0, "bias": "TAHAN", "status": "INVALID_KENA"}] * 3)
+    assert "arah, bukan vonis" not in _rapor._hitung(banyak)["peringatan_ekspektansi"]

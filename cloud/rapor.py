@@ -487,11 +487,17 @@ def _hitung(kelompok):
               "menang_rata2_persen", "kalah_rata2_persen", "kalah_terburuk_persen",
               "penurunan_maksimum_persen"):
         h[k] = st[k]
+    # Penjaga sampel di bawah memakai n (SEMUA panggilan), padahal ekspektansi hanya
+    # dihitung dari yang sudah punya hasil. Dengan 13 panggilan tapi 4 yang bisa dinilai,
+    # peringatan ini akan terdengar sekuat kesimpulan padahal berdiri di atas empat titik.
+    # Jadi ia punya penjaganya sendiri, dan menyebut sandarannya kalau masih tipis.
+    cukup = (st["dinilai"] or 0) >= SAMPEL_MINIMUM
     if st["ekspektansi_persen"] is not None and st["ekspektansi_persen"] < 0:
         h["peringatan_ekspektansi"] = (
             f"dari hasil mengikuti saran: menang {st['menang_persen']}%, TAPI ekspektansi {st['ekspektansi_persen']}% per "
             f"panggilan — menangnya kecil ({st['menang_rata2_persen']}%), kalahnya besar "
-            f"({st['kalah_rata2_persen']}%). Mengulang pola ini MERUGI meski sering benar.")
+            f"({st['kalah_rata2_persen']}%). Mengulang pola ini MERUGI meski sering benar."
+            + ("" if cukup else f" [baru {st['dinilai']} panggilan berhasil — arah, bukan vonis]"))
 
     # Rasio imbalan:risiko yang DIMINTA saat panggilan dibuat. Ini kelemahan yang tidak
     # terlihat dari hasil mana pun: panggilan bisa kena target dan tercatat menang, sambil
