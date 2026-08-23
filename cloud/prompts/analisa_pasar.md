@@ -374,3 +374,10 @@ dihitung dari harga penutupan, sehingga jangkauan sebenarnya cenderung DIREMEHKA
 
 **Tanggal horizon** = `generated_utc` + `horizon_hari`. Tulis tanggalnya, bukan cuma
 "60 hari" — pembaca perlu tahu kapan pandangan ini kedaluwarsa.
+
+**KEYAKINAN DIBATASI MUTU BUKTI.** Blok `[KELENGKAPAN DATA]` di brief menyebut berapa
+sumber yang benar-benar tiba. SKOR wajib mencerminkannya: skor tinggi di atas data tipis
+menyatakan keyakinan yang tidak kamu miliki. Sumber yang gagal disebut sebagai HILANG —
+jangan diam-diam diperlakukan sebagai netral, karena netral adalah penilaian, sedangkan
+hilang adalah ketiadaan penilaian. Bagian ber-label `[SENGAJA TIDAK DIAMBIL]` BUKAN
+kekurangan: itu memang tidak berlaku untuk aset ini.

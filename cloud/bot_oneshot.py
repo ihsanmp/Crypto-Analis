@@ -1273,6 +1273,30 @@ def _jalankan_terukur(label, args, min_kar=0):
     return keluar, err
 
 
+def _blok_kelengkapan(jumlah_tugas, gagal):
+    """Berapa banyak sumber yang benar-benar tiba — dinyatakan, bukan disimpulkan.
+
+    Sebelum ini daftar `gagal` hanya dicetak ke stderr, jadi model tidak pernah tahu
+    sumber mana yang mati. Ia cuma melihat brief yang lebih pendek, dan tetap
+    mengeluarkan SKOR dengan arsitektur bobot yang sama seperti saat semua data lengkap.
+    Skor 72 di atas 5 dari 11 sumber dan skor 72 di atas 11 dari 11 jadi tak terbedakan —
+    padahal keyakinan seharusnya dibatasi oleh mutu buktinya.
+
+    `lewat` SENGAJA tidak ikut dihitung: itu bagian yang memang tidak berlaku untuk aset
+    ini (koin natif tidak punya kontrak), bukan data yang hilang.
+    """
+    berhasil = jumlah_tugas - len(gagal)
+    persen = round(berhasil / jumlah_tugas * 100) if jumlah_tugas else 0
+    baris = [f"{berhasil} dari {jumlah_tugas} sumber berhasil ({persen}%)."]
+    if gagal:
+        baris.append("GAGAL: " + " · ".join(gagal))
+        baris.append("Keyakinan dibatasi mutu bukti: sebut kelengkapan ini saat memberi "
+                     "SKOR, dan JANGAN memberi skor tinggi di atas data yang tipis. "
+                     "Yang hilang harus disebut sebagai HILANG, bukan diam-diam "
+                     "diperlakukan sebagai netral.")
+    return "[KELENGKAPAN DATA]" + chr(10) + chr(10).join(baris)
+
+
 def _sisipkan_jejak(bagian):
     """Selipkan jejak rekam SENDIRI ke kepala brief, kalau ada yang perlu diperbaiki.
 
@@ -1404,6 +1428,7 @@ def data_mentah_crypto(coin):
         bagian.append("[SENGAJA TIDAK DIAMBIL]\n" + "\n".join("- " + x for x in lewat)
                       + "\nPerlakukan sebagai tidak berlaku untuk koin ini, BUKAN sebagai "
                         "data yang hilang — jangan menyebutnya kekurangan.")
+    bagian.append(_blok_kelengkapan(len(tugas), gagal))
     for g in gagal:
         print(f"[data] GAGAL {g}", file=sys.stderr)
     print(f"[data] crypto {t}: {len(tugas)} script dijalankan, {len(lewat)} dilewati, "
@@ -1628,6 +1653,7 @@ def data_mentah_pasar(simbol, jenis):
         except OSError as e:
             gagal.append(f"gold_drivers.md: {e}")
 
+    bagian.append(_blok_kelengkapan(len(tugas), gagal))
     _sisipkan_jejak(bagian)
 
     for g in gagal:
@@ -2067,8 +2093,9 @@ def process(token, chat_id, text, photo_file_id=None):
     asal = audit_sumber(brief)
     imbalan = audit_imbalan(body)
     outlook = audit_outlook(brief, body)
+    keyakinan = audit_keyakinan(brief, body)
     if not body.startswith("❌"):
-        catatan = peringatan_audit(jejak, asal, kesegaran, imbalan, outlook)
+        catatan = peringatan_audit(jejak, asal, kesegaran, imbalan, outlook, keyakinan)
         if catatan:
             body = sisipkan_peringatan(body, catatan)
             print(f"[audit] peringatan DIKIRIM ke user: {catatan[:70]}", file=sys.stderr)
@@ -2167,7 +2194,44 @@ def audit_outlook(brief, body):
     return None if "OUTLOOK" in body else "HILANG"
 
 
-def peringatan_audit(jejak, asal, kesegaran, imbalan=None, outlook=None):
+_RE_KELENGKAPAN = re.compile(r"(\d+) dari (\d+) sumber berhasil")
+
+# Di bawah kelengkapan ini, skor tinggi tidak lagi punya dasar yang cukup.
+KELENGKAPAN_TIPIS = 70
+SKOR_TINGGI = 60
+
+
+def audit_keyakinan(brief, body):
+    """Apakah skornya tinggi padahal datanya tipis? Return dict, atau None.
+
+    Diambil dari agency-agents (msitarzewski), aturan #6: keyakinan harus dinyatakan
+    BESERTA mutu bukti di belakangnya. Enam dari delapan aturannya sudah ada di seed sini;
+    yang ini belum, dan celahnya nyata — arsitektur SKOR punya bobot dan veto, tapi tidak
+    satu pun yang mengaitkannya dengan berapa banyak data yang benar-benar tiba.
+    """
+    if not brief or not body:
+        return None
+    m = _RE_KELENGKAPAN.search(brief)
+    if not m:
+        return None
+    berhasil, total = int(m.group(1)), int(m.group(2))
+    if not total:
+        return None
+    persen = round(berhasil / total * 100)
+    try:
+        sys.path.insert(0, os.path.join(REPO_ROOT, "cloud"))
+        import rapor
+        p = rapor.urai_panggilan(body)
+        skor = (p or {}).get("skor")
+    except Exception:
+        return None
+    if skor is None or persen >= KELENGKAPAN_TIPIS or skor < SKOR_TINGGI:
+        return None
+    return {"skor": skor, "berhasil": berhasil, "total": total, "persen": persen}
+
+
+def peringatan_audit(jejak, asal, kesegaran, imbalan=None, outlook=None,
+                     keyakinan=None):
     """Ubah hasil audit jadi MAKSIMAL SATU baris peringatan untuk user, atau None.
 
     Ketiga audit sudah menghitung vonis nyata sejak lama, tapi hasilnya hanya dicetak ke
@@ -2208,6 +2272,13 @@ def peringatan_audit(jejak, asal, kesegaran, imbalan=None, outlook=None):
     if "BURUK" in kesegaran:
         return ("⚠️ Balasan ini memuat angka tanpa satu pun tanggal — ada kemungkinan sebagian "
                 "berasal dari ingatan, bukan data baru.")
+    # Sebelum vonis kelengkapan tapi sesudah vonis data: skor tinggi di atas data tipis
+    # bukan sekadar kurang lengkap — ia menyatakan keyakinan yang tidak dimilikinya.
+    if keyakinan:
+        return (f"⚠️ Skor {keyakinan['skor']}/100 berdiri di atas {keyakinan['berhasil']} "
+                f"dari {keyakinan['total']} sumber ({keyakinan['persen']}%). Perlakukan "
+                "keyakinannya sebagai lebih rendah daripada angkanya.")
+
     # Paling akhir: ini soal KELENGKAPAN, bukan kebenaran. Analisa tanpa outlook tetap sahih,
     # hanya berhenti lebih awal daripada yang datanya izinkan.
     if outlook == "HILANG":

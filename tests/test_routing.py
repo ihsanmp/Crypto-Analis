@@ -2772,3 +2772,46 @@ def test_format_output_menuntut_outlook_di_kedua_pasar():
         assert "harga_penutup" in t, f"{nama}: peluang skenario harus dari tangga penutup"
         # Pemicu tautologis membuat skenario tidak pernah bisa salah.
         assert "sentimen membaik" in t, f"{nama}: contoh pemicu terlarang harus ada"
+
+
+# ------------------------------------------ keyakinan vs mutu bukti (agency-agents #6)
+
+def test_kelengkapan_data_masuk_brief():
+    """Daftar `gagal` dulu HANYA dicetak ke stderr, jadi model tak pernah tahu sumber mana
+    yang mati — ia cuma melihat brief lebih pendek, lalu tetap mengeluarkan SKOR dengan
+    arsitektur bobot yang sama seperti saat datanya lengkap."""
+    b = bot._blok_kelengkapan(11, ["indicators.py: semua sumber gagal"])
+    assert "10 dari 11 sumber berhasil (91%)" in b
+    assert "indicators.py" in b
+    # Tanpa kegagalan: tidak perlu ceramah, cukup angkanya.
+    utuh = bot._blok_kelengkapan(11, [])
+    assert "11 dari 11" in utuh and "GAGAL" not in utuh
+
+    s = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    assert s.count(chr(10) + "    bagian.append(_blok_kelengkapan(") == 2, \
+        "harus dipasang di jalur crypto DAN saham/forex"
+
+
+def test_skor_tinggi_di_atas_data_tipis_ditandai():
+    """Skor 72 di atas 5 dari 11 sumber dan skor 72 di atas 11 dari 11 dulu tak terbedakan.
+
+    Formatnya `SKOR xx/100`, bukan `SKOR: xx` — diuji memakai format yang sungguh dipakai
+    supaya auditnya tidak lolos hanya di contoh buatan."""
+    body = "🧮 SKOR 72/100  (Fund 70 · Tek 74)\nBIAS: AKUMULASI\nHarga $100\nInvalidasi $90\nTarget: 130"
+    tipis = bot._blok_kelengkapan(11, ["a: x"] * 6)
+    k = bot.audit_keyakinan(tipis, body)
+    assert k == {"skor": 72, "berhasil": 5, "total": 11, "persen": 45}
+    assert "5 dari 11 sumber" in bot.peringatan_audit("", "", "", None, None, k)
+
+    assert bot.audit_keyakinan(bot._blok_kelengkapan(11, []), body) is None, "data utuh"
+    rendah = "🧮 SKOR 35/100\nBIAS: HINDARI\nHarga $100\nInvalidasi $90\nTarget: 95"
+    assert bot.audit_keyakinan(tipis, rendah) is None, "skor rendah memang sudah jujur"
+    assert bot.audit_keyakinan("tanpa blok kelengkapan", body) is None
+
+
+def test_keyakinan_kalah_dari_vonis_data_tapi_menang_atas_kelengkapan():
+    """Skor tinggi di atas data tipis bukan sekadar kurang lengkap — ia menyatakan
+    keyakinan yang tidak dimilikinya, jadi lebih parah daripada outlook yang hilang."""
+    k = {"skor": 72, "berhasil": 5, "total": 11, "persen": 45}
+    assert "5 dari 11" in bot.peringatan_audit("", "", "", None, "HILANG", k)
+    assert "penutupan" in bot.peringatan_audit("", "CLOSE-ONLY", "", None, None, k)
