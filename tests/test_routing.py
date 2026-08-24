@@ -3201,3 +3201,61 @@ def test_kaki_sumber_di_bawah_peringatan_tapi_di_atas_disclaimer():
     i_kaki = body.index("🔗 Sumber")
     i_disc = body.index("⚠️ Riset pasar")
     assert i_ring < i_kaki < i_disc
+
+
+# ------------------------------------ normalisasi ticker: satu aset, satu nama di rapor
+
+def test_normalisasi_ticker_di_routing_bukan_di_brief():
+    """Perbaikan lama menormalkan nama DI DALAM data_mentah_crypto, jadi hasilnya cuma
+    variabel lokal: brief benar, tapi rapor.jsonl tetap mencatat "HYPERLIQUID".
+
+    Akibatnya satu aset terpecah dua di rekam jejak — dan ekspektansi, alpha, serta
+    tingkat menang dihitung dari kelompok yang salah. Normalisasi harus terjadi di titik
+    nama itu DITETAPKAN, supaya brief, rapor, dan ingatan memakai nama yang sama."""
+    s = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    blok = s[s.index('if kind == "analisa":'):s.index("def ", s.index('if kind == "analisa":'))]
+    assert "resolve_ticker" in blok, "normalisasi harus ada di jalur routing"
+    assert blok.index("resolve_ticker") < blok.index("data_mentah_pasar"), \
+        "harus SEBELUM simbol dipakai ke mana pun"
+
+
+def test_rapor_tidak_punya_nama_proyek_panjang():
+    """Penjaga data: ticker crypto praktis selalu <=6 huruf. Nama panjang di kolom `aset`
+    berarti normalisasi bocor lagi, dan pengelompokan rekam jejaknya diam-diam salah."""
+    import rapor as _r
+    for e in _r._muat():
+        if e.get("jenis") != "crypto":
+            continue
+        assert len(e.get("aset") or "") <= 6, (
+            f"{e.get('aset')} terlihat seperti nama proyek, bukan ticker — "
+            "entri lama perlu dinormalkan ulang")
+
+
+def test_entri_yang_dinormalkan_menyimpan_nama_aslinya():
+    """Migrasi data produksi harus bisa diaudit. `aset_asli` merekam apa yang benar-benar
+    diketik user, sehingga penggantian nama tidak menghapus jejaknya."""
+    import rapor as _r
+    diubah = [e for e in _r._muat() if e.get("aset_asli")]
+    for e in diubah:
+        assert e["aset_asli"] != e["aset"]
+        # id sengaja TIDAK ikut diubah: itu identifier stabil yang bisa dirujuk entri lain.
+        assert e["aset_asli"] in e["id"], "id lama harus tetap utuh sebagai jejak"
+
+
+def test_resolve_ticker_diingat_dalam_satu_run(monkeypatch):
+    """Dipanggil di routing DAN di data_mentah_crypto. Tanpa memo, satu analisa menembak
+    CoinGecko dua kali untuk pertanyaan yang sama."""
+    import indicators as _ind
+    _ind._TICKER_MEMO.clear()
+    panggilan = []
+
+    def palsu(url):
+        panggilan.append(url)
+        return {"coins": [{"symbol": "hype", "name": "Hyperliquid",
+                           "id": "hyperliquid", "market_cap_rank": 10}]}
+
+    monkeypatch.setattr(_ind, "http_json", palsu)
+    a = _ind.resolve_ticker("hyperliquid")
+    b = _ind.resolve_ticker("hyperliquid")
+    assert a == b == ("HYPE", "hyperliquid", "Hyperliquid")
+    assert len(panggilan) == 1, "panggilan kedua harus dilayani memo"

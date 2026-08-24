@@ -1962,6 +1962,19 @@ def process(token, chat_id, text, photo_file_id=None):
     if kind == "analisa":
         words = text.strip().lower().split()
         jenis, simbol = jenis_aset(" ".join(words[1:]))
+        # Normalisasi NAMA PROYEK -> TICKER dilakukan DI SINI, bukan di dalam
+        # data_mentah_crypto. Di sana hasilnya cuma variabel lokal, sehingga brief benar
+        # tapi rapor.jsonl tetap mencatat "HYPERLIQUID". Satu aset lalu terpecah dua di
+        # rekam jejak — dan ekspektansi serta alpha dihitung dari kelompok yang salah.
+        if simbol and jenis == "crypto":
+            try:
+                from indicators import resolve_ticker
+                tik, _cid, _nama = resolve_ticker(simbol)
+                if tik and tik.upper() != simbol.upper():
+                    print(f"[routing] {simbol} -> {tik}", file=sys.stderr)
+                    simbol = tik
+            except Exception as e:
+                print(f"[routing] normalisasi dilewati ({type(e).__name__})", file=sys.stderr)
         if simbol and jenis != "crypto":
             # SAHAM / FOREX: jalur terpisah. Script crypto (DefiLlama, holder Ethereum,
             # whale) tidak berlaku dan hanya menghasilkan error atau angka tak nyambung.

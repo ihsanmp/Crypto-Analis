@@ -34,6 +34,7 @@ from datetime import datetime, timezone
 UA = {"User-Agent": "Mozilla/5.0 (compatible; riset-koin/1.0)"}
 TIMEOUT = 8          # pendek: sumber yang diblokir harus cepat menyerah
 _DEAD = set()        # sumber yang sudah terbukti gagal -> jangan dicoba lagi run ini
+_TICKER_MEMO = {}    # hasil resolve_ticker per run: dipanggil di routing DAN di brief
 
 
 # ---------------------------------------------------------------- util jaringan
@@ -76,6 +77,8 @@ def resolve_ticker(masukan):
     q = (masukan or "").strip()
     if not q:
         return None, None, None
+    if q.lower() in _TICKER_MEMO:
+        return _TICKER_MEMO[q.lower()]
     try:
         data = http_json("https://api.coingecko.com/api/v3/search?query="
                          + urllib.parse.quote(q))
@@ -94,7 +97,10 @@ def resolve_ticker(masukan):
         if sym == q.upper() or nama.lower() == low or cid.lower() == low:
             if c.get("market_cap_rank") is None:
                 continue          # tanpa peringkat = koin obskur; jangan ditebak
-            return sym or None, cid or None, nama or None
+            hasil = (sym or None, cid or None, nama or None)
+            _TICKER_MEMO[low] = hasil
+            return hasil
+    _TICKER_MEMO[low] = (None, None, None)
     return None, None, None
 
 
