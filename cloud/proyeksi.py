@@ -105,6 +105,70 @@ def level_struktural(candles, harga, pakai_high):
     return atas[:4], bawah[:4]
 
 
+# Jarak invalidasi yang lazim dipakai, dari yang rapat sampai yang selebar swing low.
+JARAK_STOP = (5, 10, 15, 20, 30)
+RASIO_DIWAJIBKAN = 2.0        # analisa.md meminta minimal 1:2
+
+
+def kelayakan(candles, harga, n_hari, pakai_high, rasio=RASIO_DIWAJIBKAN):
+    """Untuk tiap jarak invalidasi: target apa yang DIBUTUHKAN, dan seberapa sering
+    gerakan sebesar itu benar-benar terjadi.
+
+    Kenapa ini ada. analisa.md sudah lama mewajibkan R:R minimal 1:2 dan tetap dilewati —
+    delapan dari sepuluh panggilan pertama di bawah 1. Menambah kalimat lagi ke prompt
+    tidak akan menolong; aturannya sudah ada.
+
+    Yang berubah kalau tabel ini hadir: aturan R:R berhenti jadi imbauan dan jadi FAKTA
+    YANG BISA DIPERIKSA. Dengan invalidasi 30% di bawah harga, target untuk R:R 2 adalah
+    +60% — dan sebaran historis bisa bilang gerakan sebesar itu terjadi di berapa persen
+    jendela. Kalau jawabannya 3%, setupnya memang tidak layak diambil, dan yang harus
+    diperbaiki adalah invalidasinya, bukan targetnya dipaksa mendekat.
+
+    Ini juga menutup jalan pintas yang paling menggoda: memasang target dekat supaya
+    terlihat mudah tercapai. Target dekat memperkecil imbalan tanpa memperkecil risiko.
+    """
+    if not harga or not candles:
+        return None
+    baris = []
+    for stop in JARAK_STOP:
+        butuh = harga * (1 + stop * rasio / 100.0)
+        u = uji_target(candles, harga, butuh, n_hari, None, pakai_high)
+        if "tidak_tersedia" in u:
+            continue
+        baris.append({
+            "invalidasi_persen": -stop,
+            "invalidasi_harga": round(harga * (1 - stop / 100.0), 8),
+            "target_dibutuhkan_persen": round(stop * rasio, 1),
+            "target_dibutuhkan_harga": round(butuh, 8),
+            "peluang_historis_persen": u.get("peluang_historis_persen"),
+        })
+    if not baris:
+        return None
+    layak = [b for b in baris if (b["peluang_historis_persen"] or 0) >= 25]
+    return {
+        "rasio_diwajibkan": rasio,
+        "horizon_hari": n_hari,
+        # Riwayat kripto gratis cuma ~1 tahun. "0%" di sini berarti TIDAK PERNAH DALAM
+        # RENTANG INI, bukan mustahil — dan bedanya besar. Rentangnya wajib ikut supaya
+        # angka nol tidak dikutip sebagai hukum alam.
+        "jendela_riwayat": _rentang_tanggal(candles),
+        "baris": baris,
+        "stop_terlebar_yang_masih_layak_persen": (
+            min(b["invalidasi_persen"] for b in layak) if layak else None),
+        "wajib_dibaca": (
+            "Baca dari BAWAH ke atas: makin lebar invalidasi, makin besar target yang "
+            "dibutuhkan, dan makin jarang gerakan sebesar itu terjadi. Pilih jarak "
+            "invalidasi yang peluang historisnya masih masuk akal, JANGAN memaksakan "
+            "target mendekat supaya terlihat mudah — target dekat memperkecil imbalan "
+            "tanpa memperkecil risiko, dan itulah yang membuat delapan dari sepuluh "
+            "panggilan pertama bot ini punya rasio di bawah 1. Kalau tidak ada satu baris "
+            "pun yang peluangnya memadai, setup ini memang TIDAK LAYAK DIAMBIL — katakan "
+            "begitu, jangan diperhalus jadi target yang lebih dekat. Peluang 0% berarti "
+            "TIDAK PERNAH TERJADI dalam `jendela_riwayat` yang tertulis — bukan mustahil; "
+            "sebut rentangnya saat mengutipnya."),
+    }
+
+
 def uji_target(candles, harga, target, n_hari, atr, pakai_high):
     """Ukur target yang DIAJUKAN. Ini penawar utama terhadap penjangkaran angka user."""
     if not harga or not target or target <= 0:
@@ -216,6 +280,13 @@ def main():
     else:
         keluar["sebaran_historis"] = {
             "tidak_tersedia": f"riwayat kurang dari {args.hari} hari perdagangan"}
+
+    try:
+        k = kelayakan(candles, harga, args.hari, pakai_high)
+        if k:
+            keluar["kelayakan_imbalan_risiko"] = k
+    except Exception as e:
+        keluar["kelayakan_tidak_tersedia"] = f"{type(e).__name__}"
 
     atas, bawah = level_struktural(candles, harga, pakai_high)
     keluar["level_struktural"] = {

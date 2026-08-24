@@ -19,6 +19,10 @@ supaya "belum ada data" tidak pernah terbaca sebagai "hasilnya nol".
 # daripada risikonya. Dengan R:R 0,5 kamu harus benar 2 dari 3 kali hanya untuk impas.
 RASIO_MINIMUM = 1.0
 
+# Bias yang sarannya MENGURANGI paparan. Target di atas harga pada bias ini adalah
+# kontradiksi, bukan imbalan.
+_BIAS_TURUN = ("KURANGI", "HINDARI")
+
 
 def _rata(xs):
     return sum(xs) / len(xs) if xs else None
@@ -117,30 +121,57 @@ def ringkas(hasil):
 
 # ------------------------------------------------- pemeriksaan sebelum panggilan
 
-def imbalan_risiko(harga, target, invalid):
-    """Jarak ke target pertama dibanding jarak ke level invalid, dalam persen.
+def imbalan_risiko(harga, target, invalid, bias=None):
+    """Jarak ke target dibanding jarak ke level invalid, dalam persen.
+
+    MEMAKAI RATA-RATA SELURUH TARGET, bukan target pertama. Versi pertama fungsi ini
+    memakai `target[0]` saja, dan itu keliru: rencananya bertahap — sebagian posisi keluar
+    di tiap target — sehingga membandingkan target PERTAMA dengan stop PENUH adalah apel
+    lawan jeruk. Kekeliruan itu membuat panggilan HYPE terbaca 0,33 padahal di target
+    terakhir 2,15, dan seluruh rekam jejak terlihat jauh lebih buruk daripada sebenarnya.
+
+    Rata-rata sederhana dipilih karena balasannya TIDAK menyebut porsi keluar di tiap
+    target. Menebak bobot 40/35/25 akan terlihat lebih presisi tanpa dasar; rata-rata rata
+    adalah asumsi paling sedikit mengarang, dan asumsinya disebut di keluarannya.
 
     Padanan pemeriksaan pra-order di RiskEngine nautilus: di sana order yang melanggar
     batas DITOLAK sebelum dikirim, dengan alasannya disebut. Di sini panggilan tidak
-    ditolak — user bertanya dan berhak dijawab — tetapi rasionya dicatat supaya
-    kelemahan yang sama tidak lolos tanpa terlihat.
+    ditolak — user bertanya dan berhak dijawab — tetapi rasionya dicatat supaya kelemahan
+    yang sama tidak lolos tanpa terlihat.
 
     Return None kalau levelnya tidak lengkap; itu keadaan yang sah dan bukan kegagalan.
     """
     if not harga or not invalid or not target:
         return None
-    t = target[0] if isinstance(target, (list, tuple)) else target
-    if not t:
+    tg = [t for t in (target if isinstance(target, (list, tuple)) else [target]) if t]
+    if not tg:
         return None
-    imbalan = abs(t - harga) / harga * 100
     risiko = abs(harga - invalid) / harga * 100
     if risiko == 0:
         return None
-    return {
+
+    jarak = [abs(t - harga) / harga * 100 for t in tg]
+    imbalan = sum(jarak) / len(jarak)
+    hasil = {
         "imbalan_persen": round(imbalan, 2),
         "risiko_persen": round(risiko, 2),
         "rasio_imbalan_risiko": round(imbalan / risiko, 2),
+        "jumlah_target": len(tg),
+        "dasar": "rata-rata seluruh target (porsi keluar per target tidak disebutkan)",
     }
+    if len(tg) > 1:
+        hasil["rasio_target_pertama"] = round(jarak[0] / risiko, 2)
+        hasil["rasio_target_terakhir"] = round(jarak[-1] / risiko, 2)
+
+    # Target yang arahnya melawan bias bukan imbalan, itu kontradiksi. Menghitungnya
+    # sebagai "imbalan" membuat panggilan KURANGI terlihat punya potensi untung dari
+    # harga NAIK — persis kebalikan dari sarannya sendiri.
+    if bias in _BIAS_TURUN and tg[0] > harga:
+        hasil["arah_bertentangan"] = (
+            f"bias {bias} tapi target pertama (${tg[0]:g}) DI ATAS harga (${harga:g}). "
+            "Levelnya ditulis dalam kerangka beli walau sarannya kurangi — rasio di sini "
+            "tidak bisa dibaca sebagai imbalan.")
+    return hasil
 
 
 def perlu_benar_persen(rasio):

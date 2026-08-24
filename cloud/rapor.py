@@ -537,12 +537,17 @@ def _hitung(kelompok):
         tengah = rr_urut[len(rr_urut) // 2]
         h["rasio_imbalan_risiko_tengah"] = tengah
         h["rasio_di_bawah_1"] = sum(1 for x in rr if x < statistik.RASIO_MINIMUM)
-        if h["rasio_di_bawah_1"] == len(rr):
+        # Ambangnya MAYORITAS, bukan seluruhnya. Versi pertama hanya menyala kalau
+        # SEMUA di bawah 1, sehingga satu panggilan bagus membuat delapan yang buruk
+        # lolos tanpa suara — dan justru saat mulai membaik peringatannya paling perlu.
+        if h["rasio_di_bawah_1"] > len(rr) / 2:
             perlu = statistik.perlu_benar_persen(tengah)
             h["peringatan_rasio"] = (
-                f"SELURUH {len(rr)} panggilan menaruh risiko lebih besar daripada imbalannya "
-                f"(rasio tengah {tengah}). Pada rasio itu panggilan harus benar {perlu}% kali "
-                "hanya untuk IMPAS. Levelnya, bukan analisanya, yang perlu diperbaiki.")
+                f"{h['rasio_di_bawah_1']} dari {len(rr)} panggilan menaruh risiko lebih besar "
+                f"daripada imbalannya (rasio tengah {tengah}). Pada rasio itu panggilan harus "
+                f"benar {perlu}% kali hanya untuk IMPAS. Levelnya, bukan analisanya, yang "
+                "perlu diperbaiki — pakai tabel kelayakan di blok PROYEKSI untuk memilih "
+                "jarak invalidasi yang targetnya masih realistis.")
 
     if n < SAMPEL_MINIMUM:
         h["peringatan"] = (f"SAMPEL KECIL ({n} panggilan) — angka ini TIDAK bermakna secara "

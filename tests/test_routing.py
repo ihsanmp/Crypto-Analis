@@ -2676,9 +2676,13 @@ def test_audit_imbalan_menandai_setup_yang_tak_sepadan():
     balasan = ("SKOR: 55\nBIAS: TAHAN\nHarga $56.46\nInvalidasi $49.7\nTarget: 57.5 -> 62\n\n"
                "⚠️ Riset, bukan saran keuangan.")
     imb = bot.audit_imbalan(balasan)
-    assert imb["rasio_imbalan_risiko"] == 0.15 and imb["di_bawah_ambang"] is True
+    # Rasionya kini rata-rata SELURUH target (0,49), bukan target pertama saja (0,15).
+    # Ekspektasi lama mengunci pengukuran yang keliru — dua target dengan stop penuh
+    # tidak boleh dinilai dari target pertama saja.
+    assert imb["rasio_imbalan_risiko"] == 0.49 and imb["di_bawah_ambang"] is True
+    assert imb["rasio_target_pertama"] == 0.15 and imb["rasio_target_terakhir"] == 0.82
     p = bot.peringatan_audit("", "", "", imb)
-    assert "Risikonya lebih besar" in p and "87.0%" in p
+    assert "Risikonya lebih besar" in p and "67.1%" in p
 
 
 def test_audit_imbalan_diam_saat_setup_sepadan():
@@ -3292,3 +3296,62 @@ def test_peringatan_terbuka_diam_saat_kerugiannya_kecil():
     h = _r._hitung(kelompok)
     assert "peringatan_terbuka" not in h
     assert h["terbuka_terburuk_persen"] == -1.2, "angkanya tetap dilaporkan, tanpa alarm"
+
+
+# --------------------------------- R:R: mengukur benar dulu, baru bisa diperbaiki
+
+def test_rasio_dari_rata2_target_bukan_target_pertama():
+    """Versi pertama memakai target[0] saja, dan itu keliru: rencananya BERTAHAP — sebagian
+    posisi keluar di tiap target. Membandingkan target PERTAMA dengan stop PENUH adalah
+    apel lawan jeruk, dan itu membuat panggilan HYPE terbaca 0,33 padahal di target
+    terakhir 2,15."""
+    r = _stat.imbalan_risiko(54.44, [57.5, 63.0, 74.5], 45.1)
+    assert r["rasio_target_pertama"] < r["rasio_imbalan_risiko"] < r["rasio_target_terakhir"]
+    assert r["jumlah_target"] == 3
+    assert "porsi keluar per target tidak disebutkan" in r["dasar"], \
+        "asumsi bobotnya harus disebut, bukan disembunyikan"
+    # Satu target: tidak ada rata-rata yang perlu dijelaskan.
+    satu = _stat.imbalan_risiko(100, [120], 90)
+    assert satu["rasio_imbalan_risiko"] == 2.0 and "rasio_target_pertama" not in satu
+
+
+def test_target_melawan_bias_ditandai_bukan_dihitung_sebagai_imbalan():
+    """Panggilan SOL: bias KURANGI tapi target di ATAS harga. Menghitungnya sebagai
+    'imbalan' membuat saran kurangi terlihat punya potensi untung dari harga NAIK —
+    persis kebalikan dari sarannya sendiri."""
+    r = _stat.imbalan_risiko(75.94, [77.3, 85.0], 58.3, bias="KURANGI")
+    assert "arah_bertentangan" in r
+    assert "DI ATAS harga" in r["arah_bertentangan"]
+    # Bias naik dengan target di atas harga itu wajar — jangan ikut ditandai.
+    assert "arah_bertentangan" not in _stat.imbalan_risiko(100, [120], 90, bias="AKUMULASI")
+
+
+def test_tabel_kelayakan_menjawab_stop_mana_yang_masih_masuk_akal():
+    """Mengubah aturan R:R dari imbauan jadi fakta yang bisa diperiksa: untuk tiap jarak
+    invalidasi, target apa yang dibutuhkan dan seberapa sering gerakan sebesar itu terjadi."""
+    import proyeksi as _p
+    # Deret menanjak pelan: gerakan besar tidak pernah terjadi, jadi stop lebar mustahil.
+    candles = [[i * 86400000, 100 + i * 0.1, 100 + i * 0.1, 100 + i * 0.1, 100 + i * 0.1, 0]
+               for i in range(200)]
+    k = _p.kelayakan(candles, candles[-1][4], 30, True)
+    assert k["rasio_diwajibkan"] == 2.0
+    assert k["jendela_riwayat"], "rentang riwayat wajib ikut — 0% bukan berarti mustahil"
+    lebar = [b for b in k["baris"] if b["invalidasi_persen"] == -30]
+    assert lebar and lebar[0]["target_dibutuhkan_persen"] == 60.0
+    assert "TIDAK PERNAH TERJADI" in k["wajib_dibaca"]
+
+
+def test_peringatan_rasio_menyala_pada_mayoritas_bukan_hanya_semua():
+    """Versi pertama hanya menyala kalau SELURUH panggilan di bawah 1, sehingga satu
+    panggilan bagus membuat delapan yang buruk lolos tanpa suara — dan justru saat mulai
+    membaik peringatannya paling perlu."""
+    import rapor as _r
+    kelompok = ([{"status": "TARGET_KENA", "bias": "TAHAN", "rasio_imbalan_risiko": 0.5}] * 8
+                + [{"status": "TARGET_KENA", "bias": "TAHAN", "rasio_imbalan_risiko": 2.5}] * 2)
+    h = _r._hitung(kelompok)
+    assert "8 dari 10" in h["peringatan_rasio"]
+    assert "tabel kelayakan" in h["peringatan_rasio"], "arahkan ke alat yang memperbaikinya"
+    # Mayoritas sehat -> diam.
+    sehat = [{"status": "TARGET_KENA", "bias": "TAHAN", "rasio_imbalan_risiko": 2.0}] * 9 + \
+            [{"status": "TARGET_KENA", "bias": "TAHAN", "rasio_imbalan_risiko": 0.5}]
+    assert "peringatan_rasio" not in _r._hitung(sehat)

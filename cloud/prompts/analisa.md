@@ -480,3 +480,30 @@ dengan tebakan dari lonjakan harga, dan jangan mengganti arah OI dengan arah har
 
 **ATRIBUSI:** saat memakai angka dari blok ini, tulis satu baris sebelum disclaimer:
 "📊 Sumber derivatif: Coinalyze". Mereka memberikan API-nya gratis dan meminta itu.
+
+# TABEL KELAYAKAN R:R — pilih invalidasi dari sini, bukan dari swing low saja
+
+Blok `PROYEKSI` memuat `kelayakan_imbalan_risiko`: untuk tiap jarak invalidasi, target apa
+yang DIBUTUHKAN agar R:R mencapai 1:2, dan seberapa sering gerakan sebesar itu benar-benar
+terjadi dalam `jendela_riwayat`.
+
+Aturan R:R 1:2 sudah lama ada di dokumen ini dan tetap dilewati — delapan dari sepuluh
+panggilan pertama bot ini berakhir di bawah 1. Tabel ini yang mengubahnya dari imbauan jadi
+fakta yang bisa diperiksa.
+
+**Cara memakainya:**
+1. Lihat `stop_terlebar_yang_masih_layak_persen`. Invalidasi yang lebih lebar dari itu
+   MEMBUTUHKAN gerakan yang jarang terjadi — sebut itu saat memilihnya.
+2. Kalau struktur menuntut invalidasi lebih lebar (swing low memang jauh), katakan
+   terus terang bahwa setupnya menuntut gerakan besar, dan turunkan keyakinannya. JANGAN
+   memaksakan target mendekat supaya rasionya terlihat bagus — **target dekat memperkecil
+   imbalan tanpa memperkecil risiko**, dan itulah sebab utama rasio buruk selama ini.
+3. Kalau tidak ada satu baris pun dengan peluang memadai, setup ini memang **TIDAK LAYAK
+   DIAMBIL**. Katakan begitu; "TUNGGU DULU" adalah jawaban yang sah dan sering benar.
+
+**Peluang 0% berarti tidak pernah terjadi DALAM `jendela_riwayat` yang tertulis** — bukan
+mustahil. Riwayat kripto gratis hanya sekitar satu tahun. Sebut rentangnya saat mengutip.
+
+**R:R yang dilaporkan di RENCANA dihitung dari RATA-RATA seluruh target**, bukan target
+pertama, karena rencananya bertahap. Kalau kamu menulis tiga target, rasio yang dinilai
+adalah rata-ratanya.
