@@ -499,6 +499,34 @@ def _hitung(kelompok):
             f"({st['kalah_rata2_persen']}%). Mengulang pola ini MERUGI meski sering benar."
             + ("" if cukup else f" [baru {st['dinilai']} panggilan berhasil — arah, bukan vonis]"))
 
+    # TINGKAT MENANG DIHITUNG DARI STATUS, dan status hanya final saat target atau
+    # invalidasi tersentuh. Panggilan yang turun 25% tapi belum menyentuh invalidasi tetap
+    # MASIH_TERBUKA — jadi tidak pernah masuk hitungan, dan tingkat menang bisa membaca
+    # 100% sementara ada posisi terbuka yang dalam sekali merahnya. Itu bias survivorship,
+    # dan persis angka menyenangkan-tapi-palsu yang rapor ini dibuat untuk mencegah.
+    terbuka = [e for e in kelompok if e.get("status") not in STATUS_FINAL]
+    nilai_terbuka = [e.get("hasil_ikut_saran_persen") for e in terbuka
+                     if e.get("hasil_ikut_saran_persen") is not None]
+    if nilai_terbuka:
+        h["masih_terbuka"] = len(terbuka)
+        h["terbuka_terburuk_persen"] = round(min(nilai_terbuka), 2)
+        # Angka pembanding yang jujur: seandainya semua posisi terbuka ditutup HARI INI.
+        semua = [e.get("hasil_ikut_saran_persen") for e in kelompok
+                 if e.get("hasil_ikut_saran_persen") is not None]
+        menang_kini, kalah_kini = statistik.pisah(semua)
+        n_kini = len(menang_kini) + len(kalah_kini)
+        if n_kini:
+            h["menang_persen_jika_ditutup_sekarang"] = round(
+                len(menang_kini) / n_kini * 100, 1)
+        if (h.get("menang_persen") is not None
+                and h["terbuka_terburuk_persen"] < -10):
+            h["peringatan_terbuka"] = (
+                f"menang {h['menang_persen']}% dihitung HANYA dari panggilan yang sudah "
+                f"selesai. {len(terbuka)} masih terbuka, yang terburuk "
+                f"{h['terbuka_terburuk_persen']}% — kalau ditutup sekarang itu kekalahan. "
+                f"Tingkat menang sebenarnya "
+                f"{h.get('menang_persen_jika_ditutup_sekarang')}%.")
+
     # Rasio imbalan:risiko yang DIMINTA saat panggilan dibuat. Ini kelemahan yang tidak
     # terlihat dari hasil mana pun: panggilan bisa kena target dan tercatat menang, sambil
     # sepanjang waktu mempertaruhkan sepuluh kali lipat imbalannya.
@@ -540,6 +568,8 @@ def catatan_untuk_brief():
     baris = []
     if h.get("peringatan_rasio"):
         baris.append(h["peringatan_rasio"])
+    if h.get("peringatan_terbuka"):
+        baris.append(h["peringatan_terbuka"])
     if h.get("peringatan_ekspektansi"):
         baris.append(h["peringatan_ekspektansi"])
     if h.get("peringatan_alpha"):

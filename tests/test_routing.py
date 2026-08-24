@@ -3259,3 +3259,36 @@ def test_resolve_ticker_diingat_dalam_satu_run(monkeypatch):
     b = _ind.resolve_ticker("hyperliquid")
     assert a == b == ("HYPE", "hyperliquid", "Hyperliquid")
     assert len(panggilan) == 1, "panggilan kedua harus dilayani memo"
+
+
+def test_menang_100_persen_tidak_boleh_berdiri_sendiri():
+    """Bias survivorship yang nyata terjadi di rapor produksi: status hanya jadi final saat
+    target atau invalidasi tersentuh, sehingga panggilan yang turun 25% tapi belum menyentuh
+    invalidasi tetap MASIH_TERBUKA — dan tidak pernah masuk hitungan.
+
+    Hasilnya tingkat menang membaca 100% sementara ada posisi terbuka yang dalam sekali
+    merahnya. Itu persis angka menyenangkan-tapi-palsu yang rapor ini dibuat untuk mencegah.
+    """
+    import rapor as _r
+    kelompok = ([{"status": "TARGET_KENA", "bias": "TAHAN",
+                  "hasil_ikut_saran_persen": 5.0}] * 4
+                + [{"status": "MASIH_TERBUKA", "bias": "TAHAN",
+                    "hasil_ikut_saran_persen": -25.09}])
+    h = _r._hitung(kelompok)
+    assert h["menang_persen"] == 100.0, "status-nya memang semua final-menang"
+    assert h["masih_terbuka"] == 1
+    assert h["terbuka_terburuk_persen"] == -25.09
+    assert h["menang_persen_jika_ditutup_sekarang"] == 80.0
+    assert "Tingkat menang sebenarnya" in h["peringatan_terbuka"]
+
+
+def test_peringatan_terbuka_diam_saat_kerugiannya_kecil():
+    """Posisi terbuka yang turun 1% bukan kabar buruk yang perlu diteriakkan — peringatan
+    yang selalu menyala berhenti dibaca."""
+    import rapor as _r
+    kelompok = ([{"status": "TARGET_KENA", "bias": "TAHAN", "hasil_ikut_saran_persen": 5.0}] * 4
+                + [{"status": "MASIH_TERBUKA", "bias": "TAHAN",
+                    "hasil_ikut_saran_persen": -1.2}])
+    h = _r._hitung(kelompok)
+    assert "peringatan_terbuka" not in h
+    assert h["terbuka_terburuk_persen"] == -1.2, "angkanya tetap dilaporkan, tanpa alarm"
