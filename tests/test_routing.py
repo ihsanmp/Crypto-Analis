@@ -3011,3 +3011,26 @@ def test_workflow_periksa_cmc_tidak_menjadwal_dan_tidak_menulis():
     assert "workflow_dispatch" in wf
     assert "schedule" not in wf
     assert "contents: read" in wf
+
+
+def test_arah_dominasi_butuh_riwayat_bukan_tebakan(monkeypatch):
+    """CoinGecko /global hanya memberi dominasi SAAT INI. Menyebut arahnya tanpa riwayat
+    adalah tebakan yang terdengar seperti pengamatan."""
+    monkeypatch.delenv("COINMARKETCAP_API_KEY", raising=False)
+    t = open(os.path.join(AKAR, "cloud", "prompts", "analisa.md"), encoding="utf-8").read()
+    assert "dominasi_perubahan" in t
+    assert "JANGAN menyebut arahnya" in t
+    src = open(os.path.join(AKAR, "cloud", "pasarglobal.py"), encoding="utf-8").read()
+    assert "from cmc import dominasi" in src, "arah dominasi harus punya sumber riwayat"
+
+
+def test_kategori_tidak_lagi_mengklaim_403():
+    """cryptoCategories TERBUKA lagi per 24 Agu 2026. Docstring yang bilang '403' jadi salah,
+    dan komentar yang salah lebih berbahaya daripada tidak ada komentar — ia menghentikan
+    orang berikutnya dari memeriksa ulang."""
+    s = open(os.path.join(AKAR, "cloud", "kategori.py"), encoding="utf-8").read()
+    kepala = s[:s.index('"""', 3)]
+    assert "yang 403" not in kepala, "klaim usang di judul docstring"
+    assert "TERBUKA lagi" in s, "perubahan statusnya harus dicatat"
+    # Alasan TETAP memakai CoinGecko harus disebut, bukan cuma statusnya.
+    assert "keyless dan tanpa kuota" in s

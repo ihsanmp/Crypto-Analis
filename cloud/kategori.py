@@ -1,10 +1,15 @@
-"""Peta sektor/narasi crypto — pengganti `cryptoCategories` CoinMarketCap yang 403.
+"""Peta sektor/narasi crypto dari CoinGecko — gratis, tanpa kunci, tanpa kuota.
 
-MASALAH YANG DIPECAHKAN: endpoint kategori CoinMarketCap tidak tersedia di paket gratis
-(403/dibatasi paket), sehingga screening narasi terpaksa disusun MANUAL dari listing
-top-150 lalu diurutkan sendiri. Cara itu tidak salah, tapi cakupannya sempit — koin bagus
-di sektor kecil yang tidak masuk top-150 tidak akan pernah terlihat, dan pengelompokan
-sektornya jadi tebakan.
+MASALAH YANG DIPECAHKAN: screening narasi dulu terpaksa disusun MANUAL dari listing
+top-150 lalu diurutkan sendiri, karena `cryptoCategories` CoinMarketCap membalas 403 di
+paket gratis. Cara itu tidak salah, tapi cakupannya sempit — koin bagus di sektor kecil
+yang tidak masuk top-150 tidak akan pernah terlihat, dan pengelompokan sektornya jadi
+tebakan.
+
+CATATAN 24 Agu 2026: endpoint CoinMarketCap itu kini TERBUKA lagi untuk kunci kita
+(diperiksa lewat cmc.py --periksa). Berkas ini tetap dipakai, dan itu bukan kelambanan:
+CoinGecko keyless dan tanpa kuota, sedangkan CMC memakan kredit tiap panggilan dan bisa
+tertutup lagi sewaktu-waktu tanpa pemberitahuan — persis yang sudah terjadi sekali.
 
 CoinGecko menyediakan padanannya GRATIS TANPA KUNCI: 749 kategori lengkap dengan market cap
 dan perubahannya, plus daftar koin di dalam tiap kategori beserta perubahan 7 hari dan 30

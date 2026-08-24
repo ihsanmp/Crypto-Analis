@@ -424,8 +424,14 @@ persen.
 tanpa pembandingnya membalik kesimpulan yang benar. Tulis keduanya: gerakan koin, gerakan
 pasar, dan selisihnya.
 
-Dominasi BTC yang NAIK berarti dana mengumpul ke BTC dan altcoin melemah secara relatif;
-dominasi TURUN berarti sebaliknya. Sebut arahnya, bukan cuma angkanya.
+**ARAH dominasi hanya boleh disebut kalau field `dominasi_perubahan` terisi** — di
+dalamnya ada `dari_persen`, `ke_persen`, `ubah_pp`, beserta tanggalnya. Tulis keduanya,
+mis. "dominasi BTC naik dari 58,39% (17 Agu) ke 59,17% (24 Agu), +0,78 pp".
+
+Dominasi NAIK berarti dana mengumpul ke BTC dan altcoin melemah secara relatif; TURUN
+berarti sebaliknya. Kalau yang muncul `tidak_tersedia`, sebut level dominasi saat ini saja
+dan JANGAN menyebut arahnya — arah tanpa data riwayat adalah tebakan yang terdengar seperti
+pengamatan.
 
 # FUNDING & OPEN INTEREST — struktur leverage, bukan hiasan
 

@@ -47,6 +47,17 @@ def denyut():
     except Exception as e:
         hasil["sisa_pasar_tidak_tersedia"] = f"{type(e).__name__}"
 
+    # ARAH dominasi, bukan cuma levelnya. CoinGecko /global hanya memberi angka SAAT INI,
+    # sehingga kalimat "dominasi naik dari 58,39% ke 59,17%" mustahil disusun — padahal
+    # justru arahnya yang memberi tahu dana sedang mengumpul ke BTC atau menyebar ke
+    # altcoin. Diambil dari CoinMarketCap, satu-satunya sumber riwayat yang terbuka untuk
+    # kunci kita (diperiksa 24 Agu 2026, 1 kredit per panggilan).
+    try:
+        from cmc import dominasi
+        hasil["dominasi_perubahan"] = dominasi(7)
+    except Exception as e:
+        hasil["dominasi_perubahan"] = {"tidak_tersedia": f"{type(e).__name__}"}
+
     hasil["wajib_dibaca"] = (
         "Untuk BTC SENDIRI pakai `sisa_pasar` sebagai pembanding, BUKAN `btc` — BTC vs BTC "
         "selalu nol dan itu tautologi, bukan temuan. "
