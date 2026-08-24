@@ -3408,3 +3408,47 @@ def test_audit_keyakinan_mengikuti_kata_kunci_yang_baru():
     k = bot.audit_keyakinan(tipis, body)
     assert k and k["berhasil"] == 5 and k["persen"] == 50
     assert "5 dari 10 sumber" in bot.peringatan_audit("", "", "", None, None, k)
+
+
+# ------------------------------- gaya kesimpulan: pemantauan vs rekomendasi transaksi
+
+def test_mode_pantau_membedakan_memantau_dari_menimbang():
+    """User tidak selalu berencana membeli. Kesimpulan bergaya "MASUK SEKARANG / TUNGGU
+    DULU" salah alamat untuk pertanyaan pemantauan — ia menjawab pertanyaan yang tidak
+    diajukan, dan memaksa pembacanya menolak saran yang tidak diminta dulu."""
+    for t in ("update btc minggu ini", "bagaimana kondisi eth sekarang",
+              "market update bitcoin", "apa yang terjadi dengan sol"):
+        assert bot.mode_pantau(t), t
+    # Kata 'update' yang disertai niat transaksi atau harga = pertanyaan RENCANA.
+    # Salah membacanya berarti menahan jawaban yang justru diminta.
+    for t in ("update btc, worth masuk di 75k?", "beli hype sekarang gimana",
+              "analisa btc", "halo"):
+        assert not bot.mode_pantau(t), t
+
+
+def test_pantau_mempertahankan_kerangka_yang_dinilai_rapor():
+    """Kalau kesimpulannya jadi naratif murni, rapor.py tidak menemukan BIAS maupun level —
+    jawaban jenis ini tak pernah masuk jejak rekam, tak pernah terbukti benar atau salah,
+    dan ekspektansi yang dibangun di atasnya jadi buta terhadap separuh keluaran."""
+    bagian = ["[TEKNIKAL]\ndata"]
+    bot._sisipkan_pantau(bagian, "update btc minggu ini")
+    blok = bagian[0]
+    assert blok.startswith("[GAYA KESIMPULAN: PEMANTAUAN]")
+    assert "TETAP DITULIS seperti biasa" in blok
+    for wajib in ("BIAS", "Harga", "Invalidasi", "Target"):
+        assert wajib in blok, f"{wajib} harus disebut sebagai yang dipertahankan"
+    assert "MASUK SEKARANG" in blok and "JANGAN memakai kata perintah" in blok
+
+
+def test_pantau_melarang_kesan_tanpa_angka():
+    """Gaya pemantauan mudah tergelincir jadi kesan: "relatif undervalued", "dekat bottom".
+    Kalimat seperti itu terdengar seperti temuan padahal tidak bisa dibantah maupun diuji."""
+    bagian = ["[X]\ndata"]
+    bot._sisipkan_pantau(bagian, "kondisi btc gimana")
+    assert "undervalued" in bagian[0] and "jangan berdiri sendiri sebagai kesan" in bagian[0]
+
+
+def test_pantau_tidak_disisipkan_untuk_pertanyaan_transaksi():
+    bagian = ["[X]\ndata"]
+    bot._sisipkan_pantau(bagian, "worth masuk btc di 75000?")
+    assert len(bagian) == 1 and not bagian[0].startswith("[GAYA")

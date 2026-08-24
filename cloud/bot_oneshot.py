@@ -1340,6 +1340,67 @@ def _blok_kelengkapan(jumlah_tugas, gagal, bagian=None):
     return "[KELENGKAPAN DATA]" + chr(10) + chr(10).join(baris)
 
 
+# Pertanyaan PEMANTAUAN: user ingin tahu apa yang sedang terjadi, bukan sedang menimbang
+# transaksi. Kesimpulan bergaya "MASUK SEKARANG / TUNGGU DULU" salah alamat di sini —
+# ia menjawab pertanyaan yang tidak diajukan, dan memaksa pembacanya menolak saran yang
+# tidak diminta sebelum bisa memakai isinya.
+_MINTA_PANTAU = re.compile(
+    r"\b(update|market update|kondisi|situasi|keadaan|perkembangan|pantau|pantauan|"
+    r"apa yang terjadi|lagi (?:gimana|bagaimana)|sekarang (?:gimana|bagaimana)|"
+    r"weekly|mingguan|kabar|terpantau)\b", re.I)
+
+
+def mode_pantau(teks):
+    """Pemantauan, bukan rekomendasi. False kalau ada niat transaksi atau harga konkret.
+
+    Dua pengecualian itu menentukan: "update btc" adalah pemantauan, tapi "update btc,
+    worth masuk di 75k?" adalah pertanyaan rencana yang kebetulan memakai kata update.
+    Salah membacanya berarti menahan jawaban yang justru diminta.
+    """
+    low = (teks or "").lower()
+    if _NIAT_TRANSAKSI.search(low) or _HARGA_KONKRET.search(low):
+        return False
+    return bool(_MINTA_PANTAU.search(low))
+
+
+# Teks pesan asli, dititipkan supaya pengumpul data bisa tahu GAYA jawaban yang
+# diminta tanpa menambah parameter ke seluruh rantai pemanggilan.
+PESAN_ASLI = {}
+
+
+def _sisipkan_pantau(bagian, teks):
+    """Ganti gaya kesimpulan jadi PEMANTAUAN — kerangka angkanya tetap.
+
+    Baris BIAS, Harga, Invalidasi, dan Target WAJIB bertahan apa adanya: rapor.py
+    menariknya dari teks balasan untuk dinilai belakangan. Menghapusnya berarti jawaban
+    jenis ini tidak pernah masuk jejak rekam, tidak pernah terbukti benar atau salah,
+    dan seluruh ekspektansi yang dibangun di atasnya jadi buta terhadap separuh keluaran.
+    """
+    if not mode_pantau(teks):
+        return
+    bagian.insert(0, "[GAYA KESIMPULAN: PEMANTAUAN]" + chr(10) + (
+        "Pertanyaannya MEMANTAU keadaan, bukan menimbang transaksi. Ganti blok "
+        "kesimpulan dengan bentuk di bawah, dan JANGAN memakai kata perintah "
+        "(MASUK SEKARANG / TUNGGU DULU / LEWATI / KELUAR) — user tidak sedang "
+        "bertanya apa yang harus dilakukan." + chr(10) + chr(10) +
+        "📌 PEMANTAUAN" + chr(10) +
+        "Terpantau  : <apa yang BARU terjadi — struktur, momentum, arus dana. "
+        "Sebut timeframe-nya eksplisit: close mingguan, reset stochastic, "
+        "perubahan OI. Angka + tanggal.>" + chr(10) +
+        "Artinya    : <apa yang itu TUNJUKKAN tentang keadaan pasar — bukan apa "
+        "yang harus dilakukan.>" + chr(10) +
+        "Skenario   : <kondisi ini bertahan sampai kapan, dan dengan syarat apa. "
+        "Sebut horizonnya.>" + chr(10) +
+        "Membatalkan: <level atau peristiwa yang membuat pembacaan ini gugur.>" +
+        chr(10) + chr(10) +
+        "Baris BIAS, Harga, Invalidasi, dan Target TETAP DITULIS seperti biasa — "
+        "itu yang dipakai menilai panggilanmu belakangan, dan tanpa itu jawaban ini "
+        "tidak pernah masuk jejak rekam. Yang berubah HANYA gaya kesimpulannya. "
+        "Klaim seperti \"relatif undervalued\" atau \"dekat bottom\" hanya boleh "
+        "ditulis kalau ada angka di brief yang mendukungnya — sebutkan angkanya di "
+        "baris yang sama, jangan berdiri sendiri sebagai kesan."))
+
+
 def _sisipkan_jejak(bagian):
     """Selipkan jejak rekam SENDIRI ke kepala brief, kalau ada yang perlu diperbaiki.
 
@@ -1483,6 +1544,7 @@ def data_mentah_crypto(coin):
         # satu hal dan menerima jawaban soal hal lain tanpa pernah diberi tahu.
         bagian.insert(0, "[NAMA DINORMALKAN]" + chr(10) + catatan_nama)
     _sisipkan_jejak(bagian)
+    _sisipkan_pantau(bagian, PESAN_ASLI.get("teks"))
     if lewat:
         bagian.append("[SENGAJA TIDAK DIAMBIL]\n" + "\n".join("- " + x for x in lewat)
                       + "\nPerlakukan sebagai tidak berlaku untuk koin ini, BUKAN sebagai "
@@ -1714,6 +1776,7 @@ def data_mentah_pasar(simbol, jenis):
 
     bagian.append(_blok_kelengkapan(len(tugas), gagal, bagian))
     _sisipkan_jejak(bagian)
+    _sisipkan_pantau(bagian, PESAN_ASLI.get("teks"))
 
     for g in gagal:
         print(f"[data] GAGAL {g}", file=sys.stderr)
@@ -1964,6 +2027,9 @@ def process(token, chat_id, text, photo_file_id=None):
 
     kind = classify(text)
     print(f"[proses] kind={kind} teks={text[:60]!r}", file=sys.stderr)
+    # Dititipkan SEKALI di sini, sebelum jalur mana pun bercabang, supaya pengumpul
+    # data di kedua jalur melihat teks yang sama persis.
+    PESAN_ASLI["teks"] = text
 
     if kind == "help":
         # Dicek juga hasil kirimnya — jalur ini sempat tanpa log sama sekali,
