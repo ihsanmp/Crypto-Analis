@@ -1298,7 +1298,14 @@ def _jalankan_terukur(label, args, min_kar=0):
     return keluar, err
 
 
-def _blok_kelengkapan(jumlah_tugas, gagal):
+# Script bisa "berhasil" (keluar 0, keluaran cukup panjang) sambil melaporkan bahwa
+# datanya tidak ada. Menghitungnya sebagai berhasil membuat kelengkapan membaca 100%
+# padahal dua sumber kosong — persis angka menyenangkan-tapi-palsu yang blok ini
+# dibuat untuk mencegah.
+_KOSONG_RE = re.compile(r'"tidak_tersedia"|semua sumber gagal|tidak ditemukan', re.I)
+
+
+def _blok_kelengkapan(jumlah_tugas, gagal, bagian=None):
     """Berapa banyak sumber yang benar-benar tiba — dinyatakan, bukan disimpulkan.
 
     Sebelum ini daftar `gagal` hanya dicetak ke stderr, jadi model tidak pernah tahu
@@ -1310,9 +1317,20 @@ def _blok_kelengkapan(jumlah_tugas, gagal):
     `lewat` SENGAJA tidak ikut dihitung: itu bagian yang memang tidak berlaku untuk aset
     ini (koin natif tidak punya kontrak), bukan data yang hilang.
     """
-    berhasil = jumlah_tugas - len(gagal)
-    persen = round(berhasil / jumlah_tugas * 100) if jumlah_tugas else 0
-    baris = [f"{berhasil} dari {jumlah_tugas} sumber berhasil ({persen}%)."]
+    kosong = []
+    for teks in (bagian or []):
+        if not _KOSONG_RE.search(teks):
+            continue
+        judul = teks.split(chr(10), 1)[0].strip("[]# ")
+        if judul:
+            kosong.append(judul[:48])
+    berhasil = jumlah_tugas - len(gagal) - len(kosong)
+    persen = round(max(berhasil, 0) / jumlah_tugas * 100) if jumlah_tugas else 0
+    baris = [f"{max(berhasil, 0)} dari {jumlah_tugas} sumber berisi data ({persen}%)."]
+    if kosong:
+        baris.append("JALAN TAPI KOSONG: " + " · ".join(kosong)
+                     + " — scriptnya sukses, datanya yang tidak ada. Perlakukan sebagai "
+                       "HILANG, bukan sebagai netral.")
     if gagal:
         baris.append("GAGAL: " + " · ".join(gagal))
         baris.append("Keyakinan dibatasi mutu bukti: sebut kelengkapan ini saat memberi "
@@ -1469,7 +1487,7 @@ def data_mentah_crypto(coin):
         bagian.append("[SENGAJA TIDAK DIAMBIL]\n" + "\n".join("- " + x for x in lewat)
                       + "\nPerlakukan sebagai tidak berlaku untuk koin ini, BUKAN sebagai "
                         "data yang hilang — jangan menyebutnya kekurangan.")
-    bagian.append(_blok_kelengkapan(len(tugas), gagal))
+    bagian.append(_blok_kelengkapan(len(tugas), gagal, bagian))
     for g in gagal:
         print(f"[data] GAGAL {g}", file=sys.stderr)
     print(f"[data] crypto {t}: {len(tugas)} script dijalankan, {len(lewat)} dilewati, "
@@ -1694,7 +1712,7 @@ def data_mentah_pasar(simbol, jenis):
         except OSError as e:
             gagal.append(f"gold_drivers.md: {e}")
 
-    bagian.append(_blok_kelengkapan(len(tugas), gagal))
+    bagian.append(_blok_kelengkapan(len(tugas), gagal, bagian))
     _sisipkan_jejak(bagian)
 
     for g in gagal:
@@ -2259,7 +2277,7 @@ def audit_outlook(brief, body):
     return None if "OUTLOOK" in body else "HILANG"
 
 
-_RE_KELENGKAPAN = re.compile(r"(\d+) dari (\d+) sumber berhasil")
+_RE_KELENGKAPAN = re.compile(r"(\d+) dari (\d+) sumber berisi data")
 
 # Di bawah kelengkapan ini, skor tinggi tidak lagi punya dasar yang cukup.
 KELENGKAPAN_TIPIS = 70

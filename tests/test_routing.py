@@ -2785,7 +2785,7 @@ def test_kelengkapan_data_masuk_brief():
     yang mati — ia cuma melihat brief lebih pendek, lalu tetap mengeluarkan SKOR dengan
     arsitektur bobot yang sama seperti saat datanya lengkap."""
     b = bot._blok_kelengkapan(11, ["indicators.py: semua sumber gagal"])
-    assert "10 dari 11 sumber berhasil (91%)" in b
+    assert "10 dari 11 sumber berisi data (91%)" in b
     assert "indicators.py" in b
     # Tanpa kegagalan: tidak perlu ceramah, cukup angkanya.
     utuh = bot._blok_kelengkapan(11, [])
@@ -3373,3 +3373,34 @@ def test_tabel_kelayakan_yang_gagal_dilaporkan_bukan_dihilangkan():
     import proyeksi as _p
     pendek = [[i * 86400000, 100, 100, 100, 100, 0] for i in range(40)]
     assert _p.kelayakan(pendek, 100, 60, True) is None, "riwayat < horizon harus None"
+
+
+def test_script_sukses_tapi_kosong_tidak_dihitung_berhasil():
+    """Ditemukan saat menguji agent: indicators.py melaporkan "semua sumber gagal" dan
+    proyeksi.py mengembalikan tidak_tersedia, tapi blok kelengkapan tetap menulis
+    "10 dari 10 sumber berhasil (100%)".
+
+    Script bisa keluar dengan kode 0 dan keluaran cukup panjang sambil melaporkan bahwa
+    datanya tidak ada. Menghitungnya sebagai berhasil membuat kelengkapan membaca 100%
+    padahal dua sumber kosong — dan audit_keyakinan yang bersandar pada angka itu ikut
+    tertipu."""
+    bagian = ['[TEKNIKAL]\n{"tidak_tersedia": "semua sumber gagal"}',
+              '[PROYEKSI (proyeksi.py)]\n{"tidak_tersedia": "candle kosong"}',
+              '[SENTIMEN]\n{"skor": 55}']
+    b = bot._blok_kelengkapan(10, ["etf.py: timeout"], bagian)
+    assert "7 dari 10 sumber berisi data (70%)" in b
+    assert "JALAN TAPI KOSONG" in b and "TEKNIKAL" in b
+    assert "bukan sebagai netral" in b
+    # Yang benar-benar berisi data tidak boleh ikut tertuduh.
+    assert "SENTIMEN" not in b.split("JALAN TAPI KOSONG")[1].split("—")[0]
+
+
+def test_audit_keyakinan_mengikuti_kata_kunci_yang_baru():
+    """Pola regexnya harus ikut berubah bersama teks bloknya. Kalau tidak, auditnya diam
+    total — dan diam itu tidak bisa dibedakan dari 'semuanya baik-baik saja'."""
+    bagian = ['[TEKNIKAL]\n{"tidak_tersedia": "gagal"}'] * 3
+    brief = bot._blok_kelengkapan(10, [], bagian)
+    body = "🧮 SKOR 72/100\nBIAS: AKUMULASI\nHarga $100\nInvalidasi $90\nTarget: 130"
+    k = bot.audit_keyakinan(brief, body)
+    assert k and k["berhasil"] == 7 and k["persen"] == 70
+    assert "7 dari 10 sumber" in bot.peringatan_audit("", "", "", None, None, k)
