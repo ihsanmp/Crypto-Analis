@@ -3034,3 +3034,59 @@ def test_kategori_tidak_lagi_mengklaim_403():
     assert "TERBUKA lagi" in s, "perubahan statusnya harus dicatat"
     # Alasan TETAP memakai CoinGecko harus disebut, bukan cuma statusnya.
     assert "keyless dan tanpa kuota" in s
+
+
+# ------------------------------------------- korelasi: koefisien selalu bersama kepadatannya
+
+def test_korelasi_dari_imbal_hasil_bukan_harga():
+    """Dua aset yang sama-sama menanjak punya korelasi HARGA mendekati 1 walau gerak
+    hariannya tak berhubungan sama sekali. Itu korelasi tren, bukan korelasi pasar."""
+    naik_a = {f"2026-01-{i:02d}": 100 + i for i in range(1, 21)}
+    naik_b = {f"2026-01-{i:02d}": 500 + i * 7 for i in range(1, 21)}
+    # Harga: dua-duanya menanjak mulus -> korelasi harga akan ~1.
+    kh = _sebab.pearson(list(naik_a.values()), list(naik_b.values()))
+    assert kh > 0.99
+    # Imbal hasil: keduanya melambat dengan pola berbeda, jadi TIDAK boleh ikut ~1.
+    ra, rb = _sebab._imbal(naik_a), _sebab._imbal(naik_b)
+    tgl = sorted(set(ra) & set(rb))
+    ki = _sebab.pearson([ra[t] for t in tgl], [rb[t] for t in tgl])
+    assert ki < kh, "imbal hasil harus memisahkan tren dari hubungan sebenarnya"
+
+
+def test_jendela_korelasi_hari_kalender_bukan_jumlah_pasangan():
+    """Cacat yang pernah ada di sini: mengambil 30 PASANGAN terakhir lalu melaporkannya
+    sebagai 'korelasi 30 hari, 30 dari 30 cocok'. QQQ tidak diperdagangkan akhir pekan,
+    jadi angka itu mustahil — dan jendelanya diam-diam membentang ~6 minggu."""
+    src = open(os.path.join(AKAR, "cloud", "sebab.py"), encoding="utf-8").read()
+    blok = src[src.index("def korelasi"):src.index('hasil["arti"]')]
+    assert "timedelta(days=h)" in blok, "jendela harus dipotong per hari kalender"
+    assert "hari_kalender" in blok and "kepadatan" in blok
+    assert "[-h:]" not in blok, "mengambil h pasangan terakhir adalah cacat yang sudah diperbaiki"
+
+
+def test_pearson_menolak_sampel_terlalu_kecil():
+    """Korelasi dari dua titik selalu tepat ±1 dan tidak berarti apa-apa."""
+    assert _sebab.pearson([1.0, 2.0], [2.0, 4.0]) is None
+    assert _sebab.pearson([], []) is None
+    # Deret datar tidak punya ragam -> tidak ada korelasi yang bisa dihitung, bukan 0.
+    assert _sebab.pearson([1.0, 1.0, 1.0, 1.0], [1.0, 2.0, 3.0, 4.0]) is None
+    assert _sebab.pearson([1.0, 2.0, 3.0, 4.0], [2.0, 4.0, 6.0, 8.0]) == 1.0
+
+
+def test_seed_menuntut_kepadatan_disebut():
+    """Koefisien tanpa jumlah hari berpasangan terdengar seperti fakta padahal separuh
+    datanya tidak pernah ada."""
+    t = open(os.path.join(AKAR, "cloud", "prompts", "chat.md"), encoding="utf-8").read()
+    assert "hari_sepadan" in t
+    assert "korelasi tren" in t, "beda korelasi harga vs imbal hasil harus disebut"
+
+
+def test_aturan_sebab_korelasi_bertanda_blok():
+    """Ditambahkan ke INTI chat.md, aturan ini ikut terbawa bahkan untuk "halo" — dan
+    prompt sapaan naik ~4 rb karakter untuk aturan yang tidak dipakai sama sekali.
+    Tes penghematan T3/T4 menangkapnya; ini menjaganya tetap tertangkap."""
+    t = open(os.path.join(AKAR, "cloud", "prompts", "chat.md"), encoding="utf-8").read()
+    assert "<!-- BLOK: sebab-korelasi" in t
+    assert "KENAPA BERGERAK" not in bot.build_chat_prompt("halo")
+    assert "KENAPA BERGERAK" in bot.build_chat_prompt("kenapa btc naik minggu ini")
+    assert "hari_sepadan" in bot.build_chat_prompt("berapa korelasi btc dengan emas")

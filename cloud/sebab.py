@@ -20,6 +20,8 @@ import json
 import os
 import sys
 
+from datetime import datetime, timedelta, timezone
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Pembanding lintas aset. Empat ini dipilih karena masing-masing menjawab pertanyaan
@@ -72,6 +74,114 @@ def lapisan(ubah_aset, ubah_pasar):
     }
 
 
+def _deret_penutupan(simbol, jenis):
+    """{tanggal: harga penutup} harian. Satu sumber untuk semua supaya tanggalnya sepadan.
+
+    Sengaja lewat Yahoo juga untuk kripto (BTC-USD), bukan sumber kripto biasa: korelasi
+    dihitung dengan MENYELARASKAN tanggal, dan dua sumber dengan batas hari berbeda akan
+    menghasilkan pasangan yang bergeser beberapa jam. Pergeseran itu menurunkan korelasi
+    tanpa ada yang berubah di pasarnya. Kalau Yahoo tidak punya asetnya, baru jatuh ke
+    sumber kripto — dan kejadian itu dilaporkan, bukan disembunyikan.
+    """
+    from market import tarik
+    kandidat = [simbol] if jenis != "crypto" else [f"{simbol.upper()}-USD", simbol.upper()]
+    for s in kandidat:
+        c, _, err = tarik(s, "1y", "1d")
+        if not err and c:
+            return ({datetime.fromtimestamp(b[0] / 1000, timezone.utc).strftime("%Y-%m-%d"):
+                     b[4] for b in c if b[4]}, s, None)
+    return {}, None, f"tidak ada deret harian untuk {simbol}"
+
+
+def _imbal(deret):
+    """Ubah harga jadi imbal hasil harian.
+
+    Korelasi dihitung dari IMBAL HASIL, bukan harga. Dua aset yang sama-sama menanjak
+    akan menunjukkan korelasi harga mendekati 1 walau gerak hariannya tidak berhubungan
+    sama sekali — itu korelasi tren, bukan korelasi pasar.
+    """
+    tgl = sorted(deret)
+    keluar = {}
+    for i in range(1, len(tgl)):
+        a, b = deret[tgl[i - 1]], deret[tgl[i]]
+        if a:
+            keluar[tgl[i]] = (b - a) / a
+    return keluar
+
+
+def pearson(x, y):
+    n = len(x)
+    if n < 3:
+        return None
+    mx, my = sum(x) / n, sum(y) / n
+    atas = sum((a - mx) * (b - my) for a, b in zip(x, y))
+    bx = sum((a - mx) ** 2 for a in x) ** 0.5
+    by = sum((b - my) ** 2 for b in y) ** 0.5
+    return round(atas / (bx * by), 4) if bx and by else None
+
+
+def korelasi(simbol, jenis, horizon=(30, 90)):
+    """Korelasi imbal hasil terhadap empat pembanding makro, DENGAN jumlah hari sepadannya.
+
+    Angka tumpang tindih itu bukan hiasan. QQQ dan emas tidak diperdagangkan akhir pekan
+    sementara kripto jalan terus, jadi korelasi 30 hari kalender sebenarnya berdiri di atas
+    ~21 hari yang benar-benar berpasangan. Tanpa menyebutnya, koefisien terdengar seperti
+    fakta padahal separuh datanya tidak pernah ada. CMC AI melaporkan `overlap` 0,4806 untuk
+    QQQ dan itu praktik yang benar — ini padanannya di sini.
+    """
+    aset, sumber, err = _deret_penutupan(simbol, jenis)
+    if err:
+        return {"tidak_tersedia": err}
+    r_aset = _imbal(aset)
+
+    hasil = {"simbol": simbol.upper(), "sumber_deret": sumber,
+             "dasar": "imbal hasil harian (bukan harga)", "pembanding": {}}
+    from market import tarik
+    for sim, nama, _arti in LINTAS_ASET:
+        c, _, e = tarik(sim, "1y", "1d")
+        if e or not c:
+            hasil["pembanding"][nama] = {"tidak_tersedia": e or "kosong"}
+            continue
+        r_lain = _imbal({datetime.fromtimestamp(b[0] / 1000, timezone.utc).strftime("%Y-%m-%d"):
+                         b[4] for b in c if b[4]})
+        sama = sorted(set(r_aset) & set(r_lain))
+        baris = {}
+        for h in horizon:
+            # Jendelanya HARI KALENDER, bukan "h observasi berpasangan terakhir". Mengambil
+            # h pasangan terakhir untuk QQQ akan membentang ~6 minggu — lalu melaporkannya
+            # sebagai "korelasi 30 hari" dengan 30 dari 30 hari cocok, padahal QQQ tidak
+            # diperdagangkan akhir pekan sehingga angka itu mustahil. Yang dibandingkan
+            # harus rentang waktu yang sama, dan kepadatannya dilaporkan apa adanya.
+            akhir = datetime.strptime(sama[-1], "%Y-%m-%d")
+            mulai = (akhir - timedelta(days=h)).strftime("%Y-%m-%d")
+            batas = [t for t in sama if t >= mulai]
+            x = [r_aset[t] for t in batas]
+            y = [r_lain[t] for t in batas]
+            k = pearson(x, y)
+            baris[f"{h}h"] = {
+                "korelasi": k,
+                "hari_sepadan": len(batas),
+                "hari_kalender": h,
+                "kepadatan": round(len(batas) / h, 2),
+                "rentang": f"{batas[0]} s/d {batas[-1]}" if batas else None,
+            }
+            if k is None:
+                baris[f"{h}h"]["catatan"] = "terlalu sedikit hari berpasangan untuk dihitung"
+            elif len(batas) < h * 0.5:
+                baris[f"{h}h"]["catatan"] = (
+                    f"hanya {len(batas)} hari berpasangan dalam {h} hari kalender — baca "
+                    "sebagai petunjuk arah, bukan hubungan yang mapan")
+        hasil["pembanding"][nama] = baris
+
+    hasil["arti"] = (
+        "Mendekati +1 = bergerak searah; mendekati 0 = tidak berhubungan; negatif = "
+        "berlawanan. Korelasi RENDAH terhadap QQQ berarti gerakan ini BUKAN sekadar selera "
+        "risiko saham teknologi. Korelasi TINGGI terhadap emas dengan dolar melemah "
+        "mengarah ke cerita likuiditas. Selalu sebut `hari_sepadan` saat mengutip "
+        "koefisiennya — angka di atas sedikit hari bukan temuan.")
+    return hasil
+
+
 def rakit(simbol, jenis):
     """Bahan lengkap untuk menjawab 'kenapa bergerak'. Tidak menyimpulkan — itu tugas model."""
     hasil = {"simbol": simbol, "jenis": jenis, "horizon_hari": list(HORIZON)}
@@ -112,6 +222,11 @@ def rakit(simbol, jenis):
             hasil["vs_spy_tidak_tersedia"] = f"{type(e).__name__}: {e}"
 
     hasil.update(lintas_aset())
+
+    try:
+        hasil["korelasi"] = korelasi(simbol, jenis)
+    except Exception as e:
+        hasil["korelasi_tidak_tersedia"] = f"{type(e).__name__}: {e}"
 
     try:
         from makro import rezim_pasar
