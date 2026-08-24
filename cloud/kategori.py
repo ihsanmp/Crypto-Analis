@@ -225,6 +225,7 @@ def data_koin(id_atau_simbol):
         "pasokan_total": total,
         "pasokan_maks": c.get("max_supply"),
         "dari_ath_persen": _bulat(c.get("ath_change_percentage")),
+        "ubah_24j": _bulat(c.get("price_change_percentage_24h")),
         "ubah_7h": _bulat(c.get("price_change_percentage_7d_in_currency")),
         "ubah_30h": _bulat(c.get("price_change_percentage_30d_in_currency")),
     }

@@ -2815,3 +2815,67 @@ def test_keyakinan_kalah_dari_vonis_data_tapi_menang_atas_kelengkapan():
     k = {"skor": 72, "berhasil": 5, "total": 11, "persen": 45}
     assert "5 dari 11" in bot.peringatan_audit("", "", "", None, "HILANG", k)
     assert "penutupan" in bot.peringatan_audit("", "CLOSE-ONLY", "", None, None, k)
+
+
+# ------------------------------------ TLDR, isolasi pasar, dan dekomposisi sebab (vs CMC AI)
+
+import pasarglobal as _pg                                                   # noqa: E402
+import sebab as _sebab                                                      # noqa: E402
+
+
+def test_isolasi_membalik_kesimpulan_yang_salah():
+    """Koin naik 5% saat pasar naik 20% adalah koin yang TERTINGGAL, bukan menguat.
+
+    Menyebut "+5% sepekan" tanpa pembandingnya bukan sekadar kurang lengkap — ia membalik
+    kesimpulan yang benar."""
+    i = _pg.isolasi(5.0, 20.0)
+    assert i["selisih_pp"] == -15.0 and "TERTINGGAL" in i["arti"]
+    assert _pg.isolasi(26.0, 23.7)["arti"].startswith("MENGUNGGULI")
+    assert "sejalan" in _pg.isolasi(10.0, 9.0)["arti"]
+    assert _pg.isolasi(None, 5.0) is None and _pg.isolasi(5.0, None) is None
+
+
+def test_btc_tidak_dibandingkan_dengan_dirinya_sendiri():
+    """BTC vs BTC selalu nol, dan "sejalan dengan pasar" jadi tautologi bukan temuan.
+
+    rapor.py sudah lama mengecualikan aset yang menjadi tolok ukurnya sendiri; sebab.py
+    harus melakukan hal yang sama, dan namanya `pasar_persen` bukan `btc_persen` karena
+    pembandingnya berbeda justru pada kasus itu."""
+    s = open(os.path.join(AKAR, "cloud", "sebab.py"), encoding="utf-8").read()
+    assert "sisa_pasar" in s and "ini_btc" in s
+    assert "pasar_persen" in _pg.isolasi(1.0, 2.0)
+    assert "btc_persen" not in _pg.isolasi(1.0, 2.0)
+
+
+def test_lapisan_memisahkan_gerakan_pasar_dari_gerakan_aset():
+    """Angka yang tidak dipunyai CMC AI: berapa PERSEN gerakan ini sebenarnya milik pasar."""
+    l = _sebab.lapisan(23.7, 20.25)
+    assert l["khas_aset_pp"] == 3.45
+    assert l["porsi_dari_pasar_persen"] == 85.4
+    assert "milik PASAR" in l["arti"]
+    # Gerakan yang hampir seluruhnya khas aset harus terbaca begitu.
+    assert "KHAS aset" in _sebab.lapisan(20.0, 2.0)["arti"]
+    assert _sebab.lapisan(None, 5.0) is None
+
+
+def test_pertanyaan_sebab_dikenali_tanpa_menelan_pertanyaan_konsep():
+    """Butuh kata tanya sebab DAN kata gerakan. Tanpa keduanya "kenapa staking bekerja
+    begitu" ikut tertangkap, padahal itu pertanyaan konsep berjalur ringan."""
+    for t in ("kenapa btc naik dalam seminggu ini?", "mengapa solana anjlok kemarin",
+              "apa penyebab emas melonjak", "kok eth turun terus ya", "why did btc pump"):
+        assert bot._MINTA_SEBAB.search(t), t
+    for t in ("kenapa staking bekerja begitu", "apa itu funding rate", "analisa btc",
+              "target btc akhir tahun"):
+        assert not bot._MINTA_SEBAB.search(t), t
+
+
+def test_tldr_wajib_di_ketiga_prompt():
+    """Kesimpulan yang baru muncul setelah 40 baris skor sama saja dengan tidak ada —
+    pembacanya membuka ini di Telegram."""
+    for nama in ("analisa.md", "analisa_pasar.md"):
+        t = open(os.path.join(AKAR, "cloud", "prompts", nama), encoding="utf-8").read()
+        assert "TLDR" in t, nama
+        assert "MENJAWAB pertanyaannya" in t, f"{nama}: TLDR harus menjawab, bukan meringkas"
+    chat = open(os.path.join(AKAR, "cloud", "prompts", "chat.md"), encoding="utf-8").read()
+    assert "KENAPA BERGERAK" in chat
+    assert "penumpang, bukan penggerak" in chat, "kekeliruan sebab-akibat harus disebut"

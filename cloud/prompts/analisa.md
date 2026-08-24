@@ -157,6 +157,10 @@ BTC $xx.xxx · Dominasi xx% · Fear & Greed xx · Whale Index xx (label)
 $TICKER — <kategori>
 ━━━━━━━━━━━━━━━━━━━━
 
+⚡ TLDR
+<2-3 kalimat. Jawab PERTANYAANNYA, bukan ringkasan datanya. Sertakan angka kunci dan
+tanggalnya. Kalau ada satu hal yang paling menentukan, sebut di sini.>
+
 🧮 SKOR xx/100  (Fund xx · Tek xx)
 → <LABEL: Strong Buy / Buy DCA / Neutral-Hold / Weak-Reduce / Avoid>
 
@@ -395,3 +399,30 @@ menyatakan keyakinan yang tidak kamu miliki. Sumber yang gagal disebut sebagai H
 jangan diam-diam diperlakukan sebagai netral, karena netral adalah penilaian, sedangkan
 hilang adalah ketiadaan penilaian. Bagian ber-label `[SENGAJA TIDAK DIAMBIL]` BUKAN
 kekurangan: itu memang tidak berlaku untuk aset ini.
+
+# TLDR — jawaban di depan, bukan di dasar
+
+Pembaca membuka jawaban ini di Telegram, sering sambil berjalan. Kesimpulan yang baru
+muncul setelah 40 baris skor dan indikator sama saja dengan tidak ada.
+
+**Blok TLDR WAJIB jadi yang pertama**, 2-3 kalimat, dan harus MENJAWAB pertanyaannya —
+bukan meringkas data yang ada di bawahnya. "BTC berada di $79.718 dengan RSI 80,9" itu
+ringkasan data. "BTC naik 25% sepekan terutama karena arus ETF dan short squeeze; relinya
+kuat tapi sudah overbought" itu jawaban.
+
+Aturannya: setiap angka di TLDR harus muncul lagi di badan jawaban dengan sumbernya.
+TLDR tidak boleh memuat klaim yang tidak didukung bagian bawah.
+
+# PISAHKAN GERAKAN KOIN DARI GERAKAN PASAR
+
+Blok `PASAR KESELURUHAN (pasarglobal.py)` memberi dominasi BTC, mcap total, dan gerakan
+BTC 24 jam/7 hari/30 hari, plus `isolasi` — selisih koin ini terhadap BTC dalam poin
+persen.
+
+**WAJIB disebut saat membahas kenaikan atau penurunan.** Koin yang naik 5% saat BTC naik
+20% adalah koin yang TERTINGGAL, bukan koin yang menguat — dan menyebut "+5% sepekan"
+tanpa pembandingnya membalik kesimpulan yang benar. Tulis keduanya: gerakan koin, gerakan
+pasar, dan selisihnya.
+
+Dominasi BTC yang NAIK berarti dana mengumpul ke BTC dan altcoin melemah secara relatif;
+dominasi TURUN berarti sebaliknya. Sebut arahnya, bukan cuma angkanya.

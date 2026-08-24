@@ -790,6 +790,31 @@ _MINTA_PROYEKSI = re.compile(
     r"dampak(?:nya)?|efek(?:nya)?|hasil(?:nya)? (?:cpi|nfp|fomc))", re.I)
 
 
+# Pertanyaan SEBAB: "kenapa BTC naik minggu ini". Wajib ada kata tanya sebab DAN kata
+# gerakan — tanpa keduanya, "kenapa staking bekerja begitu" ikut tertangkap, padahal
+# itu pertanyaan konsep yang jalurnya ringan dan tidak butuh data pasar sama sekali.
+_MINTA_SEBAB = re.compile(
+    r"(?:kenapa|mengapa|apa (?:yang )?(?:penyebab|sebab|bikin|membuat)|kok|why)"
+    r"[^?.!]{0,60}?"
+    r"(?:naik|turun|anjlok|jatuh|reli|rally|melonjak|pump|dump|melemah|menguat|"
+    r"drop|crash|terbang|ambles)", re.I)
+
+
+def data_sebab(jenis, simbol):
+    """Bahan dekomposisi sebab — dijalankan KODE, bukan diminta ke model.
+
+    Tanpa ini, "kenapa naik" dijawab dengan daftar berita yang kebetulan terbit pekan
+    itu. Itu koinsidensi yang disusun rapi, bukan sebab: kalau seluruh pasar naik dengan
+    besaran serupa, berita itu penumpang, bukan penggerak."""
+    keluar, err = _jalankan_terukur("SEBAB (sebab.py)",
+                                    ["cloud/sebab.py", simbol, "--jenis", jenis])
+    judul = "### DEKOMPOSISI SEBAB (sebab.py)" + chr(10)
+    if err:
+        return (judul + f"tidak tersedia: {err}. Katakan apa adanya — JANGAN "
+                        "menggantinya dengan daftar berita pekan ini seolah itu sebabnya.")
+    return judul + keluar
+
+
 def rakit_peran(sektor, peran=PERAN_LENGKAP):
     """Gabungkan seed peran, hanya blok yang cocok sektornya.
 
@@ -1389,6 +1414,11 @@ def data_mentah_crypto(coin):
         lewat.append(f"etf.py ({t} tidak punya ETF spot AS)")
     tugas.append(("PROYEKSI (proyeksi.py)",
                   ["cloud/proyeksi.py", coin, "--hari", "60", "--ringkas"], 0))
+    # Pemisah gerakan koin dari gerakan pasar. Tanpa ini "naik 18% sepekan" terdengar seperti
+    # prestasi koinnya, padahal kalau BTC naik 24% di pekan yang sama koin itu TERTINGGAL —
+    # dan kesimpulannya berbalik arah.
+    tugas.append(("PASAR KESELURUHAN (pasarglobal.py)",
+                  ["cloud/pasarglobal.py", "--koin", cg_id or coin], 0))
     # STUDI KEJUTAN CPI TIDAK ikut di jalur crypto. Riwayat harian gratis untuk koin cuma
     # ~1 tahun, jadi irisannya dengan 197 rilis CPI tinggal belasan kejadian dan
     # peringatan_cakupan SELALU menyala — bagian itu melaporkan dirinya sendiri terlalu
@@ -2026,6 +2056,11 @@ def process(token, chat_id, text, photo_file_id=None):
                 # historis, ATR, dan — kalau user menyebut target — pengujian target itu.
                 if _MINTA_PROYEKSI.search(text.lower()):
                     brief += "\n\n" + data_proyeksi(text, jenis_chat, simbol_chat)
+                # Pertanyaan SEBAB butuh pemisahan berlapis: berapa bagian gerakan ini
+                # milik seluruh pasar, berapa milik selera risiko yang lebih luas, dan
+                # berapa yang benar-benar khas aset ini.
+                if _MINTA_SEBAB.search(text):
+                    brief += '\n\n' + data_sebab(jenis_chat, simbol_chat)
                 print(f"[proses] chat: data {jenis_chat} {simbol_chat} dikumpulkan kode "
                       f"({len(brief)} karakter)", file=sys.stderr)
             except Exception as e:
