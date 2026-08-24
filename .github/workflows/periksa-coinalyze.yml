@@ -43,3 +43,5 @@ jobs:
             exit 1
           fi
           python cloud/coinalyze.py --periksa
+          echo "---- keluaran nyata untuk BTC ----"
+          python cloud/coinalyze.py BTC
