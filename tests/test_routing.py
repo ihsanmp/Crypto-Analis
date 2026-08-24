@@ -3398,9 +3398,13 @@ def test_script_sukses_tapi_kosong_tidak_dihitung_berhasil():
 def test_audit_keyakinan_mengikuti_kata_kunci_yang_baru():
     """Pola regexnya harus ikut berubah bersama teks bloknya. Kalau tidak, auditnya diam
     total — dan diam itu tidak bisa dibedakan dari 'semuanya baik-baik saja'."""
-    bagian = ['[TEKNIKAL]\n{"tidak_tersedia": "gagal"}'] * 3
-    brief = bot._blok_kelengkapan(10, [], bagian)
-    body = "🧮 SKOR 72/100\nBIAS: AKUMULASI\nHarga $100\nInvalidasi $90\nTarget: 130"
-    k = bot.audit_keyakinan(brief, body)
-    assert k and k["berhasil"] == 7 and k["persen"] == 70
-    assert "7 dari 10 sumber" in bot.peringatan_audit("", "", "", None, None, k)
+    body = ("🧮 SKOR 72/100" + chr(10) + "BIAS: AKUMULASI" + chr(10)
+            + "Harga $100" + chr(10) + "Invalidasi $90" + chr(10) + "Target: 130")
+    # Tepat di ambang 70% sengaja TIDAK memicu — ambang harus punya sisi yang jelas.
+    di_ambang = bot._blok_kelengkapan(10, [], ['[X]\n{"tidak_tersedia": "g"}'] * 3)
+    assert bot.audit_keyakinan(di_ambang, body) is None
+
+    tipis = bot._blok_kelengkapan(10, [], ['[X]\n{"tidak_tersedia": "g"}'] * 5)
+    k = bot.audit_keyakinan(tipis, body)
+    assert k and k["berhasil"] == 5 and k["persen"] == 50
+    assert "5 dari 10 sumber" in bot.peringatan_audit("", "", "", None, None, k)
