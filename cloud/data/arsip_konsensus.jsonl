@@ -17,3 +17,12 @@
 {"waktu": "2026-08-19T14:00:00-04:00", "mata_uang": "USD", "nama": "FOMC Meeting Minutes", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-08-17 03:00"}
 {"waktu": "2026-08-19T21:30:00-04:00", "mata_uang": "AUD", "nama": "Employment Change", "dampak": "tinggi", "konsensus": "11.4K", "sebelumnya": "76.3K", "aktual": null, "dicatat_utc": "2026-08-17 03:00"}
 {"waktu": "2026-08-19T21:30:00-04:00", "mata_uang": "AUD", "nama": "Unemployment Rate", "dampak": "tinggi", "konsensus": "4.4%", "sebelumnya": "4.4%", "aktual": null, "dicatat_utc": "2026-08-17 03:00"}
+{"waktu": "2026-08-25T21:30:00-04:00", "mata_uang": "AUD", "nama": "CPI m/m", "dampak": "tinggi", "konsensus": "0.9%", "sebelumnya": "-0.1%", "aktual": null, "dicatat_utc": "2026-08-24 03:03"}
+{"waktu": "2026-08-25T21:30:00-04:00", "mata_uang": "AUD", "nama": "CPI y/y", "dampak": "tinggi", "konsensus": "3.3%", "sebelumnya": "3.8%", "aktual": null, "dicatat_utc": "2026-08-24 03:03"}
+{"waktu": "2026-08-25T21:30:00-04:00", "mata_uang": "AUD", "nama": "Trimmed Mean CPI m/m", "dampak": "tinggi", "konsensus": "0.3%", "sebelumnya": "0.3%", "aktual": null, "dicatat_utc": "2026-08-24 03:03"}
+{"waktu": "2026-08-26T08:30:00-04:00", "mata_uang": "USD", "nama": "Core PCE Price Index m/m", "dampak": "tinggi", "konsensus": "0.2%", "sebelumnya": "0.1%", "aktual": null, "dicatat_utc": "2026-08-24 03:03"}
+{"waktu": "2026-08-26T08:30:00-04:00", "mata_uang": "USD", "nama": "Prelim GDP q/q", "dampak": "tinggi", "konsensus": "1.5%", "sebelumnya": "1.5%", "aktual": null, "dicatat_utc": "2026-08-24 03:03"}
+{"waktu": "2026-08-28T08:30:00-04:00", "mata_uang": "CAD", "nama": "GDP m/m", "dampak": "tinggi", "konsensus": "0.2%", "sebelumnya": "0.3%", "aktual": null, "dicatat_utc": "2026-08-24 03:03"}
+{"waktu": "2026-08-28T10:00:00-04:00", "mata_uang": "USD", "nama": "Fed Chairman Warsh Speaks", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-08-24 03:03"}
+{"waktu": "2026-08-28T10:00:00-04:00", "mata_uang": "USD", "nama": "Prelim Benchmark Payrolls Revision", "dampak": "tinggi", "konsensus": null, "sebelumnya": "-911K", "aktual": null, "dicatat_utc": "2026-08-24 03:03"}
+{"waktu": "2026-08-28T12:15:00-04:00", "mata_uang": "All", "nama": "Jackson Hole Symposium", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-08-24 03:03"}
