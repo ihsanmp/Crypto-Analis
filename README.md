@@ -95,7 +95,8 @@ GitHub Actions  →  cloud/bot_oneshot.py
    │    seed peran (inti · analis · risk · portofolio · trader · prediktor)
    │    + DATA BRIEF + metodologi skor
    │
-   └─ AUDIT sebelum kirim: keterlacakan angka, kesegaran data, sumber
+   └─ AUDIT sebelum kirim: keterlacakan angka, kesegaran data, asal data,
+      imbalan:risiko, kelengkapan bukti — lalu KAKI SUMBER disusun kode
         └─ peringatan disisipkan ke balasan bila ada yang mencurigakan
    │
    ▼
@@ -205,7 +206,7 @@ membawa aturan risiko forex.
 | [cloud/prompts/analisa_sumber.md](cloud/prompts/analisa_sumber.md) | Instruksi sumber data — sengaja dipisah supaya tidak ikut terkirim ke tahap sintesis yang tidak punya tool |
 | [cloud/prompts/chat.md](cloud/prompts/chat.md) | Mode ngobrol, berblok: aturan domain dimuat hanya bila pemicunya cocok |
 | [cloud/prompts/narasi.md](cloud/prompts/narasi.md) · [foto.md](cloud/prompts/foto.md) | Mode screening narasi & mode analis visual |
-| [tests/test_routing.py](tests/test_routing.py) | **357 tes** (pytest, tabel, hermetis — jaringan diblokir): routing, bobot, perakitan prompt, audit angka, penyaring privasi, uji rezim, label divergensi, dan **penjaga struktural** seperti "aturan keras tidak boleh berada di field yang dibuang `--ringkas`". Job CI-nya SENGAJA merah kalau ada yang gagal |
+| [tests/test_routing.py](tests/test_routing.py) | **446 tes** (pytest, tabel, hermetis — jaringan diblokir): routing, bobot, perakitan prompt, audit angka, penyaring privasi, uji rezim, label divergensi, dan **penjaga struktural** seperti "aturan keras tidak boleh berada di field yang dibuang `--ringkas`". Job CI-nya SENGAJA merah kalau ada yang gagal |
 
 ---
 

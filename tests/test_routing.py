@@ -3145,3 +3145,59 @@ def test_coinalyze_tersambung_dan_kunci_diteruskan():
               open(os.path.join(AKAR, ".gitignore"), encoding="utf-8").read().splitlines()
               if b.strip() and not b.strip().startswith("#")]
     assert any("coinalyze_pasar.json" in b for b in aturan), "cache daftar pasar jangan dicommit"
+
+
+# ------------------------------------------------- kaki sumber (setara "21 Sumber" CMC)
+
+def test_kaki_sumber_mengecualikan_yang_gagal():
+    """Mencantumkan sumber yang GAGAL diambil berarti mengaku memakai data yang tidak
+    pernah tiba. Itu atribusi palsu, dan lebih buruk daripada tidak ada atribusi."""
+    brief = ("[DATA PASAR KOIN (kategori.py, CoinGecko)]\n"
+             "### LIKUIDASI & OI (coinalyze.py)\n"
+             "### ARUS DANA ETF SPOT (etf.py)\n"
+             "[KELENGKAPAN DATA]\nGAGAL: etf.py: timeout")
+    k = bot.jejak_sumber(brief, "bitcoin", "crypto")
+    assert "Coinalyze" in k
+    assert "SoSoValue" not in k, "etf.py gagal — sumbernya tidak boleh diklaim"
+    assert "coingecko.com/en/coins/bitcoin" in k, "tautan harus ke koinnya, bukan beranda"
+
+
+def test_kaki_sumber_satu_tautan_per_domain():
+    """Lima artikel dari satu situs akan menenggelamkan sumber lain — dan membuat jawaban
+    terlihat punya banyak sumber padahal cuma satu."""
+    brief = ("### BERITA\nhttps://www.reuters.com/a\nhttps://www.reuters.com/b\n"
+             "https://www.coindesk.com/c\n")
+    k = bot.jejak_sumber(brief, "bitcoin", "crypto")
+    assert k.count("reuters.com") == 1
+    assert "coindesk.com" in k
+
+
+def test_kaki_sumber_dipotong_per_baris_utuh():
+    """URL yang terpenggal di tengah tetap terlihat seperti tautan tapi menuju ke
+    mana-mana. Pemotongan harus per baris utuh, bukan per karakter."""
+    brief = "### BERITA\n" + "\n".join(
+        f"https://situs{i}.com/{'x' * 120}" for i in range(12))
+    k = bot.jejak_sumber(brief, None, None)
+    assert len(k) <= bot._KAKI_MAKS + 40, f"kaki {len(k)} kar — melewati batas"
+    for potong in k.replace("🔗 Sumber: ", "").split(" · "):
+        if potong.startswith("http"):
+            assert potong.count("://") == 1 and not potong.endswith("x" * 0 + "…")
+    assert "lainnya)" in k, "sisa yang tidak muat harus dihitung, bukan dihilangkan diam-diam"
+
+
+def test_kaki_sumber_diam_saat_tak_ada_apa_pun():
+    assert bot.jejak_sumber("", None, None) is None
+    assert bot.jejak_sumber(None, None, None) is None
+    assert bot.jejak_sumber("teks tanpa sumber maupun url", None, None) is None
+
+
+def test_kaki_sumber_di_bawah_peringatan_tapi_di_atas_disclaimer():
+    """Peringatan soal mutu saran harus lebih menonjol daripada daftar sumber, dan
+    disclaimer tetap jadi penutup."""
+    body = "Isi analisa\n\n⚠️ Riset pasar berbasis data, bukan saran keuangan."
+    body = bot.sisipkan_peringatan(body, "⚠️ Risikonya lebih besar daripada imbalannya")
+    body = bot.sisipkan_peringatan(body, "🔗 Sumber: CoinGecko https://www.coingecko.com")
+    i_ring = body.index("⚠️ Risikonya")
+    i_kaki = body.index("🔗 Sumber")
+    i_disc = body.index("⚠️ Riset pasar")
+    assert i_ring < i_kaki < i_disc

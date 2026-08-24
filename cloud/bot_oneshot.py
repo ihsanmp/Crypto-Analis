@@ -2144,6 +2144,12 @@ def process(token, chat_id, text, photo_file_id=None):
         catatan = peringatan_audit(jejak, asal, kesegaran, imbalan, outlook, keyakinan)
         if catatan:
             body = sisipkan_peringatan(body, catatan)
+        # Kaki sumber disusun KODE dari brief, bukan diminta ke model: model tidak tahu
+        # script mana yang benar-benar berhasil, dan atribusi yang keliru lebih buruk
+        # daripada tidak ada atribusi.
+        kaki = jejak_sumber(brief, simbol or simbol_chat, jenis or jenis_chat)
+        if kaki:
+            body = sisipkan_peringatan(body, kaki)
             print(f"[audit] peringatan DIKIRIM ke user: {catatan[:70]}", file=sys.stderr)
 
     if send_message(token, chat_id, body):
@@ -2331,6 +2337,91 @@ def peringatan_audit(jejak, asal, kesegaran, imbalan=None, outlook=None,
         return ("⚠️ Sebaran 60 hari ke depan sudah dihitung tapi tidak dipakai di jawaban ini — "
                 "kesimpulannya berhenti pada level, tanpa peluang.")
     return None
+
+
+# Modul -> (nama sumber yang dikenali orang, alamat halamannya). Hanya sumber yang punya
+# HALAMAN PUBLIK yang masuk: sebagian data kita datang dari API tanpa halaman yang bisa
+# dibuka, dan menaruh tautan ke endpoint JSON bukan atribusi, itu cuma terlihat seperti
+# atribusi. Yang tidak punya halaman disebut namanya saja di baris hitungan.
+_SUMBER_TAUT = (
+    ("coinalyze.py", "Coinalyze", "https://coinalyze.net"),
+    ("fundamentals.py", "DefiLlama", "https://defillama.com"),
+    ("etf.py", "SoSoValue", "https://sosovalue.com"),
+    ("stockfund.py", "SEC EDGAR", "https://www.sec.gov/edgar/search/"),
+    ("investors.py", "SEC EDGAR", "https://www.sec.gov/edgar/search/"),
+    ("makro.py", "FRED", "https://fred.stlouisfed.org"),
+    ("kejutan.py", "Cleveland Fed", "https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting"),
+    ("sentiment.py", "Fear & Greed", "https://alternative.me/crypto/fear-and-greed-index/"),
+)
+
+_URL_RE = re.compile(r"https?://[^\s\"'<>,;)\]}]+")
+_GAGAL_RE = re.compile(r"^GAGAL: (.+)$", re.M)
+
+# Batas keras. Telegram memecah di 3.900 karakter, dan kaki jawaban yang lebih panjang
+# daripada kesimpulannya sendiri berhenti dibaca.
+_TAUT_MAKS = 7
+_KAKI_MAKS = 600
+
+
+def jejak_sumber(brief, simbol=None, jenis=None):
+    """Daftar sumber untuk kaki jawaban, disusun KODE dari brief. None kalau tak ada.
+
+    Disusun dari brief, bukan diminta ke model, karena dua alasan. Pertama, model tidak
+    tahu script mana yang benar-benar berhasil — ia hanya melihat hasilnya. Kedua, daftar
+    sumber yang ditulis model adalah daftar yang bisa keliru, dan atribusi yang keliru
+    lebih buruk daripada tidak ada atribusi.
+
+    Sumber yang GAGAL diambil sengaja dikeluarkan: mencantumkannya berarti mengaku memakai
+    data yang tidak pernah tiba.
+    """
+    if not brief:
+        return None
+    gagal = " ".join(_GAGAL_RE.findall(brief))
+
+    taut, terpakai = [], set()
+    if "coingecko" in brief.lower() and "kategori.py" not in gagal:
+        cg = (simbol or "").lower()
+        taut.append(("CoinGecko", f"https://www.coingecko.com/en/coins/{cg}" if cg
+                     else "https://www.coingecko.com"))
+        terpakai.add("CoinGecko")
+    for modul, nama, url in _SUMBER_TAUT:
+        if modul in brief and modul not in gagal and nama not in terpakai:
+            taut.append((nama, url))
+            terpakai.add(nama)
+    if jenis in ("saham", "forex") and simbol:
+        taut.append(("Yahoo Finance", f"https://finance.yahoo.com/quote/{simbol}"))
+        terpakai.add("Yahoo Finance")
+
+    # Berita & rilis yang MEMANG dibaca — diambil dari brief, bukan dikarang. Satu per
+    # domain supaya lima artikel dari satu situs tidak menenggelamkan sumber lainnya.
+    berita, domain = [], set()
+    for u in _URL_RE.findall(brief):
+        d = u.split("/")[2].lower().removeprefix("www.")
+        if d in domain or any(d in t[1] for t in taut):
+            continue
+        domain.add(d)
+        berita.append(u.rstrip(".,"))
+
+    if not taut and not berita:
+        return None
+
+    baris = [f"{n} {u}" for n, u in taut[:_TAUT_MAKS]]
+    sisa = _TAUT_MAKS - len(baris)
+    baris += berita[:max(0, sisa)]
+    kaki = "🔗 Sumber: " + " · ".join(baris)
+    if len(kaki) > _KAKI_MAKS:
+        # Dipotong per BARIS UTUH, bukan per karakter: URL yang terpenggal di tengah
+        # tetap terlihat seperti tautan tapi menuju ke mana-mana.
+        pakai = []
+        for b in baris:
+            if len("🔗 Sumber: " + " · ".join(pakai + [b])) > _KAKI_MAKS:
+                break
+            pakai.append(b)
+        kaki = "🔗 Sumber: " + " · ".join(pakai)
+    total = len(taut) + len(berita)
+    if total > len(baris):
+        kaki += f" (+{total - len(baris)} lainnya)"
+    return kaki
 
 
 def sisipkan_peringatan(body, peringatan):
