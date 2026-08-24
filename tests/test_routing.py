@@ -3355,3 +3355,21 @@ def test_peringatan_rasio_menyala_pada_mayoritas_bukan_hanya_semua():
     sehat = [{"status": "TARGET_KENA", "bias": "TAHAN", "rasio_imbalan_risiko": 2.0}] * 9 + \
             [{"status": "TARGET_KENA", "bias": "TAHAN", "rasio_imbalan_risiko": 0.5}]
     assert "peringatan_rasio" not in _r._hitung(sehat)
+
+
+def test_tabel_kelayakan_yang_gagal_dilaporkan_bukan_dihilangkan():
+    """Ditemukan saat menguji agent: tabel ini sempat HILANG dari brief tanpa jejak.
+
+    Penyebabnya bukan bug kode — sumber OHLC dicoba berurutan sampai ada yang berhasil,
+    dan sumber dengan riwayat lebih pendek daripada horizon membuat tabelnya mustahil
+    dihitung. Tapi ia hilang DIAM-DIAM, sehingga blok yang absen tak bisa dibedakan dari
+    blok yang lupa dimasukkan."""
+    src = open(os.path.join(AKAR, "cloud", "proyeksi.py"), encoding="utf-8").read()
+    blok = src[src.index("k = kelayakan(candles"):src.index("atas, bawah = level_struktural")]
+    assert "else:" in blok, "kegagalan mengembalikan None harus punya cabangnya sendiri"
+    assert "kelayakan_tidak_tersedia" in blok
+    assert "jangan menebak" in blok
+
+    import proyeksi as _p
+    pendek = [[i * 86400000, 100, 100, 100, 100, 0] for i in range(40)]
+    assert _p.kelayakan(pendek, 100, 60, True) is None, "riwayat < horizon harus None"

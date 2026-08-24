@@ -285,8 +285,17 @@ def main():
         k = kelayakan(candles, harga, args.hari, pakai_high)
         if k:
             keluar["kelayakan_imbalan_risiko"] = k
+        else:
+            # HILANG DIAM-DIAM adalah kegagalan tersendiri. Tabel ini tidak bisa dihitung
+            # kalau riwayatnya lebih pendek daripada horizonnya — dan itu berubah-ubah
+            # antar-run karena sumber OHLC dicoba berurutan sampai ada yang berhasil.
+            # Tanpa baris ini, blok yang absen tak bisa dibedakan dari blok yang lupa.
+            keluar["kelayakan_tidak_tersedia"] = (
+                f"riwayat {len(candles)} candle tidak cukup untuk jendela {args.hari} hari "
+                f"(sumber: {sumber}). Aturan R:R 1:2 tetap berlaku, tapi peluang historis "
+                "targetnya TIDAK bisa diperiksa — katakan begitu, jangan menebak.")
     except Exception as e:
-        keluar["kelayakan_tidak_tersedia"] = f"{type(e).__name__}"
+        keluar["kelayakan_tidak_tersedia"] = f"{type(e).__name__}: {e}"
 
     atas, bawah = level_struktural(candles, harga, pakai_high)
     keluar["level_struktural"] = {
