@@ -15,5 +15,22 @@
    "ema21=100,79",
    "ema21=124,07"
   ]
+ },
+ {
+  "chat": "1242dcf6b322d4c6",
+  "waktu": 1787561284.0914357,
+  "waktu_utc": "2026-08-24 08:48",
+  "pesan": "berikan alasan btc akan bull dan btc akan bear lalu padukan kedua alasan tersebut untuk 1 arah",
+  "balasan": "Bull vs bear BTC per 24 Agu 2026, 08:46 UTC — harga $77.074 (CoinGecko) / $77.738 (candle Daily terakhir).\n\nALASAN BULL\n• 4H & Daily EMA stack penuh bullish, harga di atas EMA21 Daily $68.282 (+13,7%) dan EMA21 4H $75.785\n• ETF spot BTC AS: inflow 5\n[...dipangkas...]\n–76.618 (EMA21 4H/S1), target $79.490–82.790, batal kalau daily close di bawah $74.409 (RR sekitar 2–3,6:1, bukan asal support terdekat)\nSudah pegang: TAHAN — kurangi kalau daily close di bawah EMA21 Daily $68.282 atau Weekly balik full bearish stack",
+  "angka_kunci": [
+   "harga=77.074",
+   "ema21=68.282",
+   "ema21=75.785",
+   "ema13=67.664",
+   "ema21=69.564",
+   "ema50=77.117",
+   "ema21=79.490",
+   "rsi=56,65"
+  ]
  }
 ]
