@@ -1425,6 +1425,11 @@ def data_mentah_crypto(coin):
     # memblokir datacenter AS, dan runner Actions ada di sana.
     tugas.append(("DERIVATIF (derivatif.py)",
                   ["cloud/derivatif.py", coin, "--ringkas"], 0))
+    # Likuidasi, riwayat OI, dan rasio long/short — butuh COINALYZE_API_KEY. derivatif.py
+    # tetap jalan tanpa kunci, jadi kalau kunci ini mati atau kena batas laju, funding & OI
+    # saat ini masih ada. Dua sumber untuk satu keputusan itu disengaja.
+    tugas.append(("LIKUIDASI & OI (coinalyze.py)",
+                  ["cloud/coinalyze.py", coin, "--ringkas"], 0))
     # STUDI KEJUTAN CPI TIDAK ikut di jalur crypto. Riwayat harian gratis untuk koin cuma
     # ~1 tahun, jadi irisannya dengan 197 rilis CPI tinggal belasan kejadian dan
     # peringatan_cakupan SELALU menyala — bagian itu melaporkan dirinya sendiri terlalu

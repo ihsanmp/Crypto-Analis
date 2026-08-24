@@ -3090,3 +3090,58 @@ def test_aturan_sebab_korelasi_bertanda_blok():
     assert "KENAPA BERGERAK" not in bot.build_chat_prompt("halo")
     assert "KENAPA BERGERAK" in bot.build_chat_prompt("kenapa btc naik minggu ini")
     assert "hari_sepadan" in bot.build_chat_prompt("berapa korelasi btc dengan emas")
+
+
+# ------------------------------------- Coinalyze: likuidasi & arah OI (celah terakhir)
+
+import coinalyze as _cly                                                    # noqa: E402
+
+
+def test_coinalyze_kunci_lewat_header_bukan_url():
+    """Dokumentasinya mengizinkan keduanya. URL bocor ke log, pesan error, dan riwayat
+    proxy jauh lebih mudah daripada header — dan repo ini publik."""
+    src = open(os.path.join(AKAR, "cloud", "coinalyze.py"), encoding="utf-8").read()
+    assert '"api_key": kunci' in src, "kunci harus di header"
+    assert "api_key=" not in src, "kunci tidak boleh masuk query string"
+    for baris in src.splitlines():
+        if "print(" in baris:
+            assert "kunci" not in baris.lower(), baris
+
+
+def test_coinalyze_tanpa_kunci_melapor_bukan_meledak(monkeypatch):
+    """derivatif.py jalan tanpa kunci, jadi kegagalan di sini TIDAK boleh mematikan
+    funding & OI. Dua sumber untuk satu keputusan itu disengaja."""
+    monkeypatch.delenv("COINALYZE_API_KEY", raising=False)
+    h = _cly.ringkas("BTC")
+    assert h["tidak_tersedia"] == "COINALYZE_API_KEY tidak diset"
+    assert "JANGAN menempelkan" in _cly.periksa()["tidak_bisa_diperiksa"]
+
+
+def test_ubah_oi_dari_deret_bukan_dari_arsip():
+    """Riwayat harian Coinalyze utuh 400 hari (diuji 24 Agu 2026, 400 titik sejak
+    2025-07-21), jadi arah OI tersedia langsung — bukan menunggu arsip tumbuh berhari-hari."""
+    titik = [{"c": 100.0}] * 20 + [{"c": 120.0}]
+    assert _cly._ubah(titik, 7) == 20.0
+    assert _cly._ubah([{"c": 100.0}], 7) is None, "satu titik bukan perubahan"
+    assert _cly._ubah([{"c": 0}, {"c": 50.0}], 7) is None, "pembagi nol harus ditolak"
+
+
+def test_seed_menuntut_arah_oi_dipasangkan_dengan_harga():
+    """Kesalahan baca paling sering: "OI naik 15%" tanpa arah harga tidak memberi tahu
+    apa pun. OI naik bersama harga = uang baru; OI turun saat harga naik = short ditutup,
+    dan reli itu jauh lebih rapuh."""
+    t = open(os.path.join(AKAR, "cloud", "prompts", "analisa.md"), encoding="utf-8").read()
+    assert "LIKUIDASI & ARAH OI" in t
+    assert "posisi short ditutup, bukan pembelian baru" in t
+    assert "Sumber derivatif: Coinalyze" in t, "mereka meminta atribusi dan itu wajar"
+
+
+def test_coinalyze_tersambung_dan_kunci_diteruskan():
+    s = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    assert "cloud/coinalyze.py" in s
+    wf = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"), encoding="utf-8").read()
+    assert "COINALYZE_API_KEY: ${{ secrets.COINALYZE_API_KEY }}" in wf
+    aturan = [b.strip() for b in
+              open(os.path.join(AKAR, ".gitignore"), encoding="utf-8").read().splitlines()
+              if b.strip() and not b.strip().startswith("#")]
+    assert any("coinalyze_pasar.json" in b for b in aturan), "cache daftar pasar jangan dicommit"

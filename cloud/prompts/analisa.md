@@ -459,3 +459,24 @@ adalah karangan yang paling sulit dibantah pembaca, justru karena terdengar spes
 **PERUBAHAN OI** hanya ada kalau field `perubahan_oi` terisi. Kalau yang muncul
 `perubahan_oi_belum_ada`, katakan arsipnya masih tumbuh — jangan menyimpulkan arah OI
 dari harga.
+
+# LIKUIDASI & ARAH OI (blok `LIKUIDASI & OI (coinalyze.py)`)
+
+- **Likuidasi**: `long_usd` besar = pembeli berleverage dipaksa keluar, itu kaskade turun.
+  `short_usd` besar = bahan bakar short squeeze. Yang menentukan **SELISIHNYA**, bukan
+  totalnya — total besar di kedua sisi cuma berarti pasarnya bergejolak, bukan berarah.
+  Baca `sisi_lebih_terpukul` lalu sebut angkanya.
+- **Arah OI wajib dipasangkan dengan arah harga**, dan ini yang paling sering salah dibaca:
+  - OI **naik** bersama harga naik → uang baru masuk, tren lebih kokoh
+  - OI **turun** saat harga naik → posisi short ditutup, bukan pembelian baru — relinya
+    lebih rapuh dan bisa berhenti begitu short habis
+  Menyebut "OI naik 15%" tanpa arah harga tidak memberi tahu apa pun.
+- **`hari_negatif`** pada funding: berapa hari dari 30 yang short-nya membayar. Nol berarti
+  tekanan long tidak pernah reda sekali pun — itu kondisi berbeda dari funding positif yang
+  naik-turun, walau rata-ratanya sama.
+
+Kalau blok ini bertuliskan `tidak_tersedia`, katakan apa adanya. JANGAN mengganti likuidasi
+dengan tebakan dari lonjakan harga, dan jangan mengganti arah OI dengan arah harga.
+
+**ATRIBUSI:** saat memakai angka dari blok ini, tulis satu baris sebelum disclaimer:
+"📊 Sumber derivatif: Coinalyze". Mereka memberikan API-nya gratis dan meminta itu.

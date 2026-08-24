@@ -15,6 +15,12 @@ APA YANG TIDAK ADA DI SINI, DAN JANGAN DIKARANG:
     angkanya baru muncul setelah beberapa hari — dan sampai itu terjadi, laporkan
     apa adanya.
 
+PERGESERAN PERAN (24 Agu 2026): coinalyze.py kini menyediakan likuidasi DAN riwayat OI
+harian sampai 400 hari ke belakang, jadi arsip yang ditumbuhkan berkas ini bukan lagi
+satu-satunya jalan. Arsipnya TETAP dipertahankan sebagai cadangan: Coinalyze butuh API key
+dan punya batas 40 panggilan/menit, sedangkan berkas ini jalan tanpa kunci sama sekali.
+Kalau kuncinya mati, funding dan OI saat ini tetap ada.
+
 CATATAN SATUAN FUNDING: tiap bursa punya interval sendiri (umumnya 8 jam, Hyperliquid
 1 jam). CoinGecko tidak menyebut intervalnya, jadi rata-rata tertimbang volume di sini
 adalah PENUNJUK ARAH, bukan biaya pendanaan yang presisi. Positif = posisi long membayar

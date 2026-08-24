@@ -18,3 +18,6 @@ cversions.*.db
 # run yang sedang berjalan. Arsipnya (derivatif_arsip.jsonl) TETAP di-commit —
 # itu riwayat OI yang ditumbuhkan sendiri dan tidak bisa diambil ulang.
 cloud/data/derivatif_cache.json
+
+# Daftar pasar Coinalyze: cache seminggu, bisa ditarik ulang kapan saja.
+cloud/data/coinalyze_pasar.json

@@ -170,14 +170,174 @@ def periksa():
     return hasil
 
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PASAR_CACHE = os.path.join(BASE_DIR, "data", "coinalyze_pasar.json")
+PASAR_UMUR = 7 * 86400        # daftar pasar nyaris statis; menariknya tiap run itu boros
+
+
+def _daftar_pasar():
+    """{ASET: simbol pasar} untuk perpetual USDT/USD. Dicache seminggu."""
+    try:
+        with open(PASAR_CACHE, encoding="utf-8") as f:
+            c = json.load(f)
+        if time.time() - c.get("waktu", 0) < PASAR_UMUR and c.get("data"):
+            return c["data"], None
+    except Exception:
+        pass
+    data, err = panggil("/future-markets")
+    if err:
+        return {}, err
+    peta = {}
+    for m in data or []:
+        if not m.get("is_perpetual"):
+            continue
+        if (m.get("quote_asset") or "").upper() not in ("USDT", "USD"):
+            continue
+        aset = (m.get("base_asset") or "").upper()
+        sim = m.get("symbol") or ""
+        # Akhiran ".A" = Binance di penamaan Coinalyze: pasar terdalam, jadi paling
+        # mewakili. Kalau tidak ada, pakai yang pertama muncul dan sebutkan bursanya.
+        if aset and (aset not in peta or sim.endswith(".A")):
+            peta[aset] = sim
+    try:
+        os.makedirs(os.path.dirname(PASAR_CACHE), exist_ok=True)
+        with open(PASAR_CACHE, "w", encoding="utf-8") as f:
+            json.dump({"waktu": time.time(), "data": peta}, f)
+    except OSError:
+        pass
+    return peta, None
+
+
+def _riwayat(jalur, sim, hari, tambahan=None):
+    """Deret harian untuk satu simbol. Return (list titik, error)."""
+    akhir = int(time.time())
+    p = {"symbols": sim, "interval": "daily",
+         "from": akhir - hari * 86400, "to": akhir}
+    p.update(tambahan or {})
+    data, err = panggil(jalur, p)
+    if err:
+        return [], err
+    if isinstance(data, list) and data:
+        return data[0].get("history") or [], None
+    return [], "balasan kosong"
+
+
+def _ubah(titik, hari):
+    """Perubahan persen antara titik terakhir dan ~`hari` lalu. None kalau kurang data."""
+    if len(titik) < 2:
+        return None
+    i = max(0, len(titik) - 1 - hari)
+    awal, kini = titik[i].get("c"), titik[-1].get("c")
+    if not awal or kini is None:
+        return None
+    return round((kini - awal) / awal * 100, 2)
+
+
+def ringkas(simbol, hari=30):
+    """Likuidasi, OI, rasio long/short, dan funding — semuanya berikut ARAHNYA."""
+    simbol = (simbol or "").upper()
+    hasil = {"simbol": simbol, "sumber": "Coinalyze",
+             "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")}
+    if not _kunci():
+        hasil["tidak_tersedia"] = "COINALYZE_API_KEY tidak diset"
+        return hasil
+
+    peta, err = _daftar_pasar()
+    if err:
+        hasil["tidak_tersedia"] = f"daftar pasar gagal: {err}"
+        return hasil
+    sim = peta.get(simbol)
+    if not sim:
+        hasil["tidak_tersedia"] = (
+            f"{simbol} tidak punya pasar perpetual di Coinalyze. Perlakukan sebagai TIDAK "
+            "ADA pasar derivatif, bukan sebagai data yang gagal diambil.")
+        return hasil
+    hasil["pasar"] = sim
+
+    # LIKUIDASI. `l` = posisi long yang dilikuidasi, `s` = short. Long besar berarti
+    # pembeli berleverage dipaksa keluar (kaskade turun); short besar berarti bahan bakar
+    # short squeeze. Yang menentukan adalah SELISIHNYA, bukan totalnya.
+    liq, e = _riwayat("/liquidation-history", sim, hari, {"convert_to_usd": "true"})
+    if e:
+        hasil["likuidasi_tidak_tersedia"] = e
+    elif liq:
+        tot_l = sum(x.get("l") or 0 for x in liq)
+        tot_s = sum(x.get("s") or 0 for x in liq)
+        akhir = liq[-1]
+        hasil["likuidasi"] = {
+            "hari": len(liq),
+            "long_usd": round(tot_l),
+            "short_usd": round(tot_s),
+            "sisi_lebih_terpukul": ("LONG" if tot_l > tot_s * 1.2 else
+                                    "SHORT" if tot_s > tot_l * 1.2 else "seimbang"),
+            "hari_terakhir": {
+                "tanggal": datetime.fromtimestamp(akhir.get("t", 0),
+                                                  timezone.utc).strftime("%Y-%m-%d"),
+                "long_usd": round(akhir.get("l") or 0),
+                "short_usd": round(akhir.get("s") or 0),
+            },
+        }
+
+    # OPEN INTEREST berikut arahnya — ini yang dulu harus ditumbuhkan sendiri berhari-hari.
+    oi, e = _riwayat("/open-interest-history", sim, 90, {"convert_to_usd": "true"})
+    if e:
+        hasil["oi_tidak_tersedia"] = e
+    elif oi:
+        hasil["open_interest"] = {
+            "kini_usd": round(oi[-1].get("c") or 0),
+            "ubah_7h_persen": _ubah(oi, 7),
+            "ubah_30h_persen": _ubah(oi, 30),
+            "hari_riwayat": len(oi),
+        }
+
+    ls, e = _riwayat("/long-short-ratio-history", sim, hari)
+    if not e and ls:
+        akhir = ls[-1]
+        hasil["long_short"] = {
+            "rasio": akhir.get("r"),
+            "long_persen": akhir.get("l"),
+            "short_persen": akhir.get("s"),
+            "rasio_30h_lalu": ls[0].get("r"),
+        }
+
+    fr, e = _riwayat("/funding-rate-history", sim, hari)
+    if not e and fr:
+        nilai = [x.get("c") for x in fr if x.get("c") is not None]
+        if nilai:
+            hasil["funding"] = {
+                "kini_persen": nilai[-1],
+                "rata2_persen": round(sum(nilai) / len(nilai), 5),
+                "hari_negatif": sum(1 for v in nilai if v < 0),
+                "dari_hari": len(nilai),
+            }
+
+    hasil["wajib_dibaca"] = (
+        "LIKUIDASI: `long_usd` besar = pembeli berleverage dipaksa keluar (kaskade turun); "
+        "`short_usd` besar = bahan bakar short squeeze. Yang menentukan SELISIHNYA, bukan "
+        "totalnya — total besar di kedua sisi cuma berarti pasarnya bergejolak. "
+        "OPEN INTEREST: naik BERSAMA harga = uang baru masuk (tren lebih kokoh); TURUN saat "
+        "harga naik = posisi short ditutup, bukan pembelian baru (reli lebih rapuh). Selalu "
+        "pasangkan arah OI dengan arah harga sebelum menyimpulkan. "
+        "FUNDING: `hari_negatif` menunjukkan seberapa sering short yang membayar — nol dari "
+        "30 hari berarti tekanan long tak pernah reda. "
+        "Sebut 'Sumber derivatif: Coinalyze' satu kali saat memakai angka-angka ini.")
+    return hasil
+
+
 def main():
-    p = argparse.ArgumentParser(description="Coinalyze: periksa akses tier gratis")
-    p.add_argument("--periksa", action="store_true")
+    p = argparse.ArgumentParser(description="Coinalyze: likuidasi, OI, funding")
+    p.add_argument("simbol", nargs="?", help="ticker koin, mis. BTC")
+    p.add_argument("--periksa", action="store_true", help="periksa akses tiap endpoint")
+    p.add_argument("--ringkas", action="store_true", help="tanpa indentasi")
     a = p.parse_args()
-    if not a.periksa:
+    if a.periksa:
+        print(json.dumps(periksa(), ensure_ascii=False, indent=1))
+    elif a.simbol:
+        print(json.dumps(ringkas(a.simbol), ensure_ascii=False,
+                         indent=None if a.ringkas else 1))
+    else:
         p.print_help()
         sys.exit(2)
-    print(json.dumps(periksa(), ensure_ascii=False, indent=1))
 
 
 if __name__ == "__main__":
