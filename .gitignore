@@ -13,3 +13,8 @@ __pycache__/
 %SystemDrive%/
 *.ver0x*.db
 cversions.*.db
+
+# Cache derivatif: 97 KB agregat yang berubah tiap 30 menit dan hanya mempercepat
+# run yang sedang berjalan. Arsipnya (derivatif_arsip.jsonl) TETAP di-commit —
+# itu riwayat OI yang ditumbuhkan sendiri dan tidak bisa diambil ulang.
+cloud/data/derivatif_cache.json

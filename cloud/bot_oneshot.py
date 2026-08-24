@@ -1419,6 +1419,12 @@ def data_mentah_crypto(coin):
     # dan kesimpulannya berbalik arah.
     tugas.append(("PASAR KESELURUHAN (pasarglobal.py)",
                   ["cloud/pasarglobal.py", "--koin", cg_id or coin], 0))
+    # Funding & open interest lintas bursa. Prompt sudah lama menyuruh memakainya, tapi
+    # tidak ada yang mengambilnya — hanya ada MCP CoinGlass yang bergantung pada model mau
+    # memanggilnya. Bursa langsung (Binance/Bybit/OKX) tidak bisa dipakai: semuanya
+    # memblokir datacenter AS, dan runner Actions ada di sana.
+    tugas.append(("DERIVATIF (derivatif.py)",
+                  ["cloud/derivatif.py", coin, "--ringkas"], 0))
     # STUDI KEJUTAN CPI TIDAK ikut di jalur crypto. Riwayat harian gratis untuk koin cuma
     # ~1 tahun, jadi irisannya dengan 197 rilis CPI tinggal belasan kejadian dan
     # peringatan_cakupan SELALU menyala — bagian itu melaporkan dirinya sendiri terlalu

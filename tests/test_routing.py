@@ -2879,3 +2879,74 @@ def test_tldr_wajib_di_ketiga_prompt():
     chat = open(os.path.join(AKAR, "cloud", "prompts", "chat.md"), encoding="utf-8").read()
     assert "KENAPA BERGERAK" in chat
     assert "penumpang, bukan penggerak" in chat, "kekeliruan sebab-akibat harus disebut"
+
+
+# ------------------------------------------- funding & open interest tanpa key (vs CoinGlass)
+
+import derivatif as _drv                                                    # noqa: E402
+
+
+def test_perubahan_oi_menyebut_jarak_SEBENARNYA(tmp_path, monkeypatch):
+    """Kalau arsip baru 3 hari, menyebutnya "perubahan 7 hari" adalah kebohongan kecil yang
+    menular ke kesimpulan. Yang dilaporkan harus jarak yang benar-benar ada."""
+    p = tmp_path / "arsip.jsonl"
+    p.write_text(
+        json.dumps({"tanggal": "2026-08-21", "simbol": "BTC", "oi_usd": 60_000_000_000}) + "\n"
+        + json.dumps({"tanggal": "2026-08-24", "simbol": "BTC", "oi_usd": 72_000_000_000}) + "\n",
+        encoding="utf-8")
+    monkeypatch.setattr(_drv, "ARSIP_PATH", str(p))
+    u = _drv.perubahan("BTC", 7)
+    assert u["oi_ubah_persen"] == 20.0
+    assert u["jarak_hari_sebenarnya"] == 3 and u["diminta_hari"] == 7
+
+
+def test_perubahan_oi_diam_saat_riwayat_belum_cukup(tmp_path, monkeypatch):
+    """Satu snapshot bukan perubahan. Mengembalikan 0% akan terbaca sebagai 'OI datar'."""
+    p = tmp_path / "arsip.jsonl"
+    p.write_text(json.dumps({"tanggal": "2026-08-24", "simbol": "BTC",
+                             "oi_usd": 72_000_000_000}) + "\n", encoding="utf-8")
+    monkeypatch.setattr(_drv, "ARSIP_PATH", str(p))
+    assert _drv.perubahan("BTC", 7) is None
+    monkeypatch.setattr(_drv, "ARSIP_PATH", str(tmp_path / "tidak_ada.jsonl"))
+    assert _drv.perubahan("BTC", 7) is None
+
+
+def test_arsip_upsert_tidak_menggandakan_hari_yang_sama(tmp_path, monkeypatch):
+    """Bot bisa jalan berkali-kali sehari. Tanpa UPSERT, satu hari punya belasan baris dan
+    perhitungan perubahannya jadi membandingkan dua jam, bukan dua hari."""
+    p = tmp_path / "arsip.jsonl"
+    monkeypatch.setattr(_drv, "ARSIP_PATH", str(p))
+    agregat = {"BTC": {"oi_usd": 72_000_000_000, "volume_24j_usd": 1, "funding_rata2_persen": 0.008}}
+    _drv.arsipkan(agregat)
+    agregat["BTC"]["oi_usd"] = 73_000_000_000
+    _drv.arsipkan(agregat)
+    baris = [json.loads(x) for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
+    assert len(baris) == 1, "hari yang sama harus ditimpa, bukan ditambah"
+    assert baris[0]["oi_usd"] == 73_000_000_000, "snapshot terbaru yang menang"
+
+
+def test_seed_melarang_mengarang_likuidasi():
+    """Likuidasi tidak ada di sumber keyless mana pun. Angka likuidasi yang ditebak lalu
+    disajikan dengan satuan dolar adalah karangan yang paling sulit dibantah pembaca,
+    justru karena terdengar spesifik."""
+    t = open(os.path.join(AKAR, "cloud", "prompts", "analisa.md"), encoding="utf-8").read()
+    assert "LIKUIDASI TIDAK TERSEDIA" in t
+    assert "PER JAM" in t, "satuan Hyperliquid berbeda dan harus disebut"
+    src = open(os.path.join(AKAR, "cloud", "derivatif.py"), encoding="utf-8").read()
+    assert "LIKUIDASI" in src
+
+
+def test_derivatif_tersambung_dan_cache_tidak_dicommit():
+    """Arsipnya riwayat yang tak bisa diambil ulang — wajib di-commit. Cache-nya 97 KB yang
+    berubah tiap 30 menit dan hanya mempercepat run berjalan — tidak boleh."""
+    s = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    assert "cloud/derivatif.py" in s
+    wf = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"), encoding="utf-8").read()
+    assert "cloud/data/derivatif_arsip.jsonl" in wf
+    # Hanya baris ATURAN yang dihitung. Komentar penjelas di .gitignore menyebut nama
+    # arsipnya, dan cocokan mentah akan mengenainya lalu memvonis salah.
+    aturan = [b.strip() for b in
+              open(os.path.join(AKAR, ".gitignore"), encoding="utf-8").read().splitlines()
+              if b.strip() and not b.strip().startswith("#")]
+    assert any("derivatif_cache.json" in b for b in aturan)
+    assert not any("derivatif_arsip" in b for b in aturan), "arsip TIDAK boleh diabaikan git"

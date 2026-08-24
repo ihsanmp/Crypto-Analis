@@ -426,3 +426,30 @@ pasar, dan selisihnya.
 
 Dominasi BTC yang NAIK berarti dana mengumpul ke BTC dan altcoin melemah secara relatif;
 dominasi TURUN berarti sebaliknya. Sebut arahnya, bukan cuma angkanya.
+
+# FUNDING & OPEN INTEREST — struktur leverage, bukan hiasan
+
+Blok `DERIVATIF (derivatif.py)` memberi funding rata-rata tertimbang volume, open interest
+agregat, dan rasio volume/OI dari ratusan bursa.
+
+- **Funding POSITIF** = posisi long membayar short. Permintaan leverage bullish ramai,
+  dan itu membuat reli LEBIH RENTAN koreksi kalau pembeli spot melemah — sebut kerentanan
+  itu, jangan bacakan angkanya saja.
+- **Funding NEGATIF** = short membayar long; tekanan jual berleverage, bahan bakar short
+  squeeze kalau harga bertahan.
+- **volume/OI tinggi** = perdagangan berputar cepat tanpa menambah posisi, sering menyertai
+  gerakan yang digerakkan likuidasi ketimbang akumulasi.
+- **Satuan Hyperliquid PER JAM** dan OI-nya dalam KOIN, bukan dolar. JANGAN dicampur
+  dengan angka lintas bursa yang satuannya berbeda.
+
+Interval funding berbeda tiap bursa dan CoinGecko tidak menyebutnya, jadi rata-ratanya
+PENUNJUK ARAH — jangan mengalikannya jadi biaya tahunan.
+
+**LIKUIDASI TIDAK TERSEDIA.** Tidak ada sumber gratis tanpa key yang memberikannya. Kalau
+ditanya, jawab tidak tersedia — JANGAN menyimpulkan besaran likuidasi dari lonjakan harga
+atau dari perubahan OI. Menebak angka likuidasi lalu menyajikannya dengan satuan dolar
+adalah karangan yang paling sulit dibantah pembaca, justru karena terdengar spesifik.
+
+**PERUBAHAN OI** hanya ada kalau field `perubahan_oi` terisi. Kalau yang muncul
+`perubahan_oi_belum_ada`, katakan arsipnya masih tumbuh — jangan menyimpulkan arah OI
+dari harga.
