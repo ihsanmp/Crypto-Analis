@@ -2950,3 +2950,64 @@ def test_derivatif_tersambung_dan_cache_tidak_dicommit():
               if b.strip() and not b.strip().startswith("#")]
     assert any("derivatif_cache.json" in b for b in aturan)
     assert not any("derivatif_arsip" in b for b in aturan), "arsip TIDAK boleh diabaikan git"
+
+
+# --------------------------------------------- CoinMarketCap: apa yang benar-benar ada
+
+import cmc as _cmc                                                          # noqa: E402
+
+
+def test_cmc_tidak_punya_derivatif_sama_sekali():
+    """Temuan yang menutup satu jalur penyelidikan: API CoinMarketCap TIDAK punya satu pun
+    endpoint funding, open interest, likuidasi, atau perpetual — nol dari 51.
+
+    Angka-angka itu di CMC AI berasal dari data internal, bukan dari API yang dijual.
+    Tes ini menjaga temuannya supaya tidak dicari ulang berbulan-bulan kemudian."""
+    jalur = " ".join(k[1] for k in _cmc.KANDIDAT).lower()
+    for kata in ("funding", "open-interest", "liquidat", "derivativ", "perpetual"):
+        assert kata not in jalur, f"'{kata}' tidak ada di API CMC — jangan dijadikan sumber"
+    src = open(os.path.join(AKAR, "cloud", "cmc.py"), encoding="utf-8").read()
+    assert "derivatif.py" in src, "arahkan pembaca ke sumber funding/OI yang benar"
+
+
+def test_cmc_tanpa_kunci_gagal_dengan_aman(monkeypatch):
+    """Kunci hanya ada di GitHub Secrets. Tanpa kunci harus melapor jelas, bukan meledak —
+    dan TIDAK BOLEH menyarankan menempelkan kuncinya ke mana pun."""
+    monkeypatch.delenv("COINMARKETCAP_API_KEY", raising=False)
+    h = _cmc.periksa()
+    assert "tidak_bisa_diperiksa" in h
+    assert "JANGAN menempelkan" in h["tidak_bisa_diperiksa"]
+    data, err = _cmc.panggil("/v1/key/info")
+    assert data is None and "tidak diset" in err
+
+
+def test_cmc_dominasi_menolak_menebak_arah(monkeypatch):
+    """Tanpa riwayat, arah dominasi adalah TEBAKAN. CoinGecko /global cuma memberi angka
+    saat ini, jadi kalimat "dominasi naik dari X ke Y" mustahil disusun tanpa sumber ini."""
+    monkeypatch.delenv("COINMARKETCAP_API_KEY", raising=False)
+    d = _cmc.dominasi(7)
+    assert "tidak_tersedia" in d
+    assert "JANGAN menyebut perubahannya" in d["arti"]
+
+
+def test_kunci_cmc_tidak_pernah_masuk_ke_pesan_error(monkeypatch):
+    """Repo ini PUBLIK dan log Actions ikut terbaca publik. Kunci yang bocor lewat pesan
+    error tidak akan tersamar oleh GitHub kalau bentuknya sudah berubah."""
+    monkeypatch.setenv("COINMARKETCAP_API_KEY", "RAHASIA-JANGAN-BOCOR-123")
+    src = open(os.path.join(AKAR, "cloud", "cmc.py"), encoding="utf-8").read()
+    # Kunci hanya boleh muncul di header permintaan, tidak pernah di URL maupun keluaran.
+    assert "X-CMC_PRO_API_KEY" in src
+    assert "CMC_PRO_API_KEY=" not in src, "kunci tidak boleh dikirim lewat query string"
+    for baris in src.splitlines():
+        if "print(" in baris:
+            assert "kunci" not in baris.lower(), baris
+
+
+def test_workflow_periksa_cmc_tidak_menjadwal_dan_tidak_menulis():
+    """Ini pertanyaan sekali jawab. Menjadwalkannya membuang kuota untuk yang sudah terjawab,
+    dan izin tulis tidak dibutuhkan karena tidak ada berkas yang dihasilkan."""
+    wf = open(os.path.join(AKAR, ".github", "workflows", "periksa-cmc.yml"),
+              encoding="utf-8").read()
+    assert "workflow_dispatch" in wf
+    assert "schedule" not in wf
+    assert "contents: read" in wf

@@ -1,0 +1,43 @@
+# Pemeriksaan sekali jalan: endpoint CoinMarketCap mana yang SUNGGUH terbuka untuk kunci
+# kita. Paket gratis memblokir sebagian dengan 402/403, dan mana yang diblokir tidak bisa
+# ditebak dari dokumentasi — `cryptoCategories` sudah pernah 403 di sini (lihat kategori.py).
+# Menebaknya berarti membangun di atas endpoint yang ternyata tertutup.
+#
+# Kenapa lewat workflow, bukan dijalankan lokal: kuncinya HANYA ada di GitHub Secrets, dan
+# memang harus tetap begitu.
+#
+# Hanya workflow_dispatch — ini pertanyaan sekali jawab, bukan tugas berkala. Jalankan lagi
+# kalau paketnya berubah atau ada endpoint yang tiba-tiba menolak.
+#
+# CATATAN KEAMANAN: repo ini publik, jadi log Actions ikut terbaca publik. cloud/cmc.py tidak
+# pernah mencetak kuncinya dan GitHub menyamarkan nilai secret yang terdaftar. Jangan
+# menambahkan `echo` apa pun terhadap kunci di sini.
+name: Periksa akses CoinMarketCap
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  periksa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Tembak tiap endpoint kandidat
+        env:
+          COINMARKETCAP_API_KEY: ${{ secrets.COINMARKETCAP_API_KEY }}
+        run: |
+          if [ -z "$COINMARKETCAP_API_KEY" ]; then
+            echo "::error::COINMARKETCAP_API_KEY belum terpasang di repository secrets"
+            exit 1
+          fi
+          python cloud/cmc.py --periksa
+          echo "---- riwayat dominasi BTC 7 hari ----"
+          python cloud/cmc.py --dominasi 7
