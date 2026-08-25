@@ -787,6 +787,10 @@ _MINTA_PROYEKSI = re.compile(
     r"(?:target|proyeksi|prediksi|forecast|ramal|potensi|berpotensi|bisa (?:naik|turun|"
     r"tembus|sampai)|akan (?:naik|turun)|sampai (?:harga|level|\$)|ke \$|outlook|"
     r"bakal|kapan|berapa lama|sejauh mana|seberapa (?:jauh|tinggi)|bullish|bearish|"
+    # "performa X seminggu kedepan" adalah pertanyaan proyeksi yang paling wajar,
+    # dan sempat jatuh ke jalur RINGAN tanpa data sama sekali. "kedepan" ditulis
+    # tanpa spasi jauh lebih sering daripada "ke depan".
+    r"performa|kinerja|ke ?depan|mendatang|"
     r"dampak(?:nya)?|efek(?:nya)?|hasil(?:nya)? (?:cpi|nfp|fomc))", re.I)
 
 
@@ -1035,7 +1039,23 @@ def _semua_aset(teks):
     return ketemu
 
 
-def aset_dari_pesan(teks):
+# Kata Indonesia yang sering muncul di pertanyaan pasar dan TIDAK boleh dikirim ke
+# pencarian koin. resolve_ticker sudah konservatif (menuntut kecocokan persis DAN
+# peringkat market cap), tapi menembakkan kata umum ke jaringan tetap pemborosan yang
+# bisa dicegah tanpa biaya.
+_KATA_UMUM_BUKAN_KOIN = {
+    "PERFORMA", "KINERJA", "SEMINGGU", "SEBULAN", "KEDEPAN", "DEPAN", "BAGAIMANA",
+    "GIMANA", "SEKARANG", "MINGGU", "BULAN", "TAHUN", "HARI", "PROSPEK", "KONDISI",
+    "SITUASI", "UPDATE", "PANTAU", "ANALISA", "ANALISIS", "TARGET", "HARGA", "PASAR",
+    "UNTUK", "DENGAN", "SAMPAI", "SUDAH", "BELUM", "MASIH", "AKAN", "BISA",
+    # Sapaan & basa-basi. HALO, PING, dan OKE semuanya nama koin sungguhan di CoinGecko —
+    # tanpa baris ini, "halo" mengembalikan analisa aset.
+    "HALO", "HAI", "PAGI", "SIANG", "SORE", "MALAM", "OKE", "OKEY", "SIP", "PING",
+    "THANKS", "MAKASIH", "TERIMA", "KASIH", "MAAF", "TOLONG", "COBA", "LAGI",
+}
+
+
+def aset_dari_pesan(teks, dalam=False):
     """Cari aset yang disebut dalam pesan ngobrol. (jenis, simbol) atau (None, None).
 
     Dipakai untuk memutuskan apakah data deterministik perlu dikumpulkan lewat KODE.
@@ -1098,6 +1118,59 @@ def aset_dari_pesan(teks):
         atas = m2.group(1).upper()
         if atas in _TICKER_UMUM:
             return "crypto", atas
+
+    # 4. PENCARIAN DALAM — hanya kalau pemanggilnya meminta.
+    #
+    # _TICKER_UMUM cuma 55 nama. ASTER, HYPE, dan SKYAI TIDAK ada di dalamnya, padahal
+    # ketiganya sudah pernah dianalisa dan tercatat di rapor.jsonl — mereka hanya lolos
+    # lewat perintah "analisa X" yang memakai jenis_aset, fungsi lain yang menerima
+    # ticker apa pun. Lewat pertanyaan biasa, koin di luar daftar itu TIDAK PERNAH
+    # mendapat brief sama sekali, dan seluruh data yang dikumpulkan bot ini jadi tidak
+    # ikut menjawab.
+    #
+    # `dalam` default False karena pesan_pasar() memanggil fungsi ini untuk SETIAP pesan,
+    # termasuk "halo". Pencarian jaringan di sana berarti tiap sapaan menembak CoinGecko.
+    # Hanya pengumpul data — yang jalan SESUDAH pesannya terklasifikasi sebagai pertanyaan
+    # pasar — yang meminta pencarian dalam.
+    if not dalam:
+        return None, None
+    # LAPIS PENGAMAN 1: pesannya harus memang soal pasar. Tanpa ini "halo" mengembalikan
+    # koin HALO — yang benar-benar ada — dan sapaan berubah jadi analisa aset.
+    # Rekursinya cuma satu tingkat: pesan_pasar memanggil balik fungsi ini dengan
+    # dalam=False, dan cabang itu tidak pernah memanggil pesan_pasar lagi.
+    # Pertanyaan PEMANTAUAN ("update aster", "kondisi skyai") tidak selalu lolos
+    # pesan_pasar — kosakatanya berbeda — padahal justru butuh brief. Diterima keduanya;
+    # _KATA_UMUM_BUKAN_KOIN yang menahan "ada update?" dan "kondisi pasar gimana", karena
+    # seluruh katanya ada di daftar itu sehingga tidak ada kandidat tersisa.
+    if not (pesan_pasar(teks) or _MINTA_PANTAU.search(low)):
+        return None, None
+    try:
+        from indicators import resolve_ticker
+    except Exception:
+        return None, None
+    dicoba = 0
+    # KATA UTUH, bukan `kata`. Pemindaian di atas memakai [A-Za-z]{2,6} TANPA batas kata,
+    # jadi "bagaimana" terpotong jadi "bagaim" + "ana" — dan "ana" adalah koin sungguhan.
+    # Ini persis kelas kesalahan yang dulu membuat "sekaraNG" dibaca sebagai saham NG.
+    # Pencarian dangkal aman karena daftarnya tertutup; pencarian dalam bertanya ke
+    # CoinGecko, jadi potongan kata bisa mengembalikan koin yang tidak pernah disebut.
+    utuh = re.findall(r"\b[A-Za-z]{3,6}\b", teks or "")
+    for k in utuh:
+        atas = k.upper()
+        if len(atas) < 3 or atas in _KATA_BUKAN_TICKER or atas in _BUKAN_TICKER_SAHAM:
+            continue
+        if atas in _SETELAH_TRANSAKSI_BUKAN_ASET or atas in _KATA_UMUM_BUKAN_KOIN:
+            continue
+        if dicoba >= 2:            # batas keras: dua panggilan jaringan per pesan
+            break
+        dicoba += 1
+        try:
+            tik, _cid, _nama = resolve_ticker(k)
+        except Exception:
+            continue
+        if tik:
+            print(f"[aset] pencarian dalam: {k} -> {tik}", file=sys.stderr)
+            return "crypto", tik
     return None, None
 
 
@@ -2143,7 +2216,9 @@ def process(token, chat_id, text, photo_file_id=None):
         # Efek terpenting: brief jadi ADA di mode ngobrol, sehingga audit keterlacakan
         # angka berjalan di sini juga — sebelumnya mode ini keluar tanpa pemeriksaan,
         # padahal justru paling rawan karangan karena model menjawab lebih bebas.
-        jenis_chat, simbol_chat = aset_dari_pesan(text)
+        # Pencarian dalam DI SINI, bukan di pesan_pasar: di sana fungsinya dipanggil
+        # untuk setiap pesan termasuk sapaan.
+        jenis_chat, simbol_chat = aset_dari_pesan(text, dalam=True)
         # Dua aset atau lebih -> pertanyaan PERBANDINGAN. aset_dari_pesan sengaja menolak
         # memilih salah satu, jadi tanpa cabang ini brief-nya kosong sama sekali.
         aset_banding = sorted(_semua_aset(text)) if len(_semua_aset(text)) >= 2 else []

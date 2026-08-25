@@ -3577,3 +3577,70 @@ def test_gauss_asas_pantulan_masuk_akal():
     assert r["puncak"][0.5] > 0, "median puncak harus positif"
     assert r["dasar"][0.5] < 0, "median dasar harus negatif"
     assert r["puncak"][0.9] > r["puncak"][0.1] >= 0
+
+
+# --------------------------- routing: koin di luar daftar 55 nama akhirnya dapat brief
+
+def test_koin_di_luar_daftar_tetap_dapat_brief():
+    """Bug yang ditemukan saat memantau run produksi nyata: "bagaimana performa aster untuk
+    seminggu kedepan" diklasifikasikan RINGAN, tidak ada brief sama sekali, dan SELURUH data
+    yang dikumpulkan bot ini tidak ikut menjawab.
+
+    _TICKER_UMUM cuma 55 nama. ASTER, HYPE, dan SKYAI tidak ada di dalamnya padahal
+    ketiganya sudah pernah dianalisa dan tercatat di rapor.jsonl — mereka hanya lolos lewat
+    perintah "analisa X" yang memakai jenis_aset."""
+    # Suite ini hermetis (jaringan diblokir), jadi memo resolve_ticker diisi lebih dulu.
+    # Yang diuji tetap jalur kodenya yang sebenarnya — resolve_ticker memeriksa memo
+    # sebelum menyentuh jaringan.
+    import indicators as _ind
+    _ind._TICKER_MEMO.update({
+        "aster": ("ASTER", "aster-2", "Aster"),
+        "hype": ("HYPE", "hyperliquid", "Hyperliquid"),
+        "skyai": ("SKYAI", "skyai", "SkyAI"),
+    })
+    for teks, harap in (("bagaimana performa aster untuk seminggu kedepan", "ASTER"),
+                        ("performa hype seminggu kedepan", "HYPE"),
+                        ("kondisi skyai sekarang", "SKYAI"),
+                        ("update aster", "ASTER")):
+        assert bot.aset_dari_pesan(teks, dalam=True)[1] == harap, teks
+    # Kosakata yang dulu bocor: "performa" dan "kedepan" tanpa spasi.
+    assert bot.pesan_pasar("bagaimana performa aster untuk seminggu kedepan")
+    assert bot._MINTA_PROYEKSI.search("performa hype seminggu kedepan")
+
+
+def test_pencarian_dalam_hanya_saat_diminta():
+    """pesan_pasar() memanggil aset_dari_pesan untuk SETIAP pesan termasuk sapaan.
+    Pencarian jaringan di sana berarti tiap "halo" menembak CoinGecko."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    assert "def aset_dari_pesan(teks, dalam=False):" in src, "default harus dangkal"
+    assert src.count("aset_dari_pesan(text, dalam=True)") == 1, \
+        "hanya pengumpul data yang boleh mencari dalam"
+    # Jalur klasifikasi TIDAK boleh memintanya.
+    blok = src[src.index("def pesan_pasar("):src.index("def pesan_pasar(") + 1500]
+    assert "dalam=True" not in blok
+
+
+def test_potongan_kata_tidak_pernah_jadi_koin():
+    """Pemindaian [A-Za-z]{2,6} TANPA batas kata memotong "bagaimana" jadi "bagaim"+"ana",
+    dan ANA adalah koin sungguhan. Ini kelas kesalahan yang sama dengan "sekaraNG" yang
+    dulu dibaca sebagai saham NG — pencarian dangkal aman karena daftarnya tertutup,
+    tapi pencarian dalam bertanya ke CoinGecko."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    blok = src[src.index("PENCARIAN DALAM"):src.index("PENCARIAN DALAM") + 3000]
+    assert 'findall(r"' + chr(92) + 'b[A-Za-z]{3,6}' in blok, "harus memakai batas kata"
+    # ANA sengaja DIISI ke memo: kalau batas katanya bocor, "bagaimana" akan terpotong
+    # jadi "ana" dan tes ini menangkapnya. Tanpa memo, tes lulus hanya karena jaringan
+    # diblokir — lulus karena alasan yang salah.
+    import indicators as _ind
+    _ind._TICKER_MEMO["ana"] = ("ANA", "nirvana", "Nirvana")
+    for teks in ("bagaimana kabarnya", "kenapa begitu ya", "sekarang gimana"):
+        assert bot.aset_dari_pesan(teks, dalam=True) == (None, None), teks
+
+
+def test_sapaan_tidak_berubah_jadi_analisa_aset():
+    """HALO, PING, dan OKE semuanya nama koin sungguhan di CoinGecko. Tanpa penjagaan,
+    "halo" mengembalikan analisa aset."""
+    for teks in ("halo", "hai pagi", "oke sip", "makasih ya", "ada update?",
+                 "kondisi pasar gimana", "apa itu funding rate"):
+        assert bot.aset_dari_pesan(teks, dalam=True) == (None, None), teks
+    assert "HALO" in bot._KATA_UMUM_BUKAN_KOIN
