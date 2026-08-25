@@ -3452,3 +3452,68 @@ def test_pantau_tidak_disisipkan_untuk_pertanyaan_transaksi():
     bagian = ["[X]\ndata"]
     bot._sisipkan_pantau(bagian, "worth masuk btc di 75000?")
     assert len(bagian) == 1 and not bagian[0].startswith("[GAYA")
+
+
+# ------------------------- TimesFM: hasil uji, dijaga supaya tidak dicari ulang
+
+import uji_timesfm as _tfm                                                  # noqa: E402
+
+# Angka nyata dari run 32875244510, 25 Agu 2026, horizon 30 hari, konteks 512.
+_HASIL_TIMESFM = [
+    {"simbol": "BTC-USD", "metode": {
+        "baserate": {"pinball": 1769.03, "cakupan_persen": 76.0},
+        "gauss": {"pinball": 1602.16, "cakupan_persen": 80.0},
+        "timesfm": {"pinball": 1782.79, "cakupan_persen": 76.9}}},
+    {"simbol": "ETH-USD", "metode": {
+        "baserate": {"pinball": 123.07, "cakupan_persen": 75.7},
+        "gauss": {"pinball": 108.96, "cakupan_persen": 77.0},
+        "timesfm": {"pinball": 117.57, "cakupan_persen": 73.8}}},
+    {"simbol": "SOL-USD", "metode": {
+        "baserate": {"pinball": 8.82, "cakupan_persen": 79.7},
+        "gauss": {"pinball": 7.05, "cakupan_persen": 85.2},
+        "timesfm": {"pinball": 7.48, "cakupan_persen": 73.8}}},
+]
+
+
+def test_timesfm_kalah_dari_jalan_acak_di_ketiga_aset():
+    """Hasil uji nyata: model 200 juta parameter KALAH dari jalan acak +-1,28*sigma*akar(h)
+    di BTC, ETH, dan SOL sekaligus, 6-11% lebih buruk pada pinball.
+
+    Dijaga di sini supaya tidak dicari ulang berbulan-bulan lagi — dan supaya siapa pun
+    yang tergoda memasangnya harus lebih dulu menjelaskan kenapa angka ini tidak berlaku.
+    """
+    v = _tfm.vonis(_HASIL_TIMESFM)
+    assert v["menang_atas_pembanding_terbaik"] == []
+    assert len(v["kalah_dari_pembanding_terbaik"]) == 3
+    assert "jangan dipasang ke produksi" in v["kesimpulan"]
+    for sim, r in v["rinci"].items():
+        assert r["pembanding_terbaik"] == "gauss", sim
+        assert r["selisih_persen"] > 0, f"{sim}: timesfm harus lebih buruk"
+
+
+def test_vonis_harus_mengalahkan_kedua_pembanding():
+    """Versi pertama hanya membandingkan terhadap baserate, sehingga menulis "layak
+    dipertimbangkan" untuk model yang kalah dari jalan acak di SEMUA aset.
+
+    Mengalahkan pembanding yang lemah bukan kemenangan kalau pembanding yang kuat ada di
+    meja yang sama."""
+    menang_separuh = [{"simbol": "X", "metode": {
+        "baserate": {"pinball": 100.0, "cakupan_persen": 80},
+        "gauss": {"pinball": 50.0, "cakupan_persen": 80},
+        "timesfm": {"pinball": 90.0, "cakupan_persen": 80}}}]
+    v = _tfm.vonis(menang_separuh)
+    assert v["kalah_dari_pembanding_terbaik"] == ["X"], "unggul atas baserate saja tidak cukup"
+
+    menang_penuh = [{"simbol": "Y", "metode": {
+        "baserate": {"pinball": 100.0, "cakupan_persen": 80},
+        "gauss": {"pinball": 50.0, "cakupan_persen": 80},
+        "timesfm": {"pinball": 40.0, "cakupan_persen": 80}}}]
+    assert _tfm.vonis(menang_penuh)["menang_atas_pembanding_terbaik"] == ["Y"]
+
+
+def test_belum_diuji_tidak_dibaca_sebagai_kalah():
+    """Menuduh tanpa bukti adalah kekeliruan yang harness ini justru dibangun untuk
+    mencegah."""
+    v = _tfm.vonis([{"simbol": "Z", "metode": {"baserate": {"pinball": 1.0}}}])
+    assert v["tidak_diuji"] == ["Z"]
+    assert "BELUM DIUJI" in v["kesimpulan"] and "BUKAN vonis kalah" in v["kesimpulan"]

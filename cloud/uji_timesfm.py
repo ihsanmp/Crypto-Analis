@@ -178,33 +178,62 @@ def evaluasi(simbol, horizon, model=None, batas_asal=None):
 
 
 def vonis(semua):
-    """Menang hanya kalau pinball LEBIH KECIL daripada base rate. Cakupan saja tidak cukup."""
+    """Menang hanya kalau pinball lebih kecil daripada KEDUA pembanding.
+
+    Versi pertama hanya membandingkan terhadap baserate, dan itu cacat: gauss sengaja
+    dipasang sebagai "pembanding termurah — kalau tidak mengalahkan ini pun tidak ada yang
+    perlu dibahas", lalu tidak ikut divonis sama sekali. Hasilnya harness menulis "layak
+    dipertimbangkan" untuk model yang KALAH dari jalan acak di ketiga aset.
+
+    Mengalahkan pembanding yang lemah bukan kemenangan kalau pembanding yang kuat ada di
+    meja yang sama.
+    """
     menang, kalah, lewat = [], [], []
+    rinci = {}
     for h in semua:
         m = h.get("metode") or {}
-        if "timesfm" not in m or "baserate" not in m:
+        if "timesfm" not in m:
             lewat.append(h["simbol"])
             continue
-        (menang if m["timesfm"]["pinball"] < m["baserate"]["pinball"] else kalah
-         ).append(h["simbol"])
+        t = m["timesfm"]["pinball"]
+        pesaing = {n: m[n]["pinball"] for n in ("baserate", "gauss") if n in m}
+        if not pesaing:
+            lewat.append(h["simbol"])
+            continue
+        terbaik = min(pesaing, key=pesaing.get)
+        rinci[h["simbol"]] = {
+            "timesfm": t,
+            "pembanding_terbaik": terbaik,
+            "pinball_pembanding": pesaing[terbaik],
+            "selisih_persen": round((t - pesaing[terbaik]) / pesaing[terbaik] * 100, 1),
+            "cakupan_timesfm": m["timesfm"]["cakupan_persen"],
+        }
+        (menang if t < pesaing[terbaik] else kalah).append(h["simbol"])
+
     if not menang and not kalah:
         kesimpulan = ("BELUM DIUJI — model tidak berhasil dimuat atau riwayatnya kurang. "
                       "Ini BUKAN vonis kalah; jangan dibaca sebagai bukti apa pun.")
-    elif len(menang) > len(kalah):
-        kesimpulan = "TimesFM layak dipertimbangkan"
+    elif not kalah:
+        kesimpulan = "TimesFM mengungguli SELURUH pembanding — layak dipertimbangkan"
+    elif not menang:
+        kesimpulan = ("TimesFM KALAH dari pembanding terbaik di semua aset — jangan "
+                      "dipasang ke produksi")
     else:
-        kesimpulan = "TimesFM TIDAK mengungguli base rate — jangan dipasang ke produksi"
+        kesimpulan = (f"Campur: menang di {len(menang)}, kalah di {len(kalah)}. Belum "
+                      "cukup untuk membenarkan biayanya.")
     return {
-        "menang_atas_baserate": menang,
-        "kalah_dari_baserate": kalah,
+        "menang_atas_pembanding_terbaik": menang,
+        "kalah_dari_pembanding_terbaik": kalah,
         "tidak_diuji": lewat,
+        "rinci": rinci,
         "kesimpulan": kesimpulan,
         "cara_baca": (
             "Pinball lebih kecil = lebih baik; ia menghukum interval yang meleset DAN yang "
             "kelewat lebar, jadi tidak bisa dicurangi dengan melebarkan interval. Cakupan "
             "dibaca BERSAMA lebar interval: cakupan 100% dengan interval dua kali lebih "
             "lebar bukan kemenangan, itu cuma pengakuan tidak tahu yang ditulis lebih "
-            "panjang."),
+            "panjang. Cakupan JAUH DI BAWAH 80% berarti modelnya terlalu percaya diri — "
+            "intervalnya terlalu sempit untuk sesering itu meleset."),
     }
 
 
