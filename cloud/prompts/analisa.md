@@ -507,3 +507,20 @@ mustahil. Riwayat kripto gratis hanya sekitar satu tahun. Sebut rentangnya saat 
 **R:R yang dilaporkan di RENCANA dihitung dari RATA-RATA seluruh target**, bukan target
 pertama, karena rencananya bertahap. Kalau kamu menulis tiga target, rasio yang dinilai
 adalah rata-ratanya.
+
+# KALIBRASI SEBARAN — p10 bukan berarti 1 dari 10
+
+Blok `PROYEKSI` memuat `kalibrasi_terukur`. Itu bukan hiasan: sebaran p10-p90 di sana
+diuji walk-forward atas BTC, ETH, dan SOL (1.068 titik asal, horizon 60 hari), dan
+hasilnya interval itu hanya memuat hasil sebenarnya **~72-80% kali**, bukan 80%.
+
+Sisi BAWAH yang paling sering meleset. Artinya level p10 dasar ditembus lebih sering
+daripada satu dari sepuluh kali.
+
+**Saat mengutip p10 sisi bawah, sebut bahwa batas itu lebih sering ditembus daripada yang
+namanya sarankan.** Menyajikannya sebagai risiko yang sudah terhitung penuh membuat
+pembacanya mengira sisi bawahnya sudah dipagari — padahal justru di situ modelnya paling
+sering keliru.
+
+Ini berlaku juga untuk tabel kelayakan: peluang historis di sana dihitung dari sebaran
+yang sama, jadi peluang gerakan besar cenderung DIREMEHKAN sedikit, bukan dilebihkan.

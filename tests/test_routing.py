@@ -3517,3 +3517,63 @@ def test_belum_diuji_tidak_dibaca_sebagai_kalah():
     v = _tfm.vonis([{"simbol": "Z", "metode": {"baserate": {"pinball": 1.0}}}])
     assert v["tidak_diuji"] == ["Z"]
     assert "BELUM DIUJI" in v["kesimpulan"] and "BUKAN vonis kalah" in v["kesimpulan"]
+
+
+# ------------------------- kalibrasi sebaran: p10 tidak berarti 1 dari 10
+
+import uji_sebaran as _usb                                                  # noqa: E402
+
+
+def test_sebaran_empiris_kalah_di_keenam_pengukuran():
+    """Hasil uji walk-forward nyata (25 Agu 2026, horizon 60, 1.068 titik asal): metode
+    sebaran empiris yang dipakai proyeksi.py kalah dari jalan acak asas pantulan di
+    SELURUH enam pengukuran — tiga aset kali dua sisi.
+
+    Tapi kalah pinball TIDAK berarti langsung diganti: cakupan gauss di sisi bawah justru
+    LEBIH BURUK (65-67% vs 72-74%), dan sisi bawah itulah yang dipakai menetapkan
+    invalidasi. Interval yang lebih tajam tapi lebih sering ditembus adalah pertukaran
+    yang salah untuk batas risiko."""
+    hasil = [{"simbol": "BTC-USD", "metode": {
+        "baserate": {"puncak": {"pinball": 8.383, "cakupan_persen": 71.8},
+                     "dasar": {"pinball": 3.849, "cakupan_persen": 73.6}},
+        "gauss": {"puncak": {"pinball": 6.799, "cakupan_persen": 70.9},
+                  "dasar": {"pinball": 3.773, "cakupan_persen": 67.3}}}}]
+    v = _usb.vonis(hasil)
+    assert v["baserate_kalah_di"] == ["BTC-USD/puncak", "BTC-USD/dasar"]
+    assert v["rinci"]["BTC-USD/puncak"]["terbaik"] == "gauss"
+    assert v["rinci"]["BTC-USD/puncak"]["selisih_persen"] > 20
+
+
+def test_kalibrasi_terukur_ikut_ke_brief():
+    """Cakupan sebenarnya ~72-80%, bukan 80% sebagaimana nama p10-p90 menyiratkan.
+    Menyebut p10 tanpa menyebut ini membuat pembacanya mengira risikonya sudah terhitung
+    penuh — padahal sisi bawah justru yang paling sering meleset."""
+    src = open(os.path.join(AKAR, "cloud", "proyeksi.py"), encoding="utf-8").read()
+    assert '"kalibrasi_terukur"' in src
+    # Harus di field yang BERTAHAN --ringkas; "arti" dibuang _PANDUAN_STATIS.
+    blok = src[src.index('keluar["kalibrasi_terukur"]'):src.index("atas, bawah = level_struktural")]
+    assert '"wajib_dibaca"' in blok, "aturan keras tidak boleh di field yang dibuang --ringkas"
+    assert '"arti":' not in blok
+    t = open(os.path.join(AKAR, "cloud", "prompts", "analisa.md"), encoding="utf-8").read()
+    assert "KALIBRASI SEBARAN" in t and "lebih sering ditembus" in t
+
+
+def test_bootstrap_menjepit_puncak_dan_dasar_di_nol():
+    """Harga hari ke-0 adalah titik acuannya, jadi puncak minimal 0 dan dasar maksimal 0.
+    Tanpa penjepitan, jendela yang bergerak satu arah menghasilkan "dasar" positif —
+    mustahil menurut definisinya, dan diam-diam membuat risikonya terlihat nihil."""
+    naik = [100.0 * (1.01 ** i) for i in range(200)]
+    r = _usb.ramal_bootstrap(naik, 30, lintasan=200)
+    assert r["dasar"][0.9] <= 0.0, "dasar tidak boleh positif"
+    assert r["puncak"][0.1] >= 0.0, "puncak tidak boleh negatif"
+
+
+def test_gauss_asas_pantulan_masuk_akal():
+    """Kuantil maksimum jalan acak: sigma*akar(T)*PPF((1+q)/2). Median maksimum harus
+    POSITIF walau median harga penutupnya nol — itu inti asas pantulan, dan kalau
+    terbalik seluruh pembandingnya tidak berarti."""
+    datar = [100.0, 101.0, 99.0, 100.5, 99.5] * 40
+    r = _usb.ramal_gauss(datar, 60)
+    assert r["puncak"][0.5] > 0, "median puncak harus positif"
+    assert r["dasar"][0.5] < 0, "median dasar harus negatif"
+    assert r["puncak"][0.9] > r["puncak"][0.1] >= 0

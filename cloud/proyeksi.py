@@ -297,6 +297,23 @@ def main():
     except Exception as e:
         keluar["kelayakan_tidak_tersedia"] = f"{type(e).__name__}: {e}"
 
+    # KALIBRASI TERUKUR, bukan asumsi. Diuji walk-forward di uji_sebaran.py atas BTC, ETH,
+    # dan SOL (1.068 titik asal, horizon 60): interval p10-p90 dari metode ini secara
+    # historis memuat hasil sebenarnya hanya ~72-80% kali, bukan 80% sebagaimana namanya
+    # menyiratkan — dan sisi BAWAH yang paling sering meleset. Menyebut "p10" tanpa
+    # menyebut ini membuat pembacanya mengira risikonya sudah terhitung penuh.
+    keluar["kalibrasi_terukur"] = {
+        "cakupan_p10_p90_sebenarnya_persen": "72-80 (puncak) · 72-74 (dasar)",
+        "target_nominal_persen": 80,
+        "diuji_pada": "BTC/ETH/SOL, 1.068 titik asal, horizon 60 hari",
+        # BUKAN "arti" — kata itu ada di _PANDUAN_STATIS dan dibuang --ringkas, padahal
+        # justru kalimat inilah aturan kerasnya.
+        "wajib_dibaca": ("Interval ini lebih SEMPIT daripada kenyataan, terutama di sisi bawah. "
+                 "Perlakukan p10 dasar sebagai batas yang masih bisa ditembus lebih sering "
+                 "daripada 1 dari 10 kali. JANGAN menyajikannya sebagai batas risiko yang "
+                 "sudah terhitung penuh."),
+    }
+
     atas, bawah = level_struktural(candles, harga, pakai_high)
     keluar["level_struktural"] = {
         "resisten_di_atas": atas, "support_di_bawah": bawah,
