@@ -1,0 +1,50 @@
+# Uji sekali jalan: apakah TimesFM MENGUNGGULI base rate yang sudah kita punya.
+#
+# Pertanyaannya bukan "apakah TimesFM bagus" melainkan "apakah ia lebih baik daripada
+# sebaran empiris di proyeksi.py". Untuk deret yang mendekati jalan acak, base rate sering
+# sudah mendekati optimal — jadi model 200 juta parameter harus membuktikan dirinya.
+#
+# Kenapa terpisah dari jalur produksi: torch (~200 MB) plus bobot (~800 MB) diunduh tiap
+# run. Bot ini jalan tiap pesan Telegram masuk, jadi biaya sebesar itu tidak boleh masuk
+# jalur normal sebelum ada bukti ia setimpal.
+#
+# Hanya workflow_dispatch. Ini pertanyaan sekali jawab.
+name: Uji TimesFM vs base rate
+
+on:
+  workflow_dispatch:
+    inputs:
+      horizon:
+        description: "horizon hari"
+        default: "30"
+      aset:
+        description: "daftar aset Yahoo, dipisah koma"
+        default: "BTC-USD,ETH-USD,SOL-USD"
+
+permissions:
+  contents: read
+
+jobs:
+  uji:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Pasang torch CPU + timesfm
+        run: |
+          # Indeks CPU eksplisit: paket default menarik CUDA ~2,5 GB yang tidak akan
+          # pernah dipakai di runner tanpa GPU.
+          pip install --quiet torch --index-url https://download.pytorch.org/whl/cpu
+          pip install --quiet timesfm
+          python -c "import torch, timesfm; print('torch', torch.__version__)"
+
+      - name: Jalankan evaluasi walk-forward
+        run: |
+          python cloud/uji_timesfm.py \
+            --aset "${{ inputs.aset }}" \
+            --horizon "${{ inputs.horizon }}"
