@@ -224,6 +224,14 @@ def test_audit_angka_tanpa_brief_tidak_error():
 
 # ------------------------------------------------------ memori.masalah_privasi
 
+# CATATAN KEAMANAN. Fixture di bawah HARUS palsu dan terlihat palsu. Token bot Telegram
+# ASLI pernah berada di sini dan terdeteksi pemindai rahasia GitHub sebagai kebocoran
+# publik setelah 16 hari. Bentuk yang sah tetap dipakai supaya _RAHASIA_RE benar-benar
+# teruji, tapi isinya berpola contoh (AbCdEf...) sehingga tidak bisa keliru dianggap nyata.
+#
+# Kalau menambah fixture rahasia baru: JANGAN menempelkan nilai sungguhan "supaya
+# realistis". Pola yang cocok sudah cukup untuk menguji penyaringnya, dan nilai asli di
+# repo publik tidak bisa ditarik kembali dari riwayat git.
 @pytest.mark.parametrize("teks", [
     "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",          # alamat EVM
     "dompet saya 0xAbC1234567890123456789012345678901234567",
@@ -1199,7 +1207,7 @@ def test_pagar_kode_prompt_seimbang(berkas):
 # ------------------------ sapuan ke-12: pesan gagal & kebocoran ke Telegram
 
 @pytest.mark.parametrize("teks", [
-    "gagal auth: bot7525096497:AAF9xKqLmN3pQrS7tUvWxYz012345678ab",
+    "gagal auth: bot1234567890:AbCdEfGhIjKlMnOpQrStUvWxYz012345",
     "fatal: ghp_AbCdEfGhIjKlMnOpQrStUvWxYz0123456",
     "OPENAI_API_KEY=sk-proj-AbCdEfGhIjKlMnOpQrStUvWx",
 ])
