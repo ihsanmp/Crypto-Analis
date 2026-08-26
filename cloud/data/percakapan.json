@@ -1,16 +1,12 @@
 [
  {
   "chat": "1242dcf6b322d4c6",
-  "waktu": 1787592832.2459795,
-  "waktu_utc": "2026-08-24 17:33",
-  "pesan": "bagaimana performa aster untuk seminggu kedepan",
-  "balasan": "Harga ASTER sekarang $0,68 (per 24 Agu 2026, 17:32 UTC), naik 12,6% dalam 7 hari terakhir. Trennya jangka pendek positif tapi struktur mingguan masih rawan — jadi minggu depan kemungkinan besar tetap volatil, bukan tren searah yang mulus.\n\n• 4H: harg\n[...dipangkas...]\nra.\n\n✅ KESIMPULAN SPOT\nBelum punya: MASUK BERTAHAP di zona $0,63–0,66 kalau ada retrace, bukan kejar di atas $0,68\nSudah pegang: TAHAN — selama harian tetap di atas EMA21 $0,628; kalau close harian tembus ke bawah situ, pertimbangkan kurangi sebagian",
+  "waktu": 1787745073.3537464,
+  "waktu_utc": "2026-08-26 11:51",
+  "pesan": "cari informasi mengenai eden, soalnya mentor saya buy spot eden",
+  "balasan": "Ada beberapa token bernama \"EDEN\" — aku asumsikan maksudnya OpenEden (EDEN), token RWA/stablecoin platform dengan mcap $23,2 juta (peringkat #600 CMC), karena ini yang aktif diperdagangkan. Ada juga \"Eden Network\" tapi itu nyaris mati (mcap $29 ribu,\n[...dipangkas...]\ns://defillama.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/",
   "angka_kunci": [
-   "harga=0,68",
-   "ema21=0,672",
-   "ema21=0,628",
-   "ema21=0,662",
-   "rsi=62,7"
+   "harga=0,05499"
   ]
  }
 ]
