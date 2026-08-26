@@ -3819,3 +3819,120 @@ def test_grup_forum_diberi_label_topik():
     class _Palsu:
         reply_to = None
     assert _tg._id_topik(_Palsu()) is None
+
+
+# ------------------------- tgbaca dengan data buatan (tanpa Telegram sama sekali)
+
+class _Pesan:
+    """Pesan Telegram tiruan. Bentuk atributnya mengikuti Telethon seadanya."""
+
+    def __init__(self, teks, menit_lalu=1, topik=None):
+        from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+        self.message = teks
+        self.date = _dt.now(_tz.utc) - _td(minutes=menit_lalu)
+        if topik is None:
+            self.reply_to = None
+        else:
+            self.reply_to = type("R", (), {"forum_topic": True,
+                                           "reply_to_top_id": topik,
+                                           "reply_to_msg_id": topik})()
+
+
+class _Dialog:
+    def __init__(self, nama, pesan, forum=False):
+        self.name = nama
+        self._pesan = pesan
+        self.is_group = True
+        self.is_channel = False
+        self.entity = type("E", (), {"forum": forum})()
+
+
+class _Klien:
+    def __init__(self, dialog):
+        self._d = dialog
+
+    def iter_dialogs(self):
+        return iter(self._d)
+
+    def iter_messages(self, d, limit=None):
+        return iter(d._pesan[:limit] if limit else d._pesan)
+
+    def disconnect(self):
+        pass
+
+
+_ISI = "OpenEden mengumumkan kemitraan dengan BNY untuk tokenisasi obligasi HYBOND"
+
+
+def test_kumpulkan_menyaring_dan_melabeli(monkeypatch):
+    """Seluruh alur diuji tanpa akun Telegram: penyaringan, batas waktu, dan label topik."""
+    monkeypatch.setattr(_tg, "_peta_topik", lambda k, e: {7: "Announcements", 9: "Chat"})
+    d = _Dialog("Grup Alpha", [
+        _Pesan(_ISI, 5, topik=7),
+        _Pesan("gm", 6, topik=9),                      # terlalu pendek -> dibuang
+        _Pesan("https://t.me/x", 7, topik=9),          # tautan telanjang -> dibuang
+        _Pesan(_ISI + " tambahan lain yang berbeda", 8, topik=9),
+        _Pesan("pesan lama yang seharusnya tidak ikut sama sekali", 60 * 40, topik=7),
+    ], forum=True)
+    hasil = _tg.kumpulkan(jam=24, k=_Klien([d]))
+    assert len(hasil) == 2, [h[3][:30] for h in hasil]
+    label = {h[1] for h in hasil}
+    assert label == {"Announcements", "Chat"}, label
+    assert all(h[0] == "Grup Alpha" for h in hasil)
+    # Terbaru lebih dulu.
+    assert hasil[0][2] > hasil[1][2]
+
+
+def test_duplikat_lintas_grup_dibuang(monkeypatch):
+    """Pesan yang sama diteruskan ke banyak grup adalah pola paling umum di kripto.
+    Tanpa dedup, satu pengumuman muncul lima kali dan menghabiskan jatah."""
+    monkeypatch.setattr(_tg, "_peta_topik", lambda k, e: {})
+    a = _Dialog("Grup A", [_Pesan(_ISI, 5)])
+    b = _Dialog("Grup B", [_Pesan(_ISI + "   ", 4)])          # spasi beda, isi sama
+    hasil = _tg.kumpulkan(jam=24, k=_Klien([a, b]))
+    assert len(hasil) == 1, hasil
+
+
+def test_jatah_per_topik_melindungi_topik_sepi(monkeypatch):
+    """Satu topik ramai akan menghabiskan seluruh jatah grup dan menutupi topik
+    pengumuman — padahal justru yang sepi itu yang layak diperiksa."""
+    monkeypatch.setattr(_tg, "_peta_topik", lambda k, e: {1: "Ramai", 2: "Pengumuman"})
+    pesan = [_Pesan(f"obrolan panjang nomor {i} yang cukup berisi untuk lolos saringan", 5,
+                    topik=1) for i in range(40)]
+    pesan.append(_Pesan(_ISI, 6, topik=2))
+    hasil = _tg.kumpulkan(jam=24, k=_Klien([_Dialog("Forum", pesan, forum=True)]))
+    per_topik = {}
+    for _n, lab, _w, _t in hasil:
+        per_topik[lab] = per_topik.get(lab, 0) + 1
+    assert per_topik.get("Ramai") <= _tg.MAKS_PER_TOPIK
+    assert per_topik.get("Pengumuman") == 1, "topik sepi harus tetap kebagian"
+
+
+def test_dm_tidak_pernah_dibaca(monkeypatch):
+    """Isi DM adalah percakapan dengan orang sungguhan yang tidak pernah setuju dianalisa
+    mesin. Batas ini tidak boleh bisa dilonggarkan tanpa sengaja."""
+    monkeypatch.setattr(_tg, "_peta_topik", lambda k, e: {})
+    dm = _Dialog("Seseorang", [_Pesan(_ISI, 5)])
+    dm.is_group = False
+    dm.is_channel = False
+    assert _tg.kumpulkan(jam=24, k=_Klien([dm])) == []
+
+
+def test_peta_topik_gagal_bukan_kegagalan_fatal():
+    """Tanpa Telethon terpasang, impornya gagal — pesannya harus TETAP terbaca, hanya
+    tanpa label. Kehilangan label jauh lebih ringan daripada kehilangan seluruh isinya."""
+    entitas = type("E", (), {"forum": True})()
+    assert _tg._peta_topik(None, entitas) == {}
+    bukan_forum = type("E", (), {"forum": False})()
+    assert _tg._peta_topik(None, bukan_forum) == {}
+
+
+def test_id_topik_dari_bentuk_telethon():
+    """reply_to_top_id dipakai kalau pesannya balasan di dalam topik; reply_to_msg_id
+    kalau ia langsung di akar topik. Pesan non-forum tidak punya keduanya."""
+    assert _tg._id_topik(_Pesan("x", topik=7)) == 7
+    assert _tg._id_topik(_Pesan("x")) is None
+    # Balasan biasa (bukan forum) tidak boleh dibaca sebagai topik.
+    biasa = _Pesan("x")
+    biasa.reply_to = type("R", (), {"forum_topic": False, "reply_to_msg_id": 99})()
+    assert _tg._id_topik(biasa) is None

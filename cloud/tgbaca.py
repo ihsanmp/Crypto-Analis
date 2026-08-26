@@ -152,10 +152,18 @@ def daftar_grup():
                 print(f"  {d.name}")
 
 
-def kumpulkan(jam=24, saring_nama=None):
+def kumpulkan(jam=24, saring_nama=None, k=None):
+    """Kumpulkan pesan tersaring. `k` boleh diisi klien siap pakai — dipakai tes.
+
+    Tanpa suntikan itu, seluruh alur ini (penyaringan, dedup lintas grup, jatah per topik,
+    batas waktu, urutan) hanya bisa diuji dengan akun Telegram sungguhan — artinya tidak
+    pernah diuji sampai ada yang rusak di produksi.
+    """
     batas = datetime.now(timezone.utc) - timedelta(hours=jam)
     terpakai, terkumpul, dilihat = 0, [], set()
-    with klien() as k:
+    tutup = k is None
+    k = k or klien().__enter__()
+    try:
         for d in k.iter_dialogs():
             if not _grup_saja(d):
                 continue
@@ -191,6 +199,12 @@ def kumpulkan(jam=24, saring_nama=None):
                     break
             if terpakai >= MAKS_TOTAL:
                 break
+    finally:
+        if tutup:
+            try:
+                k.disconnect()
+            except Exception:
+                pass
     terkumpul.sort(key=lambda x: x[2], reverse=True)
     return terkumpul
 
