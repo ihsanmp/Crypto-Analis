@@ -1149,7 +1149,7 @@ def test_peringatan_audit_tidak_mendorong_kesimpulan_keluar_riwayat():
     konteks apa pun saat dibaca ulang.
     """
     inti = ("🧮 SKOR 58/100" + N + "🎯 BIAS SPOT: TAHAN" + N + ("x" * 700) + N +
-            "✅ KESIMPULAN SPOT" + N + "Belum punya : TUNGGU DULU" + N +
+            "✅ KESIMPULAN" + N + "Belum punya : TUNGGU DULU" + N +
             "Sudah pegang: TAHAN — selama close di atas EMA21 $148,20" + N)
     disc = "⚠️ Riset pasar berbasis data, bukan saran keuangan."
     dengan = bot.sisipkan_peringatan(
@@ -3644,3 +3644,21 @@ def test_sapaan_tidak_berubah_jadi_analisa_aset():
                  "kondisi pasar gimana", "apa itu funding rate"):
         assert bot.aset_dari_pesan(teks, dalam=True) == (None, None), teks
     assert "HALO" in bot._KATA_UMUM_BUKAN_KOIN
+
+
+def test_label_kesimpulan_seragam_tanpa_kata_spot():
+    """User bertanya "apakah ada informasi menarik soal koin eden" — pertanyaan informasi —
+    dan menerima blok berjudul "KESIMPULAN SPOT". Labelnya menjanjikan jenis jawaban yang
+    tidak diminta.
+
+    analisa_pasar.md sudah lama memakai "KESIMPULAN" saja; hanya jalur crypto yang
+    menyimpang. Keseragaman ini juga menjaga pemotong balasan di bot_oneshot yang
+    membelah teks pada penanda tersebut."""
+    for nama in ("analisa.md", "analisa_pasar.md", "chat.md", "foto.md"):
+        t = open(os.path.join(AKAR, "cloud", "prompts", nama), encoding="utf-8").read()
+        assert "KESIMPULAN SPOT" not in t, nama
+        assert "KESIMPULAN POSISI" not in t, nama
+        assert "KESIMPULAN" in t, nama
+    # Pemotong balasan harus tetap mengenalinya.
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    assert "KESIMPULAN" in src

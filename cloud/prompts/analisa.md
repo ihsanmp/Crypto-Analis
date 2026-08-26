@@ -224,7 +224,7 @@ Pembatal pandangan: <satu hal konkret + level ATAU tanggalnya>
 • <poin singkat>
 • <poin singkat>
 
-✅ KESIMPULAN POSISI SPOT
+✅ KESIMPULAN
 Belum punya : <MASUK SEKARANG / MASUK BERTAHAP DI ZONA / TUNGGU DULU / LEWATI>
               <satu kalimat: apa pemicunya, atau apa yang ditunggu>
 Sudah pegang: <TAHAN / TAMBAH / KURANGI SEBAGIAN / KELUAR>
@@ -285,7 +285,7 @@ Aturan penyebutan angka teknikal:
 
 Baris disclaimer adalah **BARIS TERAKHIR** — jangan tambahkan apa pun setelahnya.
 
-**KESIMPULAN POSISI SPOT — cara mengisinya (bagian ini yang paling dibaca user).**
+**KESIMPULAN — cara mengisinya (bagian ini yang paling dibaca user).**
 Ini intisari seluruh analisa: user harus bisa membaca ini SAJA dan tahu harus berbuat apa.
 1. **Harus TEGAS memilih satu label**, jangan mengambang ("mungkin bisa dipertimbangkan").
    Kalau datanya memang belum jelas, label yang benar adalah **TUNGGU DULU** — itu pun

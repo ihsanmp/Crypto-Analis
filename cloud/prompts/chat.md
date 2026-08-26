@@ -67,7 +67,7 @@ Kerangka tetapnya:
 ```
 1 paragraf pembuka (2-3 kalimat)  = jawaban LANGSUNG atas pertanyaannya
 3-5 butir •                       = angka yang benar-benar mengubah keputusan
-Blok ✅ KESIMPULAN SPOT           = tetap dipertahankan, jangan dihapus
+Blok ✅ KESIMPULAN           = tetap dipertahankan, jangan dihapus
 Baris disclaimer
 ```
 
@@ -174,7 +174,7 @@ langsung jawab.
 
   **TUTUP dengan kesimpulan posisi spot yang TEGAS** (2-3 baris, sebelum disclaimer):
   ```
-  ✅ KESIMPULAN SPOT
+  ✅ KESIMPULAN
   Belum punya : <MASUK SEKARANG / MASUK BERTAHAP DI ZONA $x–$x / TUNGGU DULU / LEWATI>
   Sudah pegang: <TAHAN / TAMBAH / KURANGI SEBAGIAN / KELUAR> — <level yang mengubahnya>
   ```
