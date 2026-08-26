@@ -1417,10 +1417,21 @@ def _blok_kelengkapan(jumlah_tugas, gagal, bagian=None):
 # transaksi. Kesimpulan bergaya "MASUK SEKARANG / TUNGGU DULU" salah alamat di sini —
 # ia menjawab pertanyaan yang tidak diajukan, dan memaksa pembacanya menolak saran yang
 # tidak diminta sebelum bisa memakai isinya.
+# Diperluas setelah pertanyaan nyata "kalo secara fundamental di X apakah ada informasi
+# yang menarik pada koin eden?" dijawab dengan "Belum punya: LEWATI / Sudah pegang:
+# TAHAN". Itu pertanyaan INFORMASI, bukan transaksi — dan menjawabnya dengan format
+# keputusan memaksa pembacanya menolak saran yang tidak diminta sebelum bisa memakai
+# isinya. Aman diperluas: mode ini hanya mengubah GAYA kesimpulan, tidak mengubah data
+# yang dikumpulkan maupun jalur routingnya.
 _MINTA_PANTAU = re.compile(
     r"\b(update|market update|kondisi|situasi|keadaan|perkembangan|pantau|pantauan|"
     r"apa yang terjadi|lagi (?:gimana|bagaimana)|sekarang (?:gimana|bagaimana)|"
-    r"weekly|mingguan|kabar|terpantau)\b", re.I)
+    r"weekly|mingguan|kabar|terpantau|"
+    # Bentuk "apakah ada informasi/berita/sesuatu yang menarik" — pertanyaan temuan.
+    r"ada (?:informasi|info|berita|kabar|sesuatu|hal)|"
+    r"(?:informasi|info|berita) (?:menarik|penting|baru|terbaru)|"
+    r"apa saja yang|narasi(?:nya)?|"
+    r"fundamental(?:nya)? (?:gimana|bagaimana|apa))" + '\\b', re.I)
 
 
 # Permintaan RISET TELEGRAM: "cari informasi menarik di telegram saya", "ada apa di grup".

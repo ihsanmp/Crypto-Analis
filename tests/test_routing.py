@@ -3936,3 +3936,33 @@ def test_id_topik_dari_bentuk_telethon():
     biasa = _Pesan("x")
     biasa.reply_to = type("R", (), {"forum_topic": False, "reply_to_msg_id": 99})()
     assert _tg._id_topik(biasa) is None
+
+
+def test_pertanyaan_informasi_ikut_mode_pantau():
+    """Pertanyaan nyata yang salah dijawab: "kalo secara fundamental di X apakah ada
+    informasi yang menarik pada koin eden?" menerima "Belum punya: LEWATI / Sudah pegang:
+    TAHAN kecil". Itu pertanyaan INFORMASI, bukan transaksi.
+
+    Aman diperluas: mode ini hanya mengubah GAYA kesimpulan — tidak menyentuh data yang
+    dikumpulkan maupun jalur routingnya."""
+    for t in ("kalo secara fundamental di X apakah ada informasi yang menarik pada koin eden?",
+              "ada informasi menarik soal hype?", "ada berita terbaru tentang sol",
+              "narasinya gimana sekarang", "narasi apa yang lagi ramai",
+              "fundamentalnya gimana", "apa saja yang terjadi di pasar"):
+        assert bot.mode_pantau(t), t
+
+
+def test_niat_transaksi_tetap_mengalahkan_pertanyaan_informasi():
+    """Batas yang menentukan: "ada info bagus buat BELI eden?" memuat niat transaksi,
+    jadi user memang sedang menimbang. Menahan jawaban keputusan di situ berarti menahan
+    jawaban yang justru diminta."""
+    for t in ("ada info bagus buat beli eden?", "worth masuk eden di 0.05?",
+              "dca eth di 1900 gimana", "beli hype sekarang gimana"):
+        assert not bot.mode_pantau(t), t
+
+
+def test_akhiran_nya_tidak_membutakan_pemicu():
+    """\b di ujung pola menuntut batas kata tepat setelah kata dasarnya, sementara akhiran
+    -nya lazim dalam bahasa Indonesia. "narasinya" sempat lolos tanpa terdeteksi."""
+    assert bot.mode_pantau("narasinya gimana sekarang")
+    assert bot.mode_pantau("narasi apa yang lagi ramai")
