@@ -3570,6 +3570,10 @@ def test_bootstrap_menjepit_puncak_dan_dasar_di_nol():
     """Harga hari ke-0 adalah titik acuannya, jadi puncak minimal 0 dan dasar maksimal 0.
     Tanpa penjepitan, jendela yang bergerak satu arah menghasilkan "dasar" positif —
     mustahil menurut definisinya, dan diam-diam membuat risikonya terlihat nihil."""
+    # numpy TIDAK dipasang di CI dan memang tidak dibutuhkan bot — hanya harness
+    # evaluasi sekali jalan yang memakainya. Melewati tesnya lebih jujur daripada
+    # menambah dependensi runtime demi satu tes yang tidak menyentuh jalur produksi.
+    pytest.importorskip("numpy", reason="hanya dipakai harness evaluasi, bukan bot")
     naik = [100.0 * (1.01 ** i) for i in range(200)]
     r = _usb.ramal_bootstrap(naik, 30, lintasan=200)
     assert r["dasar"][0.9] <= 0.0, "dasar tidak boleh positif"
