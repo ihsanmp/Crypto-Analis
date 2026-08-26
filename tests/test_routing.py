@@ -3670,3 +3670,72 @@ def test_label_kesimpulan_seragam_tanpa_kata_spot():
     # Pemotong balasan harus tetap mengenalinya.
     src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
     assert "KESIMPULAN" in src
+
+
+# ------------------------------------------------ penjaga: rahasia nyata tidak boleh masuk repo
+
+# Nilai yang BOLEH ada: fixture berpola contoh, dan satu id koin CoinGecko yang kebetulan
+# menyerupai kunci OpenAI. Daftarnya sengaja EKSPLISIT — heuristik "kelihatan palsu" adalah
+# cara paling mudah meloloskan yang asli.
+_RAHASIA_DIIZINKAN = {
+    "1234567890:AbCdEfGhIjKlMnOpQrStUvWxYz012345",
+    "1234567890:AbCdEfGhIjKlMnOpQrStUvWxYz01234",   # fixture pemindai (satu huruf lebih pendek)
+    "ghp_AbCdEfGhIjKlMnOpQrStUvWxYz0123456",
+    "sk-proj-AbCdEfGhIjKlMnOpQrStUvWx",
+}
+
+# TANPA \b di depan pola token Telegram. Token hampir selalu ditulis menempel setelah "bot"
+# di URL API ("api.telegram.org/bot<TOKEN>/sendMessage"), dan "t" diikuti angka BUKAN batas
+# kata — sehingga \b membuat pemindainya buta persis pada bentuk yang paling sering dipakai.
+# Kekeliruan itu benar-benar terjadi saat menyapu riwayat: hasilnya "0 token" padahal ada.
+_POLA_RAHASIA = (
+    ("token Telegram", r"\d{8,10}:[A-Za-z0-9_-]{30,}"),
+    ("GitHub PAT", r"(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{30,}"),
+    ("GitHub fine-grained", r"github_pat_[A-Za-z0-9_]{50,}"),
+    # Badan kunci OpenAI asli alfanumerik TANPA tanda hubung. Pola longgar
+    # ("sk-[A-Za-z0-9_-]+") mencocokkan slug URL seperti
+    # "monitoring-risk-across-the-financial-system" dan id koin
+    # "sk-hynix-backpack-securities" — dua positif palsu yang benar-benar muncul.
+    ("OpenAI", r"sk-(?:proj-)?[A-Za-z0-9]{20,}"),
+    ("Anthropic", r"sk-ant-[A-Za-z0-9_-]{20,}"),
+    ("AWS", r"AKIA[0-9A-Z]{16}"),
+    ("Slack", r"xox[baprs]-[A-Za-z0-9-]{10,}"),
+    ("kunci privat", r"BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY"),
+    ("Google API", r"AIza[0-9A-Za-z_-]{35}"),
+)
+
+
+def test_tidak_ada_rahasia_nyata_di_repo():
+    """Token bot Telegram ASLI pernah lolos ke sini sebagai fixture tes dan terbuka 16 hari
+    sebelum pemindai GitHub menemukannya. Token bisa dicabut; yang sudah masuk riwayat git
+    tidak bisa ditarik kembali.
+
+    Penjaga ini menyapu seluruh berkas yang dilacak git. Nilai yang boleh ada didaftar
+    EKSPLISIT — bukan ditebak dari bentuknya."""
+    import subprocess
+    keluar = subprocess.run(["git", "ls-files"], cwd=AKAR, capture_output=True,
+                            text=True, encoding="utf-8", errors="replace")
+    temuan = []
+    for jalur in keluar.stdout.splitlines():
+        p = os.path.join(AKAR, jalur)
+        if not os.path.isfile(p):
+            continue
+        try:
+            with open(p, encoding="utf-8", errors="ignore") as f:
+                isi = f.read()
+        except OSError:
+            continue
+        for label, pola in _POLA_RAHASIA:
+            for m in re.finditer(pola, isi):
+                if m.group(0) not in _RAHASIA_DIIZINKAN:
+                    # Nilainya TIDAK dicetak — pesan gagal pun tidak boleh membocorkannya.
+                    temuan.append(f"{jalur}: {label} ({len(m.group(0))} karakter)")
+    assert not temuan, "rahasia nyata di repo:\n  " + "\n  ".join(temuan)
+
+
+def test_pemindai_rahasia_menangkap_bentuk_yang_menempel():
+    """Regresi pada penjagaannya sendiri: pola dengan \b di depan gagal mengenali token
+    yang ditulis "bot<TOKEN>" — bentuk yang justru paling sering dipakai."""
+    pola = dict(_POLA_RAHASIA)["token Telegram"]
+    assert re.search(pola, "api.telegram.org/bot1234567890:AbCdEfGhIjKlMnOpQrStUvWxYz01234/x")
+    assert re.search(pola, "gagal auth: bot1234567890:AbCdEfGhIjKlMnOpQrStUvWxYz01234")
