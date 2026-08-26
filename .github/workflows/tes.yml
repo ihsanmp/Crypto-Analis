@@ -12,6 +12,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Pemicu manual. Ditambahkan setelah dua commit berturut-turut TIDAK memicu run sama
+  # sekali — commitnya ada di GitHub, Actions aktif, tapi tidak ada run yang dibuat.
+  # Tanpa jalur manual, keadaan seperti itu tidak bisa dibedakan dari "CI belum jalan".
+  workflow_dispatch: {}
 
 jobs:
   pytest:
