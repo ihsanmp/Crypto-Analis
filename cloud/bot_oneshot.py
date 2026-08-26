@@ -1423,6 +1423,44 @@ _MINTA_PANTAU = re.compile(
     r"weekly|mingguan|kabar|terpantau)\b", re.I)
 
 
+# Permintaan RISET TELEGRAM: "cari informasi menarik di telegram saya", "ada apa di grup".
+# Dua bagian yang harus SAMA-SAMA ada — menyebut telegram/grup saja tidak cukup, karena
+# "kirim ke telegram" dan "grup ini ramai" bukan permintaan riset. Membaca grup itu mahal
+# dan menyentuh data orang lain, jadi ambangnya sengaja tinggi.
+_TG_TEMPAT = re.compile(r"telegram|grup|group|channel|kanal", re.I)
+_TG_NIAT = re.compile(
+    r"cari|carikan|nyari|informasi|info|menarik|riset|rangkum|ringkas|"
+    r"apa yang|ada apa|kabar|bahas|pantau", re.I)
+
+
+def data_telegram():
+    """Baca hasil pembaca Telegram dari BERKAS. None kalau tidak ada.
+
+    Lewat berkas, bukan dengan memanggil tgbaca.py dari sini. Itu bukan kerumitan yang
+    sia-sia: memanggilnya di proses ini berarti TELEGRAM_SESSION harus ada di environment
+    proses yang JUGA menjalankan model — dan seluruh gunanya pemisahan ini adalah supaya
+    injeksi prompt dari isi grup tidak berada di ruangan yang sama dengan kredensial yang
+    memberi akses penuh ke akun.
+    """
+    jalur = os.environ.get("BERKAS_TELEGRAM", "").strip()
+    if not jalur or not os.path.exists(jalur):
+        return None
+    try:
+        with open(jalur, encoding="utf-8", errors="replace") as f:
+            isi = f.read().strip()
+    except OSError as e:
+        return ("[ISI GRUP TELEGRAM — TIDAK TERBACA]" + chr(10)
+                + f"Berkasnya ada tapi gagal dibaca ({type(e).__name__}). Katakan apa "
+                  "adanya; JANGAN mengarang isi grup.")
+    return isi or None
+
+
+def minta_telegram(teks):
+    """Apakah user meminta riset dari grup Telegram-nya sendiri."""
+    low = (teks or "").lower()
+    return bool(_TG_TEMPAT.search(low) and _TG_NIAT.search(low))
+
+
 def mode_pantau(teks):
     """Pemantauan, bukan rekomendasi. False kalau ada niat transaksi atau harga konkret.
 
@@ -2244,6 +2282,11 @@ def process(token, chat_id, text, photo_file_id=None):
                 # berapa yang benar-benar khas aset ini.
                 if _MINTA_SEBAB.search(text):
                     brief += '\n\n' + data_sebab(jenis_chat, simbol_chat)
+                    # Riset grup Telegram, kalau memang diminta. Isinya dibaca dari BERKAS yang
+                    # ditulis step terpisah — proses ini tidak pernah memegang session-nya.
+                    tg = data_telegram() if minta_telegram(text) else None
+                    if tg:
+                        brief += chr(10) * 2 + tg
                 print(f"[proses] chat: data {jenis_chat} {simbol_chat} dikumpulkan kode "
                       f"({len(brief)} karakter)", file=sys.stderr)
             except Exception as e:
@@ -2804,6 +2847,12 @@ def config_problem():
 
 
 def main():
+    # Dipakai step pengintip di workflow: menentukan apakah step pembaca Telegram perlu
+    # jalan, SEBELUM step yang memegang session dimulai. Logikanya di sini, bukan di YAML,
+    # supaya frasa pemicunya tidak terduplikasi di dua tempat lalu menyimpang diam-diam.
+    if "--minta-telegram" in sys.argv[1:]:
+        sys.exit(0 if minta_telegram(os.environ.get("TG_TEXT", "")) else 1)
+
     check_only = "--check" in sys.argv[1:]
 
     problem = config_problem()

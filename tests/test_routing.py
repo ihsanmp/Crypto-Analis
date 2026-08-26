@@ -3743,3 +3743,79 @@ def test_pemindai_rahasia_menangkap_bentuk_yang_menempel():
     pola = dict(_POLA_RAHASIA)["token Telegram"]
     assert re.search(pola, "api.telegram.org/bot1234567890:AbCdEfGhIjKlMnOpQrStUvWxYz01234/x")
     assert re.search(pola, "gagal auth: bot1234567890:AbCdEfGhIjKlMnOpQrStUvWxYz01234")
+
+
+# ------------------------------------------- riset grup Telegram (session terpisah)
+
+import tgbaca as _tg                                                        # noqa: E402
+
+
+def test_pemicu_riset_telegram_butuh_tempat_dan_niat():
+    """Membaca grup itu mahal dan menyentuh data orang lain, jadi ambangnya tinggi:
+    menyebut telegram/grup saja tidak cukup. "kirim hasilnya ke telegram" dan "grup ini
+    ramai ya" bukan permintaan riset."""
+    for t in ("carikan informasi menarik dari telegram saya", "ada apa di grup hari ini",
+              "rangkum grup telegram 24 jam terakhir"):
+        assert bot.minta_telegram(t), t
+    for t in ("kirim hasilnya ke telegram", "analisa btc", "halo", "grup ini ramai ya"):
+        assert not bot.minta_telegram(t), t
+
+
+def test_session_hanya_di_step_pembaca():
+    """Session Telegram memberi AKSES PENUH ke akun — tidak ada versi read-only, dan
+    mencabutnya mengakhiri semua sesi di semua perangkat. Menaruhnya di step yang
+    menjalankan model berarti injeksi prompt dari isi grup berada di lingkungan yang sama
+    dengan kredensialnya."""
+    wf = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"), encoding="utf-8").read()
+    baris = wf.split(chr(10))
+    tetap = [i for i, l in enumerate(baris)
+             if re.match(r"\s*TELEGRAM_SESSION\s*:", l) and not l.strip().startswith("#")]
+    assert len(tetap) == 1, "TELEGRAM_SESSION harus ditetapkan tepat sekali"
+    # Step pemiliknya harus si pembaca, bukan step analisa.
+    for i in range(tetap[0], 0, -1):
+        m = re.match(r"\s*- name: (.+)", baris[i - 1])
+        if m:
+            assert "Baca grup Telegram" in m.group(1), m.group(1)
+            break
+    blok_analisa = wf[wf.index("- name: Jalankan analisa"):][:900]
+    assert "TELEGRAM_SESSION" not in blok_analisa
+
+
+def test_pembaca_telegram_tidak_menyentuh_model():
+    """Berkas pembaca sengaja tidak punya LLM, tool, maupun MCP. Itu bukan keterbatasan
+    melainkan syarat pemisahannya."""
+    src = open(os.path.join(AKAR, "cloud", "tgbaca.py"), encoding="utf-8").read()
+    for terlarang in ("run_claude", "anthropic", "claude", "mcp__"):
+        assert terlarang not in src.lower().replace("claude code", ""), terlarang
+    assert "HANYA GRUP DAN KANAL" in src, "DM tidak boleh pernah dibaca"
+
+
+def test_penyaring_membuang_derau_sebelum_dibayar():
+    """Menyaring di sisi kode jauh lebih murah daripada membayar token untuk membuang
+    sampah — dan token yang sudah dibayar tidak bisa ditarik."""
+    assert not _tg._layak("gm")
+    assert not _tg._layak("https://t.me/abc https://x.com/y")
+    assert not _tg._layak("🚀" * 30)
+    assert _tg._layak("OpenEden mengumumkan kemitraan dengan BNY untuk tokenisasi obligasi")
+
+
+def test_redaksi_data_pribadi_orang_lain():
+    """Isi grup memuat data orang lain yang kebetulan ikut terbawa dan tidak ada gunanya
+    untuk riset pasar."""
+    h = _tg._bersih("hubungi +62 812 3456 7890 join https://t.me/+AbCdEf "
+                    "dompet 0x1234567890abcdef1234567890abcdef12345678")
+    assert "[nomor]" in h and "[undangan]" in h and "[alamat]" in h
+    assert "812" not in h and "0x1234" not in h
+
+
+def test_grup_forum_diberi_label_topik():
+    """Banyak grup kripto berbentuk forum: satu grup berisi belasan topik. Tanpa label,
+    pengumuman resmi tak terbedakan dari obrolan santai — dan jatahnya habis dipakai topik
+    paling ramai, bukan yang paling berisi."""
+    src = open(os.path.join(AKAR, "cloud", "tgbaca.py"), encoding="utf-8").read()
+    assert "GetForumTopicsRequest" in src
+    assert "MAKS_PER_TOPIK" in src, "jatah per topik, bukan hanya per grup"
+    # Pesan non-forum tidak boleh dianggap punya topik.
+    class _Palsu:
+        reply_to = None
+    assert _tg._id_topik(_Palsu()) is None
