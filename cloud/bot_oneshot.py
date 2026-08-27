@@ -1441,7 +1441,9 @@ _MINTA_PANTAU = re.compile(
 _TG_TEMPAT = re.compile(r"telegram|grup|group|channel|kanal", re.I)
 _TG_NIAT = re.compile(
     r"cari|carikan|nyari|informasi|info|menarik|riset|rangkum|ringkas|"
-    r"apa yang|ada apa|kabar|bahas|pantau", re.I)
+    r"apa yang|ada apa|kabar|bahas|pantau|"
+    # Mencari lowongan adalah niat riset tersendiri — user punya grup khusus untuk itu.
+    r"lowongan|hiring|rekrut", re.I)
 
 
 def data_telegram():
@@ -1464,6 +1466,24 @@ def data_telegram():
                 + f"Berkasnya ada tapi gagal dibaca ({type(e).__name__}). Katakan apa "
                   "adanya; JANGAN mengarang isi grup.")
     return isi or None
+
+
+# Kategori grup yang relevan dengan pertanyaannya. Dua grup forex dan satu grup lowongan
+# di daftar user memang hanya berguna untuk pertanyaan tertentu — membacanya di tiap
+# pertanyaan kripto cuma menghabiskan jatah pesan tanpa menambah apa pun.
+_TG_FOREX = re.compile(r"forex|emas|gold|xau|dxy|dolar|usd|eur|jpy|gbp|komoditas", re.I)
+_TG_KERJA = re.compile(r"lowongan|kerja|job|karier|karir|hiring|rekrut|freelance", re.I)
+
+
+def kategori_telegram(teks):
+    """Kategori grup yang perlu dibaca untuk pertanyaan ini. Selalu memuat "crypto"."""
+    low = (teks or "").lower()
+    kat = ["crypto"]
+    if _TG_FOREX.search(low):
+        kat.append("forex")
+    if _TG_KERJA.search(low):
+        kat.append("kerja")
+    return kat
 
 
 def minta_telegram(teks):
@@ -2862,7 +2882,12 @@ def main():
     # jalan, SEBELUM step yang memegang session dimulai. Logikanya di sini, bukan di YAML,
     # supaya frasa pemicunya tidak terduplikasi di dua tempat lalu menyimpang diam-diam.
     if "--minta-telegram" in sys.argv[1:]:
-        sys.exit(0 if minta_telegram(os.environ.get("TG_TEXT", "")) else 1)
+        teks_tg = os.environ.get("TG_TEXT", "")
+        if not minta_telegram(teks_tg):
+            sys.exit(1)
+        # Kategori dicetak ke stdout supaya step workflow bisa menangkapnya.
+        print(",".join(kategori_telegram(teks_tg)))
+        sys.exit(0)
 
     check_only = "--check" in sys.argv[1:]
 

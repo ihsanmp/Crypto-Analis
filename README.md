@@ -288,6 +288,7 @@ Settings → Secrets and variables → Actions → **New repository secret**:
 | `CLAUDE_CODE_OAUTH_TOKEN` | **wajib** | Hasil `claude setup-token` (butuh Claude Pro/Max) |
 | `COINMARKETCAP_API_KEY` | **wajib** | Gratis di [pro.coinmarketcap.com](https://pro.coinmarketcap.com/signup) — paket Basic ~10.000 kredit/bulan |
 | `TELEGRAM_SESSION` | opsional | **Akses PENUH ke akun Telegram-mu** — bukan API key, tidak ada versi read-only. Dibuat lokal dengan `cloud/tgsesi.py`, tidak pernah lewat chat. Hanya dipakai step `Baca grup Telegram`; step yang menjalankan model TIDAK memilikinya. Tanpa ini: riset grup tidak tersedia, sisanya jalan normal |
+| `TELEGRAM_GRUP` | opsional | **Daftar grup pilihan**, JSON per kategori: `{"crypto":[...],"forex":[...],"kerja":[...]}`. Di Secret, BUKAN di repo — repo ini publik, dan daftar grup yang diikuti seseorang mengungkap komunitas, minat, bahkan kota. Kategorinya dipilih dari pertanyaan: grup forex hanya dibaca saat menanyakan forex/emas, grup lowongan hanya saat menanyakan pekerjaan. Tanpa ini: seluruh grup dibaca, dan dengan puluhan grup jatah 200 pesan habis sebelum yang berisi sempat terbaca |
 | `TELEGRAM_API_ID` | opsional | Dari [my.telegram.org](https://my.telegram.org). Dibutuhkan bersama `TELEGRAM_SESSION` |
 | `TELEGRAM_API_HASH` | opsional | Dari my.telegram.org, pasangan `TELEGRAM_API_ID` |
 | `SOSOVALUE_API_KEY` | opsional | Gratis di [sosovalue.com/developer/dashboard](https://sosovalue.com/developer/dashboard). Tanpa ini: arus ETF tidak tersedia, dan studi kejutan jatuh ke nowcast Cleveland Fed |

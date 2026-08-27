@@ -3971,3 +3971,48 @@ def test_akhiran_nya_tidak_membutakan_pemicu():
     -nya lazim dalam bahasa Indonesia. "narasinya" sempat lolos tanpa terdeteksi."""
     assert bot.mode_pantau("narasinya gimana sekarang")
     assert bot.mode_pantau("narasi apa yang lagi ramai")
+
+
+def test_kategori_grup_mengikuti_pertanyaan():
+    """Dua grup forex dan satu grup lowongan hanya berguna untuk pertanyaan tertentu.
+    Membacanya di tiap pertanyaan kripto cuma menghabiskan jatah 200 pesan tanpa menambah
+    apa pun — dan dengan 60+ grup, jatah itu habis sebelum grup yang berisi sempat dibaca."""
+    assert bot.kategori_telegram("carikan info menarik dari telegram saya") == ["crypto"]
+    assert bot.kategori_telegram("ada info soal emas di grup") == ["crypto", "forex"]
+    assert bot.kategori_telegram("ada lowongan web3 di grup?") == ["crypto", "kerja"]
+    # Niat lowongan juga harus lolos gerbang minta_telegram.
+    assert bot.minta_telegram("ada lowongan kerja web3 di grup?")
+
+
+def test_daftar_grup_di_secret_bukan_di_repo():
+    """Repo ini PUBLIK. Daftar grup yang diikuti seseorang mengungkap komunitas, minat,
+    tempat kerja, bahkan kota — tidak ada gunanya menerbitkan itu demi kenyamanan
+    menyunting berkas."""
+    src = open(os.path.join(AKAR, "cloud", "tgbaca.py"), encoding="utf-8").read()
+    assert 'os.environ.get("TELEGRAM_GRUP"' in src
+    wf = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"), encoding="utf-8").read()
+    assert "TELEGRAM_GRUP: ${{ secrets.TELEGRAM_GRUP }}" in wf
+    # Tidak boleh ada berkas daftar grup yang ikut ter-commit.
+    import subprocess
+    dilacak = subprocess.run(["git", "ls-files"], cwd=AKAR, capture_output=True,
+                             text=True, encoding="utf-8", errors="replace").stdout
+    assert "tg_grup" not in dilacak, "daftar grup tidak boleh jadi berkas di repo"
+
+
+def test_kategori_kosong_tidak_membaca_semua_grup(monkeypatch):
+    """Kegagalan yang buruk: kategori diminta tapi tidak ada isinya, lalu diam-diam
+    membaca SELURUH grup. Membaca lebih banyak daripada yang diizinkan user jauh lebih
+    berbahaya daripada tidak membaca apa pun."""
+    monkeypatch.setenv("TELEGRAM_GRUP", '{"crypto": ["Watcher"], "forex": []}')
+    assert _tg.nama_untuk(["crypto"]) == ["Watcher"]
+    assert _tg.nama_untuk(["forex"]) == [], "kategori kosong -> daftar kosong, bukan None"
+    # None hanya kalau TELEGRAM_GRUP memang tidak diset sama sekali.
+    monkeypatch.delenv("TELEGRAM_GRUP", raising=False)
+    assert _tg.nama_untuk(["crypto"]) is None
+
+
+def test_daftar_grup_rusak_tidak_menghentikan_apa_pun(monkeypatch):
+    """JSON yang salah ketik tidak boleh mematikan fiturnya — tapi juga tidak boleh
+    diam. Dilaporkan ke stderr, lalu jatuh ke perilaku tanpa penyaringan."""
+    monkeypatch.setenv("TELEGRAM_GRUP", "{bukan json")
+    assert _tg.daftar_pilihan() == {}

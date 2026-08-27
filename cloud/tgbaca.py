@@ -143,6 +143,47 @@ def _id_topik(pesan):
     return getattr(r, "reply_to_top_id", None) or getattr(r, "reply_to_msg_id", None)
 
 
+def daftar_pilihan():
+    """{kategori: [potongan nama grup]} dari TELEGRAM_GRUP. {} kalau tidak diset.
+
+    DI SECRET, BUKAN DI REPO. Repo ini publik, dan daftar grup yang diikuti seseorang
+    adalah informasi pribadi — ia mengungkap komunitas, minat, tempat kerja, bahkan kota.
+    Tidak ada gunanya menerbitkan itu demi kenyamanan menyunting berkas.
+
+    Bentuknya JSON:
+        {"crypto": ["Watcher Guru", "WhaleBot"], "forex": ["AroFX"], "kerja": ["Jobs"]}
+
+    Pencocokan memakai POTONGAN nama, tidak perlu persis — nama grup sering memuat emoji
+    dan bendera yang menyusahkan disalin tepat.
+    """
+    mentah = os.environ.get("TELEGRAM_GRUP", "").strip()
+    if not mentah:
+        return {}
+    try:
+        import json
+        data = json.loads(mentah)
+        return {k: [str(x) for x in v] for k, v in data.items() if isinstance(v, list)}
+    except Exception as e:
+        print(f"[tgbaca] TELEGRAM_GRUP tidak terbaca ({type(e).__name__}) — "
+              f"seluruh grup dibaca", file=sys.stderr)
+        return {}
+
+
+def nama_untuk(kategori):
+    """Potongan nama grup untuk kategori yang diminta. None = tanpa penyaringan."""
+    peta = daftar_pilihan()
+    if not peta:
+        return None
+    if not kategori:
+        kategori = ["crypto"]
+    pilih = []
+    for k in kategori:
+        pilih.extend(peta.get(k, []))
+    # Kategori diminta tapi tidak ada isinya: JANGAN diam-diam membaca semua grup.
+    # Membaca lebih banyak daripada yang diizinkan user adalah kegagalan yang buruk.
+    return pilih
+
+
 def _grup_saja(dialog):
     """Grup dan kanal saja. DM tidak pernah ikut — lihat batas 1 di docstring modul."""
     return bool(getattr(dialog, "is_group", False) or getattr(dialog, "is_channel", False))
@@ -244,6 +285,8 @@ def main():
     p = argparse.ArgumentParser(description="Baca & saring grup Telegram (tanpa model)")
     p.add_argument("--jam", type=int, default=24)
     p.add_argument("--grup", help="saring nama grup, dipisah koma")
+    p.add_argument("--kategori", help="kategori dari TELEGRAM_GRUP, dipisah koma "
+                                      "(mis. crypto,forex). Default: crypto")
     p.add_argument("--daftar", action="store_true", help="tampilkan grup yang terbaca")
     a = p.parse_args()
 
@@ -260,7 +303,16 @@ def main():
         return
 
     try:
-        saring = [s.strip() for s in a.grup.split(",")] if a.grup else None
+        if a.grup:
+            saring = [s.strip() for s in a.grup.split(",")]
+        else:
+            kat = [s.strip() for s in a.kategori.split(",")] if a.kategori else None
+            saring = nama_untuk(kat)
+        if saring is not None and not saring:
+            print("[ISI GRUP TELEGRAM — TIDAK ADA GRUP TERPILIH]" + os.linesep
+                  + "Kategori yang diminta tidak punya grup terdaftar. Katakan begitu; "
+                    "JANGAN membaca grup lain sebagai gantinya.")
+            return
         pesan = kumpulkan(a.jam, saring)
     except Exception as e:
         # Kegagalan di sini TIDAK boleh menggagalkan analisa. Bot tetap jalan tanpa
