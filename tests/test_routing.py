@@ -3814,6 +3814,11 @@ def test_grup_forum_diberi_label_topik():
     paling ramai, bukan yang paling berisi."""
     src = open(os.path.join(AKAR, "cloud", "tgbaca.py"), encoding="utf-8").read()
     assert "GetForumTopicsRequest" in src
+    # Telethon 1.44 menaruhnya di .messages dengan parameter `peer`. Jalur .channels
+    # (yang dipakai versi lain) menghasilkan ImportError dan label topiknya hilang
+    # diam-diam — persis yang terjadi saat pertama dijalankan sungguhan.
+    assert "functions.messages import GetForumTopicsRequest" in src
+    assert "peer=entitas" in src
     assert "MAKS_PER_TOPIK" in src, "jatah per topik, bukan hanya per grup"
     # Pesan non-forum tidak boleh dianggap punya topik.
     class _Palsu:

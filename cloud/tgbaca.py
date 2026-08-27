@@ -109,9 +109,19 @@ def _peta_topik(k, entitas):
     if not getattr(entitas, "forum", False):
         return {}
     try:
-        from telethon.tl.functions.channels import GetForumTopicsRequest
-        hasil = k(GetForumTopicsRequest(channel=entitas, offset_date=None, offset_id=0,
-                                        offset_topic=0, limit=100, q=None))
+        # Telethon 1.44 menaruhnya di .messages dengan parameter `peer`; versi lain
+        # pernah menaruhnya di .channels dengan parameter `channel`. Dicoba berurutan
+        # supaya tidak terikat satu versi — jalur yang salah cuma menghasilkan
+        # "ImportError" dan label topiknya hilang diam-diam, seperti yang sudah terjadi.
+        try:
+            from telethon.tl.functions.messages import GetForumTopicsRequest
+            minta = GetForumTopicsRequest(peer=entitas, offset_date=None, offset_id=0,
+                                          offset_topic=0, limit=100, q=None)
+        except ImportError:
+            from telethon.tl.functions.channels import GetForumTopicsRequest
+            minta = GetForumTopicsRequest(channel=entitas, offset_date=None, offset_id=0,
+                                          offset_topic=0, limit=100, q=None)
+        hasil = k(minta)
         return {t.id: t.title for t in getattr(hasil, "topics", []) if hasattr(t, "title")}
     except Exception as e:
         print(f"[tgbaca] peta topik gagal ({type(e).__name__}) — dibaca tanpa label",
@@ -237,10 +247,19 @@ def main():
     p.add_argument("--daftar", action="store_true", help="tampilkan grup yang terbaca")
     a = p.parse_args()
 
-    try:
-        if a.daftar:
+    # --daftar adalah perintah DIAGNOSTIK lokal, bukan bahan brief. Membungkus
+    # kegagalannya dengan amplop "[ISI GRUP TELEGRAM — TIDAK TERSEDIA]" membuat pesan
+    # galatnya terbaca seperti instruksi untuk model, padahal yang membaca adalah manusia
+    # di terminal yang sedang mencoba menyiapkan kredensialnya.
+    if a.daftar:
+        try:
             daftar_grup()
-            return
+        except Exception as e:
+            print(f"Gagal: {type(e).__name__}: {e}", file=sys.stderr)
+            sys.exit(1)
+        return
+
+    try:
         saring = [s.strip() for s in a.grup.split(",")] if a.grup else None
         pesan = kumpulkan(a.jam, saring)
     except Exception as e:
