@@ -907,6 +907,11 @@ def bobot_chat(text, ada_konteks):
         return 600, MODEL_SYNTH, 40, "BERAT (diminta detail / perbandingan)"
     if _RINGAN_RE.match(low) or _KONSEP_RE.search(low):
         return 120, MODEL_RINGAN, 8, "RINGAN (sapaan / konseptual)"
+    # RISET TELEGRAM. Diukur di produksi: memverifikasi belasan klaim terhadap data
+    # bukan pekerjaan 120 detik / 8 putaran. Run pertama jatuh ke RINGAN dan tidak
+    # akan pernah sempat selesai — bahannya saja 3 rb karakter di atas prompt 31 rb.
+    if minta_telegram(text):
+        return 420, MODEL_NARASI, 24, "RISET TELEGRAM (verifikasi klaim terhadap data)"
     # Keputusan TRANSAKSI dengan harga konkret selalu butuh data segar, walau kalimatnya
     # terdengar seperti minta pendapat. "kalo buy pump di 0.002551 bagaimana menurutmu?"
     # sempat jatuh ke tingkat RINGAN — 8 putaran, tanpa shell, tanpa brief — sehingga
@@ -1494,6 +1499,72 @@ def saring_telegram(mentah):
     print(f"[telegram] {len(mentah)} -> {len(keluar)} karakter setelah disaring",
           file=sys.stderr)
     return keluar
+
+
+# Berapa aset yang datanya diambil untuk verifikasi. Tiap aset ~2 rb karakter; lebih
+# dari tiga membuat bahan verifikasi lebih besar daripada klaimnya sendiri.
+ASET_VERIFIKASI_MAKS = 3
+
+
+def data_verifikasi(teks_klaim):
+    """Ambil data untuk aset yang DISEBUT di daftar klaim, supaya bisa diperiksa.
+
+    KENAPA LEWAT KODE. Seed pemeriksa menyuruh memverifikasi dengan kategori.py,
+    derivatif.py, dan coinalyze.py — tapi jalur chat memberi TOOLS_WEB tanpa shell,
+    jadi model itu diminta melakukan sesuatu yang alatnya tidak ada. Terbukti di run
+    produksi pertama.
+
+    Memberi shell BUKAN jawabannya: itu menaruh model yang sedang membaca teks tidak
+    dipercaya di lingkungan yang bisa menjalankan perintah — persis yang dihindari
+    seluruh rancangan ini. Jadi kode yang mengambil datanya lebih dulu, dan model cuma
+    membandingkan. Prinsip yang sama dengan seluruh bot ini.
+
+    Yang diambil sengaja RINGKAS: harga & pasokan, funding & OI, likuidasi. Itu yang
+    dipakai membantah klaim grup; analisa teknikal lengkap tidak diminta siapa pun.
+    """
+    aset = [a for a in sorted(_semua_aset(teks_klaim or "")) if a]
+    # _semua_aset bersandar pada daftar 55 ticker. Koin yang sedang ramai di grup justru
+    # sering yang BELUM masuk daftar itu — HYPE, ASTER, SKYAI semuanya lolos begitu saja.
+    # Kandidat tambahan diambil dari kata BERHURUF BESAR (cara ticker ditulis di grup),
+    # lalu diperiksa ke CoinGecko dengan batas keras supaya tidak menembak berkali-kali.
+    if len(aset) < ASET_VERIFIKASI_MAKS:
+        try:
+            from indicators import resolve_ticker
+            dicoba = 0
+            for k in re.findall(r"\b[A-Z]{3,6}\b", teks_klaim or ""):
+                if dicoba >= 4 or len(aset) >= ASET_VERIFIKASI_MAKS:
+                    break
+                if k in aset or k in _KATA_BUKAN_TICKER or k in _KATA_UMUM_BUKAN_KOIN:
+                    continue
+                dicoba += 1
+                tik, _c, _n = resolve_ticker(k)
+                if tik and tik not in aset:
+                    aset.append(tik)
+        except Exception as e:
+            print(f"[verifikasi] pencarian aset dalam dilewati ({type(e).__name__})",
+                  file=sys.stderr)
+    if not aset:
+        return None
+    aset = aset[:ASET_VERIFIKASI_MAKS]
+    bagian = []
+    for sim in aset:
+        potong = []
+        for label, args in (("pasar", ["cloud/kategori.py", "--koin", sim]),
+                            ("derivatif", ["cloud/derivatif.py", sim, "--ringkas"]),
+                            ("likuidasi", ["cloud/coinalyze.py", sim, "--ringkas"])):
+            keluar, err = _jalankan_terukur(f"VERIFIKASI {sim} ({label})", args)
+            if not err and keluar:
+                potong.append(f"[{label}] {keluar}")
+        if potong:
+            bagian.append(f"### DATA {sim}" + chr(10) + chr(10).join(potong))
+    if not bagian:
+        return None
+    kepala = ("[DATA UNTUK MEMERIKSA KLAIM]" + chr(10)
+              + f"Aset yang disebut di daftar klaim: {chr(44).join(aset)}. Angka di bawah "
+              + "diambil KODE, bukan dari grup. Pakai ini untuk memvonis tiap klaim. "
+              + "Aset yang TIDAK ada datanya di sini berarti tidak bisa diperiksa — "
+              + "katakan begitu, jangan menebak.")
+    return kepala + chr(10) * 2 + (chr(10) * 2).join(bagian)
 
 
 def data_telegram():
@@ -2382,8 +2453,16 @@ def process(token, chat_id, text, photo_file_id=None):
                 # tetap dipakai — bahan berlebih masih jauh lebih baik daripada tidak
                 # ada bahan sama sekali.
                 ringkas_tg = saring_telegram(tg)
-                brief = (brief + chr(10) * 2 if brief else "") + (ringkas_tg or tg)
-                print(f"[proses] chat: bahan Telegram {len(ringkas_tg or tg)} karakter",
+                bahan = ringkas_tg or tg
+                brief = (brief + chr(10) * 2 if brief else "") + bahan
+                # Data untuk MEMERIKSA klaimnya, diambil kode. Tanpa ini pemeriksa
+                # diminta memverifikasi tanpa alat apa pun — jalur chat tidak punya
+                # shell, dan memberinya shell justru yang dihindari rancangan ini.
+                verif = data_verifikasi(bahan)
+                if verif:
+                    brief += chr(10) * 2 + verif
+                print(f"[proses] chat: bahan Telegram {len(bahan)} karakter"
+                      f"{f' + data verifikasi {len(verif)} karakter' if verif else ''}",
                       file=sys.stderr)
 
         # Pesan tunggu hanya untuk yang memang lama. Untuk RINGAN, balasannya datang lebih

@@ -4063,8 +4063,8 @@ def test_penyaring_telegram_memakai_model_murah_tanpa_tool():
 def test_penyaringan_gagal_jatuh_ke_bahan_mentah():
     """Kehilangan penghematan token jauh lebih ringan daripada kehilangan seluruh bahan."""
     src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
-    blok = src[src.index("RISET TELEGRAM BERDIRI SENDIRI"):][:900]
-    assert "(ringkas_tg or tg)" in blok
+    blok = src[src.index("RISET TELEGRAM BERDIRI SENDIRI"):][:1200]
+    assert "ringkas_tg or tg" in blok, "penyaringan gagal harus jatuh ke bahan mentah"
 
 
 def test_tiga_seed_membagi_peran_dengan_tegas():
@@ -4120,3 +4120,41 @@ def test_berkas_telegram_dioper_di_level_step():
     wf = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"), encoding="utf-8").read()
     blok = wf[wf.index("- name: Jalankan analisa"):][:600]
     assert "BERKAS_TELEGRAM:" in blok and "runner.temp" in blok
+
+
+def test_riset_telegram_dapat_bobot_sendiri():
+    """Diukur di produksi: run pertama jatuh ke RINGAN (120 detik, 8 putaran) padahal
+    bahannya saja 3 rb karakter di atas prompt 31 rb. Memverifikasi belasan klaim terhadap
+    data bukan pekerjaan 120 detik."""
+    detik, model, putaran, label = bot.bobot_chat("ada informasi menarik apa di tele", False)
+    assert detik >= 300 and putaran >= 20, (detik, putaran)
+    assert "TELEGRAM" in label
+    # Pertanyaan lain tidak boleh ikut naik.
+    assert bot.bobot_chat("halo", False)[0] == 120
+
+
+def test_verifikasi_mengambil_data_lewat_kode_bukan_shell():
+    """Seed pemeriksa dulu menyuruh menjalankan kategori.py/derivatif.py, padahal jalur
+    chat memberi TOOLS_WEB tanpa shell — ia diminta melakukan sesuatu yang alatnya tidak
+    ada. Memberi shell BUKAN jawabannya: itu menaruh model yang sedang membaca teks tidak
+    dipercaya di lingkungan yang bisa menjalankan perintah."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    blok = src[src.index("def data_verifikasi"):src.index("def data_telegram")]
+    for alat in ("cloud/kategori.py", "cloud/derivatif.py", "cloud/coinalyze.py"):
+        assert alat in blok, alat
+    assert "ASET_VERIFIKASI_MAKS" in blok
+    seed = open(os.path.join(AKAR, "cloud", "prompts", "peran", "pemeriksa.md"),
+                encoding="utf-8").read()
+    assert "tidak punya shell" in seed
+    assert "jangan mencoba menjalankan script" in seed
+
+
+def test_aset_di_luar_daftar_tetap_diverifikasi():
+    """Koin yang sedang ramai di grup justru sering yang BELUM masuk daftar 55 ticker —
+    HYPE, ASTER, SKYAI semuanya lolos begitu saja tanpa pencarian dalam."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    blok = src[src.index("def data_verifikasi"):src.index("def data_telegram")]
+    assert "resolve_ticker" in blok
+    assert "dicoba >= 4" in blok, "harus ada batas keras panggilan jaringan"
+    # Dangkal saja tetap menangkap yang ada di daftar.
+    assert {"BTC", "SOL"} <= bot._semua_aset("BTC menembus 80000, SOL listing baru")
