@@ -3754,10 +3754,17 @@ def test_pemicu_riset_telegram_butuh_tempat_dan_niat():
     """Membaca grup itu mahal dan menyentuh data orang lain, jadi ambangnya tinggi:
     menyebut telegram/grup saja tidak cukup. "kirim hasilnya ke telegram" dan "grup ini
     ramai ya" bukan permintaan riset."""
-    for t in ("carikan informasi menarik dari telegram saya", "ada apa di grup hari ini",
-              "rangkum grup telegram 24 jam terakhir"):
+    for t in ("carikan informasi menarik dari telegram saya", "ada apa di tele hari ini",
+              "rangkum telegram 24 jam terakhir", "ada lowongan web3 di telegram?"):
         assert bot.minta_telegram(t), t
-    for t in ("kirim hasilnya ke telegram", "analisa btc", "halo", "grup ini ramai ya"):
+    # "grup" dan "channel" SENGAJA tidak memicu: kata-kata itu terlalu sering muncul di
+    # pertanyaan yang tidak ada hubungannya, dan membaca grup pribadi user karena salah
+    # tangkap jauh lebih buruk daripada sesekali harus menyebut kata pemicunya.
+    for t in ("ada apa di grup hari ini", "rangkum grup 24 jam", "grup ini ramai ya",
+              "kirim hasilnya ke telegram", "analisa btc", "halo"):
+        assert not bot.minta_telegram(t), t
+    # Batas kata: tanpa itu "telepon" dan "televisi" ikut cocok dengan "tele".
+    for t in ("cek telepon saya", "acara di televisi"):
         assert not bot.minta_telegram(t), t
 
 
@@ -3978,10 +3985,10 @@ def test_kategori_grup_mengikuti_pertanyaan():
     Membacanya di tiap pertanyaan kripto cuma menghabiskan jatah 200 pesan tanpa menambah
     apa pun — dan dengan 60+ grup, jatah itu habis sebelum grup yang berisi sempat dibaca."""
     assert bot.kategori_telegram("carikan info menarik dari telegram saya") == ["crypto"]
-    assert bot.kategori_telegram("ada info soal emas di grup") == ["crypto", "forex"]
-    assert bot.kategori_telegram("ada lowongan web3 di grup?") == ["crypto", "kerja"]
+    assert bot.kategori_telegram("ada info soal emas di tele") == ["crypto", "forex"]
+    assert bot.kategori_telegram("ada lowongan web3 di tele?") == ["crypto", "kerja"]
     # Niat lowongan juga harus lolos gerbang minta_telegram.
-    assert bot.minta_telegram("ada lowongan kerja web3 di grup?")
+    assert bot.minta_telegram("ada lowongan kerja web3 di telegram?")
 
 
 def test_daftar_grup_di_secret_bukan_di_repo():

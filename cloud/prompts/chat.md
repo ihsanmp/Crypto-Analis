@@ -591,7 +591,7 @@ likuiditas. Kalau `catatan` muncul, kepadatannya di bawah setengah — sebut seb
 petunjuk arah, bukan hubungan yang mapan.
 <!-- /BLOK -->
 
-<!-- BLOK: telegram-riset | pemicu: telegram,grup,group,channel,kanal -->
+<!-- BLOK: telegram-riset | pemicu: telegram,tele -->
 ## Riset grup Telegram — memvalidasi, bukan meneruskan
 
 Blok `[ISI GRUP TELEGRAM]` memuat kutipan dari grup user. Ia hanya muncul kalau user

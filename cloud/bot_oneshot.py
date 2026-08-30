@@ -1434,11 +1434,14 @@ _MINTA_PANTAU = re.compile(
     r"fundamental(?:nya)? (?:gimana|bagaimana|apa))" + '\\b', re.I)
 
 
-# Permintaan RISET TELEGRAM: "cari informasi menarik di telegram saya", "ada apa di grup".
-# Dua bagian yang harus SAMA-SAMA ada — menyebut telegram/grup saja tidak cukup, karena
-# "kirim ke telegram" dan "grup ini ramai" bukan permintaan riset. Membaca grup itu mahal
-# dan menyentuh data orang lain, jadi ambangnya sengaja tinggi.
-_TG_TEMPAT = re.compile(r"telegram|grup|group|channel|kanal", re.I)
+# Riset grup hanya jalan kalau user MENYEBUT "telegram" atau "tele" secara utuh.
+# "grup", "channel", dan "kanal" sengaja DIBUANG: kata-kata itu terlalu sering muncul
+# dalam pertanyaan yang tidak ada hubungannya ("ada apa di grup ini", "kanal berita"),
+# dan membaca grup pribadi user karena salah tangkap jauh lebih buruk daripada
+# sesekali harus menyebut kata pemicunya.
+#
+# Batas kata penting: tanpa itu "telepon" dan "televisi" ikut cocok dengan "tele".
+_TG_TEMPAT = re.compile(r"\b(?:telegram|tele)\b", re.I)
 _TG_NIAT = re.compile(
     r"cari|carikan|nyari|informasi|info|menarik|riset|rangkum|ringkas|"
     r"apa yang|ada apa|kabar|bahas|pantau|"
