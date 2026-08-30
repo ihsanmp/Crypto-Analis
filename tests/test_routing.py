@@ -4513,3 +4513,30 @@ def test_instruksi_shell_tidak_dikirim_saat_shell_tidak_ada():
     # Yang dibuang HANYA perintah shell — panduan MCP dan format kesimpulan tetap ada.
     assert "mcp__coinmarketcap__" in tanpa_shell
     assert "KESIMPULAN" in tanpa_shell
+
+
+def test_readme_menghitung_seed_dengan_benar():
+    """README pernah menulis "Enam berkas" saat sudah ada sembilan. Angka yang salah di
+    kalimat pembuka membuat pembaca berhenti mempercayai sisanya."""
+    import re as _re
+    teks = _readme()
+    n = len([f for f in os.listdir(os.path.join(AKAR, "cloud", "prompts", "peran"))
+             if f.endswith(".md")])
+    kata = {6: "Enam", 7: "Tujuh", 8: "Delapan", 9: "Sembilan", 10: "Sepuluh"}[n]
+    assert _re.search(kata + r" berkas di `cloud/prompts/peran/`", teks), \
+        f"ada {n} seed, README harus menulis '{kata} berkas'"
+    # Dan tiap seed harus disebut namanya di tabelnya.
+    for f in sorted(os.listdir(os.path.join(AKAR, "cloud", "prompts", "peran"))):
+        assert "`" + f + "`" in teks, f"seed {f} belum tercatat di tabel README"
+
+
+def test_readme_mencatat_riset_telegram():
+    """Fitur yang tidak ada di README praktis tidak diketahui siapa pun — termasuk oleh
+    aku sendiri di sesi berikutnya."""
+    teks = _readme()
+    for klaim in ("Cabang riset grup Telegram", "tg_batas.json", "--sejak-terakhir",
+                  "[KLAIM]", "[ANALISA]", "[PELUANG]", "[OBROLAN]",
+                  "Ketidakpastian disebut"):
+        assert klaim in teks, klaim
+    # Gerbang pemicunya harus disebut, kalau tidak fiturnya terlihat seperti tidak jalan.
+    assert '"tele"' in teks and '"telegram"' in teks

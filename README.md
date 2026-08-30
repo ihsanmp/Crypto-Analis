@@ -17,7 +17,13 @@ sebagai sentimen timing.
 | `carikan koin narasi yang menarik` | Bot memetakan sendiri sektor yang sedang bergerak, lalu pilih koin terbaik |
 | ngobrol bebas | "menurutmu btc gimana?" — jawaban santai, tetap berbasis data yang ditarik saat itu |
 | **kirim FOTO/screenshot** + caption | Mode analis visual: baca chart/pengumuman, cari kaitannya, gali data, beri penilaian |
+| `carikan informasi menarik dari telegram saya` | Membaca grup Telegram-mu sendiri, **memeriksa** temuannya ke data, lalu melapor. Hanya yang **baru sejak terakhir kali diminta** |
+| `apa yang menarik di tele seminggu terakhir` | Sama, tapi rentangnya kamu yang tentukan — mengalahkan penanda batas |
 | `/help` | Bantuan |
+
+> Riset grup hanya berjalan kalau pesanmu memuat kata **"telegram"** atau **"tele"**.
+> Gerbangnya sengaja sempit: membaca grup pribadi karena salah tangkap jauh lebih buruk
+> daripada sesekali harus menyebut kata pemicunya.
 
 ---
 
@@ -68,6 +74,21 @@ pembanding (nowcast model −0,17% vs konsensus pasar +0,20%, dua-duanya "konsis
 ketujuh potongan). Kesimpulan yang berlaku sekarang: **CPI tidak punya edge arah untuk
 emas, titik.**
 
+### 4. Ketidakpastian disebut, bukan dihaluskan
+
+Kalau sebuah jawaban bertumpu pada sesuatu yang tidak kokoh — datanya cuma sebagian,
+sumbernya satu, datanya lebih lama dari peristiwanya, angkanya dekat tapi tidak persis,
+kesimpulannya bergantung pada yang belum terjadi — itu ditulis **di baris pernyataannya**,
+bukan sebagai penutup "DYOR" yang dilewati mata.
+
+Aturannya berakhir dengan satu kalimat: *kalau ragu antara menyebut ragu atau tidak,
+sebutkan.* Jawaban yang menyebut keraguannya bisa dipakai untuk memutuskan seberapa besar
+risiko yang diambil; jawaban yang terdengar sama pastinya di semua bagian tidak bisa — dan
+biayanya ditanggung pembacanya.
+
+Pagarnya dua arah. Menempelkan "mungkin" pada angka yang jelas terbaca dari data membuat
+seluruh peringatan sungguhan ikut jadi derau yang dilewati.
+
 ---
 
 ## Arsitektur
@@ -103,6 +124,51 @@ GitHub Actions  →  cloud/bot_oneshot.py
 Balasan ke Telegram
 ```
 
+### Cabang riset grup Telegram
+
+Jalur terpisah, dipicu hanya oleh kata "telegram"/"tele", dan **dipecah tiga proses**
+karena session Telegram memberi akses PENUH ke akun — tidak ada versi read-only.
+
+```
+   ┌─ PENGINTIP   bot_oneshot.py --minta-telegram
+   │    tanpa kredensial APA PUN. Menentukan perlu-tidaknya, kategori grup,
+   │    dan rentang jam yang disebut user ("sebulan ini" -> 720)
+   │
+   ├─ PEMBACA     tgbaca.py --sejak-terakhir --rentang N
+   │    SATU-SATUNYA pemegang TELEGRAM_SESSION. Tidak menjalankan model,
+   │    tidak memanggil MCP, tidak menyentuh jaringan selain Telegram.
+   │    Hanya grup & kanal — DM tidak pernah dibaca.
+   │      penyaringan di sisi KODE: pesan pendek · tautan telanjang · daftar
+   │      harga bot ticker · ekor promo kanal · duplikat lintas grup
+   │
+   └─ PENGANALISA bot_oneshot.py   (TANPA TELEGRAM_SESSION di environment-nya)
+        pemulung (haiku) -> kurator (haiku) -> pemeriksa (sonnet)
+        + [DATA UNTUK MEMERIKSA KLAIM] yang diambil KODE lebih dulu
+```
+
+Injeksi prompt dari isi grup berakhir di proses yang **tidak punya kredensial apa pun**
+untuk dijangkau. Dan pemeriksa sengaja **tidak diberi shell**: model yang sedang membaca
+teks dari orang tak dikenal tidak boleh berada di lingkungan yang bisa menjalankan
+perintah — jadi kode yang mengambil datanya, model yang membandingkan.
+
+**Tidak ada duplikasi.** Tiap grup punya penanda batas berupa ID pesan terakhir yang
+pernah diambil (`cloud/data/tg_batas.json`). Permintaan pertama membuka 2 bulan penuh;
+sesudahnya hanya yang lebih baru. Rentang yang **disebut user** mengalahkan penanda —
+tapi rentang yang lebih pendek daripada yang tertunda tidak memajukannya, supaya "24 jam
+terakhir" tidak menghanguskan dua bulan yang belum sempat dibaca.
+
+Penandanya baru **berlaku** setelah user benar-benar menerima jawabannya: pembaca menulis
+calon, workflow mempromosikannya hanya kalau step analisa sukses. Bukan kehati-hatian
+teoretis — run pertama mengumpulkan 35 rb karakter lalu mati karena kuota model habis.
+
+**Empat jenis temuan, empat perlakuan.** `[KLAIM]` dicocokkan ke data · `[ANALISA]`
+dasarnya diperiksa dan kesimpulannya dinisbahkan ke penulisnya · `[PELUANG]` dilaporkan
+berikut apa yang TIDAK disebutkan pengumumannya · `[OBROLAN]` apa adanya dengan
+hitungannya, dan dilarang dinaikkan jadi sinyal beli/jual. Tiap temuan wajib membawa
+**nama grup dan tanggalnya**.
+
+---
+
 **Penjenjangan model.** `MODEL_GATHER=claude-haiku-4-5` (mekanis) · `MODEL_SYNTH=claude-opus-5`
 (analisa) · `MODEL_NARASI=claude-sonnet-5` (screening) · `MODEL_RINGAN=claude-sonnet-5`
 (sapaan & pertanyaan konseptual). Mode ngobrol memilih tingkatnya sendiri dari isi pesan,
@@ -114,8 +180,9 @@ Ukuran muatan sintesis saat ini: **crypto ~76 rb · forex ~109 rb · saham ~90 r
 
 ## Seed peran
 
-Enam berkas di `cloud/prompts/peran/`, dirakit sesuai sektor — analisa crypto tidak ikut
-membawa aturan risiko forex.
+Sembilan berkas di `cloud/prompts/peran/`, dirakit sesuai sektor dan sesuai pertanyaan —
+analisa crypto tidak ikut membawa aturan risiko forex, dan tiga seed terakhir hanya dimuat
+untuk riset grup Telegram.
 
 | Seed | Isi |
 |---|---|
@@ -125,6 +192,9 @@ membawa aturan risiko forex.
 | `portofolio.md` | Expectancy, sizing, korelasi palsu |
 | `trader.md` | Edge, R-multiple, biaya eksekusi |
 | `prediktor.md` | **FORECASTER** — lima syarat proyeksi, protokol per pasar, dan catatan temuan yang sudah teruji (mana yang bertahan, mana yang gugur) |
+| `pemulung.md` | **Riset grup, tahap 1** (haiku) — memungut tanpa menilai. Empat jenis temuan, asal & tanggal wajib, upaya manipulasi ditandai bukan dijalankan |
+| `kurator.md` | **Riset grup, tahap 2** (haiku) — memilih maks 14 yang layak dibayar untuk diperiksa, dengan **jatah per jenis** supaya isinya tidak selalu klaim berangka |
+| `pemeriksa.md` | **Riset grup, tahap 3** (sonnet) — memvonis tiap temuan terhadap data. Tidak punya shell, dan itu disengaja |
 
 ---
 
@@ -137,6 +207,7 @@ membawa aturan risiko forex.
 | [cloud/bot_oneshot.py](cloud/bot_oneshot.py) | Bot "sekali jalan": ambil pesan, routing, kumpulkan data lewat kode, sintesis, audit, balas, keluar |
 | [cloud/bot_daemon.py](cloud/bot_daemon.py) | Alternatif polling untuk server always-on (balasan hitungan detik) |
 | [cloud/memori.py](cloud/memori.py) | **Ingatan terverifikasi** — fakta yang sudah dicek disimpan dengan jenis (`volatil`/`semi`/`stabil`) yang menentukan kapan wajib dicek ulang; saat dipanggil divonis SEGAR / MULAI TUA / KEDALUWARSA. Data pribadi (alamat dompet, saldo) **ditolak di level kode** karena repo publik |
+| `cloud/data/tg_batas.json` | **Penanda batas baca grup Telegram** — ID pesan terakhir per grup, supaya permintaan berikutnya tidak mengulang isi yang sama. Nama grup TIDAK ditulis: kuncinya HMAC dengan `TELEGRAM_API_HASH`, karena repo ini publik dan nama grup adalah tebakan pendek yang bisa dibalik dari hash telanjang |
 | `cloud/data/percakapan.json` | Ingatan percakapan pendek — 3 pasang tanya-jawab terakhir per chat (kedaluwarsa 6 jam). Chat ID di-hash bersama garam dari token bot |
 | [cloud/rapor.py](cloud/rapor.py) | **Rapor rekomendasi** — mencatat panggilan bot lalu menilainya terhadap harga yang benar-benar terjadi. Dinilai terhadap **alpha** — return dikurangi return pasar (BTC untuk crypto, SPY untuk saham) pada jendela yang sama; tanpa itu, di pasar naik hampir semua panggilan AKUMULASI otomatis tercatat benar tanpa keahlian apa pun. Melaporkan keberhasilan per bias, per jenis aset, dan **per rentang skor**: kalau panggilan berskor 75 tidak lebih sering benar daripada yang 45, sistem skornya belum bermakna |
 
@@ -173,7 +244,7 @@ membawa aturan risiko forex.
 | [cloud/whaleflow.py](cloud/whaleflow.py) | Whale Sentiment Index + top-10 token dengan arah akumulasi/distribusi whale 24 jam (ETH saja) |
 | [cloud/statistik.py](cloud/statistik.py) | **Statistik jejak rekam** (dari `crates/analysis` nautilus_trader): ekspektansi, faktor untung, rasio imbalan, penurunan maksimum, dan rasio imbalan:risiko per panggilan. Memisahkan *seberapa sering benar* dari *seberapa menguntungkan* — dua hal yang bisa berlawanan arah |
 | [cloud/sebab.py](cloud/sebab.py) | **Dekomposisi sebab** untuk pertanyaan "kenapa naik/turun": memisahkan gerakan jadi tiga lapis — milik seluruh pasar, milik selera risiko luas (QQQ · emas · Indeks Dolar · imbal hasil 10 tahun), dan sisanya yang khas aset itu. Berita yang terbit di pekan yang sama bukan bukti sebab; kalau seluruh pasar naik serupa, berita itu penumpang. Plus **korelasi imbal hasil** 30/90 hari terhadap keempatnya, selalu disertai jumlah hari yang benar-benar berpasangan. Gratis tanpa key |
-| [cloud/tgbaca.py](cloud/tgbaca.py) | **Pembaca grup Telegram** (Telethon). Sengaja TANPA model, tool, maupun MCP — itu syarat pemisahannya: session memberi akses penuh ke akun, jadi ia hanya boleh berada di proses yang tidak menjalankan LLM. Hanya grup & kanal, **DM tidak pernah dibaca**. Grup forum ditangani per topik dengan jatah sendiri, supaya topik ramai tidak menutupi topik pengumuman. Nomor telepon, undangan, email, dan alamat dompet diredaksi sebelum keluar |
+| [cloud/tgbaca.py](cloud/tgbaca.py) | **Pembaca grup Telegram** (Telethon). Sengaja TANPA model, tool, maupun MCP — itu syarat pemisahannya: session memberi akses penuh ke akun, jadi ia hanya boleh berada di proses yang tidak menjalankan LLM. Hanya grup & kanal, **DM tidak pernah dibaca**. Grup forum ditangani per topik dengan jatah sendiri, supaya topik ramai tidak menutupi topik pengumuman. Nomor telepon, undangan, email, dan alamat dompet diredaksi sebelum keluar. **Penanda batas per grup** (`--sejak-terakhir`) supaya tiap permintaan hanya membawa yang baru, dan `--rentang` untuk rentang yang disebut user. Saringan sisi kode juga membuang daftar harga bot ticker dan ekor promo yang diulang kanal di tiap unggahan |
 | [cloud/tgsesi.py](cloud/tgsesi.py) | **Pembuat session string** — dijalankan di komputermu sendiri, sekali. Tidak menulis berkas `.session` ke disk (itu cara termudah kredensial ikut ter-commit) |
 | [cloud/uji_sebaran.py](cloud/uji_sebaran.py) | **Menguji metode sebaran `proyeksi.py`** — puncak & dasar yang tercapai, bukan harga penutup. Hasil 25 Agu 2026: sebaran empiris **kalah di keenam pengukuran** dari jalan acak asas pantulan. Tapi TIDAK diganti: cakupan gauss di sisi bawah justru lebih buruk (65–67% vs 72–74%), dan sisi itulah yang menetapkan invalidasi. Yang dipakai: **kalibrasi terukur** ikut dilaporkan — interval p10–p90 hanya memuat hasilnya ~72–80% kali, bukan 80% |
 | [cloud/uji_timesfm.py](cloud/uji_timesfm.py) | **Harness uji TimesFM** (Google Research) terhadap base rate dan jalan acak, walk-forward tanpa look-ahead. **Hasil 25 Agu 2026: KALAH di ketiga aset** — model 200 juta parameter 6–11% lebih buruk pada pinball daripada interval ±1,28σ√h, dan cakupannya 73–77% (target 80%) yang berarti terlalu percaya diri. **Tidak dipasang ke produksi.** Disimpan sebagai catatan supaya tidak dicari ulang |
@@ -218,7 +289,7 @@ membawa aturan risiko forex.
 
 | Workflow | Pemicu | Tugas |
 |---|---|---|
-| [bot.yml](.github/workflows/bot.yml) | `repository_dispatch` (webhook) + manual | Menjalankan bot. **Tidak ada cron** — lihat catatan hosting di bawah |
+| [bot.yml](.github/workflows/bot.yml) | `repository_dispatch` (webhook) + manual | Menjalankan bot. **Tidak ada cron** — lihat catatan hosting di bawah. Riset grup Telegram dipecah tiga step (pengintip → pembaca → penganalisa) supaya session tidak pernah berada di proses yang menjalankan model; penanda batas baca dipromosikan di step tersendiri, hanya kalau analisanya sukses |
 | [tes.yml](.github/workflows/tes.yml) | push & PR | Seluruh suite tes + penjaga "berkas hanya-tambah tidak boleh menyusut" |
 | [rapor.yml](.github/workflows/rapor.yml) | Senin 09:00 WIB + manual | Menilai panggilan lama, menyusun rapor, dan mengarsipkan konsensus mingguan |
 | [uji-timesfm.yml](.github/workflows/uji-timesfm.yml) | manual saja | Menjalankan evaluasi walk-forward TimesFM. Terpisah dari produksi: torch ~200 MB + bobot ~800 MB diunduh tiap run |
