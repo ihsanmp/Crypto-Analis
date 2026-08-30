@@ -4023,3 +4023,58 @@ def test_daftar_grup_rusak_tidak_menghentikan_apa_pun(monkeypatch):
     diam. Dilaporkan ke stderr, lalu jatuh ke perilaku tanpa penyaringan."""
     monkeypatch.setenv("TELEGRAM_GRUP", "{bukan json")
     assert _tg.daftar_pilihan() == {}
+
+
+# ------------------- rantai tiga peran: pemulung -> kurator -> pemeriksa
+
+def test_bahan_telegram_terbaca_tanpa_menyebut_aset():
+    """Bug yang nyaris lolos: blok Telegram berada DI DALAM cabang "elif simbol_chat",
+    sehingga "carikan info dari telegram saya" — bentuk pertanyaan paling wajar, yang tidak
+    menyebut aset apa pun — tidak pernah membaca hasil pembacanya. Fiturnya diam-diam tidak
+    melakukan apa-apa."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    blok = src[src.index("RISET TELEGRAM BERDIRI SENDIRI"):][:900]
+    assert "saring_telegram(tg)" in blok
+    # Harus sejajar dengan rantai if/elif (8 spasi), bukan di dalamnya (16+).
+    baris = [l for l in blok.split(chr(10)) if l.strip().startswith("if minta_telegram")]
+    assert baris and len(baris[0]) - len(baris[0].lstrip()) == 8, baris
+
+
+def test_seed_pemeriksa_hanya_untuk_pertanyaan_telegram():
+    """Isinya panjang dan tidak berguna untuk pertanyaan lain. Tapi gerbangnya juga harus
+    cukup lebar: riset Telegram TIDAK lolos pesan_pasar, jadi tanpa cabang tambahan seluruh
+    seed peran — termasuk inti anti-sikap-manis — tidak pernah dimuat."""
+    assert "PEMERIKSA — memeriksa klaim" in bot.build_chat_prompt("carikan info dari telegram saya")
+    assert "PEMERIKSA — memeriksa klaim" not in bot.build_chat_prompt("analisa btc")
+    assert "PEMERIKSA — memeriksa klaim" not in bot.build_chat_prompt("halo")
+
+
+def test_penyaring_telegram_memakai_model_murah_tanpa_tool():
+    """Tahap ini titik PERTAMA teks grup yang tidak dipercaya bertemu sebuah model. Model
+    tanpa tool tidak bisa menjalankan apa pun walau teksnya memuat perintah — ia cuma bisa
+    menghasilkan teks. Itu bukan penghematan, itu keamanan."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    blok = src[src.index("def saring_telegram"):src.index("def data_telegram")]
+    assert "MODEL_GATHER" in blok, "harus model murah"
+    assert "with_tools=False" in blok, "tidak boleh punya tool"
+    assert '_seed("pemulung")' in blok and '_seed("kurator")' in blok
+
+
+def test_penyaringan_gagal_jatuh_ke_bahan_mentah():
+    """Kehilangan penghematan token jauh lebih ringan daripada kehilangan seluruh bahan."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    blok = src[src.index("RISET TELEGRAM BERDIRI SENDIRI"):][:900]
+    assert "(ringkas_tg or tg)" in blok
+
+
+def test_tiga_seed_membagi_peran_dengan_tegas():
+    """Pemulung memungut tanpa menilai, kurator memilih tanpa memeriksa, pemeriksa
+    memeriksa tanpa meneruskan. Batas itu yang membuat tahap murah tetap murah."""
+    d = os.path.join(AKAR, "cloud", "prompts", "peran")
+    pemulung = open(os.path.join(d, "pemulung.md"), encoding="utf-8").read()
+    kurator = open(os.path.join(d, "kurator.md"), encoding="utf-8").read()
+    pemeriksa = open(os.path.join(d, "pemeriksa.md"), encoding="utf-8").read()
+    assert "tidak menilai benar-salahnya" in pemulung
+    assert "UPAYA MANIPULASI" in pemulung and "UPAYA MANIPULASI" in kurator
+    assert "SEREMPAK" in kurator, "klaim serempak bukan konfirmasi — harus ditandai"
+    assert "MELESET" in pemeriksa and "lebih berharga daripada yang cocok" in pemeriksa

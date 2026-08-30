@@ -1212,7 +1212,10 @@ def build_chat_prompt(text, chat_id=None, brief=None):
     # masih possible turun sampai 55k-58k" dinilai pertanyaan pasar TAPI dijawab tanpa
     # inti.md — tanpa aturan konfluensi palsu, base rate, skenario, maupun daftar bias.
     # Sekarang satu predikat dipakai bersama supaya keduanya tidak bisa melenceng lagi.
-    if pesan_pasar(text):
+    # Riset Telegram TIDAK lolos pesan_pasar — "carikan info dari telegram saya" tidak
+    # menyebut aset maupun kosakata pasar. Tanpa cabang ini seluruh seed peran, termasuk
+    # PEMERIKSA dan inti anti-sikap-manis, tidak pernah dimuat untuk pertanyaan itu.
+    if pesan_pasar(text) or minta_telegram(text):
         low = (text or "").lower()
         peran = ["inti"]
         if any(k in low for k in ("risiko", "risk", "rugi", "drawdown", "aman", "bahaya")):
@@ -1224,6 +1227,10 @@ def build_chat_prompt(text, chat_id=None, brief=None):
         # + protokol per pasar), dan tidak berguna untuk "harga btc berapa sekarang".
         if _MINTA_PROYEKSI.search(low):
             peran.append("prediktor")
+        # PEMERIKSA hanya ikut kalau memang ada bahan grup yang harus diperiksa.
+        # Isinya panjang dan tidak berguna untuk pertanyaan lain.
+        if minta_telegram(text):
+            peran.append("pemeriksa")
         base = rakit_peran(_sektor_pesan(text), peran) + base
     # Penegasan lewat KODE, bukan berharap model membaca blok yang tepat. Routing sudah
     # benar mengarahkan "analisis sektor ai" ke chat, tapi jawabannya tetap berisi koin AI,
@@ -1447,6 +1454,46 @@ _TG_NIAT = re.compile(
     r"apa yang|ada apa|kabar|bahas|pantau|"
     # Mencari lowongan adalah niat riset tersendiri — user punya grup khusus untuk itu.
     r"lowongan|hiring|rekrut", re.I)
+
+
+def _seed(nama):
+    """Muat satu seed peran. String kosong kalau tidak ada — jangan mematikan alurnya."""
+    try:
+        with open(os.path.join(BASE_DIR, "prompts", "peran", nama + ".md"),
+                  encoding="utf-8") as f:
+            return f.read()
+    except OSError as e:
+        print(f"[seed] {nama}.md tidak terbaca ({type(e).__name__})", file=sys.stderr)
+        return ""
+
+
+def saring_telegram(mentah):
+    """Pungut & pilih klaim dari tumpukan pesan grup, pakai model MURAH tanpa tool.
+
+    KENAPA ADA TAHAP INI. Pertanyaan Telegram jatuh ke tingkat RINGAN — sonnet, 8
+    putaran — sementara isinya bisa 200 pesan (~40 rb karakter). Mahal sekaligus tidak
+    cukup: 8 putaran tidak akan sempat memverifikasi apa pun kalau separuhnya habis
+    untuk membaca. Tahap ini memangkas 40 rb karakter jadi belasan klaim, sehingga model
+    yang memeriksa hanya membayar untuk yang memang layak diperiksa.
+
+    TANPA TOOL — dan itu bukan penghematan, itu keamanan. Ini titik PERTAMA teks grup
+    yang tidak dipercaya bertemu sebuah model. Model tanpa tool tidak bisa menjalankan
+    apa pun walau teksnya memuat perintah; ia cuma bisa menghasilkan teks.
+    """
+    if not mentah:
+        return None
+    prompt = (_seed("pemulung") + chr(10) * 2 + _seed("kurator") + chr(10) * 2
+              + "# BAHAN" + chr(10)
+              + "Kerjakan berurutan: pungut dulu (PEMULUNG), lalu pilih (KURATOR). "
+              + "Keluarkan HANYA daftar hasil kurasi." + chr(10) * 2 + mentah)
+    keluar, err = run_claude(prompt, 180, 3, model=MODEL_GATHER, with_tools=False)
+    if err or not keluar:
+        print(f"[telegram] penyaringan gagal ({err}) — dipakai mentahnya",
+              file=sys.stderr)
+        return None
+    print(f"[telegram] {len(mentah)} -> {len(keluar)} karakter setelah disaring",
+          file=sys.stderr)
+    return keluar
 
 
 def data_telegram():
@@ -2316,11 +2363,6 @@ def process(token, chat_id, text, photo_file_id=None):
                 # berapa yang benar-benar khas aset ini.
                 if _MINTA_SEBAB.search(text):
                     brief += '\n\n' + data_sebab(jenis_chat, simbol_chat)
-                    # Riset grup Telegram, kalau memang diminta. Isinya dibaca dari BERKAS yang
-                    # ditulis step terpisah — proses ini tidak pernah memegang session-nya.
-                    tg = data_telegram() if minta_telegram(text) else None
-                    if tg:
-                        brief += chr(10) * 2 + tg
                 print(f"[proses] chat: data {jenis_chat} {simbol_chat} dikumpulkan kode "
                       f"({len(brief)} karakter)", file=sys.stderr)
             except Exception as e:
@@ -2329,6 +2371,21 @@ def process(token, chat_id, text, photo_file_id=None):
                 brief = None
                 print(f"[proses] chat: pengumpulan data gagal ({type(e).__name__}) — "
                       f"model mencari sendiri", file=sys.stderr)
+        # RISET TELEGRAM BERDIRI SENDIRI. Sebelumnya blok ini berada di dalam
+        # "elif simbol_chat", sehingga "carikan info dari telegram saya" — yang tidak
+        # menyebut aset apa pun — tidak pernah membacanya. Fiturnya diam-diam tidak
+        # melakukan apa-apa untuk bentuk pertanyaan yang paling wajar.
+        if minta_telegram(text):
+            tg = data_telegram()
+            if tg:
+                # Disaring model MURAH tanpa tool lebih dulu. Kalau gagal, mentahnya
+                # tetap dipakai — bahan berlebih masih jauh lebih baik daripada tidak
+                # ada bahan sama sekali.
+                ringkas_tg = saring_telegram(tg)
+                brief = (brief + chr(10) * 2 if brief else "") + (ringkas_tg or tg)
+                print(f"[proses] chat: bahan Telegram {len(ringkas_tg or tg)} karakter",
+                      file=sys.stderr)
+
         # Pesan tunggu hanya untuk yang memang lama. Untuk RINGAN, balasannya datang lebih
         # cepat daripada pesan tunggunya sendiri.
         if jatah > 120:
