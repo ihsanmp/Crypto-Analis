@@ -120,7 +120,10 @@ jobs:
           TELEGRAM_GRUP: ${{ secrets.TELEGRAM_GRUP }}
         run: |
           pip install --quiet telethon
-          python cloud/tgbaca.py --jam 24             --kategori "${{ steps.tg.outputs.kategori }}" > "$RUNNER_TEMP/telegram.txt"
+          # --sejak-terakhir, bukan --jam tetap: dua permintaan berturut-turut dengan
+          # jendela tetap mengembalikan isi yang sama, dan user membayar dua kali untuk
+          # membaca laporan yang sama. Permintaan pertama membuka 2 bulan penuh.
+          python cloud/tgbaca.py --sejak-terakhir --kategori "${{ steps.tg.outputs.kategori }}" > "$RUNNER_TEMP/telegram.txt"
           echo "terkumpul $(wc -c < "$RUNNER_TEMP/telegram.txt") karakter"
 
       - name: Setup Node
@@ -150,6 +153,22 @@ jobs:
           # hari tanpa ada yang tahu. Hanya jalur berkas, bukan rahasia.
           BERKAS_TELEGRAM: ${{ runner.temp }}/telegram.txt
         run: python cloud/bot_oneshot.py
+
+      # Penanda batas baca baru BERLAKU setelah user benar-benar menerima jawabannya.
+      # Run pertama membuktikan kenapa: ia mengumpulkan 35 rb karakter dari grup, menyaring
+      # jadi 3 rb, lalu mati karena kuota model habis. Kalau penandanya sudah maju saat itu,
+      # dua bulan isi grup hangus dan tidak ada cara mengambilnya kembali — sementara yang
+      # hilang justru bagian yang paling banyak, karena hanya permintaan pertama yang
+      # membuka jendela selebar itu.
+      - name: Berlakukan penanda batas baca Telegram
+        if: steps.tg.outputs.perlu == 'ya' && steps.jalankan.outcome == 'success'
+        run: |
+          if [ -f cloud/data/tg_batas_calon.json ]; then
+            mv cloud/data/tg_batas_calon.json cloud/data/tg_batas.json
+            echo "penanda batas maju - permintaan berikutnya hanya melihat yang lebih baru"
+          else
+            echo "tidak ada penanda calon (pembaca gagal?) - penanda lama dipertahankan"
+          fi
 
       # JARING PENGAMAN. Kalau langkah di atas gagal ATAU dibunuh dari luar (runner
       # direbut, job dibatalkan, kehabisan waktu), proses Python tidak sempat mengabari
@@ -181,13 +200,13 @@ jobs:
       - name: Simpan ingatan terverifikasi
         if: always() && (github.event_name == 'repository_dispatch' || steps.check.outputs.has_work == 'true')
         run: |
-          if [ -z "$(git status --porcelain cloud/data/memori.jsonl cloud/data/diproses.json cloud/data/percakapan.json cloud/data/kalender_cache.json cloud/data/rapor.jsonl cloud/data/sec_tickers_cache.json.gz cloud/data/kejutan_cache.json cloud/data/jadwal_cache.json cloud/data/arsip_konsensus.jsonl cloud/data/sosovalue_riwayat.json cloud/data/derivatif_arsip.jsonl)" ]; then
+          if [ -z "$(git status --porcelain cloud/data/memori.jsonl cloud/data/diproses.json cloud/data/percakapan.json cloud/data/kalender_cache.json cloud/data/rapor.jsonl cloud/data/sec_tickers_cache.json.gz cloud/data/kejutan_cache.json cloud/data/jadwal_cache.json cloud/data/arsip_konsensus.jsonl cloud/data/sosovalue_riwayat.json cloud/data/derivatif_arsip.jsonl cloud/data/tg_batas.json)" ]; then
             echo "tidak ada ingatan baru — lewati commit"
             exit 0
           fi
           git config user.name "crypto-analis-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add cloud/data/memori.jsonl cloud/data/diproses.json cloud/data/percakapan.json cloud/data/kalender_cache.json cloud/data/rapor.jsonl cloud/data/sec_tickers_cache.json.gz cloud/data/kejutan_cache.json cloud/data/jadwal_cache.json cloud/data/arsip_konsensus.jsonl cloud/data/sosovalue_riwayat.json cloud/data/derivatif_arsip.jsonl
+          git add cloud/data/memori.jsonl cloud/data/diproses.json cloud/data/percakapan.json cloud/data/kalender_cache.json cloud/data/rapor.jsonl cloud/data/sec_tickers_cache.json.gz cloud/data/kejutan_cache.json cloud/data/jadwal_cache.json cloud/data/arsip_konsensus.jsonl cloud/data/sosovalue_riwayat.json cloud/data/derivatif_arsip.jsonl cloud/data/tg_batas.json
           git commit -m "Ingatan, jejak pesan & riwayat percakapan dari run ${GITHUB_RUN_ID}"
           # Run lain bisa menambah commit lebih dulu; rebase supaya tidak saling menimpa.
           for i in 1 2 3; do

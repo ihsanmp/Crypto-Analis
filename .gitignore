@@ -21,3 +21,6 @@ cloud/data/derivatif_cache.json
 
 # Daftar pasar Coinalyze: cache seminggu, bisa ditarik ulang kapan saja.
 cloud/data/coinalyze_pasar.json
+
+# Penanda batas baca Telegram yang BELUM berlaku — dipromosikan workflow, bukan di-commit.
+cloud/data/tg_batas_calon.json

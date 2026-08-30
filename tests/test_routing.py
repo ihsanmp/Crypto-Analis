@@ -3838,9 +3838,13 @@ def test_grup_forum_diberi_label_topik():
 class _Pesan:
     """Pesan Telegram tiruan. Bentuk atributnya mengikuti Telethon seadanya."""
 
-    def __init__(self, teks, menit_lalu=1, topik=None):
+    _urut = [0]
+
+    def __init__(self, teks, menit_lalu=1, topik=None, id=None):
         from datetime import datetime as _dt, timedelta as _td, timezone as _tz
         self.message = teks
+        self._urut[0] += 1
+        self.id = self._urut[0] if id is None else id
         self.date = _dt.now(_tz.utc) - _td(minutes=menit_lalu)
         if topik is None:
             self.reply_to = None
@@ -3866,8 +3870,9 @@ class _Klien:
     def iter_dialogs(self):
         return iter(self._d)
 
-    def iter_messages(self, d, limit=None):
-        return iter(d._pesan[:limit] if limit else d._pesan)
+    def iter_messages(self, d, limit=None, min_id=0):
+        pesan = [p for p in d._pesan if getattr(p, "id", 0) > (min_id or 0)]
+        return iter(pesan[:limit] if limit else pesan)
 
     def disconnect(self):
         pass
@@ -4044,9 +4049,9 @@ def test_seed_pemeriksa_hanya_untuk_pertanyaan_telegram():
     """Isinya panjang dan tidak berguna untuk pertanyaan lain. Tapi gerbangnya juga harus
     cukup lebar: riset Telegram TIDAK lolos pesan_pasar, jadi tanpa cabang tambahan seluruh
     seed peran — termasuk inti anti-sikap-manis — tidak pernah dimuat."""
-    assert "PEMERIKSA — memeriksa klaim" in bot.build_chat_prompt("carikan info dari telegram saya")
-    assert "PEMERIKSA — memeriksa klaim" not in bot.build_chat_prompt("analisa btc")
-    assert "PEMERIKSA — memeriksa klaim" not in bot.build_chat_prompt("halo")
+    assert "PEMERIKSA — memeriksa temuan" in bot.build_chat_prompt("carikan info dari telegram saya")
+    assert "PEMERIKSA — memeriksa temuan" not in bot.build_chat_prompt("analisa btc")
+    assert "PEMERIKSA — memeriksa temuan" not in bot.build_chat_prompt("halo")
 
 
 def test_penyaring_telegram_memakai_model_murah_tanpa_tool():
@@ -4158,3 +4163,166 @@ def test_aset_di_luar_daftar_tetap_diverifikasi():
     assert "dicoba >= 4" in blok, "harus ada batas keras panggilan jaringan"
     # Dangkal saja tetap menangkap yang ada di daftar.
     assert {"BTC", "SOL"} <= bot._semua_aset("BTC menembus 80000, SOL listing baru")
+
+
+# ------------------------- penanda batas baca: jawaban kedua tidak boleh sama
+
+def test_permintaan_pertama_membuka_dua_bulan():
+    """Tanpa penanda apa pun, jendelanya dibuka penuh — permintaan pertama memang punya
+    banyak yang perlu dilihat."""
+    jam, pertama = _tg.jendela({})
+    assert pertama is True
+    assert jam == _tg.JAM_MAKS == 24 * 60
+
+
+def test_permintaan_berikutnya_hanya_sejak_terakhir():
+    from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+    lalu = (_dt.now(_tz.utc) - _td(hours=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    jam, pertama = _tg.jendela({"terakhir_diminta": lalu})
+    assert pertama is False
+    assert 29 <= jam <= 31, jam
+
+
+def test_jendela_tidak_pernah_melampaui_dua_bulan():
+    """Bot mati empat hari pernah terjadi; enam bulan diam bukan hal mustahil. Membaca
+    setengah tahun grup bukan 'informasi menarik' lagi, melainkan arsip."""
+    jam, _ = _tg.jendela({"terakhir_diminta": "2020-01-01T00:00:00Z"})
+    assert jam == _tg.JAM_MAKS
+    # Dua permintaan dalam semenit tetap melihat sesuatu, bukan jendela nol.
+    from datetime import datetime as _dt, timezone as _tz
+    baru = _dt.now(_tz.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    assert _tg.jendela({"terakhir_diminta": baru})[0] == _tg.JAM_MINIMUM
+
+
+def test_penanda_rusak_diperlakukan_sebagai_pertama_kali():
+    """JSON terpotong (run mati saat menulis) harus jatuh ke 'belum pernah diminta',
+    bukan melempar dan menggagalkan seluruh riset."""
+    for buruk in ({"terakhir_diminta": "bukan tanggal"}, {"terakhir_diminta": ""}, None):
+        jam, pertama = _tg.jendela(buruk)
+        assert (jam, pertama) == (_tg.JAM_MAKS, True), buruk
+
+
+def test_pesan_yang_sudah_dilaporkan_tidak_muncul_lagi(monkeypatch):
+    """Inti seluruh perubahan ini: minta hari ini, minta lagi besok, jawabannya TIDAK
+    boleh mengandung pesan yang sama."""
+    monkeypatch.setattr(_tg, "_peta_topik", lambda k, e: {})
+    p1 = _Pesan("kabar pertama yang cukup panjang untuk lolos saringan tgbaca", 5)
+    d = _Dialog("Grup Alpha", [p1])
+    jejak = {}
+    assert len(_tg.kumpulkan(jam=24, k=_Klien([d]), jejak=jejak)) == 1
+    assert list(jejak["grup"].values())[0]["id"] == p1.id
+
+    # Permintaan kedua: pesan lama masih ada di grup, plus satu yang benar-benar baru.
+    p2 = _Pesan("kabar kedua yang juga cukup panjang untuk lolos saringan tgbaca", 1)
+    d._pesan = [p2, p1]
+    hasil = _tg.kumpulkan(jam=24, k=_Klien([d]), batas_lama={"grup": jejak["grup"]})
+    assert len(hasil) == 1, [h[3][:30] for h in hasil]
+    assert "kedua" in hasil[0][3]
+
+
+def test_penanda_tidak_menyimpan_nama_grup(tmp_path, monkeypatch):
+    """Berkas ini masuk repo PUBLIK. Daftar grup yang diikuti seseorang mengungkap
+    komunitas, minat, bahkan kota — alasan yang sama kenapa TELEGRAM_GRUP jadi secret."""
+    monkeypatch.setenv("TELEGRAM_API_HASH", "rahasia-uji")
+    berkas = tmp_path / "tg_batas.json"
+    _tg.simpan_calon({}, {_tg._kunci("Grup Rahasia Kantor"): {"id": 9}}, path=str(berkas))
+    isi = berkas.read_text(encoding="utf-8")
+    assert "Grup Rahasia Kantor" not in isi
+    assert "Kantor" not in isi
+    assert "terakhir_diminta" in isi
+    # HMAC, bukan hash telanjang: tanpa kuncinya, nama grup tak bisa ditebak-cocokkan.
+    monkeypatch.setenv("TELEGRAM_API_HASH", "kunci-lain")
+    assert _tg._kunci("Grup Rahasia Kantor") not in isi
+
+
+def test_penanda_ditulis_sebagai_calon_bukan_langsung_berlaku():
+    """Run pertama mati karena kuota model habis SETELAH grup dibaca. Kalau penandanya
+    sudah maju saat itu, dua bulan isi grup hangus tanpa cara mengambilnya kembali."""
+    src = open(os.path.join(AKAR, "cloud", "tgbaca.py"), encoding="utf-8").read()
+    assert "BERKAS_CALON" in src and "tg_batas_calon.json" in src
+    # main() menulis ke calon, tidak pernah ke berkas yang berlaku.
+    utama = src[src.index("def main("):]
+    assert "simpan_calon(" in utama
+    assert "BERKAS_BATAS" not in utama
+
+    alur = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"), encoding="utf-8").read()
+    langkah = alur[alur.index("Berlakukan penanda batas baca Telegram"):][:700]
+    assert "steps.jalankan.outcome == 'success'" in langkah, \
+        "penanda hanya boleh maju kalau user benar-benar menerima jawabannya"
+    assert "mv cloud/data/tg_batas_calon.json cloud/data/tg_batas.json" in langkah
+    # Dan penandanya harus ikut ter-commit, kalau tidak run berikutnya lupa lagi.
+    assert alur.count("cloud/data/tg_batas.json") >= 3
+    assert "--sejak-terakhir" in alur
+
+
+def test_jatah_melebar_untuk_jendela_panjang():
+    """Jendela 2 bulan dengan jatah 24 jam membuat user hanya melihat beberapa hari
+    terakhir sambil mengira sudah melihat semuanya."""
+    kecil = _tg.jatah(24)
+    besar = _tg.jatah(_tg.JAM_MAKS)
+    assert besar[0] > kecil[0] and besar[1] > kecil[1] and besar[3] > kecil[3]
+    # Tapi tidak dilipatgandakan sebebasnya: penyaring tidak bisa memilih 12 terbaik
+    # dari ribuan pesan — pilihannya jadi acak.
+    assert besar[0] <= 400
+
+
+def test_jatah_habis_dilaporkan_bukan_disembunyikan(monkeypatch):
+    """Penandanya tetap maju, jadi yang terlewat tidak akan pernah kembali. User berhak
+    tahu supaya bisa mempersempit kategori atau meminta lebih sering."""
+    monkeypatch.setattr(_tg, "_peta_topik", lambda k, e: {})
+    banyak = [_Pesan(f"kabar nomor {i} yang cukup panjang untuk lolos saringan tgbaca", 5)
+              for i in range(_tg.MAKS_PER_GRUP + 10)]
+    jejak = {}
+    _tg.kumpulkan(jam=24, k=_Klien([_Dialog("Grup Ramai", banyak)]), jejak=jejak)
+    assert jejak["lewat"].get("Grup Ramai"), jejak
+    assert "JATAH HABIS" in _tg._kalimat_lewat(jejak)
+    assert "Grup Ramai" in _tg._kalimat_lewat(jejak)
+    assert _tg._kalimat_lewat({"lewat": {}}) == ""
+
+
+def test_pengantar_menyatakan_jendelanya():
+    """Model harus tahu ia sedang melihat 'yang baru' atau 'dua bulan pertama' — kalau
+    tidak, ia merangkum ulang laporan lama untuk mengisi jawaban."""
+    pertama = _tg._kalimat_jendela(_tg.JAM_MAKS, True)
+    assert "PERTAMA" in pertama and "60 hari" in pertama
+    lanjutan = _tg._kalimat_jendela(30, False)
+    assert "belum pernah kamu terima" in lanjutan
+    assert "jangan mengulang" in lanjutan.lower()
+
+
+def test_empat_jenis_temuan_bukan_hanya_klaim_berangka():
+    """Dua contoh nyata yang seed lama BUANG: pembacaan makro PCE ("pendapat") dan
+    peluncuran quote token di Chain ("promosi"). Keduanya justru yang user tunjuk sebagai
+    informasi menarik — taksonomi satu-jenis membuang mayoritas nilainya."""
+    akar = os.path.join(AKAR, "cloud", "prompts", "peran")
+    pemulung = open(os.path.join(akar, "pemulung.md"), encoding="utf-8").read()
+    kurator = open(os.path.join(akar, "kurator.md"), encoding="utf-8").read()
+    pemeriksa = open(os.path.join(akar, "pemeriksa.md"), encoding="utf-8").read()
+    for jenis in ("[KLAIM]", "[ANALISA]", "[PELUANG]", "[OBROLAN]"):
+        for nama, isi in (("pemulung", pemulung), ("kurator", kurator),
+                          ("pemeriksa", pemeriksa)):
+            assert jenis in isi, f"{jenis} hilang dari seed {nama}"
+    # Kurator harus punya jatah per jenis, kalau tidak isinya selalu klaim berangka saja.
+    assert "Jatah per jenis" in kurator
+    # Analisa dipecah dua: dasarnya dicek, kesimpulannya dinisbahkan.
+    assert "dasarnya" in pemeriksa.lower() and "dinisbahkan" in pemeriksa
+    # Obrolan tidak boleh dinaikkan jadi sinyal beli/jual.
+    assert "JANGAN diubah jadi sinyal" in pemeriksa or "Jangan diubah jadi sinyal" in pemeriksa
+    # Pengumuman produk dari kanal resmi BUKAN otomatis spam.
+    assert "bukan setiap pengumuman produk" in kurator
+
+
+def test_ketidakpastian_wajib_disebut():
+    """Diminta user langsung: kalau hasilnya kurang yakin, ketidakyakinan itu harus
+    tercantum — di baris pernyataannya, bukan sebagai penutup 'DYOR' yang dilewati."""
+    chat = open(os.path.join(AKAR, "cloud", "prompts", "chat.md"), encoding="utf-8").read()
+    assert "KETIDAKPASTIAN WAJIB DISEBUT" in chat
+    assert "bukan opsional" in chat.lower()
+    assert "Kalau ragu antara menyebut ragu atau tidak, sebutkan" in chat
+    # Dan pagarnya dua arah: keraguan palsu pada data yang jelas membuat peringatan
+    # sungguhan ikut jadi derau yang dilewati.
+    assert "keraguan palsu" in chat
+    pemeriksa = open(os.path.join(AKAR, "cloud", "prompts", "peran", "pemeriksa.md"),
+                     encoding="utf-8").read()
+    assert "NYATAKAN SEBERAPA YAKIN" in pemeriksa
+    assert "hanya dari 1 grup" in pemeriksa
