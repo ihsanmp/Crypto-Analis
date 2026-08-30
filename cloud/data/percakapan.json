@@ -26,5 +26,15 @@
   "angka_kunci": [
    "harga=800"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1788088026.4680183,
+  "waktu_utc": "2026-08-30 11:07",
+  "pesan": "apa informasi yang menarik di tele selama seminggu terakhir",
+  "balasan": "Sudah kucek 14 temuan dari grup tele (25–30 Agu 2026) ke data pasar/derivatif per 30 Agu 11:05 UTC. Yang paling berharga bukan yang cocok, tapi satu framing waktu yang meleset:\n\n⚠️ SEBAGIAN \"BTC naik 23% seminggu\" — Coinvestasi, 28 Agu. Data hari ini\n[...dipangkas...]\nFlap ID, 29 Agu) — ramai soal MEV protection & takut rug pull, bukan sinyal beli.\n\n14 diperiksa: 0 meleset telak, 3 sebagian, 8 tidak bisa diperiksa, 3 info tanpa vonis.\n\n🔗 Sumber: CoinGecko https://www.coingecko.com · DefiLlama https://defillama.com",
+  "angka_kunci": [
+   "harga=78.144"
+  ]
  }
 ]
