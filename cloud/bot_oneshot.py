@@ -1613,6 +1613,47 @@ def minta_telegram(teks):
     return bool(_TG_TEMPAT.search(low) and _TG_NIAT.search(low))
 
 
+# Rentang waktu yang DISEBUT user, mengalahkan penanda batas baca. "seminggu terakhir"
+# berarti seminggu — termasuk yang sudah pernah dilaporkan — karena kalau penandanya tetap
+# berlaku, jawabannya nyaris kosong dan permintaannya jadi tak berarti.
+#
+# Ditulis serangkai di bahasa Indonesia ("seminggu", "sebulan", "sehari"), jadi "se" harus
+# ikut jadi kata bilangan dan spasinya opsional.
+_ANGKA_KATA = {"se": 1, "satu": 1, "dua": 2, "tiga": 3, "empat": 4, "lima": 5, "enam": 6,
+               "tujuh": 7, "delapan": 8, "sembilan": 9, "sepuluh": 10}
+_SATUAN_JAM = {"jam": 1, "hari": 24, "minggu": 24 * 7, "pekan": 24 * 7, "bulan": 24 * 30}
+_RENTANG_ANGKA = re.compile(
+    r"(\d{1,3})\s*(jam|hari|minggu|pekan|bulan)\b"
+    r"|\b(se|satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan|sepuluh)\s*"
+    r"(jam|hari|minggu|pekan|bulan)\b", re.I)
+# Tanpa bilangan sama sekali. "bulan ini" dan "sebulan" sama-sama wajar diucapkan.
+_RENTANG_FRASA = (
+    (re.compile(r"\bhari ini\b|\bhari ni\b|\bbarusan\b"), 24),
+    (re.compile(r"\bkemarin\b"), 48),
+    (re.compile(r"\bminggu ini\b|\bpekan ini\b"), 24 * 7),
+    (re.compile(r"\bbulan ini\b"), 24 * 30),
+)
+
+
+def rentang_telegram(teks):
+    """Jam ke belakang yang diminta user secara eksplisit, atau None kalau tidak disebut.
+
+    None BUKAN nol: artinya "pakai penanda batas seperti biasa". Membedakan keduanya
+    penting — mengembalikan 24 sebagai bawaan akan diam-diam mematikan seluruh mekanisme
+    penanda dan mengembalikan duplikasi yang baru saja dihapus.
+    """
+    low = (teks or "").lower()
+    m = _RENTANG_ANGKA.search(low)
+    if m:
+        angka = int(m.group(1)) if m.group(1) else _ANGKA_KATA[m.group(3).lower()]
+        satuan = (m.group(2) or m.group(4)).lower()
+        return max(1, angka * _SATUAN_JAM[satuan])
+    for pola, jam in _RENTANG_FRASA:
+        if pola.search(low):
+            return jam
+    return None
+
+
 def mode_pantau(teks):
     """Pemantauan, bukan rekomendasi. False kalau ada niat transaksi atau harga konkret.
 
@@ -3024,8 +3065,12 @@ def main():
         teks_tg = os.environ.get("TG_TEXT", "")
         if not minta_telegram(teks_tg):
             sys.exit(1)
-        # Kategori dicetak ke stdout supaya step workflow bisa menangkapnya.
+        # Baris 1 kategori, baris 2 rentang jam (kosong = pakai penanda batas).
+        # Dua baris, bukan satu baris berpemisah: step workflow membacanya dengan `sed -n`
+        # dan baris kosong tetap terbaca sebagai "tidak disebut" tanpa perlu ditebak.
         print(",".join(kategori_telegram(teks_tg)))
+        jam = rentang_telegram(teks_tg)
+        print("" if jam is None else jam)
         sys.exit(0)
 
     check_only = "--check" in sys.argv[1:]

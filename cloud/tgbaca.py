@@ -443,16 +443,34 @@ yang sama sekali tanpa keterangan tidak terlihat dari sini — jangan menebak is
 """
 
 
-def _kalimat_jendela(jam, pertama):
+def _lama(jam):
+    if jam >= 24 * 60:
+        return "2 bulan"
+    if jam >= 24 * 28:
+        return f"{jam // (24 * 30)} bulan" if jam % (24 * 30) == 0 else f"{jam // 24} hari"
+    if jam >= 48:
+        return f"{jam // 24} hari"
+    return f"{jam} jam"
+
+
+def _kalimat_jendela(jam, pertama, diminta=0, maju=True):
+    if diminta:
+        k = (f"User MENYEBUT SENDIRI rentangnya, jadi ini {_lama(jam)} terakhir penuh — "
+             f"termasuk yang mungkin sudah pernah dilaporkan sebelumnya. Jawab untuk "
+             f"rentang itu, jangan melebarkannya dan jangan mempersempitnya.")
+        if diminta >= JAM_MAKS:
+            k += (" (Yang diminta lebih panjang dari batas 2 bulan, jadi dipotong di 2 "
+                  "bulan — sebutkan itu.)")
+        if not maju:
+            k += (" Rentang ini lebih pendek daripada yang belum pernah dibaca, jadi "
+                  "sisanya TETAP tertunda dan akan muncul di permintaan biasa berikutnya.")
+        return k
     if pertama:
         return (f"Ini permintaan PERTAMA, jadi jendelanya dibuka penuh: {jam // 24} hari "
                 f"ke belakang. Permintaan berikutnya hanya akan memuat yang lebih baru "
                 f"dari sekarang.")
-    if jam >= 48:
-        lama = f"{jam // 24} hari"
-    else:
-        lama = f"{jam} jam"
-    return (f"Ini HANYA yang belum pernah kamu terima: {lama} sejak permintaan terakhir. "
+    return (f"Ini HANYA yang belum pernah kamu terima: {_lama(jam)} sejak permintaan "
+            f"terakhir. "
             f"Apa pun yang sudah dilaporkan sebelumnya sudah dibuang di sisi kode — "
             f"jangan mengulang atau merangkum ulang laporan lama.")
 
@@ -475,6 +493,8 @@ def main():
     p.add_argument("--jam", type=int, default=24)
     p.add_argument("--sejak-terakhir", action="store_true",
                    help="baca hanya sejak permintaan terakhir (2 bulan kalau pertama)")
+    p.add_argument("--rentang", type=int, default=0,
+                   help="rentang jam yang DISEBUT user; mengalahkan penanda batas")
     p.add_argument("--grup", help="saring nama grup, dipisah koma")
     p.add_argument("--kategori", help="kategori dari TELEGRAM_GRUP, dipisah koma "
                                       "(mis. crypto,forex). Default: crypto")
@@ -493,11 +513,23 @@ def main():
             sys.exit(1)
         return
 
-    batas_lama, pertama = None, False
+    batas_lama, pertama, diminta, maju = None, False, 0, True
     jam = a.jam
     if a.sejak_terakhir:
-        batas_lama = muat_batas()
-        jam, pertama = jendela(batas_lama)
+        tersimpan = muat_batas()
+        jam, pertama = jendela(tersimpan)
+        batas_lama = tersimpan
+        if a.rentang:
+            # Rentang yang DISEBUT user mengalahkan penanda. "seminggu terakhir" berarti
+            # seminggu penuh — termasuk yang sudah pernah dilaporkan. Kalau penandanya
+            # tetap berlaku, jawabannya nyaris kosong dan permintaannya jadi tak berarti.
+            diminta = max(JAM_MINIMUM, min(int(a.rentang), JAM_MAKS))
+            batas_lama = None
+            # Tapi penandanya HANYA maju kalau rentang ini menjangkau sejauh yang
+            # tertunda. Kalau tidak, "24 jam terakhir" sesudah dua bulan diam akan
+            # menghanguskan dua bulan itu demi satu hari yang diminta.
+            maju = diminta >= jam
+            jam = diminta
 
     jejak = {}
     try:
@@ -522,13 +554,19 @@ def main():
         print(f"[tgbaca] gagal: {type(e).__name__}: {e}", file=sys.stderr)
         sys.exit(0)
 
-    if a.sejak_terakhir:
+    if a.sejak_terakhir and maju:
         try:
-            simpan_calon(batas_lama, jejak.get("grup"))
+            simpan_calon(muat_batas(), jejak.get("grup"))
         except OSError as e:
             print(f"[tgbaca] penanda batas gagal ditulis: {e}", file=sys.stderr)
 
     if not pesan:
+        if diminta:
+            print(f"[ISI GRUP TELEGRAM — KOSONG]{os.linesep}"
+                  f"Tidak ada pesan yang lolos saringan dalam rentang yang user minta "
+                  f"({jam} jam terakhir). Katakan begitu apa adanya — sebutkan rentang "
+                  f"yang diminta, jangan diam-diam melebarkannya.")
+            return
         if a.sejak_terakhir and not pertama:
             print(f"[ISI GRUP TELEGRAM — TIDAK ADA YANG BARU]{os.linesep}"
                   f"Tidak ada pesan baru di grup terpilih sejak permintaan terakhir "
@@ -542,8 +580,8 @@ def main():
         return
 
     grup = {n for n, _, _, _ in pesan}
-    print(PENGANTAR.format(jendela=_kalimat_jendela(jam, pertama), n=len(pesan),
-                           g=len(grup), lewat=_kalimat_lewat(jejak)))
+    print(PENGANTAR.format(jendela=_kalimat_jendela(jam, pertama, diminta, maju),
+                           n=len(pesan), g=len(grup), lewat=_kalimat_lewat(jejak)))
     for nama, label, waktu, teks in pesan:
         judul = f"{nama} / {label}" if label else nama
         print(f"<<< {waktu.strftime('%Y-%m-%d %H:%M')} · {judul} >>>")

@@ -4326,3 +4326,79 @@ def test_ketidakpastian_wajib_disebut():
                      encoding="utf-8").read()
     assert "NYATAKAN SEBERAPA YAKIN" in pemeriksa
     assert "hanya dari 1 grup" in pemeriksa
+
+
+# ------------------------- rentang waktu yang disebut user
+
+@pytest.mark.parametrize("pesan,jam", [
+    ("carikan info menarik di tele seminggu terakhir", 168),
+    ("apa yang menarik di telegram selama sebulan ini", 720),
+    ("apa yang menarik di tele bulan ini", 720),
+    ("info tele 3 hari terakhir", 72),
+    ("ada apa di telegram 24 jam terakhir", 24),
+    ("info dari tele dua minggu terakhir", 336),
+    ("apa yang menarik di tele 2 pekan ini", 336),
+    ("kabar tele hari ini", 24),
+    ("ada info menarik apa di telegram kemarin", 48),
+    ("rangkum telegram sehari terakhir", 24),
+    ("riset telegram 6 bulan terakhir", 4320),
+])
+def test_rentang_disebut_user_terbaca(pesan, jam):
+    assert bot.rentang_telegram(pesan) == jam
+
+
+def test_tanpa_rentang_bukan_nol_melainkan_none():
+    """None berarti 'pakai penanda batas seperti biasa'. Mengembalikan 24 sebagai bawaan
+    akan diam-diam mematikan seluruh mekanisme penanda dan mengembalikan duplikasi."""
+    assert bot.rentang_telegram("carikan informasi menarik dari telegram saya") is None
+    assert bot.rentang_telegram("") is None
+    assert bot.rentang_telegram(None) is None
+
+
+def test_rentang_ikut_dicetak_pengintip(monkeypatch, capsys):
+    """Step pengintip berjalan TANPA kredensial apa pun; ia satu-satunya tempat teks user
+    diterjemahkan jadi parameter pembacaan."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    blok = src[src.index('if "--minta-telegram" in sys.argv'):][:900]
+    assert "rentang_telegram(teks_tg)" in blok
+    assert 'print("" if jam is None else jam)' in blok
+
+    alur = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"),
+                encoding="utf-8").read()
+    assert "rentang=$JAM" in alur
+    assert "--rentang" in alur
+
+
+def test_rentang_eksplisit_mengalahkan_penanda(monkeypatch):
+    """"Seminggu terakhir" berarti seminggu penuh. Kalau penandanya tetap berlaku,
+    jawabannya nyaris kosong dan permintaan user jadi tak berarti."""
+    src = open(os.path.join(AKAR, "cloud", "tgbaca.py"), encoding="utf-8").read()
+    utama = src[src.index("def main("):]
+    assert "batas_lama = None" in utama, "rentang eksplisit harus mengabaikan penanda"
+    assert "maju = diminta >= jam" in utama
+
+
+def test_rentang_pendek_tidak_menghanguskan_yang_tertunda():
+    """"24 jam terakhir" sesudah dua bulan diam TIDAK boleh memajukan penanda — dua bulan
+    yang belum pernah dibaca akan hangus demi satu hari yang diminta."""
+    src = open(os.path.join(AKAR, "cloud", "tgbaca.py"), encoding="utf-8").read()
+    utama = src[src.index("def main("):]
+    assert "if a.sejak_terakhir and maju:" in utama
+    # Dan model diberi tahu supaya bisa menyebutkannya ke user.
+    k = _tg._kalimat_jendela(24, False, diminta=24, maju=False)
+    assert "TETAP tertunda" in k
+
+
+def test_rentang_dipotong_di_dua_bulan():
+    """Batas 2 bulan tetap berlaku walau user meminta lebih — dan pemotongannya
+    DISEBUTKAN, tidak diam-diam."""
+    k = _tg._kalimat_jendela(_tg.JAM_MAKS, False, diminta=4320, maju=True)
+    assert "dipotong di 2 bulan" in k
+    assert "sebutkan" in k.lower()
+
+
+def test_pengantar_rentang_menyebut_lamanya():
+    for jam, kata in ((168, "7 hari"), (720, "1 bulan"), (24, "24 jam")):
+        k = _tg._kalimat_jendela(jam, False, diminta=jam, maju=True)
+        assert kata in k, (jam, k)
+        assert "MENYEBUT SENDIRI" in k
