@@ -2570,13 +2570,15 @@ def process(token, chat_id, text, photo_file_id=None):
         catatan = peringatan_audit(jejak, asal, kesegaran, imbalan, outlook, keyakinan)
         if catatan:
             body = sisipkan_peringatan(body, catatan)
+            print(f"[audit] peringatan DIKIRIM ke user: {catatan[:70]}", file=sys.stderr)
         # Kaki sumber disusun KODE dari brief, bukan diminta ke model: model tidak tahu
         # script mana yang benar-benar berhasil, dan atribusi yang keliru lebih buruk
         # daripada tidak ada atribusi.
         kaki = jejak_sumber(brief, simbol or simbol_chat, jenis or jenis_chat)
         if kaki:
             body = sisipkan_peringatan(body, kaki)
-            print(f"[audit] peringatan DIKIRIM ke user: {catatan[:70]}", file=sys.stderr)
+            print(f"[audit] kaki sumber DIKIRIM ke user ({len(kaki)} karakter)",
+                  file=sys.stderr)
 
     if send_message(token, chat_id, body):
         print(f"[proses] balasan {len(body)} karakter TERKIRIM ke Telegram", file=sys.stderr)

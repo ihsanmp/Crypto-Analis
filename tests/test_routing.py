@@ -4402,3 +4402,21 @@ def test_pengantar_rentang_menyebut_lamanya():
         k = _tg._kalimat_jendela(jam, False, diminta=jam, maju=True)
         assert kata in k, (jam, k)
         assert "MENYEBUT SENDIRI" in k
+
+
+def test_kaki_sumber_tanpa_peringatan_tidak_meledak():
+    """Run 33306560896 mati di sini setelah SELURUH pekerjaannya selesai: sebulan grup
+    terkumpul (94 rb karakter), disaring jadi 3,8 rb, data verifikasi 10 rb terambil —
+    lalu `catatan[:70]` dipanggil di cabang `if kaki:` padahal catatan boleh None.
+    Kombinasinya (tidak ada peringatan audit TAPI ada kaki sumber) justru yang paling
+    umum untuk jawaban yang baik-baik saja."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    blok = src[src.index("        kaki = jejak_sumber(brief"):]
+    blok = blok[:blok.index("if send_message(")]
+    assert "catatan" not in blok, "cabang kaki tidak boleh menyentuh catatan yang bisa None"
+    # Dan log peringatannya harus berada di cabang yang menjamin catatan terisi.
+    cabang = src[src.index("        if catatan:"):src.index("        # Kaki sumber disusun")]
+    assert "catatan[:70]" in cabang
+
+    # Kombinasi yang meledak itu memang bisa terjadi: audit bersih -> None.
+    assert bot.peringatan_audit(None, None, "OK") is None
