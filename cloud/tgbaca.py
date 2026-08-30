@@ -73,6 +73,8 @@ _REDAKSI = (
 
 _HANYA_TAUTAN = re.compile(r"^[\s\W]*(?:https?://\S+\s*)+$")
 _BUKAN_HURUF = re.compile(r"[^\w\s]")
+_BUKAN_ABJAD = re.compile(r"[\W\d_]")        # angka & tanda baca; huruf disisakan
+_ANGKA = re.compile(r"\d[\d.,]*")
 
 
 def _bersih(teks):
@@ -89,7 +91,16 @@ def _layak(teks):
         return False
     # Pesan yang isinya nyaris seluruhnya emoji/tanda baca: reaksi, bukan informasi.
     huruf = len(_BUKAN_HURUF.sub("", teks).replace(" ", ""))
-    return huruf >= len(teks) * 0.5
+    if huruf < len(teks) * 0.5:
+        return False
+    # Dan yang nyaris seluruhnya ANGKA: daftar harga dari bot ticker. Selama ini lolos utuh
+    # karena kelas \w menghitung digit sebagai huruf, sehingga satu unggahan
+    # "BTC 109.231 +1,2% | ETH 4.412 ..." bisa 600 karakter tanpa satu pun klaim.
+    # Rasio saja terlalu kasar: tabel makro yang berguna ("PCE 3,7% | konsensus 3,7% |
+    # sebelumnya 3,7%") duduk di 0,43 — tidak jauh dari daftar ticker di 0,36. Jadi
+    # rasio rendah baru berarti spam kalau angkanya memang BANYAK.
+    abjad = len(_BUKAN_ABJAD.sub("", teks))
+    return abjad >= len(teks) * 0.38 or len(_ANGKA.findall(teks)) < 5
 
 
 def _sidik(teks):
@@ -314,6 +325,36 @@ def daftar_grup():
                     print(f"      - {judul}")
             else:
                 print(f"  {d.name}")
+
+
+def buang_baris_berulang(terkumpul, minimal=3):
+    """Buang baris yang muncul di banyak pesan — promo, ajakan gabung, tanda tangan kanal.
+
+    Kanal menempelkan ekor yang sama di TIAP unggahan ("Join @channel · Powered by X ·
+    Not financial advice"). Dedup pesan-utuh tidak menangkapnya karena isi di atasnya
+    berbeda-beda, jadi ekor itu dibayar tokennya sekali per pesan — puluhan kali dalam
+    satu permintaan, untuk nol informasi.
+
+    Hanya baris yang benar-benar BERULANG yang dibuang, dan pesan yang jadi kosong
+    dipertahankan utuh: lebih baik membayar sedikit derau daripada menghapus isi.
+    """
+    hitung = {}
+    for _n, _l, _w, teks in terkumpul:
+        for b in {x.strip() for x in teks.split(chr(10)) if 8 <= len(x.strip()) <= 200}:
+            hitung[b] = hitung.get(b, 0) + 1
+    berulang = {b for b, n in hitung.items() if n >= minimal}
+    if not berulang:
+        return terkumpul, 0
+    hasil, hemat = [], 0
+    for nama, label, waktu, teks in terkumpul:
+        sisa = [x for x in teks.split(chr(10)) if x.strip() not in berulang]
+        baru = chr(10).join(sisa).strip()
+        if baru and len(baru) >= PANJANG_MINIMUM:
+            hemat += len(teks) - len(baru)
+            hasil.append((nama, label, waktu, baru))
+        else:
+            hasil.append((nama, label, waktu, teks))
+    return hasil, hemat
 
 
 def kumpulkan(jam=24, saring_nama=None, k=None, batas_lama=None, jejak=None):
@@ -579,6 +620,10 @@ def main():
               f"keadaan yang sah — katakan begitu, jangan mencari-cari.")
         return
 
+    pesan, hemat = buang_baris_berulang(pesan)
+    if hemat:
+        print(f"[tgbaca] baris berulang (promo/tanda tangan kanal) dibuang: {hemat} "
+              f"karakter", file=sys.stderr)
     grup = {n for n, _, _, _ in pesan}
     print(PENGANTAR.format(jendela=_kalimat_jendela(jam, pertama, diminta, maju),
                            n=len(pesan), g=len(grup), lewat=_kalimat_lewat(jejak)))

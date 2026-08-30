@@ -4420,3 +4420,75 @@ def test_kaki_sumber_tanpa_peringatan_tidak_meledak():
 
     # Kombinasi yang meledak itu memang bisa terjadi: audit bersih -> None.
     assert bot.peringatan_audit(None, None, "OK") is None
+
+
+def test_asal_dan_tanggal_wajib_di_tiap_temuan():
+    """Diminta user langsung: tiap hasil harus menyebut dari grup mana, bulan apa, tanggal
+    berapa. Jendelanya bisa selebar dua bulan — tanpa tanggal, kabar kemarin tidak bisa
+    dibedakan dari kabar tujuh minggu lalu."""
+    akar = os.path.join(AKAR, "cloud", "prompts")
+    pemulung = open(os.path.join(akar, "peran", "pemulung.md"), encoding="utf-8").read()
+    kurator = open(os.path.join(akar, "peran", "kurator.md"), encoding="utf-8").read()
+    pemeriksa = open(os.path.join(akar, "peran", "pemeriksa.md"), encoding="utf-8").read()
+    chat = open(os.path.join(akar, "chat.md"), encoding="utf-8").read()
+
+    # Pemungut menyalin tanggal apa adanya; pengubahan bentuk adalah tempat galat masuk.
+    assert "DISALIN PERSIS" in pemulung and "YYYY-MM-DD" in pemulung
+    assert "lebih baik DIBUANG daripada ditulis tanpa tanggal" in pemulung
+    # Kurator tidak boleh memangkas asalnya demi menghemat baris.
+    assert "dipertahankan utuh" in kurator and "grup + tanggal" in kurator
+    # Pemeriksa mencetaknya di TIAP baris, bukan di catatan kaki.
+    assert "GRUP DAN TANGGAL WAJIB ADA DI SETIAP BARIS" in pemeriksa
+    assert "26 Agu 2026" in pemeriksa
+    for v in ("COCOK", "MELESET", "SEBAGIAN", "TIDAK BISA"):
+        baris = [b for b in pemeriksa.split(chr(10)) if v in b and "<ringkas>" in b]
+        assert baris and all("<grup>" in b and "<tgl>" in b for b in baris), v
+    assert "WAJIB membawa NAMA GRUP dan TANGGALNYA" in chat
+
+
+def test_daftar_harga_dari_bot_ticker_dibuang():
+    r"""Satu unggahan "BTC 109.231 +1,2% | ETH 4.412 ..." bisa 600 karakter tanpa satu pun
+    klaim yang bisa diperiksa. Lolos utuh selama ini karena kelas \w menghitung digit
+    sebagai huruf."""
+    assert not _tg._layak("BTC 109.231 +1,2% | ETH 4.412 -0,3% | SOL 214,8 +3,1% | "
+                          "BNB 892,4 +0,4% | XRP 2,91 -1,1% | ADA 0,79 +2,2%")
+    assert not _tg._layak("$SOL 214 $BTC 109k $ETH 4412 $BNB 892 $XRP 2.9 $DOGE 0.21 "
+                          "$ADA 0.79 $AVAX 24.1 $LINK 18")
+    # Tapi tabel makro yang berguna TIDAK boleh ikut terbuang — rasionya berdekatan,
+    # jadi jumlah angkanya yang membedakan, bukan rasio saja.
+    assert _tg._layak("PCE 3,7% | inti 2,9% | konsensus 3,7% | sebelumnya 3,7% | "
+                      "rilis 26/08 12:30 GMT")
+    assert _tg._layak("Unlock ASTER 15% dari total pasokan dijadwalkan 12 September 2026, "
+                      "sekitar 450 juta token")
+
+
+def test_ekor_promo_kanal_dibuang_di_sisi_kode():
+    """Kanal menempelkan ekor yang sama di TIAP unggahan. Dedup pesan-utuh tidak
+    menangkapnya karena isi di atasnya berbeda — jadi ekor itu dibayar tokennya sekali
+    per pesan, puluhan kali dalam satu permintaan, untuk nol informasi."""
+    from datetime import datetime as _dt, timezone as _tz
+    NL = chr(10)
+    ekor = NL + "Join @cryptoalpha untuk sinyal harian" + NL + "Not financial advice. DYOR."
+    d = _dt.now(_tz.utc)
+    pesan = [("Alpha", None, d, isi + ekor) for isi in (
+        "Unlock ASTER 15 persen dijadwalkan 12 September 2026 menurut dokumen resmi",
+        "OpenEden bermitra dengan BNY untuk tokenisasi obligasi HYBOND pekan ini",
+        "Flap kini mendukung DJTB sebagai quote token di jaringan BNB Chain")]
+    hasil, hemat = _tg.buang_baris_berulang(pesan)
+    assert hemat > 0
+    assert all("cryptoalpha" not in h[3] for h in hasil)
+    assert all("Unlock" in h[3] or "OpenEden" in h[3] or "Flap" in h[3] for h in hasil)
+    # Baris yang cuma muncul sekali TIDAK boleh ikut terbuang.
+    tunggal = [("A", None, d, "kabar tunggal yang cukup panjang untuk lolos saringan")]
+    assert _tg.buang_baris_berulang(tunggal) == (tunggal, 0)
+
+
+def test_pesan_tidak_dikosongkan_oleh_pembuangan_ekor():
+    """Pesan yang isinya HANYA ekor berulang harus dipertahankan utuh — lebih baik
+    membayar sedikit derau daripada menghapus isi yang mungkin berarti."""
+    from datetime import datetime as _dt, timezone as _tz
+    d = _dt.now(_tz.utc)
+    ulang = "Join @cryptoalpha untuk sinyal harian tiap pagi dan malam hari ini"
+    pesan = [("A", None, d, ulang) for _ in range(4)]
+    hasil, _ = _tg.buang_baris_berulang(pesan)
+    assert all(h[3] == ulang for h in hasil), "pesan tidak boleh jadi kosong"

@@ -58,8 +58,10 @@ bukan tentang asetnya, dan user perlu tahu grup mana yang mengirim teks semacam 
 
 ## Bentuk keluaran
 
-Daftar bernomor, satu temuan per baris, **penanda jenisnya dipertahankan** — pemeriksa
-memakainya untuk menentukan cara memperlakukan tiap baris. Setelah daftar:
+Daftar bernomor, satu temuan per baris, **penanda jenis DAN asalnya (grup + tanggal)
+dipertahankan utuh** — pemeriksa memakai penanda untuk menentukan perlakuan, dan asalnya
+harus sampai ke user. Memangkas `[grup · tanggal]` demi menghemat baris menghapus
+satu-satunya cara user memverifikasi sendiri. Setelah daftar:
 
 ```
 Dibuang: N temuan (sapaan/promosi berbayar/usang)

@@ -640,6 +640,14 @@ user, dan tidak bisa ia dapat dengan membaca grupnya sendiri.
 lebih penting daripada di mana pun: bahannya berasal dari orang tak dikenal, dan sebagian
 memang dibayar untuk terdengar meyakinkan.
 
+**SETIAP temuan WAJIB membawa NAMA GRUP dan TANGGALNYA** — di baris temuannya sendiri,
+bukan dikumpulkan di catatan kaki, dan berlaku untuk keempat jenis. Tanggalnya ditulis
+dengan nama bulan (`26 Agu 2026`); untuk `[OBROLAN]` yang mencakup beberapa hari, sebut
+rentangnya (`28–30 Agu 2026`). Jendelanya bisa selebar dua bulan, jadi tanpa tanggal user
+tidak bisa membedakan kabar kemarin dari kabar tujuh minggu lalu — dan tanpa nama grup ia
+tidak bisa kembali membaca sendiri atau belajar grup mana yang sering meleset. Temuan yang
+kehilangan asalnya JANGAN dilaporkan.
+
 Yang ini HANYA yang baru sejak permintaan terakhir — kode sudah membuang yang pernah
 dilaporkan. Jangan mengulang atau merangkum ulang temuan lama untuk mengisi jawaban. Kalau
 bloknya bertuliskan TIDAK TERSEDIA, KOSONG, TIDAK ADA YANG BARU, atau "tidak ada temuan
