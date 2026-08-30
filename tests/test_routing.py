@@ -4492,3 +4492,24 @@ def test_pesan_tidak_dikosongkan_oleh_pembuangan_ekor():
     pesan = [("A", None, d, ulang) for _ in range(4)]
     hasil, _ = _tg.buang_baris_berulang(pesan)
     assert all(h[3] == ulang for h in hasil), "pesan tidak boleh jadi kosong"
+
+
+def test_instruksi_shell_tidak_dikirim_saat_shell_tidak_ada():
+    """Begitu brief tersedia, jalur chat memakai TOOLS_WEB — tanpa Bash. Mengirim
+    "jalankan `python cloud/indicators.py`" ke model tanpa shell bukan cuma beban 1,4 rb
+    karakter yang diulang di setiap putaran (sampai 24): ia menyuruh model melakukan
+    sesuatu yang alatnya tidak ada, persis kekeliruan yang sudah terjadi di seed
+    pemeriksa."""
+    t = "apa yang menarik di telegram selama sebulan ini"
+    dengan_shell = bot.build_chat_prompt(t)
+    tanpa_shell = bot.build_chat_prompt(t, brief="[DATA] contoh")
+    assert "Jalankan lewat Bash" in dengan_shell, "shell ada -> instruksinya harus ikut"
+    assert "Jalankan lewat Bash" not in tanpa_shell
+    assert "memori.py cari" in dengan_shell and "memori.py cari" not in tanpa_shell
+    assert len(dengan_shell) - len(tanpa_shell) > 1200
+    # Penandanya sendiri tidak boleh bocor ke prompt dalam keadaan mana pun.
+    for p in (dengan_shell, tanpa_shell):
+        assert "<!-- SHELL" not in p and "<!-- /SHELL" not in p
+    # Yang dibuang HANYA perintah shell — panduan MCP dan format kesimpulan tetap ada.
+    assert "mcp__coinmarketcap__" in tanpa_shell
+    assert "KESIMPULAN" in tanpa_shell

@@ -1203,11 +1203,34 @@ def pesan_pasar(text):
                 or any(aset_dari_pesan(text)))
 
 
+_SHELL_RE = re.compile(r"<!-- SHELL -->.*?<!-- /SHELL -->", re.S)
+
+
+def buang_bagian_shell(teks):
+    """Buang instruksi menjalankan script kalau shell-nya memang tidak diberikan.
+
+    Jalur chat memakai TOOLS_WEB begitu brief tersedia — tanpa Bash. Mengirim "jalankan
+    `python cloud/indicators.py`" ke model yang tidak punya shell adalah beban mati 1,6 rb
+    karakter yang diulang di SETIAP putaran (sampai 24), dan lebih buruk dari sekadar
+    mahal: ia menyuruh model melakukan sesuatu yang alatnya tidak ada. Persis kekeliruan
+    yang sudah terjadi sekali di seed pemeriksa.
+    """
+    return _SHELL_RE.sub("", teks)
+
+
+def _lepas_penanda_shell(teks):
+    """Penandanya sendiri dibuang saat shell MEMANG diberikan — isinya tetap."""
+    return teks.replace("<!-- SHELL -->" + NL, "").replace("<!-- /SHELL -->" + NL, "")
+
+
 def build_chat_prompt(text, chat_id=None, brief=None):
     with open(CHAT_PROMPT, encoding="utf-8") as f:
         # Jenis aset ikut diberikan supaya pemilihan blok tidak jatuh ke "muat semua"
         # hanya karena kalimatnya tidak memakai kosakata rumpun.
         base = rakit_chat(f.read(), text, aset_dari_pesan(text)[0])
+    # brief terisi <=> tools_chat = TOOLS_WEB (lihat pemilihan tool di process()). Datanya
+    # sudah diambil kode, jadi tidak ada script yang perlu dijalankan model.
+    base = buang_bagian_shell(base) if brief else _lepas_penanda_shell(base)
     # Aturan kalibrasi hanya untuk pertanyaan pasar. Buat "apa itu RAG?" atau sapaan,
     # aturan konviksi & bukti kontra tidak berguna dan cuma menambah beban.
     #

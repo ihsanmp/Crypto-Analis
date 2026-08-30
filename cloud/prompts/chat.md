@@ -161,6 +161,7 @@ langsung jawab.
 - Kalau user tanya soal KOIN tertentu atau minta pendapat ("bagaimana pendapatmu tentang X",
   "X bagus nggak", "prospek X gimana", "worth dibeli nggak X"): AMBIL DATA DULU sebelum
   berpendapat — jangan menebak dari ingatan.
+<!-- SHELL -->
   1. Jalankan lewat Bash: `python cloud/indicators.py <TICKER>` → dapat EMA 13/21/33/50/100/200, RSI14,
      Stoch(5,3,3), Fibonacci, struktur pasar untuk timeframe 1w/1d/4h (angka pasti, jangan hitung manual).
   1b. Kalau pertanyaannya menyangkut REVENUE / KEUANGAN PROTOKOL (revenue bulanan atau
@@ -180,6 +181,7 @@ langsung jawab.
      (multi-chain, `--chain bsc|solana|...`). Kalau menyangkut SENTIMEN/hype:
      `python cloud/sentiment.py <TICKER>` (Fear & Greed + sosial). Kalau user menempel
      sebuah ALAMAT DOMPET: `python cloud/wallet.py <ALAMAT>` (isi & identitas dompet).
+<!-- /SHELL -->
   2. MCP `mcp__coinmarketcap__*`: `cryptoQuotesLatest` (harga, market cap, FDV, perubahan
      7d/30d), `getCryptoMetadata` (kategori/profil), `globalMetricsLatest` + `fearAndGreedLatest`
      (kondisi pasar umum).
