@@ -4088,14 +4088,35 @@ def test_konteks_runner_tidak_dipakai_di_env_level_job():
     satu job pun dibuat, log tidak ada, dan pesan Telegram apa pun berhenti diproses.
 
     Kegagalannya sunyi justru karena bot.yml tidak punya pemicu push — jadi run gagal itu
-    muncul atas nama push dan mudah dikira noise, bukan kematian botnya."""
-    import yaml
-    with open(os.path.join(AKAR, ".github", "workflows", "bot.yml"), encoding="utf-8") as f:
-        d = yaml.safe_load(f)
-    for nama, job in (d.get("jobs") or {}).items():
-        for k, v in (job.get("env") or {}).items():
-            assert "runner." not in str(v), f"{nama}.env.{k} memakai konteks runner"
-    # Tetap dioper ke step yang membutuhkannya.
-    langkah = [s for s in d["jobs"]["bot"]["steps"]
-               if "Jalankan analisa" in (s.get("name") or "")]
-    assert langkah and "BERKAS_TELEGRAM" in (langkah[0].get("env") or {})
+    muncul atas nama push dan mudah dikira noise, bukan kematian botnya.
+
+    DIPERIKSA PER BARIS, bukan dengan PyYAML: pustaka itu tidak terpasang di runner CI,
+    dan penjaga yang dilewati di CI bukan penjaga. Ini kekeliruan yang sama dengan tes
+    numpy sebelumnya — bedanya, di sana melewati tesnya memang tidak merugikan.
+    """
+    for nama in os.listdir(os.path.join(AKAR, ".github", "workflows")):
+        if not nama.endswith((".yml", ".yaml")):
+            continue
+        baris = open(os.path.join(AKAR, ".github", "workflows", nama),
+                     encoding="utf-8").read().split(chr(10))
+        di_env_job = False
+        for l in baris:
+            polos = l.strip()
+            if not polos or polos.startswith("#"):
+                continue
+            lekuk = len(l) - len(l.lstrip())
+            if polos == "env:" and lekuk == 4:      # env milik JOB
+                di_env_job = True
+                continue
+            if di_env_job and lekuk <= 4:           # keluar dari blok env job
+                di_env_job = False
+            if di_env_job:
+                assert "runner." not in l, f"{nama}: env level job memakai konteks runner -> {polos}"
+
+
+def test_berkas_telegram_dioper_di_level_step():
+    """Setelah dicabut dari level job, ia HARUS tetap sampai ke step yang membacanya —
+    kalau tidak, data_telegram() tidak akan pernah menemukan berkasnya."""
+    wf = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"), encoding="utf-8").read()
+    blok = wf[wf.index("- name: Jalankan analisa"):][:600]
+    assert "BERKAS_TELEGRAM:" in blok and "runner.temp" in blok
