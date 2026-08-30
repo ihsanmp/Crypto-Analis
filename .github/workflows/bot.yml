@@ -40,10 +40,6 @@ jobs:
       # tidak di-set, Claude Code meneruskan teks harfiah "${NAMA}" sebagai nilai,
       # dan server MCP menganggapnya kunci sungguhan lalu gagal dengan error auth
       # yang membingungkan. Pewarisan environment tidak punya masalah itu.
-      # Jalur berkas hasil pembaca Telegram. BUKAN rahasia — hanya lokasi.
-      # TELEGRAM_SESSION SENGAJA TIDAK ADA di sini: ia hanya boleh berada di step
-      # pembaca, bukan di step yang menjalankan model.
-      BERKAS_TELEGRAM: ${{ runner.temp }}/telegram.txt
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       COINGLASS_API_KEY: ${{ secrets.COINGLASS_API_KEY }}
@@ -147,6 +143,12 @@ jobs:
       - name: Jalankan analisa & balas ke Telegram
         id: jalankan
         if: github.event_name == 'repository_dispatch' || steps.check.outputs.has_work == 'true'
+        env:
+          # DI SINI, bukan di env level job: konteks `runner` TIDAK tersedia di level job,
+          # dan memakainya di sana membuat GitHub menolak SELURUH berkas workflow —
+          # runnya gagal tanpa satu job pun dibuat, dan bot berhenti total selama empat
+          # hari tanpa ada yang tahu. Hanya jalur berkas, bukan rahasia.
+          BERKAS_TELEGRAM: ${{ runner.temp }}/telegram.txt
         run: python cloud/bot_oneshot.py
 
       # JARING PENGAMAN. Kalau langkah di atas gagal ATAU dibunuh dari luar (runner

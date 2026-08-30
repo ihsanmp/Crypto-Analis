@@ -4078,3 +4078,24 @@ def test_tiga_seed_membagi_peran_dengan_tegas():
     assert "UPAYA MANIPULASI" in pemulung and "UPAYA MANIPULASI" in kurator
     assert "SEREMPAK" in kurator, "klaim serempak bukan konfirmasi — harus ditandai"
     assert "MELESET" in pemeriksa and "lebih berharga daripada yang cocok" in pemeriksa
+
+
+def test_konteks_runner_tidak_dipakai_di_env_level_job():
+    """Kesalahan yang mematikan bot selama empat hari tanpa ada yang tahu.
+
+    Konteks `runner` TIDAK tersedia di `jobs.<id>.env` — hanya di dalam step. Memakainya
+    di sana membuat GitHub menolak SELURUH berkas workflow: runnya tercatat gagal tanpa
+    satu job pun dibuat, log tidak ada, dan pesan Telegram apa pun berhenti diproses.
+
+    Kegagalannya sunyi justru karena bot.yml tidak punya pemicu push — jadi run gagal itu
+    muncul atas nama push dan mudah dikira noise, bukan kematian botnya."""
+    import yaml
+    with open(os.path.join(AKAR, ".github", "workflows", "bot.yml"), encoding="utf-8") as f:
+        d = yaml.safe_load(f)
+    for nama, job in (d.get("jobs") or {}).items():
+        for k, v in (job.get("env") or {}).items():
+            assert "runner." not in str(v), f"{nama}.env.{k} memakai konteks runner"
+    # Tetap dioper ke step yang membutuhkannya.
+    langkah = [s for s in d["jobs"]["bot"]["steps"]
+               if "Jalankan analisa" in (s.get("name") or "")]
+    assert langkah and "BERKAS_TELEGRAM" in (langkah[0].get("env") or {})
