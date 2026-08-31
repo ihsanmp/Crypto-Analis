@@ -26,3 +26,18 @@
 {"waktu": "2026-08-28T10:00:00-04:00", "mata_uang": "USD", "nama": "Fed Chairman Warsh Speaks", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-08-24 03:03"}
 {"waktu": "2026-08-28T10:00:00-04:00", "mata_uang": "USD", "nama": "Prelim Benchmark Payrolls Revision", "dampak": "tinggi", "konsensus": null, "sebelumnya": "-911K", "aktual": null, "dicatat_utc": "2026-08-24 03:03"}
 {"waktu": "2026-08-28T12:15:00-04:00", "mata_uang": "All", "nama": "Jackson Hole Symposium", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-08-24 03:03"}
+{"waktu": "2026-09-01T10:00:00-04:00", "mata_uang": "USD", "nama": "ISM Manufacturing PMI", "dampak": "tinggi", "konsensus": "55.2", "sebelumnya": "55.6", "aktual": null, "dicatat_utc": "2026-08-31 08:11"}
+{"waktu": "2026-09-01T21:30:00-04:00", "mata_uang": "AUD", "nama": "GDP q/q", "dampak": "tinggi", "konsensus": "0.3%", "sebelumnya": "0.3%", "aktual": null, "dicatat_utc": "2026-08-31 08:11"}
+{"waktu": "2026-09-01T22:00:00-04:00", "mata_uang": "NZD", "nama": "Official Cash Rate", "dampak": "tinggi", "konsensus": "2.75%", "sebelumnya": "2.50%", "aktual": null, "dicatat_utc": "2026-08-31 08:11"}
+{"waktu": "2026-09-01T22:00:00-04:00", "mata_uang": "NZD", "nama": "RBNZ Monetary Policy Statement", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-08-31 08:11"}
+{"waktu": "2026-09-01T22:00:00-04:00", "mata_uang": "NZD", "nama": "RBNZ Rate Statement", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-08-31 08:11"}
+{"waktu": "2026-09-01T23:00:00-04:00", "mata_uang": "NZD", "nama": "RBNZ Press Conference", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-08-31 08:11"}
+{"waktu": "2026-09-02T09:45:00-04:00", "mata_uang": "CAD", "nama": "BOC Rate Statement", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-08-31 08:11"}
+{"waktu": "2026-09-02T09:45:00-04:00", "mata_uang": "CAD", "nama": "Overnight Rate", "dampak": "tinggi", "konsensus": "2.25%", "sebelumnya": "2.25%", "aktual": null, "dicatat_utc": "2026-08-31 08:11"}
+{"waktu": "2026-09-02T10:30:00-04:00", "mata_uang": "CAD", "nama": "BOC Press Conference", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-08-31 08:11"}
+{"waktu": "2026-09-04T04:50:00-04:00", "mata_uang": "GBP", "nama": "BOE Gov Bailey Speaks", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-08-31 08:11"}
+{"waktu": "2026-09-04T08:30:00-04:00", "mata_uang": "USD", "nama": "Average Hourly Earnings m/m", "dampak": "tinggi", "konsensus": "0.3%", "sebelumnya": "0.1%", "aktual": null, "dicatat_utc": "2026-08-31 08:11"}
+{"waktu": "2026-09-04T08:30:00-04:00", "mata_uang": "CAD", "nama": "Employment Change", "dampak": "tinggi", "konsensus": "15.8K", "sebelumnya": "75.1K", "aktual": null, "dicatat_utc": "2026-08-31 08:11"}
+{"waktu": "2026-09-04T08:30:00-04:00", "mata_uang": "USD", "nama": "Non-Farm Employment Change", "dampak": "tinggi", "konsensus": "58K", "sebelumnya": "-23K", "aktual": null, "dicatat_utc": "2026-08-31 08:11"}
+{"waktu": "2026-09-04T08:30:00-04:00", "mata_uang": "CAD", "nama": "Unemployment Rate", "dampak": "tinggi", "konsensus": "6.4%", "sebelumnya": "6.4%", "aktual": null, "dicatat_utc": "2026-08-31 08:11"}
+{"waktu": "2026-09-04T08:30:00-04:00", "mata_uang": "USD", "nama": "Unemployment Rate", "dampak": "tinggi", "konsensus": "4.1%", "sebelumnya": "4.1%", "aktual": null, "dicatat_utc": "2026-08-31 08:11"}
