@@ -490,6 +490,52 @@ def _rumpun_cocok(low):
     return blok
 
 
+_PEMICU_PENDEK = 3      # di bawah ini, substring polos terlalu sering salah kena
+
+
+def _pemicu_cocok(kata, low):
+    """Pemicu PENDEK harus jatuh di awal kata; yang panjang tetap substring bebas.
+
+    Substring polos membuat pemicu pendek menyala di tempat yang salah: "ai" cocok di
+    dalam "hai" dan "explain" (sapaan "hai bot" ikut membawa 1.486 karakter aturan
+    industri AI), dan "ema" cocok di dalam "kemarin" (1.272 karakter peta korelasi untuk
+    pertanyaan yang tidak menyinggung EMA sama sekali).
+
+    Tapi batas kata TIDAK boleh dipasang untuk semua pemicu, ke dua arah:
+
+    - di BELAKANG — pemicu ditulis sebagai akar kata, "banding" untuk "bandingkan".
+    - di DEPAN — bahasa Indonesia memakai AWALAN. "emas bagus dibeli sekarang?" adalah
+      pertanyaan beli, dan pemicunya "beli" berada di tengah "di-beli". Memasang batas
+      depan untuk semua pemicu mematikan blok rencana-posisi di situ — regresi yang
+      hanya ketahuan karena hasilnya diukur, bukan diasumsikan.
+
+    Jadi batasnya hanya untuk pemicu <= 3 huruf, tempat kesalahannya benar-benar
+    terkonsentrasi. Pemicu >= 4 huruf jarang jadi potongan kata lain secara kebetulan.
+    """
+    if len(kata) > _PEMICU_PENDEK:
+        return kata in low
+    i = low.find(kata)
+    while i != -1:
+        if i == 0 or not (low[i - 1].isalnum() or low[i - 1] == "_"):
+            return True
+        i = low.find(kata, i + 1)
+    return False
+
+
+def _jenis_ticker(tik):
+    """Rumpun sebuah simbol, dipakai memilih blok prompt untuk pesan MULTI-ASET.
+
+    aset_dari_pesan() sengaja menolak memilih saat asetnya lebih dari satu, dan itu
+    benar — brief perbandingan memang tidak bisa dilayani satu aset. Tapi RUMPUN-nya
+    tetap jelas, dan tanpa ini gagal-aman memuat seluruh blok.
+    """
+    if tik in _FX_SIMBOL or _PASANGAN_FX.match(tik):
+        return "forex"
+    if tik in _TICKER_UMUM or tik in _KOIN_SIMBOL:
+        return "crypto"
+    return "saham"      # sisanya hanya bisa datang dari peta ticker SEC
+
+
 def rakit_chat(teks_prompt, pesan, jenis_aset_terdeteksi=None):
     """Rakit prompt NGOBROL: bagian inti selalu ikut, blok domain hanya bila relevan.
 
@@ -509,7 +555,7 @@ def rakit_chat(teks_prompt, pesan, jenis_aset_terdeteksi=None):
     for nama, pemicu, _ in blok:
         for kata in pemicu.split(","):
             kata = kata.strip().lower()
-            if kata and kata in low:
+            if kata and _pemicu_cocok(kata, low):
                 dipakai.add(nama)
                 break
 
@@ -531,6 +577,14 @@ def rakit_chat(teks_prompt, pesan, jenis_aset_terdeteksi=None):
         # SEMUA blok (42 rb karakter) padahal jelas pertanyaan crypto.
         if not serumpun and jenis_aset_terdeteksi:
             serumpun = _RUMPUN_JENIS.get(jenis_aset_terdeteksi, set())
+        # Pesan MULTI-ASET ("bandingkan btc dan eth") sengaja tidak memilih satu aset,
+        # jadi jenis_aset_terdeteksi kosong dan gagal-aman memuat SELURUH 14 blok:
+        # 54.948 karakter, +19 rb dari pertanyaan crypto biasa — di tingkat BERAT yang
+        # 40 putaran. Rumpunnya jelas dari aset-aset yang disebut; tidak perlu ditebak.
+        if not serumpun:
+            serumpun = set().union(*(
+                _RUMPUN_JENIS.get(_jenis_ticker(a), set()) for a in _semua_aset(pesan)
+            )) if _semua_aset(pesan) else set()
         if serumpun:
             dipakai.update(serumpun)
         else:
@@ -964,6 +1018,10 @@ _KATA_BUKAN_TICKER = {"ADA", "OP", "ATAU", "INI", "ITU", "DAN", "APA", "KE", "DI
 # Kata Indonesia yang KEBETULAN terdaftar sebagai ticker saham AS di berkas SEC. Peta SEC
 # memuat 10.398 ticker termasuk "DAN", "VS", "MANA", "GOLD" — mencocokkannya mentah ke
 # kalimat Indonesia akan menghasilkan aset palsu di hampir setiap pertanyaan.
+# Diturunkan sekali di impor, bukan dihitung ulang tiap pesan.
+_FX_SIMBOL = frozenset(_ALIAS_FX.values())
+_KOIN_SIMBOL = frozenset(_ALIAS_KOIN.values())
+
 _BUKAN_TICKER_SAHAM = {
     "DAN", "VS", "MANA", "ATAU", "INI", "ITU", "APA", "KE", "DI", "YANG", "JADI", "BUAT",
     "PADA", "DARI", "AKAN", "BISA", "LAGI", "SAJA", "JUGA", "TAPI", "ANTARA", "SAMA",
@@ -1543,6 +1601,57 @@ def saring_telegram(mentah):
 ASET_VERIFIKASI_MAKS = 3
 
 
+def _angkat_bagian_kembar(mentah):
+    """Angkat field JSON yang isinya SAMA untuk semua aset, supaya dikirim sekali saja.
+
+    Script data menyisipkan catatan cara membaca ke dalam keluarannya — `wajib_dibaca`
+    milik derivatif.py sendiri 612 karakter, lebih dari separuh keluarannya, dan isinya
+    identik untuk BTC maupun ETH. Dengan tiga aset ia dibayar tiga kali, di SETIAP putaran
+    dari 24. Yang diulang bukan datanya melainkan penjelasannya, jadi tidak ada yang
+    hilang dengan mengangkatnya ke atas.
+    """
+    per_label = {}
+    for sim, potong in mentah.items():
+        for label, isi in potong:
+            try:
+                per_label.setdefault(label, {})[sim] = json.loads(isi)
+            except (ValueError, TypeError):
+                return "", mentah                 # bukan JSON: biarkan apa adanya
+
+    umum, buang = [], {}
+    for label, per_sim in per_label.items():
+        if len(per_sim) < 2:
+            continue
+        acuan = next(iter(per_sim.values()))
+        if not isinstance(acuan, dict):
+            continue
+        for k, v in acuan.items():
+            # Hanya yang panjang: mengangkat "generated_utc" tidak menghemat apa pun
+            # dan justru mengaburkan bahwa tiap aset punya stempel waktunya sendiri.
+            if len(str(v)) < 200 or not isinstance(v, str):
+                continue
+            if all(isinstance(d, dict) and d.get(k) == v for d in per_sim.values()):
+                umum.append(f"[{label}] {k}: {v}")
+                buang.setdefault(label, set()).add(k)
+    if not umum:
+        return "", mentah
+
+    rapi = {}
+    for sim, potong in mentah.items():
+        baru = []
+        for label, isi in potong:
+            kunci = buang.get(label)
+            if kunci:
+                d = json.loads(isi)
+                isi = json.dumps({k: v for k, v in d.items() if k not in kunci},
+                                 ensure_ascii=False)
+            baru.append((label, isi))
+        rapi[sim] = baru
+    kepala = ("### CARA MEMBACA (berlaku untuk SEMUA aset di bawah)" + chr(10)
+              + chr(10).join(umum))
+    return kepala, rapi
+
+
 def data_verifikasi(teks_klaim):
     """Ambil data untuk aset yang DISEBUT di daftar klaim, supaya bisa diperiksa.
 
@@ -1583,19 +1692,22 @@ def data_verifikasi(teks_klaim):
     if not aset:
         return None
     aset = aset[:ASET_VERIFIKASI_MAKS]
-    bagian = []
+    mentah = {}
     for sim in aset:
-        potong = []
         for label, args in (("pasar", ["cloud/kategori.py", "--koin", sim]),
                             ("derivatif", ["cloud/derivatif.py", sim, "--ringkas"]),
                             ("likuidasi", ["cloud/coinalyze.py", sim, "--ringkas"])):
             keluar, err = _jalankan_terukur(f"VERIFIKASI {sim} ({label})", args)
             if not err and keluar:
-                potong.append(f"[{label}] {keluar}")
-        if potong:
-            bagian.append(f"### DATA {sim}" + chr(10) + chr(10).join(potong))
-    if not bagian:
+                mentah.setdefault(sim, []).append((label, keluar))
+    if not mentah:
         return None
+    bersama, mentah = _angkat_bagian_kembar(mentah)
+    bagian = [f"### DATA {sim}" + chr(10)
+              + chr(10).join(f"[{lab}] {isi}" for lab, isi in potong)
+              for sim, potong in mentah.items()]
+    if bersama:
+        bagian.insert(0, bersama)
     kepala = ("[DATA UNTUK MEMERIKSA KLAIM]" + chr(10)
               + f"Aset yang disebut di daftar klaim: {chr(44).join(aset)}. Angka di bawah "
               + "diambil KODE, bukan dari grup. Pakai ini untuk memvonis tiap klaim. "

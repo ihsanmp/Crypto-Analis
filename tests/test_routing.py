@@ -4693,3 +4693,71 @@ def test_blok_pendapat_dan_kategori_kerja_di_inggris():
     assert "kerja" in bot.kategori_telegram("any job openings on telegram")
     assert "kerja" in bot.kategori_telegram("cari lowongan di tele")
     assert "forex" in bot.kategori_telegram("check tele for gold news")
+
+
+# ------------------------- pemborosan token: diukur, bukan diasumsikan
+
+def test_pemicu_pendek_tidak_menyala_di_tengah_kata():
+    """"ai" cocok di dalam "hai" dan "explain": sapaan "hai bot" ikut membawa 1.486
+    karakter aturan industri AI, dan "ema" di dalam "kemarin" membawa 1.272 karakter peta
+    korelasi ke pertanyaan yang tidak menyinggung EMA sama sekali."""
+    assert not bot._pemicu_cocok("ai", "hai bot")
+    assert not bot._pemicu_cocok("ai", "explain what an amm is")
+    assert not bot._pemicu_cocok("ema", "kenapa btc turun kemarin")
+    assert bot._pemicu_cocok("ai", "industri ai lagi gimana")
+    assert bot._pemicu_cocok("ema", "ema21 ketembus")
+
+
+def test_awalan_indonesia_tidak_ikut_dimatikan():
+    """Batas kata di DEPAN tidak boleh dipasang untuk semua pemicu: bahasa Indonesia
+    memakai awalan, dan "emas bagus dibeli sekarang?" adalah pertanyaan beli yang
+    pemicunya berada di tengah "di-beli". Regresi ini hanya ketahuan karena diukur."""
+    assert bot._pemicu_cocok("beli", "emas bagus dibeli sekarang?")
+    assert bot._pemicu_cocok("banding", "bandingkan btc dan eth")
+    assert bot._pemicu_cocok("pegang", "koin apa yang dipegang blackrock")
+    p = bot.build_chat_prompt("emas bagus dibeli sekarang?")
+    assert "rencana-posisi" not in p          # penanda tidak bocor
+    assert len(p) > 39000, "blok rencana-posisi harus tetap termuat"
+
+
+def test_pesan_multi_aset_tidak_memuat_seluruh_blok():
+    """aset_dari_pesan() sengaja menolak memilih saat asetnya lebih dari satu — itu benar.
+    Tapi akibatnya gagal-aman memuat SELURUH 14 blok: 54.948 karakter untuk "bandingkan
+    btc dan eth", +19 rb dari pertanyaan crypto biasa, di tingkat BERAT yang 40 putaran."""
+    banding = bot.build_chat_prompt("bandingkan btc dan eth")
+    tunggal = bot.build_chat_prompt("analisa sol")
+    assert len(banding) < 40000, len(banding)
+    assert len(banding) - len(tunggal) < 3000, "perbandingan tidak boleh jauh lebih besar"
+    # Blok yang jelas tidak nyambung TIDAK boleh ikut.
+    for asing in ("hasilnya NULL", "Riset grup Telegram"):
+        assert asing not in banding, asing
+    # Tapi rumpunnya harus benar: crypto, bukan forex/saham.
+    assert bot._jenis_ticker("BTC") == "crypto"
+    assert bot._jenis_ticker("GC=F") == "forex"
+    assert bot._jenis_ticker("NVDA") == "saham"
+    # Perbandingan saham memilih rumpun saham.
+    assert len(bot.build_chat_prompt("bandingkan nvda dan aapl")) < 40000
+
+
+def test_penjelasan_kembar_diangkat_sekali():
+    """derivatif.py menyisipkan catatan cara membaca 612 karakter ke keluarannya, identik
+    untuk tiap aset. Dengan tiga aset ia dibayar tiga kali, di SETIAP putaran dari 24."""
+    import json as _json
+    W = "Funding POSITIF = long membayar short, jadi reli lebih rentan koreksi. " * 5
+    mentah = {s: [("derivatif", _json.dumps({"simbol": s, "oi": i, "wajib_dibaca": W}))]
+              for i, s in enumerate(("BTC", "ETH", "SOL"))}
+    sebelum = sum(len(i) for v in mentah.values() for _, i in v)
+    kepala, rapi = bot._angkat_bagian_kembar(mentah)
+    sesudah = len(kepala) + sum(len(i) for v in rapi.values() for _, i in v)
+    assert sesudah < sebelum * 0.6, (sebelum, sesudah)
+    # Yang diangkat penjelasannya, BUKAN datanya.
+    assert W[:40] in kepala
+    for v in rapi.values():
+        for _, isi in v:
+            d = _json.loads(isi)
+            assert "simbol" in d and "oi" in d and "wajib_dibaca" not in d
+    # Satu aset: tidak ada yang kembar, jangan diubah.
+    assert bot._angkat_bagian_kembar({"BTC": mentah["BTC"]}) == ("", {"BTC": mentah["BTC"]})
+    # Keluaran yang bukan JSON dibiarkan apa adanya, bukan dibuang.
+    bukan = {"BTC": [("x", "bukan json")], "ETH": [("x", "juga bukan")]}
+    assert bot._angkat_bagian_kembar(bukan) == ("", bukan)
