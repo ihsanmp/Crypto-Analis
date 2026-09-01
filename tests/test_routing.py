@@ -4540,3 +4540,59 @@ def test_readme_mencatat_riset_telegram():
         assert klaim in teks, klaim
     # Gerbang pemicunya harus disebut, kalau tidak fiturnya terlihat seperti tidak jalan.
     assert '"tele"' in teks and '"telegram"' in teks
+
+
+# ------------------------- fase bulan: fitur null yang harus TETAP null
+
+def test_blok_fase_bulan_menyala_dan_tidak_bocor():
+    """Acuannya 23 rb karakter — terlalu besar untuk ditempel di tiap pertanyaan. Blok
+    ringkasnya hanya menyala saat memang ditanyakan."""
+    for pesan in ("apakah purnama minggu ini bearish untuk btc?",
+                  "ada pengaruh fase bulan ke harga bitcoin?",
+                  "gimana kalau pakai lunar cycle buat timing entry"):
+        assert "hasilnya NULL" in bot.build_chat_prompt(pesan), pesan
+    for pesan in ("btc gimana menurutmu", "analisa sol", "halo"):
+        assert "hasilnya NULL" not in bot.build_chat_prompt(pesan), pesan
+
+
+def test_fase_bulan_dilarang_jadi_sinyal():
+    """Yang membedakan jawaban benar dari jawaban yang terdengar pintar di sini bukan
+    "hati-hati ya" melainkan angka. Blok promptnya harus MEMBAWA angkanya, karena tanpa
+    itu model akan menjawab dari ingatan dan jatuh ke "masih diperdebatkan"."""
+    p = bot.build_chat_prompt("apakah full moon bearish untuk btc?")
+    for angka in ("0,883", "0,908", "0,969", "0,84"):
+        assert angka in p, angka
+    assert "Jangan menyajikannya sebagai" in p and "diperdebatkan" in p
+    # Post-hoc adalah cara paling umum mitos ini dihidupkan lagi.
+    assert "post-hoc" in p
+    # Dan bot TIDAK boleh menjalankan ulang ujinya untuk menjawab: ephem/statsmodels
+    # tidak terpasang di runner, dan kesimpulannya sudah tetap.
+    assert "Jangan menjalankan ulang ujinya" in p
+
+
+def test_acuan_fase_bulan_mencatat_reproduksinya():
+    """Dokumen yang mengklaim dirinya dapat direproduksi harus benar-benar diuji, bukan
+    dipercaya karena bunyinya meyakinkan — itu justru kesalahan yang diperingatkan
+    dokumen itu sendiri."""
+    d = open(os.path.join(AKAR, "cloud", "data", "moon_phase_btc.md"),
+             encoding="utf-8").read()
+    assert "4.9 Reproduksi independen" in d
+    assert "0,9693" in d, "hasil reproduksi harus tercatat, bukan cuma diklaim cocok"
+    # Koreksi yang ditemukan saat reproduksi tidak boleh dihapus diam-diam.
+    assert "bergantung pada cara membagi bin" in d
+    assert "+0,361" in d
+    # Datanya ikut supaya siapa pun bisa mengulang.
+    assert os.path.exists(os.path.join(AKAR, "cloud", "data",
+                                       "btc_daily_bitstamp.csv.gz"))
+
+
+def test_uji_lunar_tidak_dipanggil_jalur_jawaban():
+    """ephem & statsmodels tidak terpasang di runner bot. Kalau ada jalur yang
+    memanggilnya saat menjawab, ia akan gagal di produksi — dan tidak perlu ada, karena
+    kesimpulannya sudah tetap."""
+    for nama in ("bot_oneshot.py", "kategori.py", "indicators.py"):
+        jalur = os.path.join(AKAR, "cloud", nama)
+        if os.path.exists(jalur):
+            assert "uji_lunar" not in open(jalur, encoding="utf-8").read(), nama
+    src = open(os.path.join(AKAR, "cloud", "uji_lunar.py"), encoding="utf-8").read()
+    assert "alat REPRODUKSI" in src

@@ -613,6 +613,48 @@ likuiditas. Kalau `catatan` muncul, kepadatannya di bawah setengah — sebut seb
 petunjuk arah, bukan hubungan yang mapan.
 <!-- /BLOK -->
 
+<!-- BLOK: fase-bulan | pemicu: bulan purnama,purnama,full moon,new moon,bulan baru,fase bulan,moon phase,lunar,siklus bulan,astro,astrologi,supermoon,gerhana -->
+## Fase bulan & BTC — sudah diuji, hasilnya NULL
+
+Acuan lengkap: `cloud/data/moon_phase_btc.md` (uji primer 5.356 hari BTC 2012–2026,
+direproduksi di repo ini). **Jangan menjalankan ulang ujinya untuk menjawab** — angkanya
+sudah tetap, dan `ephem`/`statsmodels` tidak terpasang di runner.
+
+**Tidak ada bukti fase bulan memprediksi arah maupun volatilitas BTC.**
+
+| Uji | Hasil |
+|---|---|
+| Event-window ±3d & ±7d, HAC + kontrol DOW/turn-of-month | p = 0,66–0,99 di **semua** sampel |
+| Harmonik (sudut fase kontinu, K=2) | F = 0,29 · p = 0,883 · amplitudo 0,04%/hari (**di bawah biaya transaksi**) |
+| Placebo 2.000 siklus palsu 29,53 hari | bulan asli **lebih buruk dari median placebo**, p empiris 0,908 |
+| Volatilitas | sd mentah 1,166 terlihat kuat, tapi jadi 1,013 setelah winsorize dan **0,969** setelah 20 hari terbesar dibuang |
+| Backtest naif (fee 0,1%) | waxing Sharpe 0,57 · waning 0,53 · **buy & hold 0,84** |
+
+**Kalau ditanya "purnama minggu ini bearish untuk BTC?"** — jawab tidak ada buktinya,
+sebutkan satu-dua angka di atas, selesai. **Jangan** mengarang mekanisme kausal, dan
+**jangan** menghubungkan pergerakan harga yang baru terjadi dengan fase bulan secara
+post-hoc — itu persis bias yang menciptakan mitosnya.
+
+**Jangan menyajikannya sebagai "masih diperdebatkan".** Buktinya tidak seimbang: tiga dari
+empat studi kripto null, dan yang melaporkan hasil positif (Patil 2025, CAGR 32,2%) ternyata
+**kalah dari buy-and-hold di paper yang sama** (risk-adjusted 65,6% vs 68%).
+
+**Jangan mengutip Yuan et al. (3–5%/tahun) sebagai bukti untuk BTC** — itu ekuitas, dan
+replikasi terbarunya (Kovacs 2025) tidak menemukan efek global yang robust.
+
+**Kalau user menunjukkan backtest lunar yang bagus,** periksa tiga hal berurutan:
+(1) ada pembanding buy-and-hold di periode yang sama, disesuaikan risiko? (2) biaya dan
+slippage dimasukkan? (3) bertahan di hold-out yang belum disentuh?
+
+Dua hal yang BOLEH: menjelaskan literaturnya secara netral kalau ditanya, dan memakai kasus
+ini sebagai contoh data snooping. Yang belum diuji dan harus disebut apa adanya kalau
+ditanya: intraday, perigee/apogee, gerhana, supermoon, altcoin.
+
+> Anomali BTC yang justru NYATA dan sering tertukar dengan ini: *turn-of-the-candle effect*
+> — return terkonsentrasi di menit 0/15/30/45 tiap jam, t-stat di atas 9 (Shanaev et al.,
+> *Heliyon* 2023). Itu sinyal; fase bulan bukan.
+<!-- /BLOK -->
+
 <!-- BLOK: telegram-riset | pemicu: telegram,tele -->
 ## Riset grup Telegram
 
