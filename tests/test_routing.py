@@ -4596,3 +4596,100 @@ def test_uji_lunar_tidak_dipanggil_jalur_jawaban():
             assert "uji_lunar" not in open(jalur, encoding="utf-8").read(), nama
     src = open(os.path.join(AKAR, "cloud", "uji_lunar.py"), encoding="utf-8").read()
     assert "alat REPRODUKSI" in src
+
+
+# ------------------------- campur bahasa: user menulis Indonesia + Inggris sekaligus
+
+@pytest.mark.parametrize("pesan", [
+    "bagaimana pergerakan btc untuk full moon nanti",
+    "how will btc move on the next full moon",
+    "is the upcoming new moon bearish for bitcoin",
+    "does the lunar cycle affect btc price",
+    "apakah moon phase ngaruh ke btc",
+])
+def test_blok_fase_bulan_juga_di_inggris(pesan):
+    assert "hasilnya NULL" in bot.build_chat_prompt(pesan)
+
+
+@pytest.mark.parametrize("pesan", [
+    "anything interesting on my telegram",
+    "what's new on telegram",
+    "summarize my telegram groups",
+    "check my telegram for alpha",
+    "any job openings on telegram",
+    "recap my tele groups",
+    "find interesting info from tele",
+])
+def test_riset_grup_menyala_di_inggris(pesan):
+    """Sisi Inggris gerbang ini sempat kosong sama sekali: "info menarik dari telegram"
+    menyala, "anything interesting on my telegram" tidak. Gerbang yang hanya mengerti satu
+    bahasa terasa seperti bot yang rusak sesekali."""
+    assert bot.minta_telegram(pesan)
+
+
+@pytest.mark.parametrize("pesan", [
+    "kirim update ke telegram saya",
+    "update webhook telegram",
+    "check telegram bot status",
+    "telegram bot token nya expired",
+    "set my telegram notification",
+    "send the summary to telegram",
+    "balas lewat telegram ya",
+])
+def test_mengoperasikan_telegram_bukan_riset_grup(pesan):
+    """Melebarkan gerbang ke find/check/update/summarize membuat kalimat soal PIPA botnya
+    sendiri ikut tertangkap. Salah tangkap di sini mahal: ia membaca grup PRIBADI user
+    tanpa diminta, dan memajukan penanda batas kalau analisanya sukses."""
+    assert not bot.minta_telegram(pesan)
+
+
+@pytest.mark.parametrize("pesan,jam", [
+    ("info tele last week", 168),
+    ("apa yang menarik di telegram past month", 720),
+    ("telegram in the last 7 days", 168),
+    ("tele over the last 3 days", 72),
+    ("what's new on telegram this month", 720),
+    ("telegram last 24 hours", 24),
+    ("info tele today", 24),
+    ("telegram yesterday", 48),
+    ("tele for the last two weeks", 336),
+])
+def test_rentang_waktu_di_inggris(pesan, jam):
+    assert bot.rentang_telegram(pesan) == jam
+
+
+@pytest.mark.parametrize("pesan,fungsi", [
+    ("what's happening with btc right now", "pantau"),
+    ("monitor sol for me", "pantau"),
+    ("is there anything new with btc", "pantau"),
+    ("where will btc be in 3 months", "proyeksi"),
+    ("predict eth price", "proyeksi"),
+    ("what is your btc forecast", "proyeksi"),
+])
+def test_pemantauan_dan_proyeksi_di_inggris(pesan, fungsi):
+    if fungsi == "pantau":
+        assert bot.mode_pantau(pesan)
+    else:
+        assert bot._MINTA_PROYEKSI.search(pesan.lower())
+
+
+def test_pemantauan_tidak_menelan_niat_transaksi():
+    """Pelebaran ke Inggris tidak boleh membuat pertanyaan beli/jual ikut dijawab dengan
+    kesimpulan gaya pemantauan — itu justru koreksi yang diminta user dulu."""
+    assert not bot.mode_pantau("should i buy btc now")
+    assert not bot._MINTA_PROYEKSI.search("btc price now")
+
+
+def test_blok_pendapat_dan_kategori_kerja_di_inggris():
+    for p in ("what do you think about sol", "your take on btc", "menurutmu sol gimana"):
+        assert "mode-pendapat" not in bot.build_chat_prompt(p), "penanda blok bocor"
+    # Blok pendapat harus benar-benar termuat, bukan cuma tidak error.
+    isi_id = bot.build_chat_prompt("menurutmu sol gimana")
+    isi_en = bot.build_chat_prompt("what do you think about sol")
+    tanda = "mode-pendapat"
+    assert len(isi_en) > 20000 and len(isi_id) > 20000
+    assert tanda not in isi_en
+    # Lowongan dalam bahasa Inggris harus memilih kategori grup yang sama.
+    assert "kerja" in bot.kategori_telegram("any job openings on telegram")
+    assert "kerja" in bot.kategori_telegram("cari lowongan di tele")
+    assert "forex" in bot.kategori_telegram("check tele for gold news")

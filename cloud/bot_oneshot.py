@@ -791,6 +791,7 @@ _MINTA_PROYEKSI = re.compile(
     # dan sempat jatuh ke jalur RINGAN tanpa data sama sekali. "kedepan" ditulis
     # tanpa spasi jauh lebih sering daripada "ke depan".
     r"performa|kinerja|ke ?depan|mendatang|"
+    r"predict|projection|where will|how (?:high|low|far)|next (?:week|month|quarter|year)|"
     r"dampak(?:nya)?|efek(?:nya)?|hasil(?:nya)? (?:cpi|nfp|fomc))", re.I)
 
 
@@ -1466,6 +1467,10 @@ _MINTA_PANTAU = re.compile(
     r"ada (?:informasi|info|berita|kabar|sesuatu|hal)|"
     r"(?:informasi|info|berita) (?:menarik|penting|baru|terbaru)|"
     r"apa saja yang|narasi(?:nya)?|"
+    # Sisi Inggris dari pertanyaan yang sama. "what's happening with btc"
+    # adalah pertanyaan pemantauan, bukan permintaan rencana beli.
+    r"what.?s (?:happening|going on|up) (?:with|on)|anything new|any(?:thing)? (?:news|update)|"
+    r"monitor|watch(?:ing)? |current (?:state|condition|situation)|"
     r"fundamental(?:nya)? (?:gimana|bagaimana|apa))" + '\\b', re.I)
 
 
@@ -1481,7 +1486,16 @@ _TG_NIAT = re.compile(
     r"cari|carikan|nyari|informasi|info|menarik|riset|rangkum|ringkas|"
     r"apa yang|ada apa|kabar|bahas|pantau|"
     # Mencari lowongan adalah niat riset tersendiri — user punya grup khusus untuk itu.
-    r"lowongan|hiring|rekrut", re.I)
+    r"lowongan|hiring|rekrut|"
+    # User mencampur dua bahasa dalam satu kalimat, dan sisi Inggrisnya sempat kosong
+    # sama sekali: "anything interesting on my telegram" tidak menyalakan apa pun,
+    # sementara "info menarik dari telegram" menyala. Gerbang yang hanya mengerti satu
+    # bahasa terasa seperti bot yang rusak sesekali, dan itu lebih buruk daripada
+    # gerbang yang lebar — kata "telegram"/"tele" tetap wajib ada di sisi tempat.
+    r"find|search|look|check|read|scan|"
+    r"anything|what.?s new|whats new|any (?:news|update|alpha)|update|"
+    r"summar|recap|digest|interesting|"
+    r"job|vacanc|opening|career", re.I)
 
 
 def _seed(nama):
@@ -1616,7 +1630,8 @@ def data_telegram():
 # di daftar user memang hanya berguna untuk pertanyaan tertentu — membacanya di tiap
 # pertanyaan kripto cuma menghabiskan jatah pesan tanpa menambah apa pun.
 _TG_FOREX = re.compile(r"forex|emas|gold|xau|dxy|dolar|usd|eur|jpy|gbp|komoditas", re.I)
-_TG_KERJA = re.compile(r"lowongan|kerja|job|karier|karir|hiring|rekrut|freelance", re.I)
+_TG_KERJA = re.compile(r"lowongan|kerja|job|karier|karir|hiring|rekrut|freelance|"
+                       r"vacanc|opening|career|recruit|intern", re.I)
 
 
 def kategori_telegram(teks):
@@ -1630,9 +1645,22 @@ def kategori_telegram(teks):
     return kat
 
 
+# Pengecualian: pesan yang MENGOPERASIKAN Telegram, bukan meriset grupnya. Gerbang niat
+# dilebarkan ke sisi Inggris (find/check/update/summarize), dan kata-kata itu juga muncul
+# di kalimat soal pipa botnya sendiri — 'kirim update ke telegram', 'check telegram bot
+# status', 'update webhook telegram'. Salah tangkap di sini mahal: ia membaca grup
+# PRIBADI user tanpa diminta. Lebih baik sesekali harus mengulang perintah.
+_TG_BUKAN_RISET = re.compile(
+    r"webhook|bot ?token|\b(?:telegram|tele) bot\b|\bbot telegram\b|"
+    r"telegram api|api telegram|notifikasi|notification|"
+    # "kirim ... KE telegram" adalah mengirim, bukan membaca. "DARI telegram" tetap riset.
+    r"\b(?:ke|to|via)\s+(?:telegram|tele)\b", re.I)
+
 def minta_telegram(teks):
     """Apakah user meminta riset dari grup Telegram-nya sendiri."""
     low = (teks or "").lower()
+    if _TG_BUKAN_RISET.search(low):
+        return False
     return bool(_TG_TEMPAT.search(low) and _TG_NIAT.search(low))
 
 
@@ -1643,18 +1671,22 @@ def minta_telegram(teks):
 # Ditulis serangkai di bahasa Indonesia ("seminggu", "sebulan", "sehari"), jadi "se" harus
 # ikut jadi kata bilangan dan spasinya opsional.
 _ANGKA_KATA = {"se": 1, "satu": 1, "dua": 2, "tiga": 3, "empat": 4, "lima": 5, "enam": 6,
-               "tujuh": 7, "delapan": 8, "sembilan": 9, "sepuluh": 10}
-_SATUAN_JAM = {"jam": 1, "hari": 24, "minggu": 24 * 7, "pekan": 24 * 7, "bulan": 24 * 30}
+               "tujuh": 7, "delapan": 8, "sembilan": 9, "sepuluh": 10,
+               "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
+               "seven": 7, "eight": 8, "nine": 9, "ten": 10}
+_SATUAN_JAM = {"jam": 1, "hari": 24, "minggu": 24 * 7, "pekan": 24 * 7, "bulan": 24 * 30,
+               "hour": 1, "hours": 1, "day": 24, "days": 24, "week": 24 * 7,
+               "weeks": 24 * 7, "month": 24 * 30, "months": 24 * 30}
 _RENTANG_ANGKA = re.compile(
-    r"(\d{1,3})\s*(jam|hari|minggu|pekan|bulan)\b"
-    r"|\b(se|satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan|sepuluh)\s*"
-    r"(jam|hari|minggu|pekan|bulan)\b", re.I)
+    r"(\d{1,3})\s*(jam|hari|minggu|pekan|bulan|hours?|days?|weeks?|months?)\b"
+    r"|\b(se|satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan|sepuluh|one|two|three|four|five|six|seven|eight|nine|ten)\s*"
+    r"(jam|hari|minggu|pekan|bulan|hours?|days?|weeks?|months?)\b", re.I)
 # Tanpa bilangan sama sekali. "bulan ini" dan "sebulan" sama-sama wajar diucapkan.
 _RENTANG_FRASA = (
-    (re.compile(r"\bhari ini\b|\bhari ni\b|\bbarusan\b"), 24),
-    (re.compile(r"\bkemarin\b"), 48),
-    (re.compile(r"\bminggu ini\b|\bpekan ini\b"), 24 * 7),
-    (re.compile(r"\bbulan ini\b"), 24 * 30),
+    (re.compile(r"\bhari ini\b|\bhari ni\b|\bbarusan\b|\btoday\b|\blast 24 ?h(?:ours?|rs?)?\b"), 24),
+    (re.compile(r"\bkemarin\b|\byesterday\b"), 48),
+    (re.compile(r"\bminggu ini\b|\bpekan ini\b|\b(?:this|last|past) week\b"), 24 * 7),
+    (re.compile(r"\bbulan ini\b|\b(?:this|last|past) month\b"), 24 * 30),
 )
 
 

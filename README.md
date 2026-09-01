@@ -23,7 +23,15 @@ sebagai sentimen timing.
 
 > Riset grup hanya berjalan kalau pesanmu memuat kata **"telegram"** atau **"tele"**.
 > Gerbangnya sengaja sempit: membaca grup pribadi karena salah tangkap jauh lebih buruk
-> daripada sesekali harus menyebut kata pemicunya.
+> daripada sesekali harus menyebut kata pemicunya. Kalimat yang MENGOPERASIKAN Telegram
+> ("kirim update ke telegram", "check telegram bot status", "update webhook") dikecualikan
+> — itu soal pipa botnya sendiri, bukan permintaan membaca grup.
+
+**Campur bahasa didukung di seluruh jalur.** Pemicunya mengerti dua sisi sekaligus, karena
+begitulah kalimatnya benar-benar ditulis: *"bagaimana pergerakan btc untuk full moon
+nanti"*, *"anything interesting on my telegram"*, *"apa yang menarik di telegram past
+month"*, *"where will btc be in 3 months"*. Rentang waktu terbaca di kedua bahasa
+(`seminggu` = `last week`, `sebulan ini` = `this month`, `kemarin` = `yesterday`).
 
 ---
 

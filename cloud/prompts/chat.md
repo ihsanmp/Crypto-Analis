@@ -520,7 +520,7 @@ tidak kamu punya.
    angka yang diukur lewat kode.
 <!-- /BLOK -->
 
-<!-- BLOK: mode-pendapat | pemicu: menurutmu,gambaranmu,kesimpulannya,artinya,pendapatmu,jadi gimana,jadi bagaimana,harga,koin,saham,forex,emas,gold,prospek,analisa,analisis -->
+<!-- BLOK: mode-pendapat | pemicu: menurutmu,gambaranmu,kesimpulannya,artinya,pendapatmu,jadi gimana,jadi bagaimana,harga,koin,saham,forex,emas,gold,prospek,analisa,analisis,what do you think,your take,your view,thoughts on,opinion,how do you see,price,coin,stock,outlook,analysis -->
 # MODE PENDAPAT
 
 Kalau pertanyaannya meminta **PENAFSIRAN atas yang sudah dibahas** — "jadi bagaimana",
