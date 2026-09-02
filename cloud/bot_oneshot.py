@@ -1765,7 +1765,7 @@ _MINTA_PANTAU = re.compile(
 _TG_TEMPAT = re.compile(r"\b(?:telegram|tele)\b", re.I)
 _TG_NIAT = re.compile(
     r"cari|carikan|nyari|informasi|info|menarik|riset|rangkum|ringkas|"
-    r"apa yang|ada apa|kabar|bahas|pantau|"
+    r"apa yang|ada apa|kabar|berita|news|bahas|pantau|"
     # Mencari lowongan adalah niat riset tersendiri — user punya grup khusus untuk itu.
     r"lowongan|hiring|rekrut|"
     # User mencampur dua bahasa dalam satu kalimat, dan sisi Inggrisnya sempat kosong
@@ -1773,7 +1773,7 @@ _TG_NIAT = re.compile(
     # sementara "info menarik dari telegram" menyala. Gerbang yang hanya mengerti satu
     # bahasa terasa seperti bot yang rusak sesekali, dan itu lebih buruk daripada
     # gerbang yang lebar — kata "telegram"/"tele" tetap wajib ada di sisi tempat.
-    r"find|search|look|check|read|scan|"
+    r"find|search|look|check|cek|baca|lihat|read|scan|"
     r"anything|what.?s new|whats new|any (?:news|update|alpha)|update|"
     r"summar|recap|digest|interesting|"
     r"job|vacanc|opening|career", re.I)
@@ -2002,13 +2002,22 @@ _GRUP_SEBUT = re.compile(
     r"([A-Za-z0-9][\w .&'-]{0,30})", re.I)
 # Kata yang mengikuti "grup" tapi BUKAN nama grup. "grup telegram saya" berarti seluruh
 # grup, bukan grup bernama Telegram.
-_BUKAN_NAMA_GRUP = {"telegram", "tele", "saya", "aku", "kamu", "ini", "itu",
-                    "mana", "apa", "yang", "yg"}
+# Kata pertama yang menandakan ini BUKAN nama grup. Termasuk satuan waktu: "rangkum grup
+# 24 jam" berarti rentang waktunya, bukan grup bernama "24 jam"; "ada apa di grup hari
+# ini" juga bukan grup bernama "hari".
+_BUKAN_NAMA_GRUP = {"telegram", "tele", "tg", "saya", "aku", "kamu", "ini", "itu",
+                    "mana", "apa", "yang", "yg", "jam", "hari", "minggu", "bulan",
+                    "tahun", "tadi", "kemarin", "sekarang", "semua", "semuanya",
+                    "terakhir", "terbaru", "aja", "saja", "dong", "ya"}
 # Ekor kalimat yang ikut tertangkap dan harus dipangkas.
 _EKOR_GRUP = re.compile(
+    r"\s+(?:di|dari|pada|in|on|at)\s+(?:telegram|tele|tg)\b.*$|"
+    # Bentuk serangkai ("seminggu", "sebulan") tidak tertangkap oleh "minggu"
+    # telanjang — huruf sebelumnya bukan batas kata.
+    r"\s+se(?:minggu|bulan|hari|tahun)\b.*$|"
     r"\s+(?:saya|aku|kamu|ini|itu|dong|ya|yg|yang|gimana|gmn|apa|aja|saja|"
-    r"tadi|kemarin|hari|minggu|bulan|terakhir|terbaru|sekarang|barusan|dan|atau)\b.*$",
-    re.I)
+    r"tadi|kemarin|hari|minggu|bulan|terakhir|terbaru|sekarang|barusan|dan|atau|"
+    r"selama|sejak|buat|untuk|about|for|in|on|di|dari)\b.*$", re.I)
 
 
 # OBROLAN MURNI: sapaan, ucapan terima kasih, dan pertanyaan tentang jawaban SEBELUMNYA.
@@ -2066,17 +2075,41 @@ def grup_diminta(teks):
     if not m:
         return None
     nama = _EKOR_GRUP.sub("", m.group(1)).strip(" .,?!:;-" + chr(39) + chr(34))
-    if not nama or nama.lower() in _BUKAN_NAMA_GRUP:
+    if not nama:
+        return None
+    # Diperiksa per KATA PERTAMA, bukan seluruh frasanya: "hari ini" dan "24 jam" lolos
+    # kalau hanya frasa utuhnya yang dicocokkan ke daftar.
+    awal = nama.lower().split()[0]
+    if awal in _BUKAN_NAMA_GRUP or awal.isdigit():
+        return None
+    # Nama grup selalu punya huruf. Tanpa ini "grup 2024" jadi nama grup.
+    if not any(c.isalpha() for c in nama):
         return None
     return nama
 
 
 def minta_telegram(teks):
-    """Apakah user meminta riset dari grup Telegram-nya sendiri."""
+    """Apakah user meminta riset dari grup Telegram-nya sendiri.
+
+    Gerbangnya menuntut kata "telegram"/"tele" ATAU nama grup yang disebut jelas.
+
+    Menyebut nama grup memang RUJUKAN ke grup Telegram — "apa informasi menarik dari grup
+    cokri?" tidak punya kata "telegram" sama sekali, dan tanpa cabang ini seluruh fitur
+    riset per-grup tidak pernah bisa dipanggil dengan kalimat yang paling wajar. Ini
+    melonggarkan aturan lama ("hanya kalau menyebut telegram/tele"), tapi ke arah yang
+    diminta kemudian dan dengan pagar yang sama: grup_diminta() menolak kata umum, dan
+    nama yang tidak cocok dengan grup mana pun membuat pembaca melapor TIDAK DITEMUKAN
+    tanpa membaca satu pesan pun.
+    """
     low = (teks or "").lower()
     if _TG_BUKAN_RISET.search(low):
         return False
-    return bool(_TG_TEMPAT.search(low) and _TG_NIAT.search(low))
+    # Menanyakan HARGA BTC sambil menyebut telegram sudah cukup jadi niat: "berapa harga
+    # btc di telegram" tidak memuat satu pun kata di _TG_NIAT, dan tanpa cabang ini
+    # pembaca tidak pernah jalan sehingga fitur harga dari grup tak pernah terjangkau.
+    if not _TG_NIAT.search(low) and not minta_harga_btc(teks):
+        return False
+    return bool(_TG_TEMPAT.search(low) or grup_diminta(teks))
 
 
 # Rentang waktu yang DISEBUT user, mengalahkan penanda batas baca. "seminggu terakhir"

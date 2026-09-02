@@ -5605,3 +5605,80 @@ def test_koin_di_luar_daftar_tidak_memuat_seluruh_blok():
     # Yang sudah terdaftar tidak berubah.
     assert abs(len(bot.build_chat_prompt("analisa sol"))
                - len(bot.build_chat_prompt("analisa hype"))) < 200
+
+
+def test_contoh_user_untuk_riset_per_grup_benar_benar_jalan():
+    """Bug yang ditemukan sapuan kelima: seluruh fitur riset per-grup TIDAK TERJANGKAU
+    dengan kalimat yang user contohkan sendiri. "apa informasi yang menarik dari grup
+    cokri?" tidak memuat kata "telegram", jadi gerbangnya tidak pernah menyala."""
+    for pesan, grup in (("apa informasi yang menarik dari grup cokri?", "cokri"),
+                        ("ada berita terbaru apa dari grup lighter?", "lighter"),
+                        ("cek grup lighter di tele", "lighter"),
+                        ("cek grup Bitcoin Price dong", "Bitcoin Price")):
+        assert bot.minta_telegram(pesan), pesan
+        assert bot.grup_diminta(pesan) == grup, pesan
+
+
+def test_nama_grup_tidak_menelan_kata_di_belakangnya():
+    """"grup cokri di telegram seminggu terakhir" sempat menghasilkan nama grup
+    "cokri di telegram seminggu tera" — dipotong di 31 karakter dan tidak akan cocok
+    dengan grup mana pun."""
+    for pesan, grup in (
+            ("apa informasi menarik dari grup cokri di telegram", "cokri"),
+            ("info dari grup sui indonesia seminggu terakhir", "sui indonesia"),
+            ("ada news apa di grup lighter sebulan ini", "lighter"),
+            ("cek grup lighter di tele", "lighter"),
+            ("info grup cokri buat hari ini", "cokri")):
+        assert bot.grup_diminta(pesan) == grup, (pesan, bot.grup_diminta(pesan))
+    # Rentangnya tetap terbaca terpisah, bukan ikut termakan nama grup.
+    assert bot.rentang_telegram("info dari grup sui indonesia seminggu terakhir") == 168
+    assert bot.rentang_telegram("ada news apa di grup lighter sebulan ini") == 720
+
+
+def test_niat_riset_memuat_kosakata_yang_wajar():
+    """"berita" dan "cek" tidak ada di daftar niat, padahal dua-duanya cara paling wajar
+    menanyakannya dalam bahasa Indonesia."""
+    for pesan in ("ada berita terbaru apa dari grup lighter?",
+                  "cek grup lighter di tele",
+                  "ada news apa di telegram",
+                  "baca telegram saya dong",
+                  "lihat grup cokri dong"):
+        assert bot.minta_telegram(pesan), pesan
+
+
+def test_gerbang_grup_tidak_menangkap_kata_umum():
+    """Melonggarkan gerbang ke "nama grup" tidak boleh membuat kalimat biasa memicu
+    pembacaan grup PRIBADI user."""
+    for pesan in ("ada apa di grup ini", "grup telegram saya isinya apa",
+                  "kirim update ke telegram saya", "update webhook telegram",
+                  "check telegram bot status", "analisa sol", "halo",
+                  "harga eth berapa sekarang"):
+        assert not bot.minta_telegram(pesan), pesan
+
+
+def test_nama_grup_bukan_satuan_waktu_atau_angka():
+    """Melonggarkan gerbang ke "nama grup" membuat "rangkum grup 24 jam" terbaca sebagai
+    grup bernama "24 jam", dan "ada apa di grup hari ini" sebagai grup bernama "hari".
+    Ditangkap penjaga lama, bukan oleh dugaan."""
+    for pesan in ("rangkum grup 24 jam", "ada apa di grup hari ini", "grup ini ramai ya",
+                  "grup 2024", "ada apa di grup", "rangkum grup terakhir",
+                  "grup semua isinya apa"):
+        assert bot.grup_diminta(pesan) is None, (pesan, bot.grup_diminta(pesan))
+        assert not bot.minta_telegram(pesan), pesan
+    # Nama yang diawali angka TAPI punya huruf tetap sah — 0x Protocol itu nyata.
+    assert bot.grup_diminta("cek grup 0x Protocol") == "0x Protocol"
+
+
+def test_harga_btc_dari_grup_benar_benar_terjangkau():
+    """minta_harga_btc benar tapi minta_telegram salah = pembaca tidak pernah jalan, dan
+    harga dari grup tidak pernah diambil. Fiturnya ada tapi mati — "berapa harga btc di
+    telegram" tidak memuat satu pun kata di _TG_NIAT."""
+    for pesan in ("berapa harga btc di telegram", "harga btc terbaru dari tele",
+                  "btc price now di telegram", "cek harga bitcoin di telegram"):
+        assert bot.minta_harga_btc(pesan), pesan
+        assert bot.minta_telegram(pesan), pesan
+    # Tanpa menyebut telegram, tetap jalur biasa — bukan membuka session.
+    for pesan in ("harga btc sekarang", "harga eth berapa", "analisa btc"):
+        assert not bot.minta_telegram(pesan), pesan
+    # Dan MENGIRIM harga ke telegram tetap bukan permintaan riset.
+    assert not bot.minta_telegram("kirim harga btc ke telegram")
