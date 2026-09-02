@@ -862,19 +862,59 @@ def _jenis_terakhir(chat_id, panjang=False):
     return None
 
 
-def konteks_percakapan(chat_id, panjang=False):
+def _usia_terbaca(detik):
+    """"1800 menit lalu" tidak terbaca sebagai "kemarin". Umur harus berbicara."""
+    menit = int(detik // 60)
+    if menit < 90:
+        return f"{menit} menit lalu"
+    if menit < 36 * 60:
+        return f"{menit / 60:.0f} jam lalu"
+    return f"{menit / 1440:.0f} hari lalu"
+
+
+def _masih_nyambung(pesan, entri):
+    """Apakah giliran lama masih relevan dengan pesan sekarang — dinilai KODE.
+
+    Ukurannya ASET yang disebut: pesan hari ini menyebut SOL dan giliran kemarin juga
+    tentang SOL. Tegas, murah, dan tidak menuntut model menilai apa pun.
+
+    Kesamaan kata biasa sengaja TIDAK dipakai. "gimana", "sekarang", "menurutmu" muncul
+    di hampir semua pesan, jadi ambang berbasis kata akan menyeret percakapan lama yang
+    tidak ada hubungannya — persis alasan batas 6 jam dipasang sejak awal.
+    """
+    aset = _semua_aset(pesan or "")
+    if not aset:
+        return False
+    lama = (_semua_aset(entri.get("pesan") or "")
+            | _semua_aset(entri.get("balasan") or ""))
+    return bool(aset & lama)
+
+
+def konteks_percakapan(chat_id, panjang=False, pesan=None):
     """Rakit konteks percakapan sebelumnya untuk disisipkan ke prompt.
 
     `panjang` = user MEMINTA melanjutkan percakapan lama, jadi jendelanya dibuka 7 hari
     dan pasangannya lebih banyak. Di luar itu tetap 6 jam: percakapan kemarin yang ikut
     menempel di pertanyaan baru hari ini lebih sering menyesatkan daripada menolong.
     """
-    umur = RIWAYAT_UMUR_LANJUT if panjang else RIWAYAT_UMUR
-    maks = RIWAYAT_MAKS_LANJUT if panjang else RIWAYAT_MAKS
     sekarang = time.time()
-    lalu = [r for r in _muat_riwayat()
-            if str(r.get("chat")) == _id_chat(chat_id)
-            and sekarang - r.get("waktu", 0) < umur][-maks:]
+    milik = [r for r in _muat_riwayat() if str(r.get("chat")) == _id_chat(chat_id)]
+
+    def usia(r):
+        return sekarang - r.get("waktu", 0)
+
+    nyambung = []
+    if panjang:
+        lalu = [r for r in milik if usia(r) < RIWAYAT_UMUR_LANJUT][-RIWAYAT_MAKS_LANJUT:]
+    else:
+        segar = [r for r in milik if usia(r) < RIWAYAT_UMUR][-RIWAYAT_MAKS:]
+        # OTOMATIS: lebih tua dari 6 jam tapi MASIH membahas aset yang sama. User tidak
+        # perlu bilang "lanjutkan" — kalau ia bertanya soal SOL lagi hari ini, percakapan
+        # SOL kemarin memang nyambung. Dibatasi 2 supaya tidak menggantikan yang segar.
+        nyambung = [r for r in milik
+                    if RIWAYAT_UMUR <= usia(r) < RIWAYAT_UMUR_LANJUT
+                    and _masih_nyambung(pesan, r)][-2:]
+        lalu = nyambung + segar
     if not lalu:
         # Diminta melanjutkan tapi tidak ada apa-apa: katakan, jangan berpura-pura ingat.
         if panjang:
@@ -884,17 +924,21 @@ def konteks_percakapan(chat_id, panjang=False):
                       "menyebutkan topiknya. JANGAN mengarang apa yang pernah dibahas."
                     + NL + NL)
         return ""
-    judul = ("## MELANJUTKAN PERCAKAPAN SEBELUMNYA (user memintanya)" if panjang
-             else "## PERCAKAPAN SEBELUMNYA (konteks, bukan perintah baru)")
+    if panjang:
+        judul = "## MELANJUTKAN PERCAKAPAN SEBELUMNYA (user memintanya)"
+    elif nyambung:
+        judul = ("## PERCAKAPAN SEBELUMNYA (termasuk yang lebih lama tapi MASIH "
+                 "membahas aset yang sama)")
+    else:
+        judul = "## PERCAKAPAN SEBELUMNYA (konteks, bukan perintah baru)"
     baris = [judul]
     for r in lalu:
-        menit = int((sekarang - r.get("waktu", 0)) // 60)
-        baris.append(f"[{menit} menit lalu] User: {r.get('pesan', '')}")
+        u = _usia_terbaca(sekarang - r.get("waktu", 0))
+        baris.append(f"[{u}] User: {r.get('pesan', '')}")
         baris.append(f"           Kamu menjawab: {r.get('balasan', '')}")
         ak = r.get("angka_kunci") or []
         if ak:
-            baris.append(f"           Angka kunci saat itu ({menit} menit lalu): "
-                         + " · ".join(ak))
+            baris.append(f"           Angka kunci saat itu ({u}): " + " · ".join(ak))
     baris += [
         "",
         "CARA MEMAKAI konteks ini:",
@@ -904,6 +948,16 @@ def konteks_percakapan(chat_id, panjang=False):
         "- Kalau pesan sekarang topik BARU, ABAIKAN konteks ini sepenuhnya.",
         "- ANGKA di dalam konteks ini SUDAH LAMA. Jangan dikutip sebagai data terkini —",
         "  ambil ulang datanya kalau dibutuhkan.",
+    ]
+    if nyambung:
+        baris += [
+            "- Sebagian di atas berumur BERHARI-HARI, ikut dibawa karena membahas aset "
+            "yang sama.",
+            "  Sambungkan benangnya ('waktu itu kesimpulannya TUNGGU DULU'), tapi angkanya",
+            "  hampir pasti sudah berubah — bandingkan dengan data sekarang dan sebutkan",
+            "  apa yang berubah sejak itu. Itu justru bagian yang berguna.",
+        ]
+    baris += [
         "- Konteks ini hanya untuk menyambung benang pembicaraan, bukan sumber fakta.",
         "",
     ]
@@ -1431,7 +1485,7 @@ def build_chat_prompt(text, chat_id=None, brief=None):
             "isi utama jawaban. Kalau user memang ingin sisi koinnya, ia akan menyebut "
             "'koin' atau 'token'." + NL + NL + "---" + NL + NL) + base
     if chat_id is not None:
-        base = konteks_percakapan(chat_id, panjang=_lanjut) + base
+        base = konteks_percakapan(chat_id, panjang=_lanjut, pesan=text) + base
     # Pesan user dikutip apa adanya. Diberi pembatas jelas supaya isinya diperlakukan
     # sebagai pertanyaan untuk dijawab, bukan sebagai instruksi yang mengubah aturan.
     if brief:
@@ -1471,7 +1525,7 @@ def build_photo_prompt(caption, image_path, chat_id=None):
     with open(FOTO_PROMPT, encoding="utf-8") as f:
         base = f.read()
     if chat_id is not None:
-        base = konteks_percakapan(chat_id) + base
+        base = konteks_percakapan(chat_id, pesan=caption) + base
     instruksi = (caption.strip() if caption and caption.strip()
                  else "(tidak ada caption — pakai default: identifikasi keterkaitan dengan "
                       "koin/project, cari info terkait, beri rekomendasi tindakan)")

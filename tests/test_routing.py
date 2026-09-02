@@ -5460,3 +5460,60 @@ def test_pewarisan_rumpun_ikut_jendela_konteks():
         assert len(p) < 45000, f"gagal-aman memuat semua blok: {len(p)}"
     finally:
         bot._muat_riwayat = asli
+
+
+def test_percakapan_lama_ikut_otomatis_kalau_masih_relevan():
+    """User tidak perlu bilang "lanjutkan": kalau ia bertanya soal SOL lagi hari ini,
+    percakapan SOL kemarin memang nyambung. Relevansi dinilai KODE lewat aset yang
+    disebut — bukan diserahkan ke model, dan bukan kesamaan kata biasa yang akan
+    menyeret percakapan tak berhubungan."""
+    import time as _t
+    chat = "1"
+    asli = bot._muat_riwayat
+    bot._muat_riwayat = lambda: [
+        {"chat": bot._id_chat(chat), "waktu": _t.time() - 30 * 3600, "waktu_utc": "x",
+         "pesan": "analisa sol", "balasan": "SOL di 214. TUNGGU DULU.",
+         "angka_kunci": ["214"]},
+        {"chat": bot._id_chat(chat), "waktu": _t.time() - 50 * 3600, "waktu_utc": "x",
+         "pesan": "analisa aave", "balasan": "AAVE di 180.", "angka_kunci": ["180"]},
+    ]
+    try:
+        for pesan, harap in (("gimana sol sekarang", "sol"), ("sol udah naik belum", "sol"),
+                             ("aave gimana", "aave")):
+            k = bot.konteks_percakapan(chat, pesan=pesan)
+            assert harap in k.lower(), pesan
+            assert "MASIH membahas aset yang sama" in k, pesan
+            # Basinya harus disebut, bukan disamarkan.
+            assert "berumur BERHARI-HARI" in k and "apa yang berubah sejak itu" in k
+        # Aset lain, sapaan, dan aset yang belum pernah dibahas: TIDAK menyeret apa pun.
+        for pesan in ("btc gimana", "halo", "analisa hype"):
+            assert not bot.konteks_percakapan(chat, pesan=pesan).strip(), pesan
+        # Tanpa pesan sama sekali (mis. pemanggil lama): jangan menebak relevansi.
+        assert not bot.konteks_percakapan(chat).strip()
+    finally:
+        bot._muat_riwayat = asli
+
+
+def test_umur_konteks_terbaca_manusia():
+    """"1800 menit lalu" tidak terbaca sebagai "kemarin", dan model mengutipnya apa
+    adanya ke user."""
+    assert bot._usia_terbaca(300) == "5 menit lalu"
+    assert bot._usia_terbaca(30 * 3600) == "30 jam lalu"
+    assert bot._usia_terbaca(50 * 3600) == "2 hari lalu"
+    assert bot._usia_terbaca(5 * 86400) == "5 hari lalu"
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    blok = src[src.index("def konteks_percakapan"):]
+    blok = blok[:blok.index("CARA MEMAKAI konteks")]
+    assert "menit lalu] User" not in blok, "umur mentah tidak boleh dicetak lagi"
+
+
+def test_relevansi_tidak_memakai_kesamaan_kata_biasa():
+    """"gimana", "sekarang", "menurutmu" muncul di hampir semua pesan. Ambang berbasis
+    kata akan menyeret percakapan lama yang tidak ada hubungannya — persis alasan batas
+    6 jam dipasang sejak awal."""
+    entri = {"pesan": "analisa sol", "balasan": "SOL di 214."}
+    assert bot._masih_nyambung("gimana sol sekarang", entri)
+    assert not bot._masih_nyambung("gimana sekarang menurutmu", entri)
+    assert not bot._masih_nyambung("btc gimana sekarang", entri)
+    assert not bot._masih_nyambung("", entri)
+    assert not bot._masih_nyambung(None, entri)
