@@ -5517,3 +5517,91 @@ def test_relevansi_tidak_memakai_kesamaan_kata_biasa():
     assert not bot._masih_nyambung("btc gimana sekarang", entri)
     assert not bot._masih_nyambung("", entri)
     assert not bot._masih_nyambung(None, entri)
+
+
+def test_topik_non_aset_terbaca_dari_kosakata_yang_sudah_ada():
+    """Kosakatanya dipinjam dari pemicu blok yang memang sudah dikurasi. Tidak ada daftar
+    kata baru yang harus dirawat terpisah, dan NOL tambahan token di prompt: ini murni
+    aturan pemilihan."""
+    for pesan, tag in (("gimana dampak fomc ke btc", "makro"),
+                       ("inflasi cpi gimana", "makro"),
+                       ("industri ai lagi gimana", "ai"),
+                       ("emas bagus dibeli?", "gold"),
+                       ("saham nvda gimana", "saham-forex"),
+                       ("koin yang dipegang blackrock", "institusi"),
+                       ("carikan info dari telegram saya", "telegram-riset"),
+                       ("cari lowongan dong", "kerja"),
+                       ("purnama bearish?", "fase-bulan")):
+        assert tag in bot.topik_pesan(pesan), (pesan, tag)
+    # Pesan generik TIDAK boleh punya tanda topik — kalau punya, ia akan menyeret
+    # percakapan lama yang tidak ada hubungannya.
+    for pesan in ("halo", "gimana menurutmu", "analisa sol", "makasih ya"):
+        assert not bot.topik_pesan(pesan), pesan
+    # Blok yang menandai BENTUK pertanyaan sengaja tidak ikut.
+    for bukan in ("peta-korelasi", "mode-pendapat", "rencana-posisi", "sebab-korelasi",
+                  "diskusi-balik", "perbandingan", "data-konten", "x-twitter"):
+        assert bukan not in bot._BLOK_TOPIK, bukan
+
+
+def test_percakapan_non_aset_tersambung_otomatis():
+    """Diminta user: penyambungan otomatis juga untuk topik tanpa aset — makro, lowongan,
+    industri AI."""
+    import time as _t
+    chat = "1"
+    arsip = [("gimana fomc", "FOMC hawkish, yield 10Y naik.", 30),
+             ("cari lowongan di tele", "3 lowongan solidity di grup.", 40),
+             ("industri ai gimana", "Nvidia rilis chip baru.", 50)]
+    asli = bot._muat_riwayat
+    bot._muat_riwayat = lambda: [
+        {"chat": bot._id_chat(chat), "waktu": _t.time() - j * 3600, "waktu_utc": "x",
+         "pesan": p, "balasan": b, "angka_kunci": []} for p, b, j in arsip]
+    try:
+        for pesan, harap in (("gimana hasil cpi kemarin", "gimana fomc"),
+                             ("suku bunga the fed gimana", "gimana fomc"),
+                             ("ada lowongan baru ga", "cari lowongan di tele"),
+                             ("kabar nvidia gimana", "industri ai gimana")):
+            k = bot.konteks_percakapan(chat, pesan=pesan)
+            assert harap in k, (pesan, harap)
+        for pesan in ("halo", "menurutmu gimana", "makasih"):
+            assert not bot.konteks_percakapan(chat, pesan=pesan).strip(), pesan
+    finally:
+        bot._muat_riwayat = asli
+
+
+def test_tanda_pesan_dihitung_sekali_bukan_per_entri():
+    """_semua_aset menyapu peta 10.398 ticker SEC. Mengulangnya untuk SETIAP entri arsip
+    membuat pemilihan konteks makan 150 ms untuk pekerjaan yang sama persis."""
+    import time as _t
+    chat = "1"
+    asli, n = bot._muat_riwayat, [0]
+    bot._muat_riwayat = lambda: [
+        {"chat": bot._id_chat(chat), "waktu": _t.time() - (7 + i) * 3600,
+         "waktu_utc": "x", "pesan": "gimana fomc", "balasan": "FOMC hawkish.",
+         "angka_kunci": []} for i in range(20)]
+    aset_asli = bot._semua_aset
+    bot._semua_aset = lambda t: (n.__setitem__(0, n[0] + 1), aset_asli(t))[1]
+    try:
+        bot.konteks_percakapan(chat, pesan="gimana hasil cpi kemarin")
+        # 1 untuk pesannya + paling banyak 1 per entri arsip. Tanpa perbaikan: 2x lipat.
+        assert n[0] <= 21, n[0]
+        # Pesan tanpa tanda apa pun tidak menyapu arsip sama sekali.
+        n[0] = 0
+        bot.konteks_percakapan(chat, pesan="halo")
+        assert n[0] <= 1, n[0]
+    finally:
+        bot._semua_aset, bot._muat_riwayat = aset_asli, asli
+
+
+def test_koin_di_luar_daftar_tidak_memuat_seluruh_blok():
+    """aset_dari_pesan konservatif dan menolak ticker di luar daftar 55, padahal koin yang
+    ditanyakan justru sering yang belum masuk daftar itu — HYPE dan ASTER dua-duanya
+    muncul di sesi ini. Selisihnya 23 rb karakter hanya karena namanya belum terdaftar."""
+    assert bot._jenis_perintah("analisa hype") == "crypto"
+    assert bot._jenis_perintah("analisa gold") == "forex"
+    assert bot._jenis_perintah("halo") is None
+    for pesan in ("analisa hype", "analisa aster"):
+        n = len(bot.build_chat_prompt(pesan))
+        assert n < 40000, (pesan, n)
+    # Yang sudah terdaftar tidak berubah.
+    assert abs(len(bot.build_chat_prompt("analisa sol"))
+               - len(bot.build_chat_prompt("analisa hype"))) < 200

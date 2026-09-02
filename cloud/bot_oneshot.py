@@ -840,6 +840,21 @@ def simpan_riwayat(chat_id, pesan, balasan):
         print(f"[riwayat] gagal menyimpan: {e}", file=sys.stderr)
 
 
+_PERINTAH_ANALISA = re.compile(
+    r"^\s*(?:analisa|analisis|analyze|analisakan)\s+(.+)", re.I)
+
+
+def _jenis_perintah(teks):
+    """Rumpun dari perintah "analisa X", walau X belum masuk daftar ticker.
+
+    jenis_aset() sudah tahu jawabannya tanpa satu pun panggilan jaringan — ia memang
+    dibuat untuk membaca perintah ini. Yang kurang cuma menyambungkannya ke pemilihan
+    blok.
+    """
+    m = _PERINTAH_ANALISA.match(teks or "")
+    return jenis_aset(m.group(1))[0] if m else None
+
+
 def _jenis_terakhir(chat_id, panjang=False):
     """Rumpun aset dari giliran sebelumnya. None kalau memang belum ada.
 
@@ -872,7 +887,60 @@ def _usia_terbaca(detik):
     return f"{menit / 1440:.0f} hari lalu"
 
 
-def _masih_nyambung(pesan, entri):
+# Blok yang menandai TOPIK, bukan bentuk pertanyaan. Dipakai untuk menyambung percakapan
+# non-aset ("makro kemarin gimana", "lowongan yang kemarin"). Yang lain sengaja tidak
+# ikut: peta-korelasi, mode-pendapat, rencana-posisi, sebab-korelasi, diskusi-balik, dan
+# perbandingan menyala pada hampir semua pertanyaan pasar — memakainya sebagai penanda
+# topik sama saja dengan kembali ke kesamaan kata biasa yang justru dihindari.
+_BLOK_TOPIK = ("makro", "ai", "gold", "saham-forex", "institusi", "telegram-riset",
+               "fase-bulan")
+_PEMICU_TOPIK = None
+
+
+def _peta_topik_chat():
+    """{nama blok topik: [pemicu]} — dibaca SEKALI, bukan tiap pesan.
+
+    Kosakatanya dipinjam dari pemicu blok yang memang sudah dikurasi untuk keperluan
+    lain. Tidak ada daftar kata baru yang harus dirawat terpisah, dan nol tambahan token
+    di prompt: ini murni aturan pemilihan.
+    """
+    global _PEMICU_TOPIK
+    if _PEMICU_TOPIK is None:
+        try:
+            with open(CHAT_PROMPT, encoding="utf-8") as f:
+                blok = _BLOK_RE.findall(f.read())
+            _PEMICU_TOPIK = {n: [k.strip().lower() for k in p.split(",") if k.strip()]
+                             for n, p, _ in blok if n in _BLOK_TOPIK}
+        except OSError as e:
+            print(f"[topik] pemicu blok tidak terbaca ({type(e).__name__}) — "
+                  f"penyambungan topik non-aset dilewati", file=sys.stderr)
+            _PEMICU_TOPIK = {}
+    return _PEMICU_TOPIK
+
+
+def topik_pesan(teks):
+    """Tanda topik non-aset yang disebut sebuah pesan. Kosong kalau tidak ada."""
+    low = (teks or "").lower()
+    if not low:
+        return set()
+    keluar = {nama for nama, kata in _peta_topik_chat().items()
+              if any(_pemicu_cocok(k, low) for k in kata)}
+    if _TG_KERJA.search(low):
+        keluar.add("kerja")
+    return keluar
+
+
+def _tanda_pesan(teks):
+    """(aset, topik) sebuah pesan — tanda pengenal untuk mencocokkan percakapan lama.
+
+    Dipisah supaya sisi PESAN dihitung SEKALI, bukan sekali per entri arsip. _semua_aset
+    menyapu peta 10.398 ticker SEC; mengulangnya 20 kali per pesan membuat pemilihan
+    konteks makan 150 ms untuk pekerjaan yang sama persis.
+    """
+    return _semua_aset(teks or ""), topik_pesan(teks)
+
+
+def _masih_nyambung(pesan, entri, tanda=None):
     """Apakah giliran lama masih relevan dengan pesan sekarang — dinilai KODE.
 
     Ukurannya ASET yang disebut: pesan hari ini menyebut SOL dan giliran kemarin juga
@@ -882,12 +950,16 @@ def _masih_nyambung(pesan, entri):
     di hampir semua pesan, jadi ambang berbasis kata akan menyeret percakapan lama yang
     tidak ada hubungannya — persis alasan batas 6 jam dipasang sejak awal.
     """
-    aset = _semua_aset(pesan or "")
-    if not aset:
-        return False
-    lama = (_semua_aset(entri.get("pesan") or "")
-            | _semua_aset(entri.get("balasan") or ""))
-    return bool(aset & lama)
+    aset, topik = tanda if tanda is not None else _tanda_pesan(pesan)
+    if not aset and not topik:
+        return False                      # tidak ada yang bisa dicocokkan; jangan menyapu
+    teks_lama = (entri.get("pesan") or "") + " " + (entri.get("balasan") or "")
+    if aset and aset & _semua_aset(teks_lama):
+        return True
+    # Topik non-aset: makro, industri AI, emas, saham/forex, institusi, riset Telegram,
+    # fase bulan, lowongan. "makro kemarin gimana" nyambung ke diskusi FOMC kemarin
+    # walau tidak satu pun aset disebut di kedua sisi.
+    return bool(topik and topik & topik_pesan(teks_lama))
 
 
 def konteks_percakapan(chat_id, panjang=False, pesan=None):
@@ -911,9 +983,11 @@ def konteks_percakapan(chat_id, panjang=False, pesan=None):
         # OTOMATIS: lebih tua dari 6 jam tapi MASIH membahas aset yang sama. User tidak
         # perlu bilang "lanjutkan" — kalau ia bertanya soal SOL lagi hari ini, percakapan
         # SOL kemarin memang nyambung. Dibatasi 2 supaya tidak menggantikan yang segar.
-        nyambung = [r for r in milik
-                    if RIWAYAT_UMUR <= usia(r) < RIWAYAT_UMUR_LANJUT
-                    and _masih_nyambung(pesan, r)][-2:]
+        tanda = _tanda_pesan(pesan)
+        nyambung = ([] if not any(tanda) else
+                    [r for r in milik
+                     if RIWAYAT_UMUR <= usia(r) < RIWAYAT_UMUR_LANJUT
+                     and _masih_nyambung(pesan, r, tanda)][-2:])
         lalu = nyambung + segar
     if not lalu:
         # Diminta melanjutkan tapi tidak ada apa-apa: katakan, jangan berpura-pura ingat.
@@ -1428,8 +1502,14 @@ def build_chat_prompt(text, chat_id=None, brief=None):
         # tapi pewarisan rumpun berhenti di 6 jam, "lanjutkan yang kemarin" jatuh ke
         # gagal-aman dan memuat SELURUH blok — 63 rb karakter, persis yang baru dihemat.
         _lanjut = minta_lanjut(text)
+        # Urutan sengaja: aset yang dikenali -> perintah "analisa X" -> giliran sebelumnya.
+        # aset_dari_pesan konservatif dan menolak ticker di luar daftar 55, padahal koin
+        # yang ditanyakan justru sering yang belum masuk daftar itu (HYPE, ASTER). Tanpa
+        # ini gagal-aman memuat SELURUH blok: "analisa hype" 57.464 karakter, "analisa
+        # sol" 34.578 — selisih 23 rb hanya karena namanya belum terdaftar.
         base = rakit_chat(f.read(), text,
-                          aset_dari_pesan(text)[0] or _jenis_terakhir(chat_id, _lanjut))
+                          aset_dari_pesan(text)[0] or _jenis_perintah(text)
+                          or _jenis_terakhir(chat_id, _lanjut))
     # brief terisi <=> tools_chat = TOOLS_WEB (lihat pemilihan tool di process()). Datanya
     # sudah diambil kode, jadi tidak ada script yang perlu dijalankan model.
     base = buang_bagian_shell(base) if brief else _lepas_penanda_shell(base)
