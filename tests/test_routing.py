@@ -5371,3 +5371,92 @@ def test_workflow_melewati_pemasangan_mcp_untuk_obrolan():
     assert "steps.obrolan" not in alur[k:alur.index("Install server MCP")]
     # Dan pengintipnya berjalan sebelum step pemasangan mana pun.
     assert alur.index("Cek apakah obrolan murni") < k
+
+
+# ------------------------- melanjutkan percakapan sebelumnya
+
+@pytest.mark.parametrize("pesan", [
+    "lanjutkan pembicaraan sebelumnya", "lanjutkan obrolan kita kemarin",
+    "terusin yang tadi", "sambung diskusi kemarin", "balik ke topik tadi",
+    "obrolan kemarin gimana", "kemarin kita bahas apa",
+    "continue our previous conversation",
+])
+def test_permintaan_melanjutkan_terbaca(pesan):
+    assert bot.minta_lanjut(pesan), pesan
+
+
+@pytest.mark.parametrize("pesan", [
+    "lanjutkan analisanya", "lanjut", "teruskan ke target berikutnya",
+    "halo", "analisa sol", "maksudnya gimana",
+])
+def test_lanjut_biasa_bukan_permintaan_membuka_arsip(pesan):
+    """"lanjutkan analisanya" berarti teruskan yang sedang dikerjakan, BUKAN buka lagi
+    percakapan lama. Salah tangkap di sini menyeret konteks berhari-hari lalu ke
+    pertanyaan yang tidak memintanya."""
+    assert not bot.minta_lanjut(pesan), pesan
+
+
+def test_jendela_riwayat_dua_lapis():
+    """Batas 6 jam disengaja: percakapan kemarin yang menempel di pertanyaan baru hari
+    ini lebih sering menyesatkan daripada menolong. Tapi "lanjutkan yang kemarin" adalah
+    permintaan EKSPLISIT, dan di situ batas itu justru yang menghalangi."""
+    import time as _t
+    chat = "12345"
+    asli = bot._muat_riwayat
+
+    def pasang(jam):
+        bot._muat_riwayat = lambda: [{
+            "chat": bot._id_chat(chat), "waktu": _t.time() - jam * 3600,
+            "waktu_utc": "2026-09-01 10:00", "pesan": "analisa sol",
+            "balasan": "SOL di 214.", "angka_kunci": ["214"]}]
+
+    def isi(x):
+        return x.strip() and "TIDAK ADA CATATANNYA" not in x
+
+    try:
+        for jam, biasa, lanjut in ((0.5, True, True), (5.9, True, True),
+                                   (6.1, False, True), (24, False, True),
+                                   (167, False, True), (169, False, False)):
+            pasang(jam)
+            assert bool(isi(bot.konteks_percakapan(chat))) is biasa, (jam, "biasa")
+            assert bool(isi(bot.konteks_percakapan(chat, panjang=True))) is lanjut, (jam,)
+        # Diminta melanjutkan tapi tidak ada apa-apa: KATAKAN, jangan berpura-pura ingat.
+        bot._muat_riwayat = lambda: []
+        p = bot.build_chat_prompt("lanjutkan pembicaraan kita kemarin", chat_id=chat)
+        assert "TIDAK ADA CATATANNYA" in p and "JANGAN mengarang" in p
+        # Dan judulnya membedakan mana yang diminta user.
+        pasang(30)
+        p = bot.build_chat_prompt("lanjutkan pembicaraan kita kemarin", chat_id=chat)
+        assert "MELANJUTKAN PERCAKAPAN SEBELUMNYA" in p
+    finally:
+        bot._muat_riwayat = asli
+
+
+def test_arsip_riwayat_bertahan_cukup_lama_untuk_dipakai():
+    """Retensi dulu memangkas di 6 jam, jadi arsip untuk "lanjutkan yang kemarin" tidak
+    akan pernah terkumpul — dibuang jauh sebelum sempat dipakai."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    blok = src[src.index("def simpan_riwayat"):]
+    blok = blok[:blok.index("def _jenis_terakhir")]
+    assert "RIWAYAT_UMUR_LANJUT" in blok, "retensi harus ikut jendela terpanjang"
+    assert "< RIWAYAT_UMUR]" not in blok
+    assert bot.RIWAYAT_UMUR_LANJUT > bot.RIWAYAT_UMUR
+
+
+def test_pewarisan_rumpun_ikut_jendela_konteks():
+    """Kalau konteksnya boleh 7 hari tapi pewarisan rumpun berhenti di 6 jam, "lanjutkan
+    yang kemarin" jatuh ke gagal-aman dan memuat SELURUH blok — 63 rb karakter, persis
+    yang baru saja dihemat."""
+    import time as _t
+    chat = "12345"
+    asli = bot._muat_riwayat
+    bot._muat_riwayat = lambda: [{"chat": bot._id_chat(chat), "waktu": _t.time() - 30 * 3600,
+                                  "waktu_utc": "x", "pesan": "analisa sol",
+                                  "balasan": "SOL di 214.", "angka_kunci": []}]
+    try:
+        assert bot._jenis_terakhir(chat) is None, "jendela biasa tetap 6 jam"
+        assert bot._jenis_terakhir(chat, panjang=True) == "crypto"
+        p = bot.build_chat_prompt("lanjutkan obrolan kita kemarin", chat_id=chat)
+        assert len(p) < 45000, f"gagal-aman memuat semua blok: {len(p)}"
+    finally:
+        bot._muat_riwayat = asli

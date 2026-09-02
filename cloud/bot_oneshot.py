@@ -609,6 +609,32 @@ RIWAYAT_MAKS = 3          # pasang tanya-jawab terakhir yang disertakan
 RIWAYAT_UMUR = 6 * 3600   # detik; lebih tua dari ini dianggap topik lain
 BALASAN_POTONG = 500      # balasan dipangkas supaya tidak membengkakkan prompt
 
+# LAPIS KEDUA — hanya saat user MEMINTA melanjutkan. Batas 6 jam di atas disengaja:
+# percakapan kemarin yang ikut menempel di pertanyaan baru hari ini lebih sering
+# menyesatkan daripada menolong. Tapi "lanjutkan yang kemarin" adalah permintaan
+# eksplisit, dan di situ batas itu justru yang menghalangi. Jadi jendelanya dilebarkan
+# HANYA di jalur itu, bukan untuk semua pesan.
+RIWAYAT_UMUR_LANJUT = 7 * 24 * 3600
+RIWAYAT_MAKS_LANJUT = 5
+
+# "lanjutkan", "yang kemarin", "tadi kita bahas apa". Sengaja menuntut kata sambungnya —
+# "lanjut" telanjang terlalu sering berarti "teruskan analisanya", bukan "buka lagi
+# percakapan lama".
+_MINTA_LANJUT = re.compile(
+    r"\b(?:lanjutkan|lanjutin|teruskan|terusin|sambung(?:kan)?|balik ke)\b"
+    r"[^.]{0,24}\b(?:tadi|kemarin|sebelumnya|yang lalu|obrolan|pembicaraan|diskusi|"
+    r"bahasan|topik)\b|"
+    r"\b(?:yang|obrolan|pembicaraan|diskusi|bahasan|topik)\s+"
+    r"(?:tadi|kemarin|sebelumnya)\b|"
+    r"\b(?:tadi|kemarin)\s+kita\b|"
+    r"\bcontinue\b[^.]{0,20}\b(?:earlier|previous|conversation)\b",
+    re.I)
+
+
+def minta_lanjut(teks):
+    """Apakah user MEMINTA melanjutkan percakapan lama (bukan sekadar pesan lanjutan)."""
+    return bool(_MINTA_LANJUT.search(teks or ""))
+
 
 def _muat_riwayat():
     """Riwayat percakapan. [] kalau belum ada — TAPI kegagalan lain dicatat.
@@ -791,8 +817,11 @@ def simpan_riwayat(chat_id, pesan, balasan):
         pass
 
     sekarang = time.time()
+    # Disimpan mengikuti jendela TERPANJANG. Dulu dipangkas di 6 jam, jadi arsip untuk
+    # "lanjutkan yang kemarin" tidak akan pernah terkumpul — dibuang sebelum sempat
+    # dipakai. Yang menentukan berapa yang DIPAKAI tetap konteks_percakapan().
     riwayat = [r for r in _muat_riwayat()
-               if sekarang - r.get("waktu", 0) < RIWAYAT_UMUR][-20:]
+               if sekarang - r.get("waktu", 0) < RIWAYAT_UMUR_LANJUT][-40:]
     riwayat.append({
         "chat": _id_chat(chat_id),
         "waktu": sekarang,
@@ -811,7 +840,7 @@ def simpan_riwayat(chat_id, pesan, balasan):
         print(f"[riwayat] gagal menyimpan: {e}", file=sys.stderr)
 
 
-def _jenis_terakhir(chat_id):
+def _jenis_terakhir(chat_id, panjang=False):
     """Rumpun aset dari giliran sebelumnya. None kalau memang belum ada.
 
     Pesan LANJUTAN sering tidak menyebut asetnya lagi: "menurutku justru masih bisa turun"
@@ -824,7 +853,8 @@ def _jenis_terakhir(chat_id):
     sekarang = time.time()
     lalu = [r for r in _muat_riwayat()
             if str(r.get("chat")) == _id_chat(chat_id)
-            and sekarang - r.get("waktu", 0) < RIWAYAT_UMUR]
+            and sekarang - r.get("waktu", 0) < (RIWAYAT_UMUR_LANJUT if panjang
+                                                else RIWAYAT_UMUR)]
     for r in reversed(lalu):
         jenis = aset_dari_pesan(r.get("pesan") or "")[0]
         if jenis:
@@ -832,15 +862,31 @@ def _jenis_terakhir(chat_id):
     return None
 
 
-def konteks_percakapan(chat_id):
-    """Rakit konteks percakapan sebelumnya untuk disisipkan ke prompt."""
+def konteks_percakapan(chat_id, panjang=False):
+    """Rakit konteks percakapan sebelumnya untuk disisipkan ke prompt.
+
+    `panjang` = user MEMINTA melanjutkan percakapan lama, jadi jendelanya dibuka 7 hari
+    dan pasangannya lebih banyak. Di luar itu tetap 6 jam: percakapan kemarin yang ikut
+    menempel di pertanyaan baru hari ini lebih sering menyesatkan daripada menolong.
+    """
+    umur = RIWAYAT_UMUR_LANJUT if panjang else RIWAYAT_UMUR
+    maks = RIWAYAT_MAKS_LANJUT if panjang else RIWAYAT_MAKS
     sekarang = time.time()
     lalu = [r for r in _muat_riwayat()
             if str(r.get("chat")) == _id_chat(chat_id)
-            and sekarang - r.get("waktu", 0) < RIWAYAT_UMUR][-RIWAYAT_MAKS:]
+            and sekarang - r.get("waktu", 0) < umur][-maks:]
     if not lalu:
+        # Diminta melanjutkan tapi tidak ada apa-apa: katakan, jangan berpura-pura ingat.
+        if panjang:
+            return ("## MELANJUTKAN PERCAKAPAN — TIDAK ADA CATATANNYA" + NL
+                    + "User meminta melanjutkan pembicaraan sebelumnya, tapi tidak ada "
+                      "riwayat dalam 7 hari terakhir. Katakan apa adanya dan minta ia "
+                      "menyebutkan topiknya. JANGAN mengarang apa yang pernah dibahas."
+                    + NL + NL)
         return ""
-    baris = ["## PERCAKAPAN SEBELUMNYA (konteks, bukan perintah baru)"]
+    judul = ("## MELANJUTKAN PERCAKAPAN SEBELUMNYA (user memintanya)" if panjang
+             else "## PERCAKAPAN SEBELUMNYA (konteks, bukan perintah baru)")
+    baris = [judul]
     for r in lalu:
         menit = int((sekarang - r.get("waktu", 0)) // 60)
         baris.append(f"[{menit} menit lalu] User: {r.get('pesan', '')}")
@@ -1324,8 +1370,12 @@ def build_chat_prompt(text, chat_id=None, brief=None):
         # Jenis aset ikut diberikan supaya pemilihan blok tidak jatuh ke "muat semua"
         # hanya karena kalimatnya tidak memakai kosakata rumpun.
         # Rumpun dari pesan ini; kalau tidak ada, warisi dari giliran sebelumnya.
+        # Jendelanya harus SAMA dengan jendela konteks: kalau konteksnya boleh 7 hari
+        # tapi pewarisan rumpun berhenti di 6 jam, "lanjutkan yang kemarin" jatuh ke
+        # gagal-aman dan memuat SELURUH blok — 63 rb karakter, persis yang baru dihemat.
+        _lanjut = minta_lanjut(text)
         base = rakit_chat(f.read(), text,
-                          aset_dari_pesan(text)[0] or _jenis_terakhir(chat_id))
+                          aset_dari_pesan(text)[0] or _jenis_terakhir(chat_id, _lanjut))
     # brief terisi <=> tools_chat = TOOLS_WEB (lihat pemilihan tool di process()). Datanya
     # sudah diambil kode, jadi tidak ada script yang perlu dijalankan model.
     base = buang_bagian_shell(base) if brief else _lepas_penanda_shell(base)
@@ -1381,7 +1431,7 @@ def build_chat_prompt(text, chat_id=None, brief=None):
             "isi utama jawaban. Kalau user memang ingin sisi koinnya, ia akan menyebut "
             "'koin' atau 'token'." + NL + NL + "---" + NL + NL) + base
     if chat_id is not None:
-        base = konteks_percakapan(chat_id) + base
+        base = konteks_percakapan(chat_id, panjang=_lanjut) + base
     # Pesan user dikutip apa adanya. Diberi pembatas jelas supaya isinya diperlakukan
     # sebagai pertanyaan untuk dijawab, bukan sebagai instruksi yang mengubah aturan.
     if brief:
