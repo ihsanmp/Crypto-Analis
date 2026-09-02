@@ -1,4 +1,4 @@
-﻿"""Penarik OHLC + kalkulator indikator deterministik.
+"""Penarik OHLC + kalkulator indikator deterministik.
 
 Kenapa ada file ini:
   - Candle mingguan ASLI tidak bisa didapat dari CoinGecko tier gratis (untuk rentang

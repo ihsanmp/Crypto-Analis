@@ -5037,3 +5037,49 @@ def test_deteksi_close_only_tidak_rapuh_pada_satu_candle():
     # Tapi data yang benar-benar punya rentang tetap memakai jalur aslinya.
     asli = [[i * 86400000, x, x * 1.02, x * 0.97, x, 1.0] for i, x in enumerate(h)]
     assert nama(asli) == "pullback_ke_ema21_saat_uptrend"
+
+
+def test_tidak_ada_berkas_ber_bom():
+    """BOM (U+FEFF) di awal berkas sumber: Python memakluminya saat impor sehingga tidak
+    pernah ketahuan, tapi ast.parse atas isi yang dibaca encoding='utf-8' langsung gagal,
+    dan penjaga apa pun yang memeriksa AWAL berkas akan meleset dengan cara yang
+    membingungkan. Ditemukan di cloud/indicators.py pada sapuan 2 Sep 2026."""
+    kena = []
+    for r, d, fs in os.walk(AKAR):
+        d[:] = [x for x in d if x not in (".git", "__pycache__", "node_modules", ".venv")]
+        for f in fs:
+            if not f.endswith((".py", ".md", ".yml", ".json")):
+                continue
+            p = os.path.join(r, f)
+            try:
+                with open(p, "rb") as fh:
+                    if fh.read(3) == b"\xef\xbb\xbf":
+                        kena.append(os.path.relpath(p, AKAR))
+            except OSError:
+                pass
+    assert not kena, f"berkas ber-BOM: {kena}"
+
+
+def test_seluruh_modul_bisa_di_ast_parse():
+    """Penjaga yang sama dari sisi lain: apa pun yang membuat ast.parse gagal (BOM,
+    karakter tak tercetak, escape rusak) tertangkap di sini, bukan nanti saat sebuah
+    alat mengeluh dengan pesan yang tidak nyambung."""
+    import ast
+    for f in sorted(os.listdir(os.path.join(AKAR, "cloud"))):
+        if not f.endswith(".py"):
+            continue
+        p = os.path.join(AKAR, "cloud", f)
+        with open(p, encoding="utf-8") as fh:
+            ast.parse(fh.read(), filename=f)
+
+
+def test_kegagalan_baca_meninggalkan_jejak():
+    """Berkas yang belum ada memang wajar dan boleh diam. Berkas RUSAK tidak: tanpa jejak,
+    ingatan percakapan lenyap selamanya dan bot cuma terlihat pelupa."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    blok = src[src.index("def _muat_riwayat"):]
+    blok = blok[:blok.index("def _buang_ekor_boilerplate")]
+    assert "except FileNotFoundError" in blok, "belum-ada harus dibedakan dari rusak"
+    assert "[riwayat]" in blok and "tidak terbaca" in blok
+    d = open(os.path.join(AKAR, "cloud", "derivatif.py"), encoding="utf-8").read()
+    assert "arsip gagal ditulis" in d, "0 baris tertulis tidak boleh senyap"

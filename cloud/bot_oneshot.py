@@ -608,10 +608,20 @@ BALASAN_POTONG = 500      # balasan dipangkas supaya tidak membengkakkan prompt
 
 
 def _muat_riwayat():
+    """Riwayat percakapan. [] kalau belum ada — TAPI kegagalan lain dicatat.
+
+    Berkas yang belum ada memang wajar dan diam-diam saja. Berkas yang RUSAK tidak:
+    tanpa jejak, ingatan percakapan lenyap selamanya dan tidak ada yang tahu — bot
+    cuma terlihat pelupa. Membedakan keduanya harganya satu baris.
+    """
     try:
         with open(RIWAYAT_PATH, encoding="utf-8") as f:
             return json.load(f)
-    except Exception:
+    except FileNotFoundError:
+        return []
+    except Exception as e:
+        print(f"[riwayat] {RIWAYAT_PATH} tidak terbaca ({type(e).__name__}) — "
+              f"percakapan dimulai dari kosong", file=sys.stderr)
         return []
 
 

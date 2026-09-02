@@ -173,7 +173,11 @@ def arsipkan(agregat):
         with open(ARSIP_PATH, "w", encoding="utf-8") as f:
             for e in lama:
                 f.write(json.dumps(e, ensure_ascii=False) + "\n")
-    except OSError:
+    except OSError as e:
+        # 0 di sini berarti "gagal menulis", bukan "tidak ada yang perlu ditulis".
+        # Tanpa jejak, arsip yang berhenti tumbuh terlihat seperti pasar yang sepi.
+        print(f"[derivatif] arsip gagal ditulis ({type(e).__name__}) — "
+              f"perubahan OI tidak akan tersedia di run berikutnya", file=sys.stderr)
         return 0
     return len(teratas)
 
