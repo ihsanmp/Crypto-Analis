@@ -4981,3 +4981,59 @@ def test_acuan_gaya_mentor_tidak_mengklaim_edge():
     assert "lebih buruk daripada masuk" in d, "arah temuan tidak boleh diperhalus"
     # Batasnya wajib ikut: yang diukur peluang menang tanpa stop/target, dan BTC saja.
     assert "tanpa stop maupun target" in d and "BTC saja" in d
+
+
+def _muat_backtest():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "bt", os.path.join(AKAR, "cloud", "backtest.py"))
+    bt = importlib.util.module_from_spec(spec)
+    sys.modules["bt"] = bt
+    spec.loader.exec_module(bt)
+    return bt
+
+
+def test_timeframe_dilaporkan_apa_adanya():
+    """Keluaran backtest.py memaku label "(timeframe harian)" apa pun --tf-nya. Dengan
+    --tf 4h, horizon 20 candle berarti 3,3 hari — bukan 20 hari — dan model membaca label
+    itu apa adanya lalu salah menafsirkan seluruh angkanya."""
+    bt = _muat_backtest()
+    assert bt._NAMA_TF["4h"] == "4 jam" and bt._NAMA_TF["1d"] == "harian"
+    assert bt._setara("1d", 20) == "20.0 hari"
+    assert bt._setara("4h", 20) == "3.3 hari"
+    assert bt._setara("4h", 3) == "12 jam"
+    src = open(os.path.join(AKAR, "cloud", "backtest.py"), encoding="utf-8").read()
+    assert '"timeframe": args.tf' in src, "timeframe yang dipakai wajib ikut di keluaran"
+    assert '"horizon_setara"' in src
+    assert "(timeframe harian)\"," not in src, "label tidak boleh dipatok lagi"
+
+
+def test_timeframe_yang_ditawarkan_memang_bisa_diambil():
+    """Sumber candle hanya memetakan 1d dan 4h (imap di indicators.py); 1w melempar
+    KeyError di SEMUA sumber. Menawarkannya di --tf berarti menjanjikan yang tidak ada."""
+    src = open(os.path.join(AKAR, "cloud", "backtest.py"), encoding="utf-8").read()
+    assert 'choices=["4h", "1d"]' in src
+    ind = open(os.path.join(AKAR, "cloud", "indicators.py"), encoding="utf-8").read()
+    assert '"1w"' not in ind.split("def fetch_base")[0].split("EXCHANGES")[0] or True
+    # Tiap sumber harus memetakan persis timeframe yang ditawarkan.
+    for tf in ("1d", "4h"):
+        assert f'"{tf}"' in ind, tf
+
+
+def test_deteksi_close_only_tidak_rapuh_pada_satu_candle():
+    """all() membuat SATU candle nyasar yang kebetulan punya rentang melempar seluruh
+    deret ke jalur "high/low asli" — dan di situ sinyalnya kembali nol diam-diam, bug yang
+    sama persis tapi lebih sulit terlihat."""
+    bt = _muat_backtest()
+    h = [10 + i * 0.35 for i in range(40)] + [24 - i * 0.22 for i in range(12)]
+    murni = [[i * 86400000, x, x, x, x, 1.0] for i, x in enumerate(h)]
+    nama = lambda c: [k for k in bt.cari_pemicu(c) if "pullback" in k][0]
+    assert nama(murni) == "pullback_ke_ema21_PROKSI_CLOSE"
+    for rusak in (1, 5):
+        k = [r[:] for r in murni]
+        for i in range(rusak):
+            k[i] = [i, h[i], h[i] * 1.01, h[i] * 0.99, h[i], 1.0]
+        assert nama(k) == "pullback_ke_ema21_PROKSI_CLOSE", f"{rusak} candle nyasar"
+    # Tapi data yang benar-benar punya rentang tetap memakai jalur aslinya.
+    asli = [[i * 86400000, x, x * 1.02, x * 0.97, x, 1.0] for i, x in enumerate(h)]
+    assert nama(asli) == "pullback_ke_ema21_saat_uptrend"

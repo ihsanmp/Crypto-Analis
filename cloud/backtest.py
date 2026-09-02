@@ -143,8 +143,12 @@ def cari_pemicu(candles):
     # MUSTAHIL terpenuhi — pullback dilaporkan "0 kejadian" seolah memang tidak pernah
     # terjadi, padahal ia tidak pernah bisa DIUKUR. Nol yang berarti "tidak terukur" jauh
     # lebih menyesatkan daripada nol yang berarti "tidak ada".
-    tanpa_rentang = all(abs(x[3] - x[4]) < 1e-12 and abs(x[2] - x[4]) < 1e-12
-                        for x in candles)
+    # MAYORITAS, bukan all(): satu candle nyasar yang kebetulan punya rentang sudah
+    # cukup untuk melempar seluruh deret ke jalur "high/low asli", dan di situ sinyalnya
+    # kembali nol diam-diam — bug yang sama persis, cuma lebih sulit terlihat.
+    datar = sum(1 for x in candles
+                if abs(x[3] - x[4]) < 1e-12 and abs(x[2] - x[4]) < 1e-12)
+    tanpa_rentang = bool(candles) and datar >= len(candles) * 0.9
     gc, dc, os_, ob, pullback = [], [], [], [], []
     for i in range(1, len(c)):
         a13, a21, b13, b21 = E13(i), E21(i), E13(i - 1), E21(i - 1)
@@ -328,13 +332,23 @@ def buang_panduan(obj):
     return obj
 
 
+_NAMA_TF = {"1d": "harian", "4h": "4 jam"}
+_JAM_TF = {"1d": 24, "4h": 4}
+
+
+def _setara(tf, n):
+    """Horizon dalam satuan manusia. "20 candle" berarti hal yang sangat berbeda di 4h."""
+    jam = _JAM_TF.get(tf, 24) * n
+    return f"{jam / 24:.1f} hari" if jam >= 24 else f"{jam} jam"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("simbol")
     ap.add_argument("--pasar", action="store_true", help="saham/forex/komoditas (via market.py)")
     ap.add_argument("--makro", action="store_true", help="uji juga hari rilis terjadwal")
     ap.add_argument("--depan", type=int, default=20, help="berapa candle ke depan diukur")
-    ap.add_argument("--tf", default="1d", choices=["4h", "1d", "1w"],
+    ap.add_argument("--tf", default="1d", choices=["4h", "1d"],
                     help="timeframe candle. 4h punya high/low asli (crypto), 1d tidak")
     ap.add_argument("--ringkas", action="store_true",
                     help="buang panduan statis (hemat token saat dipakai bot)")
@@ -344,8 +358,14 @@ def main():
     hasil = {
         "simbol": simbol,
         "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
-        "jenis": "uji balik sinyal terhadap riwayat aset ini sendiri (timeframe harian)",
+        # Label ini SEBELUMNYA dipatok "timeframe harian" apa pun --tf-nya. Dengan
+        # --tf 4h, horizon 20 candle berarti 3,3 hari — bukan 20 hari — dan model
+        # membaca label itu apa adanya lalu salah menafsirkan seluruh angkanya.
+        "jenis": ("uji balik sinyal terhadap riwayat aset ini sendiri (timeframe "
+                  + _NAMA_TF.get(args.tf, args.tf) + ")"),
+        "timeframe": args.tf,
         "horizon_candle": args.depan,
+        "horizon_setara": _setara(args.tf, args.depan),
         "peringatan": [
             "BUKAN bukti, hanya konteks. Masa lalu tidak menjamin masa depan.",
             "TANPA biaya transaksi, spread, slippage, atau pajak.",
