@@ -4925,3 +4925,54 @@ def test_aturan_emas_tidak_dibayar_pertanyaan_lain():
     for lain in ("halo", "analisa sol", "carikan informasi menarik dari telegram saya"):
         assert "MENGALAHKAN tabel arah" not in bot.build_chat_prompt(lain), lain
     assert len(bot.build_chat_prompt("halo")) < 18000
+
+
+def test_pullback_tidak_dilaporkan_nol_saat_tak_terukur():
+    """Crypto dari CoinGecko di candle HARIAN tidak punya high/low sama sekali
+    (open=high=low=close di 366/366, mutu approx_close_only). Syarat "low menyentuh EMA21
+    lalu close di atasnya" jadi mustahil terpenuhi, dan sinyalnya dilaporkan "0 kejadian"
+    seolah memang tidak pernah terjadi. Nol yang berarti TIDAK TERUKUR jauh lebih
+    menyesatkan daripada nol yang berarti TIDAK ADA."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "bt", os.path.join(AKAR, "cloud", "backtest.py"))
+    bt = importlib.util.module_from_spec(spec)
+    sys.modules["bt"] = bt
+    spec.loader.exec_module(bt)
+
+    # Candle close-only: open=high=low=close, naik lalu mundur ke EMA21.
+    harga = [10 + i * 0.35 for i in range(40)] + [24 - i * 0.22 for i in range(12)]
+    tanpa = [[i * 86400000, h, h, h, h, 1.0] for i, h in enumerate(harga)]
+    hasil = bt.cari_pemicu(tanpa)
+    assert "pullback_ke_ema21_PROKSI_CLOSE" in hasil, list(hasil)
+    assert "pullback_ke_ema21_saat_uptrend" not in hasil, \
+        "nama tidak boleh sama dengan yang diukur dari high/low asli"
+
+    # Candle dengan low sungguhan: nama aslinya yang dipakai.
+    asli = [[i * 86400000, h, h * 1.02, h * 0.97, h, 1.0] for i, h in enumerate(harga)]
+    hasil2 = bt.cari_pemicu(asli)
+    assert "pullback_ke_ema21_saat_uptrend" in hasil2
+    assert "pullback_ke_ema21_PROKSI_CLOSE" not in hasil2
+
+
+def test_backtest_bisa_diuji_di_timeframe_lain():
+    """Metode intraday tidak bisa diuji dengan candle harian. Dan untuk crypto, 4h justru
+    punya data LEBIH BAIK: native dengan high/low asli, sementara harian tidak punya."""
+    src = open(os.path.join(AKAR, "cloud", "backtest.py"), encoding="utf-8").read()
+    assert '"--tf"' in src and '"4h"' in src
+    assert "ambil_candle(simbol, args.pasar, args.tf)" in src
+    assert "def ambil_candle(simbol, pasar, tf=" in src
+    # Alasannya wajib tertulis, kalau tidak orang berikutnya mengembalikannya ke 1d.
+    assert "approx_close_only" in src and "native" in src
+
+
+def test_acuan_gaya_mentor_tidak_mengklaim_edge():
+    """Angka 4 jam-nya berasal dari 30 hari di mana KETUJUH koin naik. Di jendela seperti
+    itu sinyal long apa pun menang — persis jebakan yang sudah didokumentasikan di
+    moon_phase_btc.md (Patil 2025: CAGR 32% yang ternyata kalah dari beli-dan-tahan)."""
+    d = open(os.path.join(AKAR, "cloud", "data", "gaya_kalimasada.md"),
+             encoding="utf-8").read()
+    assert "Belum terbukti, dan belum terbantah" in d
+    assert "lantai acak" in d and "koin NAIK di jendela 30 hari" in d
+    assert "JANGAN menyebutnya teruji" in d
+    assert "mustahil menyala di harian" in d or "mustahil diukur" in d

@@ -39,17 +39,24 @@ sys.path.insert(0, BASE_DIR)
 from indicators import ema, rsi_wilder  # noqa: E402
 
 
-def ambil_candle(simbol, pasar):
-    """Pinjam penarik data yang sudah ada supaya sumbernya persis sama dengan analisa."""
+def ambil_candle(simbol, pasar, tf="1d"):
+    """Pinjam penarik data yang sudah ada supaya sumbernya persis sama dengan analisa.
+
+    `tf` penting, bukan kenyamanan. Untuk crypto, candle HARIAN dari CoinGecko tidak punya
+    high/low sungguhan sama sekali (open=high=low=close di 366/366 candle, mutu
+    'approx_close_only'), sementara candle 4 JAM justru 'native' dengan high/low asli
+    180/180. Sinyal yang menuntut sentuhan level — pullback ke EMA21, misalnya — hanya bisa
+    diukur apa adanya di 4h. Tukarannya: 4h cuma menyimpan ~30 hari riwayat.
+    """
     if pasar:
         from market import tarik
         KOM = {"GOLD": "GC=F", "EMAS": "GC=F", "XAUUSD": "GC=F", "SILVER": "SI=F",
                "PERAK": "SI=F", "XAGUSD": "SI=F", "OIL": "CL=F", "WTI": "CL=F"}
         s = KOM.get(simbol, simbol)
-        c, _, err = tarik(s, "2y", "1d")
+        c, _, err = tarik(s, "2y", tf)
         return c, s, err
     from indicators import fetch_base, resolve_cg_id
-    c, sumber, _, err = fetch_base(simbol, resolve_cg_id(simbol), "1d")
+    c, sumber, _, err = fetch_base(simbol, resolve_cg_id(simbol), tf)
     return c, simbol, err
 
 
@@ -130,6 +137,14 @@ def cari_pemicu(candles):
         return r[j] if 0 <= j < len(r) else None
 
     l = [x[3] for x in candles]
+    # DATA CRYPTO DARI COINGECKO TIDAK PUNYA HIGH/LOW SUNGGUHAN: open=high=low=close di
+    # SELURUH candle (diverifikasi 366/366 pada ZEC, NEAR, dan BTC; indicators.py menandai
+    # mutunya 'approx_close_only'). Akibatnya syarat sentuhan `low <= EMA21 < close`
+    # MUSTAHIL terpenuhi — pullback dilaporkan "0 kejadian" seolah memang tidak pernah
+    # terjadi, padahal ia tidak pernah bisa DIUKUR. Nol yang berarti "tidak terukur" jauh
+    # lebih menyesatkan daripada nol yang berarti "tidak ada".
+    tanpa_rentang = all(abs(x[3] - x[4]) < 1e-12 and abs(x[2] - x[4]) < 1e-12
+                        for x in candles)
     gc, dc, os_, ob, pullback = [], [], [], [], []
     for i in range(1, len(c)):
         a13, a21, b13, b21 = E13(i), E21(i), E13(i - 1), E21(i - 1)
@@ -159,8 +174,17 @@ def cari_pemicu(candles):
                     dc.append(k)
             # Pullback: dalam tren naik (EMA13 di atas EMA21), harga menyentuh EMA21
             # lalu ditutup kembali di atasnya — pola "beli di diskon" yang lazim dipakai.
-            if a13 > a21 and l[i] <= a21 and c[i] > a21:
-                pullback.append(i)
+            if a13 > a21:
+                if tanpa_rentang:
+                    # Tanpa low sungguhan, "menyentuh" diganti "mendekat": close turun ke
+                    # dalam 1,5% di atas EMA21 padahal candle sebelumnya lebih jauh.
+                    # PROKSI, dan dinamai proksi supaya tidak dikira hasil yang sama.
+                    dekat = 0 <= (c[i] - a21) / a21 <= 0.015
+                    jauh = b21 and (c[i - 1] - b21) / b21 > 0.015
+                    if dekat and jauh:
+                        pullback.append(i)
+                elif l[i] <= a21 < c[i]:
+                    pullback.append(i)
         rv, rp = R(i), R(i - 1)
         if None not in (rv, rp):
             if rp >= 30 > rv:
@@ -168,9 +192,11 @@ def cari_pemicu(candles):
             if rp <= 70 < rv:
                 ob.append(i)
 
+    nama_pullback = ("pullback_ke_ema21_PROKSI_CLOSE" if tanpa_rentang
+                     else "pullback_ke_ema21_saat_uptrend")
     return {"golden_cross_13x21": gc, "death_cross_13x21": dc,
             "rsi_turun_bawah_30": os_, "rsi_naik_atas_70": ob,
-            "pullback_ke_ema21_saat_uptrend": pullback}
+            nama_pullback: pullback}
 
 
 
@@ -308,6 +334,8 @@ def main():
     ap.add_argument("--pasar", action="store_true", help="saham/forex/komoditas (via market.py)")
     ap.add_argument("--makro", action="store_true", help="uji juga hari rilis terjadwal")
     ap.add_argument("--depan", type=int, default=20, help="berapa candle ke depan diukur")
+    ap.add_argument("--tf", default="1d", choices=["4h", "1d", "1w"],
+                    help="timeframe candle. 4h punya high/low asli (crypto), 1d tidak")
     ap.add_argument("--ringkas", action="store_true",
                     help="buang panduan statis (hemat token saat dipakai bot)")
     args = ap.parse_args()
@@ -326,7 +354,7 @@ def main():
         ],
     }
 
-    candles, dipakai, err = ambil_candle(simbol, args.pasar)
+    candles, dipakai, err = ambil_candle(simbol, args.pasar, args.tf)
     if err or not candles:
         hasil["error"] = f"Gagal mengambil riwayat harga: {err or 'kosong'}"
         print(json.dumps(buang_panduan(hasil) if args.ringkas else hasil, indent=2, ensure_ascii=False))
