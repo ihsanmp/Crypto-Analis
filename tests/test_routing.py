@@ -5682,3 +5682,52 @@ def test_harga_btc_dari_grup_benar_benar_terjangkau():
         assert not bot.minta_telegram(pesan), pesan
     # Dan MENGIRIM harga ke telegram tetap bukan permintaan riset.
     assert not bot.minta_telegram("kirim harga btc ke telegram")
+
+
+def test_acuan_gaya_mentor_benar_benar_masuk_prompt():
+    """Pola yang sama dengan bug riset per-grup: acuannya ditulis, dicatat di README,
+    punya skrip ujinya sendiri — tapi TIDAK PERNAH dimuat ke prompt mana pun. Bot tidak
+    tahu apa-apa kalau user menanyakan gaya mentornya."""
+    for pesan in ("gimana sol pakai gaya mentor saya", "ini setup kalimasada bukan?",
+                  "ada order block di btc?", "ema 13/21 sol gimana",
+                  "sol udah tembus range belum", "zona demand eth di mana"):
+        assert "Kalimasada" in bot.build_chat_prompt(pesan), pesan
+    for pesan in ("analisa sol", "halo", "menurutmu btc gimana", "harga eth berapa"):
+        assert "Kalimasada" not in bot.build_chat_prompt(pesan), pesan
+    # Vonis pengukurannya ikut, bukan cuma kerangkanya — kalau tidak, bot akan
+    # menyajikannya seolah metode teruji.
+    p = bot.build_chat_prompt("ini setup kalimasada bukan?")
+    assert "lebih buruk daripada masuk di" in p and "di dalam derau" in p
+    assert "JANGAN" in p and "teruji" in p
+
+
+def test_gagal_aman_dipersempit_penanda_topik():
+    """"purnama bearish?" dan "industri ai lagi bearish" lolos pesan_pasar lewat kata
+    "bearish", tidak punya aset maupun rumpun, lalu memuat SELURUH blok — 64-65 rb
+    karakter. Padahal topiknya terbaca jelas."""
+    for pesan, tanda in (("purnama bearish?", "hasilnya NULL"),
+                         ("industri ai lagi bearish", "AI")):
+        p = bot.build_chat_prompt(pesan)
+        assert len(p) < 45000, (pesan, len(p))
+        assert tanda in p, pesan
+    # Dan blok yang tidak nyambung TIDAK ikut terseret.
+    assert "Kalimasada" not in bot.build_chat_prompt("purnama bearish?")
+    assert "Riset grup Telegram" not in bot.build_chat_prompt("purnama bearish?")
+    # Yang sudah benar sebelumnya tidak berubah.
+    assert abs(len(bot.build_chat_prompt("analisa sol")) - 34578) < 100
+    assert len(bot.build_chat_prompt("halo")) < 18000
+
+
+def test_setiap_acuan_di_data_bisa_dicapai():
+    """Penjaga atas pola yang sudah muncul DUA KALI sesi ini: berkas acuan ditulis
+    lengkap dengan tesnya, tapi tidak pernah dimuat ke prompt mana pun sehingga botnya
+    tidak pernah tahu isinya."""
+    import glob
+    prompt = "".join(open(p, encoding="utf-8").read()
+                     for p in glob.glob(os.path.join(AKAR, "cloud", "prompts", "*.md")))
+    kode = "".join(open(p, encoding="utf-8").read()
+                   for p in glob.glob(os.path.join(AKAR, "cloud", "*.py")))
+    for jalur in glob.glob(os.path.join(AKAR, "cloud", "data", "*.md")):
+        nama = os.path.basename(jalur)
+        assert nama in prompt or f'"data", "{nama}"' in kode or nama in kode, \
+            f"{nama} tidak pernah sampai ke prompt maupun kode — acuan yang tak terpakai"

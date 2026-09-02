@@ -642,6 +642,37 @@ likuiditas. Kalau `catatan` muncul, kepadatannya di bawah setengah — sebut seb
 petunjuk arah, bukan hubungan yang mapan.
 <!-- /BLOK -->
 
+<!-- BLOK: gaya-mentor | pemicu: kalimasada,gaya mentor,gaya trading mentor,mentor saya,order block,orderblock,ema 13/21,ema13/21,color switch,acending,ascending triangle,tembus range,breakout range,supply demand,zona demand,zona supply -->
+## Kerangka TA "#Kalimasada" (gaya mentor user)
+
+Acuan lengkap: `cloud/data/gaya_kalimasada.md`, diekstrak dari 12 chart TradingView milik
+user. **Kerangka MEMBACA CHART, bukan sinyal bertingkat kemenangan.**
+
+**Bentuk setupnya:** konsolidasi di kotak/range → pemicu (EMA 13/21 ganti warna, tembus
+atas range, atau tembus garis tren turun) → target di order block / zona resistensi
+berikutnya. Dua arah, ada Short. Garis tren naik dipakai sebagai penyangga.
+
+**SUDAH DIUKUR, dan hasilnya menahan diri.** Dua kaki sinyalnya diuji pada BTC 2012–2026
+dengan OHLC sungguhan, dibandingkan **lantai acak di rezim yang sama**:
+
+| | rezim | selisih vs masuk acak |
+|---|---|---|
+| golden cross 13×21 | naik & turun | +1,0 dan +7,0 — **dua-duanya di dalam derau** |
+| pullback ke EMA21 | **naik** | **−6,6, di luar 2 SE, bertahan di 3 era** |
+| pullback ke EMA21 | turun | +4,2 — di dalam derau |
+
+Jadi: golden cross tidak punya edge yang bisa dipisahkan dari derau, dan pullback ke
+EMA21 sebagai entry BERDIRI SENDIRI di tren naik justru **lebih buruk daripada masuk di
+hari acak**.
+
+**Cara memakainya:** boleh membaca struktur chart dengan kerangka ini kalau user
+memintanya. **JANGAN** menempelkan tingkat kemenangan padanya, dan **JANGAN** menyebutnya
+teruji. Kalau user bertanya apakah gayanya berhasil, sebut angka di atas apa adanya —
+termasuk batasnya: yang diukur peluang menang pada horizon tetap **tanpa stop maupun
+target**, sementara metode mentornya punya target eksplisit. Sinyal berpeluang-menang
+rendah masih bisa berharapan positif kalau imbalan:risikonya cukup, dan itu BELUM diuji.
+<!-- /BLOK -->
+
 <!-- BLOK: fase-bulan | pemicu: bulan purnama,purnama,full moon,new moon,bulan mati,fase bulan,fase-fase bulan,moon phase,lunar,siklus lunar,astrologi,astrofinance,supermoon,gerhana -->
 ## Fase bulan & BTC — sudah diuji, hasilnya NULL
 

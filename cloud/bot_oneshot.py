@@ -591,6 +591,13 @@ def rakit_chat(teks_prompt, pesan, jenis_aset_terdeteksi=None):
             if aset:
                 serumpun = set().union(*(_RUMPUN_JENIS.get(_jenis_ticker(a), set())
                                          for a in aset))
+        if not serumpun:
+            # Sebelum menyerah dan memuat SEMUANYA: penanda topik sering tahu persis apa
+            # yang dibutuhkan. "purnama bearish?" dan "industri ai lagi bearish" lolos
+            # pesan_pasar lewat kata "bearish", tidak punya aset maupun rumpun, lalu
+            # memuat 64-65 rb karakter — padahal topiknya terbaca jelas sebagai
+            # fase-bulan dan ai.
+            serumpun = {n for n in topik_pesan(pesan) if n in {x for x, _, _ in blok}}
         if serumpun:
             dipakai.update(serumpun)
         else:
