@@ -73,9 +73,53 @@ kaki pullback justru **kalah di 4 dari 7 koin**:
 Golden cross hanya 10 kejadian di tujuh koin — di bawah ambang 10 yang ditetapkan
 `backtest.py` sendiri sebagai batas kebermaknaan, dan itu pun tersebar 1–2 per koin.
 
+### Temuan 3: diuji di pasar TURUN — dan kaki pullback kalah dari masuk acak
+
+Jendela 30 hari tidak bisa menjawab "bagaimana kalau pasar turun". Yang bisa: **BTC harian
+Bitstamp, 5.358 candle, 2012–2026, OHLC sungguhan** (5.305 punya high/low asli) — memuat
+tiga pasar beruang. Reproduksi: `python cloud/uji_gaya.py --era`.
+
+Tiap sinyal dibandingkan ke **lantai acak di rezim yang sama**: peluang menang kalau masuk
+di hari ACAK dalam rezim itu. Rezim = harga vs SMA200. Horizon 20 candle.
+
+| sinyal | rezim | n | menang | lantai acak | selisih | 1 SE |
+|---|---|---|---|---|---|---|
+| golden cross 13×21 | NAIK | 32 | 59,4% | 58,4% | +1,0 | 8,7 |
+| golden cross 13×21 | TURUN | 22 | 59,1% | 52,1% | +7,0 | 10,5 |
+| **pullback ke EMA21** | **NAIK** | **344** | **51,7%** | **58,4%** | **−6,6** | **2,7** |
+| pullback ke EMA21 | TURUN | 87 | 56,3% | 52,1% | +4,2 | 5,3 |
+
+**Golden cross: tidak ada edge, dua-duanya di dalam derau.** Selisih +7,0 pada n=22 terlihat
+besar sampai galat bakunya dilihat — 10,5. Dan tandanya berbalik antar era: 2012–2016 bull
+−11,5 · 2021–2026 bull +14,8. Rapuh, bukan temuan.
+
+**Pullback ke EMA21 di pasar NAIK: −6,6 poin, di luar 2 galat baku, dan tandanya BERTAHAN
+di ketiga era** (−7,4 · −4,1 · −12,7). Ini satu-satunya hasil di seluruh pengujian yang
+lolos ambangnya — dan arahnya negatif: **masuk di pullback saat tren naik lebih buruk
+daripada masuk di hari acak.** Masuk akal secara mekanis: pullback terjadi tepat saat
+momentum melemah, jadi harga yang "diskon" itu dibayar dengan peluang lanjut yang lebih
+kecil.
+
+Di pasar TURUN sebaliknya, +4,2 — tapi di dalam derau dan tandanya berbalik antar era
+(−11,8 · +21,0 · −1,8). Tidak ada apa-apa di sana.
+
+**Batas temuan ini, dan penting:** yang diukur adalah PELUANG MENANG pada horizon tetap
+**tanpa stop maupun target**. Metode mentornya punya target eksplisit (zona order block
+berikutnya) dan hampir pasti punya stop. Sinyal dengan peluang menang rendah masih bisa
+berharapan positif kalau imbalan:risikonya cukup besar — itu belum diuji di sini, dan
+menguji­nya butuh aturan keluar yang eksplisit. Dan ini **BTC saja**, bukan altcoin yang
+justru diperdagangkan mentornya.
+
 ### Vonis
 
-**Belum terbukti, dan belum terbantah.** Yang bisa dikatakan jujur: 30 hari riwayat di
+**Golden cross: tidak ada edge arah yang bisa dipisahkan dari derau.** Baik di pasar naik
+maupun turun, baik di 4 jam maupun harian.
+
+**Pullback ke EMA21 sebagai ENTRY BERDIRI SENDIRI di tren naik: lebih buruk daripada masuk
+acak**, bertahan di ketiga era pada 14 tahun data BTC. Sebagai bagian dari setup lengkap
+dengan target dan stop, belum diuji.
+
+Sebelum ini yang bisa dikatakan hanya: Yang bisa dikatakan jujur: 30 hari riwayat di
 pasar yang seluruhnya naik tidak cukup untuk menetapkan maupun menolak edge. Yang berubah
 adalah pullback kini BISA diukur; sebelumnya tidak.
 
@@ -90,7 +134,10 @@ ini; JANGAN menempelkan angka kemenangan padanya, dan JANGAN menyebutnya teruji.
 
 - Riwayat 4h lebih panjang dari 30 hari (butuh sumber lain; CoinGecko hanya menyimpan ~30).
 - Pembanding beli-dan-tahan pada tiap sinyal, bukan hanya persentase menang.
-- Jendela yang memuat pasar TURUN — seluruh pengukuran di atas berasal dari pasar naik.
+- ~~Jendela yang memuat pasar TURUN~~ — **sudah, lihat Temuan 3.**
+- **Ekspektansi dengan stop & target eksplisit**, bukan hanya peluang menang. Ini yang
+  paling menentukan dan yang paling mungkin membalikkan vonis di atas.
+- Altcoin dengan OHLC asli riwayat panjang — pengujian pasar turun di atas BTC saja.
 - Biaya: perpetual punya funding, dan setup intraday berpindah posisi jauh lebih sering.
 
 ⚠️ Materi acuan, bukan nasihat keuangan.

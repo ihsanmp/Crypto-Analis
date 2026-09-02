@@ -4972,7 +4972,12 @@ def test_acuan_gaya_mentor_tidak_mengklaim_edge():
     moon_phase_btc.md (Patil 2025: CAGR 32% yang ternyata kalah dari beli-dan-tahan)."""
     d = open(os.path.join(AKAR, "cloud", "data", "gaya_kalimasada.md"),
              encoding="utf-8").read()
-    assert "Belum terbukti, dan belum terbantah" in d
     assert "lantai acak" in d and "koin NAIK di jendela 30 hari" in d
     assert "JANGAN menyebutnya teruji" in d
     assert "mustahil menyala di harian" in d or "mustahil diukur" in d
+    # Diuji juga di pasar TURUN, lewat 14 tahun BTC dengan OHLC sungguhan.
+    assert "Temuan 3" in d and "pasar beruang" in d
+    assert "tidak ada edge arah yang bisa dipisahkan dari derau" in d.lower()
+    assert "lebih buruk daripada masuk" in d, "arah temuan tidak boleh diperhalus"
+    # Batasnya wajib ikut: yang diukur peluang menang tanpa stop/target, dan BTC saja.
+    assert "tanpa stop maupun target" in d and "BTC saja" in d
