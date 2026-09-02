@@ -4832,3 +4832,62 @@ def test_jendela_tahan_penanda_yang_bukan_dict():
     dan kegagalannya akan menghentikan seluruh riset."""
     for buruk in ("rusak", None, [], 0):
         assert _tg.jendela(buruk) == (_tg.JAM_MAKS, True), buruk
+
+
+@pytest.mark.parametrize("pesan", [
+    "apakah purnama minggu ini bearish untuk btc",
+    "bagaimana pergerakan btc untuk full moon nanti",
+    "ada pengaruh fase bulan ke harga bitcoin",
+    "gimana fase-fase bulan pengaruhnya ke btc",
+    "bulan mati besok gimana btc",
+    "new moon besok gimana",
+    "does the lunar cycle affect btc",
+    "supermoon efek ke pasar?",
+    "gerhana bulan pengaruh ke pasar?",
+    "astrologi buat trading works ga",
+])
+def test_fase_bulan_menyala_saat_disebut(pesan):
+    assert "hasilnya NULL" in bot.build_chat_prompt(pesan)
+
+
+@pytest.mark.parametrize("pesan", [
+    "proyeksi btc bulan baru",          # "bulan baru" = bulan KALENDER baru
+    "unlock aster bulan baru",
+    "awal bulan baru biasanya gimana",
+    "siklus bulanan funding rate gimana",   # "siklus bulan" cocok di dalam "bulanan"
+    "performa btc siklus bulanan",
+    "astro token gimana prospeknya",       # ASTRO adalah token sungguhan
+    "analisa btc bulan ini",
+    "rata rata bulanan btc berapa",
+    "berapa lama lagi bulan depan ada unlock",
+    "analisa sol",
+])
+def test_fase_bulan_tidak_menyala_saat_tidak_disebut(pesan):
+    """Diminta user langsung: materi fase bulan HANYA muncul kalau ia menyebutnya. Enam
+    dari kalimat ini dulu memicunya — "bulan baru" di Indonesia lazimnya berarti bulan
+    kalender baru, "siklus bulan" cocok di dalam "siklus bulanan", dan ASTRO adalah nama
+    token sungguhan."""
+    assert "hasilnya NULL" not in bot.build_chat_prompt(pesan)
+
+
+def test_model_dilarang_mengangkat_fase_bulan_sendiri():
+    """Blok yang tidak dimuat menutup satu arah saja. Model masih bisa menambahkan
+    "menjelang purnama" dari priornya sendiri di analisa yang tidak menanyakannya — dan
+    itu menanamkan kaitan yang datanya justru membantah."""
+    for pesan in ("analisa sol", "btc gimana menurutmu",
+                  "carikan informasi menarik dari telegram saya"):
+        p = bot.build_chat_prompt(pesan)
+        assert "hanya dibahas kalau USER menyebutnya" in p, pesan
+    # Tapi TIDAK di sapaan: ia tidak akan pernah menyinggung fase bulan, dan penjaga
+    # ukuran prompt sapaan (<18 rb) ada justru untuk mencegah penambahan semacam ini.
+    # Rumahnya seed inti, yang dimuat tepat untuk pertanyaan pasar dan riset Telegram.
+    assert "hanya dibahas kalau USER" not in bot.build_chat_prompt("halo")
+    # Jalur analisa terstruktur punya pagar yang sama, dan memang tidak punya bloknya.
+    a = open(os.path.join(AKAR, "cloud", "prompts", "analisa.md"), encoding="utf-8").read()
+    assert "hanya dibahas kalau USER menyebutnya" in a
+    for berkas in ("analisa_pasar.md", "narasi.md", "foto.md"):
+        isi = open(os.path.join(AKAR, "cloud", "prompts", berkas), encoding="utf-8").read()
+        assert "purnama" not in isi.lower(), berkas
+    # Pagarnya harus RINGKAS: ia dibayar di setiap pesan, termasuk sapaan.
+    i = p.index("Fase bulan (purnama")
+    assert len(p[i:p.index("\n", i)]) < 230

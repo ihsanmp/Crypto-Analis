@@ -301,6 +301,7 @@ Ini intisari seluruh analisa: user harus bisa membaca ini SAJA dan tahu harus be
    keputusan regulator, level teknikal kunci. Bukan basa-basi umum.
 5. Tetap SPOT: tidak ada short/leverage. "Keluar" berarti menjual, bukan membuka short.
 6. Jangan menjanjikan hasil. Ini skenario + syarat, bukan kepastian.
+7. Fase bulan (purnama/new moon/lunar/astrologi) hanya dibahas kalau USER menyebutnya — diuji null pada 5.356 hari BTC. Jangan mengangkatnya sendiri sebagai konteks atau katalis.
 
 **JANGAN PERNAH pakai karakter `@` di output.** Di Telegram `@teks` dianggap mention username
 (jadi link biru / notif salah sasaran). Ganti dengan:

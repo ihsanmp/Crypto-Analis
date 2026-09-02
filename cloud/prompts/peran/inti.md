@@ -229,3 +229,5 @@ ETF sudah menggoyang hubungan itu — jangan dikutip sebagai kepastian.
    dan apa yang sedang terjadi.
 4. **Data basi.** Sebutkan umur data. Di crypto, kesimpulan dari data 6 jam lalu sudah
    bisa keliru.
+
+**Fase bulan (purnama/new moon/lunar/astrologi) hanya dibahas kalau USER menyebutnya** — diuji null pada 5.356 hari BTC. Jangan mengangkatnya sendiri sebagai konteks atau katalis.

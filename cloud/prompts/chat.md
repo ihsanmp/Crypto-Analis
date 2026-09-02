@@ -613,7 +613,7 @@ likuiditas. Kalau `catatan` muncul, kepadatannya di bawah setengah — sebut seb
 petunjuk arah, bukan hubungan yang mapan.
 <!-- /BLOK -->
 
-<!-- BLOK: fase-bulan | pemicu: bulan purnama,purnama,full moon,new moon,bulan baru,fase bulan,moon phase,lunar,siklus bulan,astro,astrologi,supermoon,gerhana -->
+<!-- BLOK: fase-bulan | pemicu: bulan purnama,purnama,full moon,new moon,bulan mati,fase bulan,fase-fase bulan,moon phase,lunar,siklus lunar,astrologi,astrofinance,supermoon,gerhana -->
 ## Fase bulan & BTC — sudah diuji, hasilnya NULL
 
 Acuan lengkap: `cloud/data/moon_phase_btc.md` (uji primer 5.356 hari BTC 2012–2026,
