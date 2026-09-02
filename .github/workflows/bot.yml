@@ -100,10 +100,14 @@ jobs:
             # rentang, jadi penanda batas yang menentukan.
             KAT=$(echo "$OUT" | sed -n 1p)
             JAM=$(echo "$OUT" | sed -n 2p)
+            GRP=$(echo "$OUT" | sed -n 3p)
+            HRG=$(echo "$OUT" | sed -n 4p)
             echo "perlu=ya" >> "$GITHUB_OUTPUT"
             echo "kategori=$KAT" >> "$GITHUB_OUTPUT"
             echo "rentang=$JAM" >> "$GITHUB_OUTPUT"
-            echo "user meminta riset grup Telegram (kategori: $KAT, rentang: ${JAM:-sejak terakhir diminta})"
+            echo "grup=$GRP" >> "$GITHUB_OUTPUT"
+            echo "harga=$HRG" >> "$GITHUB_OUTPUT"
+            echo "user meminta riset grup Telegram (kategori: $KAT, rentang: ${JAM:-sejak terakhir diminta}, grup: ${GRP:-semua kategori})"
           else
             echo "perlu=tidak" >> "$GITHUB_OUTPUT"
           fi
@@ -128,7 +132,7 @@ jobs:
           # --sejak-terakhir, bukan --jam tetap: dua permintaan berturut-turut dengan
           # jendela tetap mengembalikan isi yang sama, dan user membayar dua kali untuk
           # membaca laporan yang sama. Permintaan pertama membuka 2 bulan penuh.
-          python cloud/tgbaca.py --sejak-terakhir --rentang "${{ steps.tg.outputs.rentang || 0 }}" --kategori "${{ steps.tg.outputs.kategori }}" > "$RUNNER_TEMP/telegram.txt"
+          python cloud/tgbaca.py --sejak-terakhir --rentang "${{ steps.tg.outputs.rentang || 0 }}" --kategori "${{ steps.tg.outputs.kategori }}" --grup-sebut "${{ steps.tg.outputs.grup }}" ${{ steps.tg.outputs.harga == '1' && '--harga' || '' }} > "$RUNNER_TEMP/telegram.txt"
           echo "terkumpul $(wc -c < "$RUNNER_TEMP/telegram.txt") karakter"
 
       - name: Setup Node

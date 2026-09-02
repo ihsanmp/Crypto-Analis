@@ -1784,6 +1784,52 @@ _TG_BUKAN_RISET = re.compile(
     # "kirim ... KE telegram" adalah mengirim, bukan membaca. "DARI telegram" tetap riset.
     r"\b(?:ke|to|via)\s+(?:telegram|tele)\b", re.I)
 
+# Nama grup yang DISEBUT user: "dari grup cokri", "grup lighter". Diekstrak di step
+# pengintip yang tidak punya kredensial apa pun — yang tahu daftar grup sebenarnya cuma
+# pembaca, jadi di sini hanya potongan namanya yang diambil, pencocokannya di sana.
+_GRUP_SEBUT = re.compile(
+    r"\b(?:grup|group|grub|channel|kanal)\s+"
+    r"([A-Za-z0-9][\w .&'-]{0,30})", re.I)
+# Kata yang mengikuti "grup" tapi BUKAN nama grup. "grup telegram saya" berarti seluruh
+# grup, bukan grup bernama Telegram.
+_BUKAN_NAMA_GRUP = {"telegram", "tele", "saya", "aku", "kamu", "ini", "itu",
+                    "mana", "apa", "yang", "yg"}
+# Ekor kalimat yang ikut tertangkap dan harus dipangkas.
+_EKOR_GRUP = re.compile(
+    r"\s+(?:saya|aku|kamu|ini|itu|dong|ya|yg|yang|gimana|gmn|apa|aja|saja|"
+    r"tadi|kemarin|hari|minggu|bulan|terakhir|terbaru|sekarang|barusan|dan|atau)\b.*$",
+    re.I)
+
+
+# Harga BTC dari grup hanya ditarik kalau memang ditanyakan. Bloknya cuma ~250
+# karakter, tapi ia ikut di SETIAP permintaan Telegram kalau tidak digerbangi —
+# dan sebagian besar permintaan tidak menanyakan harga sama sekali.
+_MINTA_HARGA_BTC = re.compile(
+    r"\b(?:harga|price|berapa|rate|kurs)\b[^.]{0,30}\b(?:btc|bitcoin)\b|"
+    r"\b(?:btc|bitcoin)\b[^.]{0,30}\b(?:harga|price|berapa|sekarang|now|terbaru)\b", re.I)
+
+
+def minta_harga_btc(teks):
+    """Apakah user menanyakan harga BTC (jadi grup pemberi harga perlu dibaca)."""
+    return bool(_MINTA_HARGA_BTC.search(teks or ""))
+
+
+def grup_diminta(teks):
+    """Nama grup yang disebut user, atau None kalau ia tidak menyebut satu pun.
+
+    None berarti "baca sesuai kategori seperti biasa" — BUKAN "tidak ada grup". Bedanya
+    menentukan: menganggapnya sebagai nama grup kosong akan membuat pembaca menyaring ke
+    nol grup dan melaporkan tidak ada apa-apa.
+    """
+    m = _GRUP_SEBUT.search(teks or "")
+    if not m:
+        return None
+    nama = _EKOR_GRUP.sub("", m.group(1)).strip(" .,?!:;-" + chr(39) + chr(34))
+    if not nama or nama.lower() in _BUKAN_NAMA_GRUP:
+        return None
+    return nama
+
+
 def minta_telegram(teks):
     """Apakah user meminta riset dari grup Telegram-nya sendiri."""
     low = (teks or "").lower()
@@ -3256,6 +3302,10 @@ def main():
         print(",".join(kategori_telegram(teks_tg)))
         jam = rentang_telegram(teks_tg)
         print("" if jam is None else jam)
+        # Baris 3: nama grup yang disebut user. Kosong = baca sesuai kategori.
+        print(grup_diminta(teks_tg) or "")
+        # Baris 4: "1" kalau harga BTC ditanyakan, kosong kalau tidak.
+        print("1" if minta_harga_btc(teks_tg) else "")
         sys.exit(0)
 
     check_only = "--check" in sys.argv[1:]

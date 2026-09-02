@@ -34,6 +34,7 @@ Pemakaian:
 """
 
 import argparse
+import difflib
 import hashlib
 import hmac
 import json
@@ -308,6 +309,66 @@ def nama_untuk(kategori):
     return pilih
 
 
+_TAK_PENTING = re.compile(r"[^a-z0-9 ]+")
+
+
+def _rata(nama):
+    """Nama grup untuk dicocokkan: huruf kecil, tanpa emoji/bendera/tanda baca.
+
+    Nama grup Telegram penuh emoji dan bendera yang menyusahkan disalin tepat — user
+    menyebut "lighter", grupnya bernama "Lighter Community Chat 🇮🇩". Pencocokan harus
+    tahan terhadap itu.
+    """
+    return " ".join(_TAK_PENTING.sub(" ", (nama or "").lower()).split())
+
+
+def cocokkan_grup(diminta, semua):
+    """(daftar_cocok, status) untuk nama grup yang disebut user.
+
+    status: "tepat" (satu grup), "ambigu" (lebih dari satu), "tidak_ada" (nol).
+
+    AMBIGU TIDAK DITEBAK. Membaca grup yang salah berarti menghabiskan jatah pada isi yang
+    tidak diminta, dan yang benar-benar diminta tidak pernah terbaca — sementara penanda
+    batasnya sudah telanjur maju. Lebih baik bertanya sekali.
+    """
+    d = _rata(diminta)
+    if not d or not semua:
+        return [], "tidak_ada"
+    kata = d.split()
+    # Persis lebih diutamakan: "sui" tidak boleh jadi ambigu kalau memang ada grup
+    # yang namanya persis "sui".
+    persis = [n for n in semua if _rata(n) == d]
+    if len(persis) == 1:
+        return persis, "tepat"
+    cocok = [n for n in semua if all(k in _rata(n) for k in kata)]
+    if len(cocok) == 1:
+        return cocok, "tepat"
+    if len(cocok) > 1:
+        return cocok, "ambigu"
+    # Belum ketemu: coba yang MIRIP. Nama grup panjang hampir selalu diketik ulang dengan
+    # satu-dua huruf meleset — "lighter comunity chat" untuk "Lighter Community Chat".
+    # Menolaknya karena satu huruf membuat fitur ini terasa rewel tanpa alasan.
+    def dekat(a, b):
+        return difflib.SequenceMatcher(None, a, b).ratio() >= 0.8
+
+    mirip = [n for n in semua
+             if difflib.SequenceMatcher(None, d, _rata(n)).ratio() >= 0.75
+             # atau tiap kata yang diketik user punya padanan dekat di nama grup —
+             # menangkap salah ketik pada nama PENDEK ("cokry" untuk "Cokri"), yang
+             # rasio seluruh-kalimatnya rendah karena nama grupnya jauh lebih panjang.
+             or all(any(dekat(x, y) for y in _rata(n).split()) for x in kata)]
+    if len(mirip) == 1:
+        return mirip, "tepat"
+    if len(mirip) > 1:
+        return mirip, "ambigu"
+    return [], "tidak_ada"
+
+
+def nama_grup(k):
+    """Nama seluruh grup & kanal yang bisa dibaca. DM tidak pernah ikut."""
+    return [d.name or "(tanpa nama)" for d in k.iter_dialogs() if _grup_saja(d)]
+
+
 def _grup_saja(dialog):
     """Grup dan kanal saja. DM tidak pernah ikut — lihat batas 1 di docstring modul."""
     return bool(getattr(dialog, "is_group", False) or getattr(dialog, "is_channel", False))
@@ -355,6 +416,48 @@ def buang_baris_berulang(terkumpul, minimal=3):
         else:
             hasil.append((nama, label, waktu, teks))
     return hasil, hemat
+
+
+GRUP_HARGA = "bitcoin price"      # nama grup pemberi harga BTC, dicocokkan longgar
+_ANGKA_HARGA = re.compile(r"[0-9][0-9.,]{3,}")
+_KONTEKS_HARGA = re.compile(r"\b(?:btc|bitcoin|xbt)\b|[$]|\busd(?:t)?\b", re.I)
+
+
+def harga_btc(k, nama_grup_harga=GRUP_HARGA, batas=8):
+    """Harga BTC terbaru dari grup pemberi harga. None kalau tidak ketemu.
+
+    Grup ini memperbarui dirinya jauh lebih sering daripada satu tarikan API per run, jadi
+    ia berguna sebagai PEMBANDING — bukan pengganti. Dua sumber untuk satu angka membuat
+    selisihnya terlihat; satu sumber tidak pernah bisa salah menurut dirinya sendiri.
+
+    Hanya membaca beberapa pesan terakhir: biayanya harus mendekati nol.
+    """
+    sasaran = _rata(nama_grup_harga)
+    for d in k.iter_dialogs():
+        if not _grup_saja(d) or sasaran not in _rata(d.name or ""):
+            continue
+        for pesan in k.iter_messages(d, limit=batas):
+            teks = (pesan.message or "").replace(chr(160), " ")
+            # Angka saja tidak cukup: "anggota grup 12345 orang" lolos batas nilai dengan
+            # mulus. Pesannya harus memang berbicara tentang harga BTC.
+            if not _KONTEKS_HARGA.search(teks):
+                continue
+            m = _ANGKA_HARGA.search(teks)
+            if not m:
+                continue
+            try:
+                nilai = float(m.group(0).replace(".", "").replace(",", "."))                     if m.group(0).count(",") == 1 and m.group(0).rfind(",") > m.group(0).rfind(".")                     else float(m.group(0).replace(",", ""))
+            except ValueError:
+                continue
+            # Angka yang masuk akal untuk BTC. Tanpa batas ini, nomor kontrak atau
+            # jumlah anggota grup ikut terbaca sebagai harga.
+            if not 1000 <= nilai <= 10_000_000:
+                continue
+            return {"harga_usd": nilai, "grup": d.name,
+                    "waktu_utc": pesan.date.strftime("%Y-%m-%d %H:%M") if pesan.date else None,
+                    "kutipan": _bersih(teks)[:120]}
+        return None                    # grupnya ketemu tapi tidak ada angka yang masuk akal
+    return None
 
 
 def kumpulkan(jam=24, saring_nama=None, k=None, batas_lama=None, jejak=None):
@@ -566,6 +669,10 @@ def main():
     p.add_argument("--rentang", type=int, default=0,
                    help="rentang jam yang DISEBUT user; mengalahkan penanda batas")
     p.add_argument("--grup", help="saring nama grup, dipisah koma")
+    p.add_argument("--harga", action="store_true",
+                   help="ikut baca harga BTC dari grup pemberi harga")
+    p.add_argument("--grup-sebut", default="",
+                   help="nama grup yang DISEBUT user; dicocokkan longgar, ambigu ditanyakan")
     p.add_argument("--kategori", help="kategori dari TELEGRAM_GRUP, dipisah koma "
                                       "(mis. crypto,forex). Default: crypto")
     p.add_argument("--daftar", action="store_true", help="tampilkan grup yang terbaca")
@@ -601,19 +708,47 @@ def main():
             maju = diminta >= jam
             jam = diminta
 
-    jejak = {}
+    jejak, harga, k = {}, None, None
     try:
         if a.grup:
             saring = [s.strip() for s in a.grup.split(",")]
         else:
             kat = [s.strip() for s in a.kategori.split(",")] if a.kategori else None
             saring = nama_untuk(kat)
+        # SATU koneksi untuk semuanya: daftar nama, pembacaan, dan harga. Dibuka di sini
+        # supaya penutupannya terjamin di `finally` — sebelumnya sempat dibuka dua kali
+        # dan tidak pernah ditutup sama sekali.
+        k = klien().__enter__()
+        if a.grup_sebut:
+            cocok, status = cocokkan_grup(a.grup_sebut, nama_grup(k))
+            if status == "ambigu":
+                # TIDAK ditebak, dan penandanya TIDAK maju: belum ada yang dibaca.
+                print(f"[GRUP TELEGRAM — PERLU DIPERJELAS]{os.linesep}"
+                      f'"{a.grup_sebut}" cocok dengan lebih dari satu grup: '
+                      + ", ".join(f'"{n}"' for n in cocok[:6]) + "." + os.linesep
+                      + "TANYAKAN ke user grup mana yang dimaksud, lalu berhenti. JANGAN "
+                        "menebak salah satu, dan JANGAN membaca semuanya — jatah bacanya "
+                        "akan habis di grup yang tidak diminta.")
+                return
+            if status == "tidak_ada":
+                print(f"[GRUP TELEGRAM — TIDAK DITEMUKAN]{os.linesep}"
+                      f'Tidak ada grup yang cocok dengan "{a.grup_sebut}". Katakan begitu '
+                      f"apa adanya dan minta user menyebutkan namanya lebih lengkap. "
+                      f"JANGAN membaca grup lain sebagai gantinya.")
+                return
+            saring = cocok
+            print(f"[tgbaca] grup diminta: {a.grup_sebut!r} -> {cocok}", file=sys.stderr)
         if saring is not None and not saring:
             print("[ISI GRUP TELEGRAM — TIDAK ADA GRUP TERPILIH]" + os.linesep
                   + "Kategori yang diminta tidak punya grup terdaftar. Katakan begitu; "
                     "JANGAN membaca grup lain sebagai gantinya.")
             return
-        pesan = kumpulkan(jam, saring, batas_lama=batas_lama, jejak=jejak)
+        pesan = kumpulkan(jam, saring, k=k, batas_lama=batas_lama, jejak=jejak)
+        try:
+            harga = harga_btc(k) if a.harga else None
+        except Exception as e:
+            # Harga hanya pelengkap — kegagalannya tidak boleh menjatuhkan risetnya.
+            print(f"[tgbaca] harga BTC dilewati ({type(e).__name__})", file=sys.stderr)
     except Exception as e:
         # Kegagalan di sini TIDAK boleh menggagalkan analisa. Bot tetap jalan tanpa
         # bahan Telegram, dan ketiadaannya dinyatakan alih-alih disamarkan. Penandanya
@@ -623,6 +758,12 @@ def main():
               f"isi grup.")
         print(f"[tgbaca] gagal: {type(e).__name__}: {e}", file=sys.stderr)
         sys.exit(0)
+    finally:
+        if k is not None:
+            try:
+                k.disconnect()
+            except Exception:
+                pass
 
     if a.sejak_terakhir and maju:
         try:
@@ -653,6 +794,12 @@ def main():
     if hemat:
         print(f"[tgbaca] baris berulang (promo/tanda tangan kanal) dibuang: {hemat} "
               f"karakter", file=sys.stderr)
+    if harga:
+        print(f"[HARGA BTC DARI GRUP {harga['grup']!r} — {harga['waktu_utc']} UTC]")
+        print(f"BTC ${harga['harga_usd']:,.2f}. Sumber grup Telegram, BUKAN API. Pakai "
+              f"sebagai PEMBANDING: kalau berbeda jauh dari angka API di brief, sebutkan "
+              f"kedua angkanya dan selisihnya — jangan diam-diam memilih salah satu.")
+        print()
     grup = {n for n, _, _, _ in pesan}
     print(PENGANTAR.format(jendela=_kalimat_jendela(jam, pertama, diminta, maju),
                            n=len(pesan), g=len(grup), lewat=_kalimat_lewat(jejak)))

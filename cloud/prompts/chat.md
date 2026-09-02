@@ -694,6 +694,15 @@ tidak bisa membedakan kabar kemarin dari kabar tujuh minggu lalu — dan tanpa n
 tidak bisa kembali membaca sendiri atau belajar grup mana yang sering meleset. Temuan yang
 kehilangan asalnya JANGAN dilaporkan.
 
+**Kalau bloknya `[GRUP TELEGRAM — PERLU DIPERJELAS]`**, nama yang user sebut cocok dengan
+beberapa grup. **Tanyakan grup mana yang dimaksud, sebutkan pilihannya, lalu BERHENTI** —
+jangan menebak salah satu dan jangan membaca semuanya. Kalau `TIDAK DITEMUKAN`, katakan
+apa adanya dan minta namanya lebih lengkap.
+
+**Blok `[HARGA BTC DARI GRUP ...]`** adalah harga dari grup Telegram, bukan API. Pakai
+sebagai PEMBANDING: kalau selisihnya jauh dari angka API di brief, sebutkan kedua angkanya
+dan selisihnya — jangan diam-diam memilih salah satu.
+
 Yang ini HANYA yang baru sejak permintaan terakhir — kode sudah membuang yang pernah
 dilaporkan. Jangan mengulang atau merangkum ulang temuan lama untuk mengisi jawaban. Kalau
 bloknya bertuliskan TIDAK TERSEDIA, KOSONG, TIDAK ADA YANG BARU, atau "tidak ada temuan
