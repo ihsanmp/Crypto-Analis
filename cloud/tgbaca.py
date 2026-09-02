@@ -374,6 +374,37 @@ def _grup_saja(dialog):
     return bool(getattr(dialog, "is_group", False) or getattr(dialog, "is_channel", False))
 
 
+_TEBAK_FOREX = re.compile(r"forex|fx|gold|emas|xau|trading ?view|mt[45]|scalp", re.I)
+_TEBAK_KERJA = re.compile(r"job|kerja|karir|karier|hiring|career|lowongan|recruit", re.I)
+
+
+def _tebak_kategori(nama):
+    """Tebakan kategori dari NAMA grup. Tebakan, jadi hasilnya untuk disunting user."""
+    if _TEBAK_KERJA.search(nama or ""):
+        return "kerja"
+    if _TEBAK_FOREX.search(nama or ""):
+        return "forex"
+    return "crypto"
+
+
+def daftar_json():
+    """Cetak TELEGRAM_GRUP siap tempel, berisi seluruh grup yang bisa dibaca.
+
+    Menyusunnya dengan tangan berarti mengetik ulang nama yang penuh emoji dan bendera,
+    dan satu huruf meleset membuat grupnya diam-diam tidak pernah terbaca. Di sini
+    namanya diambil apa adanya dari Telegram.
+
+    Kategorinya TEBAKAN dari nama; user tinggal memindahkan yang salah.
+    """
+    peta = {"crypto": [], "forex": [], "kerja": []}
+    with klien() as k:
+        for nama in nama_grup(k):
+            peta[_tebak_kategori(nama)].append(nama)
+    for v in peta.values():
+        v.sort(key=str.lower)
+    print(json.dumps({a: b for a, b in peta.items() if b}, ensure_ascii=False, indent=1))
+
+
 def daftar_grup():
     with klien() as k:
         for d in k.iter_dialogs():
@@ -676,15 +707,17 @@ def main():
     p.add_argument("--kategori", help="kategori dari TELEGRAM_GRUP, dipisah koma "
                                       "(mis. crypto,forex). Default: crypto")
     p.add_argument("--daftar", action="store_true", help="tampilkan grup yang terbaca")
+    p.add_argument("--daftar-json", action="store_true",
+                   help="cetak TELEGRAM_GRUP siap tempel (kategori ditebak dari nama)")
     a = p.parse_args()
 
     # --daftar adalah perintah DIAGNOSTIK lokal, bukan bahan brief. Membungkus
     # kegagalannya dengan amplop "[ISI GRUP TELEGRAM — TIDAK TERSEDIA]" membuat pesan
     # galatnya terbaca seperti instruksi untuk model, padahal yang membaca adalah manusia
     # di terminal yang sedang mencoba menyiapkan kredensialnya.
-    if a.daftar:
+    if a.daftar or a.daftar_json:
         try:
-            daftar_grup()
+            daftar_json() if a.daftar_json else daftar_grup()
         except Exception as e:
             print(f"Gagal: {type(e).__name__}: {e}", file=sys.stderr)
             sys.exit(1)

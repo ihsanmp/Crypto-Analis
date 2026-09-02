@@ -21,6 +21,10 @@ sebagai sentimen timing.
 | `apa yang menarik di tele seminggu terakhir` | Sama, tapi rentangnya kamu yang tentukan — mengalahkan penanda batas |
 | `/help` | Bantuan |
 
+> **Grup baru?** Menyebut namanya (`cek grup X`) langsung bisa tanpa mengubah apa pun — jalur itu mencocokkan ke seluruh grup yang terbaca, bukan ke `TELEGRAM_GRUP`. Yang butuh pembaruan secret hanyalah permintaan tanpa nama grup (`carikan info dari telegram saya`), karena di situ kategorilah yang menentukan. Pakai [daftar-grup.yml](.github/workflows/daftar-grup.yml) untuk menyusunnya.
+>
+> **DM tidak pernah dibaca** — hanya grup dan kanal. Percakapan pribadi dengan layanan mana pun (support bursa, bot, orang) berada di luar jangkauan bot ini, dan itu batas yang disengaja.
+
 > Riset grup hanya berjalan kalau pesanmu memuat kata **"telegram"** atau **"tele"**.
 > Gerbangnya sengaja sempit: membaca grup pribadi karena salah tangkap jauh lebih buruk
 > daripada sesekali harus menyebut kata pemicunya. Kalimat yang MENGOPERASIKAN Telegram
@@ -309,6 +313,7 @@ untuk riset grup Telegram.
 | [periksa-coinalyze.yml](.github/workflows/periksa-coinalyze.yml) | manual saja | Memeriksa akses tiap endpoint Coinalyze. Hasil 24 Agu 2026: **7 terbuka, 0 tertutup** |
 | [periksa-cmc.yml](.github/workflows/periksa-cmc.yml) | manual saja | Menembak tiap endpoint CoinMarketCap dan melaporkan mana yang terbuka untuk kunci kita. Sekali jawab, bukan berkala — kuncinya hanya ada di Secrets, jadi harus dijalankan di sana |
 | [periksa-sosovalue.yml](.github/workflows/periksa-sosovalue.yml) | Minggu 12:00 WIB + manual | Menyegarkan riwayat konsensus & data ETF, lalu commit balik |
+| [daftar-grup.yml](.github/workflows/daftar-grup.yml) | manual saja | Mencetak `TELEGRAM_GRUP` **siap tempel** setelah kamu bergabung ke grup baru — nama grup diambil apa adanya dari Telegram, jadi emoji dan bendera tidak perlu diketik ulang. **Hasilnya dikirim ke Telegram-mu, BUKAN ke log**: log Actions repo publik ini akan menerbitkan komunitas, minat, bahkan kemungkinan tempat kerja pemiliknya. Memegang `TELEGRAM_SESSION` dan tidak menjalankan model, sama seperti step pembaca |
 | [mcp-security-scan.yml](.github/workflows/mcp-security-scan.yml) | terjadwal + manual | Audit keamanan konfigurasi MCP |
 
 > **Catatan hosting.** Awalnya memakai cron GitHub Actions, tapi GitHub **tidak menjamin

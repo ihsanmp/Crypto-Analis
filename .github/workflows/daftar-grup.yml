@@ -1,0 +1,60 @@
+name: Daftar grup Telegram (untuk isi TELEGRAM_GRUP)
+
+# MANUAL SAJA. Gunanya satu: mencetak TELEGRAM_GRUP siap tempel setelah kamu bergabung
+# ke grup baru, supaya tidak perlu mengetik ulang nama yang penuh emoji dan bendera —
+# satu huruf meleset membuat grupnya diam-diam tidak pernah terbaca.
+#
+# HASILNYA DIKIRIM KE TELEGRAM, BUKAN KE LOG. Repo ini PUBLIK, jadi log Actions-nya juga
+# publik; mencetak daftar grup ke sana sama saja menerbitkan komunitas, minat, dan
+# kemungkinan tempat kerja pemiliknya. Yang masuk log cuma jumlah karakternya.
+#
+# Seperti step pembaca di bot.yml, job ini memegang TELEGRAM_SESSION dan TIDAK
+# menjalankan model apa pun.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  daftar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Ambil daftar grup & kirim ke Telegram
+        env:
+          TELEGRAM_SESSION: ${{ secrets.TELEGRAM_SESSION }}
+          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+          TG: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CH: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          pip install --quiet telethon
+          # stdout DIALIHKAN ke berkas, tidak pernah ke log.
+          if ! python cloud/tgbaca.py --daftar-json > daftar.json 2> galat.txt; then
+            echo "::error::gagal mengambil daftar grup"
+            head -c 300 galat.txt          # pesan galat aman; tidak memuat nama grup
+            exit 1
+          fi
+          echo "daftar tersusun: $(wc -c < daftar.json) karakter — dikirim ke Telegram"
+
+          # Telegram membatasi 4096 karakter per pesan; dipotong 3500 supaya aman.
+          split -b 3500 daftar.json bagian_
+          n=0
+          for f in bagian_*; do
+            n=$((n+1))
+            {
+              echo "TELEGRAM_GRUP (bagian $n) — tempel ke Settings > Secrets > Actions"
+              echo ""
+              cat "$f"
+            } > kirim.txt
+            curl -s -o /dev/null -X POST "https://api.telegram.org/bot$TG/sendMessage" \
+              --data-urlencode "chat_id=$CH" --data-urlencode text@kirim.txt || true
+          done
+          echo "$n pesan terkirim"
+          rm -f daftar.json bagian_* kirim.txt galat.txt

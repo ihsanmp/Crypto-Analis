@@ -5731,3 +5731,49 @@ def test_setiap_acuan_di_data_bisa_dicapai():
         nama = os.path.basename(jalur)
         assert nama in prompt or f'"data", "{nama}"' in kode or nama in kode, \
             f"{nama} tidak pernah sampai ke prompt maupun kode — acuan yang tak terpakai"
+
+
+def test_daftar_grup_tidak_pernah_masuk_log_publik():
+    """Repo ini PUBLIK, jadi log Actions-nya juga publik. Mencetak daftar grup ke sana
+    sama saja menerbitkan komunitas, minat, dan kemungkinan tempat kerja pemiliknya —
+    alasan yang sama kenapa TELEGRAM_GRUP disimpan sebagai secret sejak awal."""
+    p = os.path.join(AKAR, ".github", "workflows", "daftar-grup.yml")
+    assert os.path.exists(p), "workflow daftar grup belum ada"
+    s = open(p, encoding="utf-8").read()
+    assert "> daftar.json" in s, "keluaran wajib dialihkan ke berkas"
+    for bocor in ("cat daftar.json", "echo \"$(cat daftar", "python cloud/tgbaca.py --daftar-json\n"):
+        assert bocor not in s, bocor
+    # Dikirim ke Telegram, dan berkas sementaranya dibersihkan.
+    assert "api.telegram.org" in s and "rm -f daftar.json" in s
+    # Manual saja — bukan terjadwal, bukan otomatis.
+    assert "workflow_dispatch" in s and "schedule" not in s
+    # Memegang session TAPI tidak menjalankan model, sama seperti step pembaca.
+    assert "TELEGRAM_SESSION" in s and "claude" not in s.lower()
+
+
+def test_daftar_json_menyusun_kategori_dari_nama():
+    """Menyusun TELEGRAM_GRUP dengan tangan berarti mengetik ulang nama penuh emoji dan
+    bendera; satu huruf meleset membuat grupnya diam-diam tidak pernah terbaca."""
+    assert _tg._tebak_kategori("cryptojoblist") == "kerja"
+    assert _tg._tebak_kategori("Genjot Candlestick (khusus forex)") == "forex"
+    assert _tg._tebak_kategori("arofx academy") == "forex"
+    assert _tg._tebak_kategori("Bitget Announcements") == "crypto"
+    assert _tg._tebak_kategori("") == "crypto"
+    src = open(os.path.join(AKAR, "cloud", "tgbaca.py"), encoding="utf-8").read()
+    assert "--daftar-json" in src
+
+
+def test_dm_tidak_pernah_terbaca_termasuk_percakapan_layanan():
+    """User menambahkan satu PERCAKAPAN dengan Bitget. Kalau itu DM, ia tidak akan pernah
+    terbaca — dan itu batas yang disengaja, bukan kelalaian: isi DM adalah percakapan
+    dengan pihak yang tidak pernah setuju dianalisa mesin."""
+    dm = type("D", (), {"name": "Bitget", "is_group": False, "is_channel": False})()
+    kanal = type("D", (), {"name": "Bitget Announcements", "is_group": False,
+                           "is_channel": True})()
+    assert not _tg._grup_saja(dm)
+    assert _tg._grup_saja(kanal)
+    # Dan daftar grup pun tidak memuat DM.
+    class _K:
+        def iter_dialogs(self):
+            return iter([dm, kanal])
+    assert _tg.nama_grup(_K()) == ["Bitget Announcements"]
