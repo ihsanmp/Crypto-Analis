@@ -5306,3 +5306,68 @@ def test_tidak_ada_rahasia_di_berkas_ter_commit():
                     continue
                 temuan.append((b, nama, m[:20]))
     assert not temuan, temuan
+
+
+# ------------------------- ngobrol lebih cepat
+
+@pytest.mark.parametrize("pesan", [
+    "halo", "hai bot", "makasih ya", "terima kasih banyak", "kamu bisa apa", "oke sip",
+    "maksudnya gimana", "jelaskan lagi dong", "kok beda dengan yang tadi?",
+    "kenapa kamu bilang tunggu?", "aku kurang paham", "bingung nih",
+])
+def test_obrolan_murni_lewat_jalur_cepat(pesan):
+    assert bot.obrolan_murni(pesan), pesan
+
+
+@pytest.mark.parametrize("pesan", [
+    "halo, btc gimana?", "makasih, sekarang analisa sol", "menurutmu btc gimana",
+    "worth ga masuk sekarang", "apa itu RAG?", "maksudnya harga eth berapa",
+    "carikan informasi dari telegram saya", "bandingkan btc dan eth",
+])
+def test_yang_butuh_riset_tidak_ikut_dipercepat(pesan):
+    """Daftar putih, bukan tebakan: salah menganggap sesuatu obrolan murni berarti
+    MENCABUT alat yang mungkin dibutuhkan. Salah ke arah sebaliknya cuma lebih lambat.
+    Sapaan yang diikuti pertanyaan pasar ("halo, btc gimana?") harus lewat jalur biasa."""
+    assert not bot.obrolan_murni(pesan), pesan
+
+
+def test_mcp_hanya_dinyalakan_kalau_toolnya_diizinkan():
+    """--mcp-config sebelumnya SELALU dikirim, termasuk ke tahap sintesis yang tools-nya
+    kosong: keempat server dinyalakan, ditunggu siap, lalu tidak dipakai sama sekali."""
+    import shutil as _sh
+    import subprocess as _sp
+    dicatat, which_asli, run_asli = [], _sh.which, _sp.run
+
+    class _R:
+        returncode, stdout, stderr = 0, "ok", ""
+
+    _sh.which = lambda x: "/usr/bin/claude"
+    _sp.run = lambda cmd, **k: (dicatat.append(cmd), _R())[1]
+    try:
+        for kw, harap in (({"with_tools": False}, False),
+                          ({"tools_override": bot.TOOLS_WEB}, True),
+                          ({"tools_override": bot.TOOLS_SOSIAL}, False),
+                          ({"tools_override": bot.TOOLS_LONGGAR}, True)):
+            dicatat.clear()
+            bot.run_claude("x", 10, 3, **kw)
+            assert ("--mcp-config" in dicatat[0]) is harap, (kw, harap)
+    finally:
+        _sh.which, _sp.run = which_asli, run_asli
+    assert "mcp__" not in bot.TOOLS_SOSIAL
+
+
+def test_workflow_melewati_pemasangan_mcp_untuk_obrolan():
+    """CLI Claude SELALU perlu; server MCP-nya tidak. Kalau keduanya tetap satu step,
+    melewatinya berarti ikut membuang CLI-nya — dan botnya tidak jalan sama sekali."""
+    alur = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"),
+                encoding="utf-8").read()
+    assert "npm install -g @anthropic-ai/claude-code\n" in alur, "CLI harus berdiri sendiri"
+    i = alur.index("Install server MCP (Node)")
+    assert "steps.obrolan.outputs.murni != 'ya'" in alur[i:i + 400]
+    j = alur.index("Install TradingView MCP")
+    assert "steps.obrolan.outputs.murni != 'ya'" in alur[j:j + 400]
+    # Step CLI TIDAK boleh ikut digerbangi.
+    k = alur.index("Install Claude Code CLI (Node)")
+    assert "steps.obrolan" not in alur[k:alur.index("Install server MCP")]
+    # Dan pengintipnya berjalan sebelum step pemasangan mana pun.
+    assert alur.index("Cek apakah obrolan murni") < k

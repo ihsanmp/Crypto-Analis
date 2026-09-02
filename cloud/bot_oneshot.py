@@ -65,6 +65,9 @@ TOOLS_WEB = ",".join(_MCP_PASAR + ["WebSearch", "WebFetch"])   # baca web, TANPA
 TOOLS_SKRIP = ",".join(_MCP_PASAR + ["Bash"])                  # jalankan script, tanpa web
 TOOLS_VISION = TOOLS_WEB + ",Read"                             # mode foto butuh Read
 TOOLS_LONGGAR = TOOLS_WEB + ",Bash"                            # cadangan & screening narasi
+# Tanpa MCP sama sekali: dipakai untuk obrolan murni, supaya server MCP tidak perlu
+# dipasang maupun dinyalakan. run_claude() ikut membuang --mcp-config sendiri.
+TOOLS_SOSIAL = "WebSearch,WebFetch"
 
 # Nama lama dipertahankan supaya pemanggil yang belum diubah tetap berjalan.
 ALLOWED_TOOLS = TOOLS_LONGGAR
@@ -1824,6 +1827,37 @@ _EKOR_GRUP = re.compile(
     re.I)
 
 
+# OBROLAN MURNI: sapaan, ucapan terima kasih, dan pertanyaan tentang jawaban SEBELUMNYA.
+# Giliran seperti ini tidak pernah menyentuh server MCP, tapi tetap membayar
+# pemasangannya (~45 detik diukur dari run produksi) dan tetap menunggu keempatnya siap.
+#
+# DAFTAR PUTIH, bukan tebakan. Ragu = BUKAN obrolan murni, jadi jalurnya yang sekarang
+# yang dipakai. Salah menganggap sesuatu obrolan murni berarti mencabut alat yang
+# mungkin dibutuhkan; salah ke arah sebaliknya cuma lebih lambat.
+_OBROLAN_MURNI = re.compile(
+    r"^(?:halo|hai|hi|hello|hallo|pagi|siang|sore|malam|assalam|p)\b|"
+    r"\b(?:makasih|terima kasih|thanks|thank you|sip|mantap|oke|okay|siap|noted)\b|"
+    r"\b(?:kamu bisa apa|bisa apa aja|kemampuanmu|help|bantuan)\b|"
+    # Pertanyaan tentang jawaban sebelumnya — datanya sudah ada di riwayat.
+    r"\b(?:maksudnya|maksud kamu|jelaskan lagi|jelasin lagi|ulangi|"
+    r"kok beda|kenapa kamu bilang|tadi katanya|kurang paham|gak paham|"
+    r"nggak paham|bingung|gimana maksudnya)\b", re.I)
+
+
+def obrolan_murni(teks):
+    """Giliran sosial/meta yang tidak butuh MCP maupun data baru.
+
+    Dipakai untuk MELEWATI pemasangan server MCP di workflow dan menjalankan Claude
+    tanpa --mcp-config. Sengaja sempit: yang tidak cocok tetap lewat jalur biasa.
+    """
+    low = (teks or "").strip().lower()
+    if not low or not _OBROLAN_MURNI.search(low):
+        return False
+    # Pagar terakhir: menyebut aset atau kosakata pasar berarti BUKAN obrolan murni,
+    # sekalipun kalimatnya diawali sapaan ("halo, btc gimana?").
+    return not pesan_pasar(teks) and not _semua_aset(teks)
+
+
 # Harga BTC dari grup hanya ditarik kalau memang ditanyakan. Bloknya cuma ~250
 # karakter, tapi ia ikut di SETIAP permintaan Telegram kalau tidak digerbangi —
 # dan sebagian besar permintaan tidak menanyakan harga sama sekali.
@@ -2430,11 +2464,16 @@ def run_claude(prompt, timeout, max_turns, model=None, with_tools=True, tools_ov
     cmd = [
         claude, "-p", prompt,
         "--output-format", "text",
-        "--mcp-config", MCP_CONFIG,
         "--allowedTools", tools,
         "--dangerously-skip-permissions",
         "--max-turns", str(max_turns),
     ]
+    # --mcp-config HANYA kalau ada tool MCP yang benar-benar diizinkan. Sebelumnya selalu
+    # dikirim, termasuk ke tahap SINTESIS yang tools-nya kosong — keempat server MCP
+    # dinyalakan, ditunggu siap, lalu tidak dipakai sama sekali. Itu biaya start yang
+    # dibayar di setiap analisa untuk nol manfaat.
+    if "mcp__" in (tools or ""):
+        cmd[3:3] = ["--mcp-config", MCP_CONFIG]
     if model:
         cmd += ["--model", model]
     try:
@@ -2776,11 +2815,19 @@ def process(token, chat_id, text, photo_file_id=None):
         elif topik_ai(text.strip().lower()):
             # Pertanyaan industri AI memang butuh menjalankan ainews.py.
             tools_chat = TOOLS_LONGGAR
+        elif obrolan_murni(text):
+            # Obrolan murni: tidak menyentuh MCP sama sekali. Tanpa --mcp-config, keempat
+            # server tidak dinyalakan dan tidak ditunggu — dan workflow melewati
+            # pemasangannya (~45 detik diukur dari run produksi).
+            tools_chat = TOOLS_SOSIAL
+            print("[proses] chat: obrolan murni — MCP dilewati", file=sys.stderr)
         else:
             # Sapaan & pertanyaan konseptual: tidak ada aset, tidak ada script yang perlu
             # dijalankan. Tanpa shell, halaman web yang dibaca tidak bisa berbuat apa-apa.
             tools_chat = TOOLS_WEB
-        print(f"[proses] chat: tool = {'WEB' if tools_chat == TOOLS_WEB else 'LONGGAR'}",
+        _nama_tool = {TOOLS_WEB: "WEB", TOOLS_LONGGAR: "LONGGAR",
+                      TOOLS_SOSIAL: "SOSIAL (tanpa MCP)"}
+        print(f"[proses] chat: tool = {_nama_tool.get(tools_chat, 'LAIN')}",
               file=sys.stderr)
         output, err = run_claude(build_chat_prompt(text, chat_id, brief),
                                  min(timeout, jatah), max_turns=putaran, model=model_chat,
@@ -3330,6 +3377,11 @@ def main():
         # Baris 4: "1" kalau harga BTC ditanyakan, kosong kalau tidak.
         print("1" if minta_harga_btc(teks_tg) else "")
         sys.exit(0)
+
+    # Dipakai workflow untuk MELEWATI pemasangan server MCP pada giliran sosial/meta.
+    # Berdiri sendiri supaya bisa dipanggil sebelum step pemasangan mana pun.
+    if "--obrolan-murni" in sys.argv[1:]:
+        sys.exit(0 if obrolan_murni(os.environ.get("TG_TEXT", "")) else 1)
 
     check_only = "--check" in sys.argv[1:]
 

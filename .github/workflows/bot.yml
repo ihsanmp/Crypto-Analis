@@ -91,6 +91,21 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: python cloud/bot_oneshot.py --check
 
+      # Giliran sosial/meta (sapaan, terima kasih, "maksudnya gimana") tidak pernah
+      # menyentuh server MCP. Diukur dari run produksi, memasangnya makan ~45 detik:
+      # npm 19-22 dtk + pip 14-15 dtk + Setup Node 4-10 dtk. Dilewati di sini.
+      - name: Cek apakah obrolan murni
+        id: obrolan
+        env:
+          TG_TEXT: ${{ github.event.client_payload.text }}
+        run: |
+          if python cloud/bot_oneshot.py --obrolan-murni; then
+            echo "murni=ya" >> "$GITHUB_OUTPUT"
+            echo "obrolan murni — pemasangan server MCP dilewati"
+          else
+            echo "murni=tidak" >> "$GITHUB_OUTPUT"
+          fi
+
       # PENGINTIP. Menentukan apakah pembaca Telegram perlu jalan, SEBELUM step yang
       # memegang session dimulai. Tidak ada kredensial di sini sama sekali — hanya teks
       # pesan yang sudah dikirim Worker lewat client_payload.
@@ -148,12 +163,19 @@ jobs:
       # Sengaja install global, bukan "npx -y" di dalam konfigurasi MCP: npx mengunduh
       # ulang tiap run (lambat) dan pernah gagal karena cache terkunci. Binary global
       # membuat perintahnya deterministik.
-      - name: Install Claude Code CLI & MCP server (Node)
+      - name: Install Claude Code CLI (Node)
         if: github.event_name == 'repository_dispatch' || steps.check.outputs.has_work == 'true'
-        run: npm install -g @anthropic-ai/claude-code mcp-coinglass @shinzolabs/coinmarketcap-mcp
+        run: npm install -g @anthropic-ai/claude-code
+
+      # Dipisah dari CLI: CLI-nya SELALU perlu, server MCP-nya tidak. Obrolan murni
+      # dijalankan dengan TOOLS_SOSIAL dan run_claude() ikut membuang --mcp-config,
+      # jadi paket ini tidak akan dicari sama sekali di giliran itu.
+      - name: Install server MCP (Node)
+        if: (github.event_name == 'repository_dispatch' || steps.check.outputs.has_work == 'true') && steps.obrolan.outputs.murni != 'ya'
+        run: npm install -g mcp-coinglass @shinzolabs/coinmarketcap-mcp
 
       - name: Install TradingView MCP (versi data)
-        if: github.event_name == 'repository_dispatch' || steps.check.outputs.has_work == 'true'
+        if: (github.event_name == 'repository_dispatch' || steps.check.outputs.has_work == 'true') && steps.obrolan.outputs.murni != 'ya'
         run: pip install tradingview-mcp-server
 
       - name: Jalankan analisa & balas ke Telegram
