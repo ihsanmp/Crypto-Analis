@@ -5777,3 +5777,70 @@ def test_dm_tidak_pernah_terbaca_termasuk_percakapan_layanan():
         def iter_dialogs(self):
             return iter([dm, kanal])
     assert _tg.nama_grup(_K()) == ["Bitget Announcements"]
+
+
+def test_pesan_bahasa_lain_tidak_dibuang_saringan():
+    """Anggota grup memakai bahasa berbeda-beda. Aksara CJK memuat 2-3 kali informasi per
+    karakter dibanding Latin — pengumuman utuh berbahasa Mandarin sering hanya 27 karakter,
+    dan ambang 45 membuangnya. Diukur: 3 dari 11 contoh multibahasa dibuang, semuanya CJK."""
+    berisi = [
+        "Aave announces partnership with BNY for tokenized bond settlement today",
+        "Unlock ASTER 15 persen dijadwalkan 12 September 2026 menurut dokumen resmi",
+        "Aave 宣布与纽约梅隆银行合作，推出代币化债券结算服务",
+        "ASTER 将于 9 月 12 日解锁 15% 供应量",
+        "AaveがBNYと提携し、トークン化された債券の決済を開始",
+        "에이브가 BNY와 제휴하여 토큰화된 채권 결제를 시작한다고",
+        "Aave объявила о партнёрстве с BNY для расчётов по облигациям",
+    ]
+    for teks in berisi:
+        assert _tg._layak(teks), teks[:40]
+    # Tapi sapaan & reaksi CJK tetap dibuang — ambangnya diturunkan, bukan dimatikan.
+    for teks in ("早上好", "哈哈哈哈", "gm all"):
+        assert not _tg._layak(teks), teks
+    src = open(os.path.join(AKAR, "cloud", "tgbaca.py"), encoding="utf-8").read()
+    assert "PANJANG_MINIMUM_CJK" in src
+    # Rantainya juga harus DIBERI TAHU, bukan cuma saringannya yang dilonggarkan.
+    assert "BAHASA:" in src and "melewatkan pesan hanya karena bahasanya" in src
+    seed = open(os.path.join(AKAR, "cloud", "prompts", "peran", "pemulung.md"),
+                encoding="utf-8").read()
+    assert "Bahasa apa pun ikut dipungut" in seed
+    assert "TIDAK YAKIN TERJEMAHANNYA" in seed, "menebak terjemahan lebih buruk dari mengaku"
+
+
+def test_satu_grup_diminta_dibaca_sedalam_mungkin():
+    """Batas 40-80 pesan per grup ada untuk MEMBAGI jatah ke banyak grup. Ketika user
+    meminta SATU grup, batas itu justru memotong isi yang ia minta dibaca seluruhnya."""
+    for jam in (24, 168, 720):
+        biasa = _tg.jatah(jam)
+        fokus = _tg.jatah(jam, fokus=True)
+        assert fokus[1] == fokus[0], "seluruh jatah untuk grup itu"
+        assert fokus[1] > biasa[1] * 5, (jam, biasa, fokus)
+        assert fokus[2] > biasa[2] and fokus[3] > biasa[3]
+    # Plafonnya tetap ada — "semua percakapan" di grup ramai bisa ribuan pesan.
+    assert _tg.jatah(720, fokus=True)[0] <= 1000
+    src = open(os.path.join(AKAR, "cloud", "tgbaca.py"), encoding="utf-8").read()
+    assert "fokus=bool(a.grup_sebut) and len(saring or []) == 1" in src, \
+        "fokus hanya saat TEPAT satu grup yang diminta"
+
+
+def test_potongan_nama_yang_tidak_cocok_dilaporkan():
+    """Potongan nama di TELEGRAM_GRUP yang tidak cocok satu grup pun hampir pasti salah
+    ketik — dan sekarang gagal DIAM-DIAM. Diukur pada enam nama yang ditulis user:
+    tiga di antaranya tidak cocok karena ejaan ("comunity", "announsements")."""
+    from datetime import datetime as _dt, timezone as _tz
+    monkey = _tg._peta_topik
+    _tg._peta_topik = lambda k, e: {}
+    try:
+        d = _Dialog("Alpha Community", [_Pesan("kabar yang cukup panjang untuk lolos", 5)])
+        jejak = {}
+        _tg.kumpulkan(jam=24, saring_nama=["Alpha", "Salah Ketik"], k=_Klien([d]),
+                      jejak=jejak)
+        assert jejak["saring_nihil"] == ["Salah Ketik"], jejak["saring_nihil"]
+        jejak2 = {}
+        _tg.kumpulkan(jam=24, saring_nama=["Alpha"], k=_Klien([d]), jejak=jejak2)
+        assert jejak2["saring_nihil"] == []
+    finally:
+        _tg._peta_topik = monkey
+    src = open(os.path.join(AKAR, "cloud", "tgbaca.py"), encoding="utf-8").read()
+    assert "ADA NAMA DI DAFTAR YANG TIDAK COCOK" in src
+    assert "Hampir pasti salah ketik" in src

@@ -53,6 +53,13 @@ Contoh:
 
 ## Aturan
 
+**Bahasa apa pun ikut dipungut.** Anggota grup menulis dalam Indonesia, Inggris,
+Mandarin, Jepang, Korea, Rusia, Arab, Vietnam, Turki, Thai, dan lainnya. Pesan berbahasa
+lain BUKAN alasan melewatkannya — sering justru pengumuman resmi yang paling awal muncul
+di sana. Tulis temuannya dalam bahasa Indonesia, tapi **kutipan pendukungnya tetap dalam
+bahasa aslinya** supaya bisa diperiksa. Kalau maknanya tidak jelas bagimu, tulis
+`[TIDAK YAKIN TERJEMAHANNYA]` — jangan menebak.
+
 **Salin apa adanya.** Jangan memperhalus, jangan menerjemahkan angka, jangan melengkapi
 yang tidak tertulis. Kalau pesannya menulis "$2,2 triliun", tulis "$2,2 triliun" — bukan
 "sangat besar". Untuk `[ANALISA]`, jangan menukar kesimpulan penulis dengan kesimpulanmu.

@@ -46,6 +46,11 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 
 PANJANG_MINIMUM = 45          # di bawah ini hampir selalu reaksi, bukan informasi
+# Aksara CJK memuat 2-3 kali informasi per karakter dibanding Latin: pengumuman utuh
+# dalam bahasa Mandarin sering hanya 27-35 karakter. Memakai ambang 45 untuknya berarti
+# membuang pesan yang justru paling padat isi — dan grup kripto banyak yang berbahasa
+# campur. Diukur: 3 dari 11 contoh multibahasa dibuang, semuanya CJK.
+PANJANG_MINIMUM_CJK = 16
 MAKS_PER_GRUP = 40
 MAKS_PER_TOPIK = 12       # supaya topik ramai tidak menutupi topik pengumuman
 MAKS_TOTAL = 200
@@ -75,6 +80,8 @@ _REDAKSI = (
 _HANYA_TAUTAN = re.compile(r"^[\s\W]*(?:https?://\S+\s*)+$")
 _BUKAN_HURUF = re.compile(r"[^\w\s]")
 _BUKAN_ABJAD = re.compile(r"[\W\d_]")        # angka & tanda baca; huruf disisakan
+# Hiragana, katakana, CJK, dan hangul. Dipakai memilih ambang panjang, bukan menyaring.
+_CJK = re.compile("[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]")
 _ANGKA = re.compile(r"\d[\d.,]*")
 
 
@@ -86,7 +93,8 @@ def _bersih(teks):
 
 def _layak(teks):
     """Saring di sisi kode. Token yang dibayar untuk membuang sampah tidak bisa ditarik."""
-    if len(teks) < PANJANG_MINIMUM:
+    padat = len(_CJK.findall(teks)) >= len(teks) * 0.2
+    if len(teks) < (PANJANG_MINIMUM_CJK if padat else PANJANG_MINIMUM):
         return False
     if _HANYA_TAUTAN.match(teks):
         return False
@@ -161,19 +169,30 @@ def jendela(batas, sekarang=None):
     return max(JAM_MINIMUM, min(JAM_MAKS, math.ceil(jam))), False
 
 
-def jatah(jam):
+def jatah(jam, fokus=False):
     """(total, per_grup, per_topik, dalam) — jatah menyesuaikan lebar jendela.
 
     Jendela 2 bulan dengan jatah 24 jam berarti user hanya melihat beberapa hari terakhir
     dan mengira sudah melihat semuanya. Tapi jatahnya TIDAK dilipatgandakan sebebasnya:
     yang membatasi bukan biaya token melainkan kemampuan penyaring memilih 12 hal paling
     layak dari setumpuk — beri ia 2000 pesan dan pilihannya jadi acak.
+
+    `fokus` = hanya SATU grup yang diminta. Batas per grup ada untuk MEMBAGI jatah ke
+    banyak grup; ketika cuma satu yang diminta ia justru memotong isi yang user minta
+    dibaca seluruhnya. Jadi seluruh jatah diberikan ke grup itu, plafon totalnya
+    dinaikkan, dan kedalaman pindaian mengikuti. Plafonnya tetap ada — yang terlewat
+    dilaporkan apa adanya, bukan disembunyikan.
     """
     if jam <= 48:
-        return MAKS_TOTAL, MAKS_PER_GRUP, MAKS_PER_TOPIK, 300
-    if jam <= 24 * 14:
-        return 300, 60, 18, 1000
-    return 400, 80, 24, 1800
+        total, grup, topik, dalam = MAKS_TOTAL, MAKS_PER_GRUP, MAKS_PER_TOPIK, 300
+    elif jam <= 24 * 14:
+        total, grup, topik, dalam = 300, 60, 18, 1000
+    else:
+        total, grup, topik, dalam = 400, 80, 24, 1800
+    if fokus:
+        total = max(total, 600)
+        grup, topik, dalam = total, max(topik * 4, 60), max(dalam * 3, 2500)
+    return total, grup, topik, dalam
 
 
 def simpan_calon(batas_lama, grup_baru, path=None):
@@ -491,7 +510,8 @@ def harga_btc(k, nama_grup_harga=GRUP_HARGA, batas=8):
     return None
 
 
-def kumpulkan(jam=24, saring_nama=None, k=None, batas_lama=None, jejak=None):
+def kumpulkan(jam=24, saring_nama=None, k=None, batas_lama=None, jejak=None,
+              fokus=False):
     """Kumpulkan pesan tersaring. `k` boleh diisi klien siap pakai — dipakai tes.
 
     Tanpa suntikan itu, seluruh alur ini (penyaringan, dedup lintas grup, jatah per topik,
@@ -503,11 +523,16 @@ def kumpulkan(jam=24, saring_nama=None, k=None, batas_lama=None, jejak=None):
     dan hitungan yang terlewat — dipakai pemanggil untuk menyimpan dan untuk berterus
     terang di pengantar.
     """
-    maks_total, maks_grup, maks_topik, dalam = jatah(jam)
+    maks_total, maks_grup, maks_topik, dalam = jatah(jam, fokus)
     peta_lama = ((batas_lama or {}).get("grup") or {})
     ambang = datetime.now(timezone.utc) - timedelta(hours=jam)
-    terpakai, terkumpul, dilihat = 0, [], set()
+    terpakai_pesan, terkumpul, dilihat = 0, [], set()
     penanda, lewat = {}, {}
+    # Potongan nama dari TELEGRAM_GRUP yang tidak cocok dengan SATU grup pun hampir pasti
+    # salah ketik — dan sekarang ia gagal DIAM-DIAM: grupnya tidak pernah dibaca, tanpa
+    # satu pun tanda. Nama grup Telegram penuh emoji dan ejaan yang mudah meleset
+    # ("comunity", "announsements"), jadi ini bukan kemungkinan teoretis.
+    terpakai = set()
     tutup = k is None
     k = k or klien().__enter__()
     try:
@@ -515,8 +540,11 @@ def kumpulkan(jam=24, saring_nama=None, k=None, batas_lama=None, jejak=None):
             if not _grup_saja(d):
                 continue
             nama = d.name or "(tanpa nama)"
-            if saring_nama and not any(s.lower() in nama.lower() for s in saring_nama):
-                continue
+            if saring_nama:
+                kena = [x for x in saring_nama if x.lower() in nama.lower()]
+                if not kena:
+                    continue
+                terpakai.update(kena)
             kunci = _kunci(nama)
             sejak = int((peta_lama.get(kunci) or {}).get("id") or 0)
             topik = _peta_topik(k, d.entity)
@@ -557,8 +585,8 @@ def kumpulkan(jam=24, saring_nama=None, k=None, batas_lama=None, jejak=None):
                 dilihat.add(s)
                 terkumpul.append((nama, label, pesan.date, teks[:POTONG_PESAN]))
                 n_grup += 1
-                terpakai += 1
-                if terpakai >= maks_total:
+                terpakai_pesan += 1
+                if terpakai_pesan >= maks_total:
                     break                    # jatah TOTAL: sapuan berhenti sama sekali
                 if n_grup >= maks_grup:
                     penuh = True             # jatah GRUP ini saja: lanjut menghitung
@@ -571,7 +599,7 @@ def kumpulkan(jam=24, saring_nama=None, k=None, batas_lama=None, jejak=None):
                 # Menyentuh plafon scan berarti masih ada pesan di jendela yang tidak
                 # sempat DILIHAT sama sekali, jadi angkanya batas bawah — bukan jumlah.
                 lewat[nama] = (dilompati, dilihat_grup >= batas_scan)
-            if terpakai >= maks_total:
+            if terpakai_pesan >= maks_total:
                 break
     finally:
         if tutup:
@@ -582,7 +610,9 @@ def kumpulkan(jam=24, saring_nama=None, k=None, batas_lama=None, jejak=None):
     if jejak is not None:
         jejak["grup"] = penanda
         jejak["lewat"] = lewat
-        jejak["jatah_habis"] = terpakai >= maks_total
+        jejak["jatah_habis"] = terpakai_pesan >= maks_total
+        jejak["saring_nihil"] = ([x for x in saring_nama if x not in terpakai]
+                                 if saring_nama else [])
     terkumpul.sort(key=lambda x: x[2], reverse=True)
     return terkumpul
 
@@ -629,6 +659,12 @@ lintas grup dibuang di sisi kode).{lewat}
 
 CATATAN: yang terbaca hanya TEKS, termasuk keterangan (caption) di bawah gambar. Gambar
 yang sama sekali tanpa keterangan tidak terlihat dari sini — jangan menebak isinya.
+
+BAHASA: anggota grup memakai bahasa yang berbeda-beda — Indonesia, Inggris, Mandarin,
+Jepang, Korea, Rusia, Arab, Vietnam, Turki, Thai, dan lainnya. Baca SEMUANYA; jangan
+melewatkan pesan hanya karena bahasanya bukan yang kamu pakai menjawab. Terjemahkan
+maknanya, JANGAN mengarang isi yang tidak kamu pahami — kalau sebuah pesan tidak jelas,
+katakan begitu dan kutip aslinya. Jawaban akhir tetap dalam bahasa yang dipakai user.
 """
 
 
@@ -776,7 +812,9 @@ def main():
                   + "Kategori yang diminta tidak punya grup terdaftar. Katakan begitu; "
                     "JANGAN membaca grup lain sebagai gantinya.")
             return
-        pesan = kumpulkan(jam, saring, k=k, batas_lama=batas_lama, jejak=jejak)
+        # Satu grup diminta = baca sedalam mungkin di rentang itu, bukan sepotong.
+        pesan = kumpulkan(jam, saring, k=k, batas_lama=batas_lama, jejak=jejak,
+                          fokus=bool(a.grup_sebut) and len(saring or []) == 1)
         try:
             harga = harga_btc(k) if a.harga else None
         except Exception as e:
@@ -827,6 +865,15 @@ def main():
     if hemat:
         print(f"[tgbaca] baris berulang (promo/tanda tangan kanal) dibuang: {hemat} "
               f"karakter", file=sys.stderr)
+    nihil = (jejak or {}).get("saring_nihil") or []
+    if nihil:
+        print(f"[GRUP TELEGRAM — ADA NAMA DI DAFTAR YANG TIDAK COCOK]{os.linesep}"
+              f"Potongan nama ini ada di TELEGRAM_GRUP tapi tidak cocok dengan satu grup "
+              f"pun: {', '.join(repr(x) for x in nihil[:8])}. Hampir pasti salah ketik — "
+              f"grupnya TIDAK terbaca sama sekali. Sebutkan ini ke user supaya ia bisa "
+              f"membetulkannya; jalankan workflow 'Daftar grup Telegram' untuk mendapat "
+              f"ejaan yang benar.{os.linesep}")
+        print(f"[tgbaca] saringan nihil: {nihil}", file=sys.stderr)
     if harga:
         print(f"[HARGA BTC DARI GRUP {harga['grup']!r} — {harga['waktu_utc']} UTC]")
         print(f"BTC ${harga['harga_usd']:,.2f}. Sumber grup Telegram, BUKAN API. Pakai "
