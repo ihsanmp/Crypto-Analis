@@ -5187,3 +5187,65 @@ def test_nama_grup_tidak_bisa_menyuntik_shell():
 def test_cocokkan_grup_tahan_masukan_kosong():
     for arg in (("x", []), ("", ["A"]), (None, ["A"]), ("x", None)):
         assert _tg.cocokkan_grup(*arg) == ([], "tidak_ada"), arg
+
+
+# ------------------------- bertanya balik saat ngobrol
+
+@pytest.mark.parametrize("pesan", [
+    "menurutmu btc gimana", "kok beda dengan yang tadi?", "kenapa kamu bilang tunggu?",
+    "worth ga masuk sekarang", "jadi kesimpulannya apa", "eth atau sol yang lebih bagus",
+    "aku udah pegang sol, gimana?", "sebaiknya aku gimana",
+    "what do you think about sol", "should i buy btc now", "mendingan eth apa sol",
+])
+def test_boleh_bertanya_balik_saat_diskusi(pesan):
+    assert "BOLEH BERTANYA BALIK" in bot.build_chat_prompt(pesan), pesan
+
+
+@pytest.mark.parametrize("pesan", [
+    "halo", "makasih ya", "apa itu RAG?", "analisa sol", "harga eth berapa sekarang",
+])
+def test_perintah_dan_sapaan_tidak_memancing_pertanyaan(pesan):
+    """"analisa sol" adalah PERINTAH, "harga eth berapa" pertanyaan fakta — dua-duanya
+    tidak butuh pendapat user, dan mengekori jawabannya dengan pertanyaan cuma bikin
+    orang berhenti bertanya."""
+    assert "BOLEH BERTANYA BALIK" not in bot.build_chat_prompt(pesan), pesan
+    assert len(bot.build_chat_prompt("halo")) < 18000
+
+
+def test_aturan_bertanya_balik_menahan_diri():
+    """User minta: BOLEH bertanya balik, tapi TIDAK harus selalu — hanya kalau bingung
+    atau memang ingin pendapatnya. Aturan yang cuma mengizinkan tanpa membatasi akan
+    membuat tiap jawaban berekor pertanyaan."""
+    p = bot.build_chat_prompt("menurutmu btc gimana")
+    assert "JAWAB DULU" in p, "menahan jawaban sampai user menjawab tidak boleh"
+    assert "SATU pertanyaan" in p
+    assert "Jangan menutup setiap jawaban dengan pertanyaan" in p
+    assert "JANGAN bertanya kalau" in p
+    # Alasan bertanya yang sah harus disebut supaya tidak jadi kebiasaan kosong.
+    assert "cuma user tahu" in p and "dua arah" in p
+
+
+def test_rumpun_diwarisi_dari_giliran_sebelumnya():
+    """Pesan lanjutan sering tidak menyebut asetnya lagi: "menurutku justru masih bisa
+    turun" tidak punya petunjuk rumpun sama sekali, sehingga gagal-aman memuat SELURUH
+    blok — 63 rb karakter untuk satu kalimat."""
+    import time as _t
+    chat = "12345"
+    asli = bot._muat_riwayat
+    bot._muat_riwayat = lambda: [{"chat": bot._id_chat(chat), "waktu": _t.time() - 300,
+                                  "pesan": "analisa sol", "balasan": "..."}]
+    try:
+        assert bot._jenis_terakhir(chat) == "crypto"
+        tanpa = len(bot.build_chat_prompt("menurutku justru masih bisa turun"))
+        dengan = len(bot.build_chat_prompt("menurutku justru masih bisa turun", chat_id=chat))
+        assert tanpa - dengan > 15000, (tanpa, dengan)
+        # Rumpun yang salah tidak boleh diwarisi kalau pesannya sendiri menyebut aset.
+        assert bot.aset_dari_pesan("emas gimana")[0] == "forex"
+    finally:
+        bot._muat_riwayat = asli
+    assert bot._jenis_terakhir(None) is None
+    bot._muat_riwayat = lambda: []
+    try:
+        assert bot._jenis_terakhir(chat) is None
+    finally:
+        bot._muat_riwayat = asli

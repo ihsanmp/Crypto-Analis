@@ -808,6 +808,27 @@ def simpan_riwayat(chat_id, pesan, balasan):
         print(f"[riwayat] gagal menyimpan: {e}", file=sys.stderr)
 
 
+def _jenis_terakhir(chat_id):
+    """Rumpun aset dari giliran sebelumnya. None kalau memang belum ada.
+
+    Pesan LANJUTAN sering tidak menyebut asetnya lagi: "menurutku justru masih bisa turun"
+    tidak punya satu pun petunjuk rumpun, sehingga gagal-aman memuat SELURUH blok — 63 rb
+    karakter untuk satu kalimat. Padahal rumpunnya sudah diketahui satu giliran lalu, dan
+    riwayatnya memang sudah dibaca untuk keperluan lain.
+    """
+    if not chat_id:
+        return None
+    sekarang = time.time()
+    lalu = [r for r in _muat_riwayat()
+            if str(r.get("chat")) == _id_chat(chat_id)
+            and sekarang - r.get("waktu", 0) < RIWAYAT_UMUR]
+    for r in reversed(lalu):
+        jenis = aset_dari_pesan(r.get("pesan") or "")[0]
+        if jenis:
+            return jenis
+    return None
+
+
 def konteks_percakapan(chat_id):
     """Rakit konteks percakapan sebelumnya untuk disisipkan ke prompt."""
     sekarang = time.time()
@@ -1299,7 +1320,9 @@ def build_chat_prompt(text, chat_id=None, brief=None):
     with open(CHAT_PROMPT, encoding="utf-8") as f:
         # Jenis aset ikut diberikan supaya pemilihan blok tidak jatuh ke "muat semua"
         # hanya karena kalimatnya tidak memakai kosakata rumpun.
-        base = rakit_chat(f.read(), text, aset_dari_pesan(text)[0])
+        # Rumpun dari pesan ini; kalau tidak ada, warisi dari giliran sebelumnya.
+        base = rakit_chat(f.read(), text,
+                          aset_dari_pesan(text)[0] or _jenis_terakhir(chat_id))
     # brief terisi <=> tools_chat = TOOLS_WEB (lihat pemilihan tool di process()). Datanya
     # sudah diambil kode, jadi tidak ada script yang perlu dijalankan model.
     base = buang_bagian_shell(base) if brief else _lepas_penanda_shell(base)
