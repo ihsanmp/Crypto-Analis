@@ -4891,3 +4891,37 @@ def test_model_dilarang_mengangkat_fase_bulan_sendiri():
     # Pagarnya harus RINGKAS: ia dibayar di setiap pesan, termasuk sapaan.
     i = p.index("Fase bulan (purnama")
     assert len(p[i:p.index("\n", i)]) < 230
+
+
+def test_hasil_ukur_mengalahkan_tabel_acuan_emas():
+    """gold_drivers.md menulis "CPI di atas forecast -> gold turun (KUAT)" dan menyamakan
+    peringkatnya dengan NFP. Pengukuran repo ini sendiri (kejutan.py, 178 rilis) membantah
+    keduanya: selisih hari rilis +0,16% — berlawanan tanda, di bawah lantai derau 0,3%,
+    dan tandanya berbalik antar rezim maupun di luar sampel. Sementara NFP bertahan di
+    kelima potongan. Tanpa aturan pendahuluan, model menerima dua sumber yang bertabrakan
+    tanpa tahu mana yang menang."""
+    d = open(os.path.join(AKAR, "cloud", "data", "gold_drivers.md"),
+             encoding="utf-8").read()
+    assert "SUDAH DIUKUR" in d
+    assert "TIDAK ADA EDGE ARAH" in d and "BERTAHAN" in d
+    assert "hasil ukur mengalahkan tabel" in d.lower()
+    # Angka yang jujur: yang dikutip adalah paruh akhir, bukan gabungan yang optimistis.
+    assert "-0,31%" in d or "−0,31%" in d
+    # Peringkat lama tidak boleh berdiri tanpa peringatan.
+    i = d.index("Federal Funds Rate  >  NFP = CPI")
+    assert "membantahnya" in d[i:i + 400]
+
+    for berkas in ("analisa_pasar.md", "chat.md"):
+        p = open(os.path.join(AKAR, "cloud", "prompts", berkas), encoding="utf-8").read()
+        assert "MENGALAHKAN tabel arah" in p, berkas
+        assert "yield RIIL" in p, berkas
+
+
+def test_aturan_emas_tidak_dibayar_pertanyaan_lain():
+    """Aturannya hanya berguna untuk emas. Menaruhnya di INTI berarti membayarnya di
+    setiap sapaan — kesalahan yang sudah terjadi sekali dengan pagar fase bulan."""
+    for gold in ("emas bagus dibeli sekarang?", "analisa gold"):
+        assert "MENGALAHKAN tabel arah" in bot.build_chat_prompt(gold), gold
+    for lain in ("halo", "analisa sol", "carikan informasi menarik dari telegram saya"):
+        assert "MENGALAHKAN tabel arah" not in bot.build_chat_prompt(lain), lain
+    assert len(bot.build_chat_prompt("halo")) < 18000

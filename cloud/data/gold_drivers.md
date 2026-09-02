@@ -24,11 +24,75 @@ selisih *actual vs forecast* di kalender ekonomi.
 
 ---
 
+## RANTAI SEBABNYA — kenapa data ekonomi sampai ke harga emas
+
+Emas **tidak membayar bunga**. Itu satu kalimat yang menjelaskan hampir seluruh tabel di
+bawah:
+
+```
+Kebijakan Fed (suku bunga)  →  US Bond Yield  →  DXY (nilai USD)  →  Gold (XAUUSD)
+```
+
+| Saat suku bunga NAIK | Saat suku bunga TURUN |
+|---|---|
+| Yield naik → biaya pinjam mahal | Yield turun → biaya pinjam murah |
+| USD menguat → dolar lebih diminati | USD melemah → dolar kurang diminati |
+| **Gold turun** → investor pilih aset berbunga | **Gold naik** → investor cari aset lindung nilai |
+
+**Yield riil 10 tahun adalah jalur paling langsung.** Yield naik = biaya peluang memegang
+emas (yang tidak memberi bunga) jadi lebih besar → emas ditinggalkan. Itu sebabnya
+`makro.py` memantau DGS10 dan **DFII10** (yield riil), bukan hanya suku bunga Fed.
+
+Dua jalur ini kadang berlawanan, dan saat itu terjadi yang menang biasanya yield riil:
+DXY bisa menguat karena pelarian risiko (yang justru menopang emas), sementara yield riil
+naik hampir selalu menekan emas.
+
+---
+
 ## Peringkat kekuatan dampak
 
 ```
 Federal Funds Rate  >  NFP = CPI = Core PCE  >  sisanya
 ```
+
+⚠️ **Peringkat ini menyamakan NFP dan CPI, dan pengukuran di repo ini membantahnya.**
+Lihat bagian berikutnya sebelum memakai peringkat ini.
+
+---
+
+## SUDAH DIUKUR — mana yang bertahan, mana yang tidak
+
+Tabel-tabel di dokumen ini adalah **materi belajar**, bukan hasil pengukuran. Sebagiannya
+sudah diuji terhadap data sungguhan lewat `cloud/kejutan.py` (studi peristiwa, reaksi
+dipisah menurut arah kejutan, lalu tandanya diuji apakah bertahan saat data dipotong per
+rezim dan di paruh yang belum pernah dilihat). Hasilnya **tidak seragam**:
+
+| Klaim di dokumen ini | Vonis pengukuran |
+|---|---|
+| NFP di atas forecast → **gold turun (kuat)** | ✅ **BERTAHAN**, tapi MENYUSUT |
+| CPI di atas forecast → **gold turun (kuat)** | ❌ **TIDAK ADA EDGE ARAH** |
+
+**NFP → emas** (179 rilis, 2011-09 s/d 2026-09, konsensus SoSoValue). Selisih median hari
+rilis panas−dingin **−0,57%**, dan tandanya negatif di **kelima** potongan rezim (−1,30 ·
+−0,51 · −0,24 · −0,79 · −0,44). Uji luar sampel: paruh awal −0,80%, paruh akhir −0,31% —
+tanda bertahan tapi besarannya menyusut lebih dari separuh. **Kutip −0,31%, bukan −0,57%**;
+angka gabungan terlalu optimistis.
+
+**CPI → emas** (178 rilis, jendela sama). Selisih median hari rilis **+0,16%** — bukan cuma
+kecil, tapi **berlawanan tanda** dengan yang ditulis di dokumen ini. Dan angka itu tidak
+bisa dipakai ke arah mana pun: tandanya berbalik antar potongan (periode +0,02 · +0,39 ·
+−0,07; inflasi tinggi +0,35 vs inflasi rendah −0,37), dan di uji luar sampel paruh awal
+−0,02% menjadi paruh akhir +0,27% — **tanda tidak bertahan**. Selisih di bawah ~0,3% pada
+emas juga tidak bisa dibedakan dari derau harian.
+
+Vonisnya: **CPI tidak punya edge arah untuk emas.** Bukan "lemah", bukan "terbalik" —
+tidak ada. Reaksi menit-menit pertama boleh saja terjadi; yang tidak ada adalah arah yang
+bisa diandalkan sampai penutupan hari.
+
+**ATURAN SAAT BENTROK: hasil ukur mengalahkan tabel.** Kalau brief memuat keluaran
+`kejutan.py`, pakai vonisnya dan sebutkan bahwa angkanya dari pengukuran. Tabel di bawah
+tetap berguna untuk **jadwal, mekanisme, dan arah yang masuk akal secara ekonomi** — tapi
+jangan menyebut sebuah arah "kuat" hanya karena tertulis kuat di sini.
 
 ---
 

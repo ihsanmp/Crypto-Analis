@@ -97,7 +97,9 @@ Tidak ada laporan keuangan. Yang menggerakkan adalah **ekspektasi suku bunga**.
 **Untuk GOLD (XAUUSD/XAGUSD), acuannya `cloud/data/gold_drivers.md`** (sudah ditempel di
 brief). Inti yang wajib dipegang:
 1. **Satu pintu:** data ekonomi KUAT → Fed hawkish → yield & dolar naik → **gold TURUN**.
-   Data LEMAH → Fed dovish → **gold NAIK**.
+   Data LEMAH → Fed dovish → **gold NAIK**. Jalur paling langsung adalah **yield RIIL**
+   (DFII10): naik = biaya peluang memegang emas yang tak berbunga jadi lebih besar.
+   **Kalau `kejutan.py` ada di brief, vonisnya MENGALAHKAN tabel arah di `gold_drivers.md`.** Sudah diukur: NFP bertahan (−0,31%/hari rilis, menyusut dari −0,80%), CPI **tidak punya edge arah** — tandanya berbalik antar rezim dan di luar sampel. Jangan menyebut sebuah arah "kuat" hanya karena tabelnya menulis kuat.
 2. **Yang menggerakkan adalah SELISIH actual vs forecast**, bukan angka absolutnya.
    Konsensus kini TERSEDIA di brief lewat `kalender.py` (Forex Factory) beserta nowcast
    inflasi Cleveland Fed. Pakai itu dulu. **Meminta ke user adalah JALAN TERAKHIR** — hanya

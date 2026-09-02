@@ -404,7 +404,9 @@ langsung jawab.
   arah dampaknya, jadwal rilis, dan peringkat kekuatannya.
   Inti yang wajib kamu pegang:
   1. **Satu pintu:** data ekonomi KUAT -> Fed hawkish -> yield & dolar naik -> gold TURUN.
-     Data LEMAH -> Fed dovish -> gold NAIK.
+     Data LEMAH -> Fed dovish -> gold NAIK. Jalur paling langsung adalah **yield RIIL**
+     (DFII10): naik = biaya peluang memegang emas yang tak berbunga jadi lebih besar.
+     **Kalau `kejutan.py` ada di brief, vonisnya MENGALAHKAN tabel arah di `gold_drivers.md`.** Sudah diukur: NFP bertahan (−0,31%/hari rilis, menyusut dari −0,80%), CPI **tidak punya edge arah** — tandanya berbalik antar rezim dan di luar sampel. Jangan menyebut sebuah arah "kuat" hanya karena tabelnya menulis kuat.
   2. **Yang menggerakkan adalah SELISIH actual vs forecast**, bukan angka absolutnya. Karena
      konsensus/forecast tidak tersedia di sumber gratis kita, MINTA ke user (lihat aturan
      DATA MAKRO) — tanpa itu jangan berpura-pura tahu arah reaksinya.
