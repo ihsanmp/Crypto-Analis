@@ -582,9 +582,12 @@ def rakit_chat(teks_prompt, pesan, jenis_aset_terdeteksi=None):
         # 54.948 karakter, +19 rb dari pertanyaan crypto biasa — di tingkat BERAT yang
         # 40 putaran. Rumpunnya jelas dari aset-aset yang disebut; tidak perlu ditebak.
         if not serumpun:
-            serumpun = set().union(*(
-                _RUMPUN_JENIS.get(_jenis_ticker(a), set()) for a in _semua_aset(pesan)
-            )) if _semua_aset(pesan) else set()
+            # Sekali saja: _semua_aset menyapu peta 10.398 ticker SEC, dan dulu dipanggil
+            # dua kali di sini (plus sekali lagi lewat aset_dari_pesan di pemanggil).
+            aset = _semua_aset(pesan)
+            if aset:
+                serumpun = set().union(*(_RUMPUN_JENIS.get(_jenis_ticker(a), set())
+                                         for a in aset))
         if serumpun:
             dipakai.update(serumpun)
         else:
@@ -1764,7 +1767,10 @@ def kategori_telegram(teks):
 # PRIBADI user tanpa diminta. Lebih baik sesekali harus mengulang perintah.
 _TG_BUKAN_RISET = re.compile(
     r"webhook|bot ?token|\b(?:telegram|tele) bot\b|\bbot telegram\b|"
-    r"telegram api|api telegram|notifikasi|notification|"
+    # "notifikasi" polos terlalu lebar: "rangkum notifikasi penting di telegram"
+    # adalah permintaan riset yang sah. Yang dikecualikan hanya konteks MENGATUR.
+    r"telegram api|api telegram|"
+    r"(?:set|atur|ubah|aktifkan|matikan|nyalakan)\s[^.]{0,24}(?:notif|notification)|"
     # "kirim ... KE telegram" adalah mengirim, bukan membaca. "DARI telegram" tetap riset.
     r"\b(?:ke|to|via)\s+(?:telegram|tele)\b", re.I)
 

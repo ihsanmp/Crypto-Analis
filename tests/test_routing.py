@@ -4761,3 +4761,74 @@ def test_penjelasan_kembar_diangkat_sekali():
     # Keluaran yang bukan JSON dibiarkan apa adanya, bukan dibuang.
     bukan = {"BTC": [("x", "bukan json")], "ETH": [("x", "juga bukan")]}
     assert bot._angkat_bagian_kembar(bukan) == ("", bukan)
+
+
+# ------------------------- bug yang ditemukan saat sapuan 2 Sep 2026
+
+def test_jumlah_pesan_terlewat_bukan_angka_karangan():
+    """Bug nyata: `break` dengan `dilompati += 1` melaporkan "1 pesan" untuk 160 yang
+    benar-benar terlewat. Angka karangan di kalimat yang JUSTRU bertugas memberi tahu user
+    berapa banyak yang hilang permanen — penandanya tetap maju, jadi yang terlewat tidak
+    akan kembali."""
+    from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+    monkey = _tg._peta_topik
+    _tg._peta_topik = lambda k, e: {}
+    try:
+        n = _tg.MAKS_PER_GRUP * 5
+        pesan = [_Pesan(f"kabar nomor {i} yang cukup panjang untuk lolos saringan", i + 1)
+                 for i in range(n)]
+        jejak = {}
+        hasil = _tg.kumpulkan(jam=24, k=_Klien([_Dialog("Grup Ramai", pesan)]), jejak=jejak)
+        lewat = jejak["lewat"]["Grup Ramai"]
+        jumlah = lewat[0] if isinstance(lewat, tuple) else lewat
+        assert jumlah == n - len(hasil), (jumlah, n - len(hasil))
+        k = _tg._kalimat_lewat(jejak)
+        assert str(jumlah) in k
+    finally:
+        _tg._peta_topik = monkey
+
+
+def test_angka_terlewat_ditandai_batas_bawah_saat_plafon_scan():
+    """Kalau plafon scan tersentuh, masih ada pesan di jendela yang tidak sempat DILIHAT
+    sama sekali — jadi angkanya batas bawah, bukan jumlah. Melaporkannya sebagai jumlah
+    pasti adalah bentuk lain dari angka karangan."""
+    tanpa = _tg._kalimat_lewat({"lewat": {"A": (12, False)}})
+    dengan = _tg._kalimat_lewat({"lewat": {"A": (12, True)}})
+    assert "setidaknya" not in tanpa and "setidaknya" in dengan
+    # Bentuk lama (int polos) tetap terbaca, bukan melempar.
+    assert "12" in _tg._kalimat_lewat({"lewat": {"A": 12}})
+    # Jatah TOTAL habis: grup berikutnya tidak dibaca sama sekali, dan itu disebut.
+    habis = _tg._kalimat_lewat({"lewat": {"A": (5, False)}, "jatah_habis": True})
+    assert "tidak sempat" in habis and "tidak diketahui" in habis
+
+
+def test_pengecualian_telegram_tidak_memblokir_permintaan_sah():
+    """Pengecualian pipa bot sempat terlalu lebar: "notifikasi" polos memblokir "rangkum
+    notifikasi penting di telegram", yang jelas permintaan riset."""
+    for sah in ("rangkum notifikasi penting di telegram",
+                "cari info soal bot trading di telegram",
+                "info dari grup telegram tentang api ondo",
+                "cek telegram dong ada apa"):
+        assert bot.minta_telegram(sah), sah
+    for pipa in ("set my telegram notification", "atur notifikasi telegram dong",
+                 "update webhook telegram", "check telegram bot status"):
+        assert not bot.minta_telegram(pipa), pipa
+
+
+def test_semua_aset_tidak_dipindai_berulang():
+    """_semua_aset menyapu peta 10.398 ticker SEC. Sempat dipanggil tiga kali untuk satu
+    prompt — dua di antaranya di baris yang sama."""
+    asli, n = bot._semua_aset, [0]
+    bot._semua_aset = lambda t: (n.__setitem__(0, n[0] + 1), asli(t))[1]
+    try:
+        bot.build_chat_prompt("bandingkan btc dan eth")
+    finally:
+        bot._semua_aset = asli
+    assert n[0] <= 2, f"dipindai {n[0]} kali"
+
+
+def test_jendela_tahan_penanda_yang_bukan_dict():
+    """muat_batas() memang menjamin dict, tapi jendela() dipanggil juga dari tempat lain
+    dan kegagalannya akan menghentikan seluruh riset."""
+    for buruk in ("rusak", None, [], 0):
+        assert _tg.jendela(buruk) == (_tg.JAM_MAKS, True), buruk

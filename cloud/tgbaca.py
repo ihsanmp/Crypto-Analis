@@ -147,7 +147,7 @@ def jendela(batas, sekarang=None):
     Stempel waktu ini cuma menentukan LEBAR jendela dan pengantarnya — yang benar-benar
     mencegah duplikat adalah ID pesan per grup di bawah.
     """
-    t = (batas or {}).get("terakhir_diminta")
+    t = (batas or {}).get("terakhir_diminta") if isinstance(batas, dict) else None
     if not t:
         return JAM_MAKS, True
     try:
@@ -386,13 +386,14 @@ def kumpulkan(jam=24, saring_nama=None, k=None, batas_lama=None, jejak=None):
             kunci = _kunci(nama)
             sejak = int((peta_lama.get(kunci) or {}).get("id") or 0)
             topik = _peta_topik(k, d.entity)
-            n_grup, tertinggi, dilompati = 0, sejak, 0
+            n_grup, tertinggi, dilompati, penuh, dilihat_grup = 0, sejak, 0, False, 0
+            batas_scan = dalam * 2 if topik else dalam
             # Jatah PER TOPIK, bukan hanya per grup. Di grup forum, satu topik ramai
             # (biasanya obrolan santai) akan menghabiskan seluruh jatah grup dan menutupi
             # topik pengumuman yang justru paling layak diperiksa.
             n_topik = {}
-            for pesan in _pesan_baru(k, d, limit=dalam * 2 if topik else dalam,
-                                     sejak=sejak):
+            for pesan in _pesan_baru(k, d, limit=batas_scan, sejak=sejak):
+                dilihat_grup += 1
                 if not pesan.date or pesan.date < ambang:
                     break
                 tertinggi = max(tertinggi, int(getattr(pesan, "id", 0) or 0))
@@ -401,6 +402,16 @@ def kumpulkan(jam=24, saring_nama=None, k=None, batas_lama=None, jejak=None):
                     continue
                 s = _sidik(teks)
                 if s in dilihat:
+                    continue
+                # Jatah grup sudah habis: TERUS DIHITUNG, jangan berhenti. Dulu di sini
+                # ada `break` dengan `dilompati += 1`, sehingga 160 pesan yang benar-benar
+                # terlewat dilaporkan sebagai "1 pesan". Angka karangan di kalimat yang
+                # justru bertugas memberi tahu user berapa banyak yang hilang permanen —
+                # penandanya tetap maju, jadi yang terlewat memang tidak akan kembali.
+                # Menghitung terus tidak menambah biaya jaringan: batas `limit` yang sama
+                # sudah diambil, sisanya cuma pekerjaan CPU.
+                if penuh:
+                    dilompati += 1
                     continue
                 tid = _id_topik(pesan)
                 label = topik.get(tid) or ("General" if topik else None)
@@ -413,16 +424,19 @@ def kumpulkan(jam=24, saring_nama=None, k=None, batas_lama=None, jejak=None):
                 terkumpul.append((nama, label, pesan.date, teks[:POTONG_PESAN]))
                 n_grup += 1
                 terpakai += 1
-                if n_grup >= maks_grup or terpakai >= maks_total:
-                    dilompati += 1
-                    break
+                if terpakai >= maks_total:
+                    break                    # jatah TOTAL: sapuan berhenti sama sekali
+                if n_grup >= maks_grup:
+                    penuh = True             # jatah GRUP ini saja: lanjut menghitung
             if tertinggi > sejak:
                 penanda[kunci] = {"id": tertinggi}
             # Jatah yang habis BUKAN hal yang boleh disembunyikan: penandanya tetap maju,
             # jadi yang terlewat tidak akan pernah kembali. User berhak tahu supaya bisa
             # mempersempit kategorinya atau meminta lebih sering.
             if dilompati:
-                lewat[nama] = dilompati
+                # Menyentuh plafon scan berarti masih ada pesan di jendela yang tidak
+                # sempat DILIHAT sama sekali, jadi angkanya batas bawah — bukan jumlah.
+                lewat[nama] = (dilompati, dilihat_grup >= batas_scan)
             if terpakai >= maks_total:
                 break
     finally:
@@ -517,16 +531,31 @@ def _kalimat_jendela(jam, pertama, diminta=0, maju=True):
 
 
 def _kalimat_lewat(jejak):
+    """Berapa yang terlewat, dan apakah angkanya pasti atau batas bawah.
+
+    Kalimat ini ADA justru untuk memberi tahu user berapa banyak yang hilang permanen —
+    penandanya tetap maju, jadi yang terlewat tidak akan kembali. Angka karangan di sini
+    lebih buruk daripada tidak ada angka sama sekali; pernah melaporkan "1 pesan" untuk
+    160 yang benar-benar terlewat.
+    """
     lewat = (jejak or {}).get("lewat") or {}
     if not lewat:
         return ""
-    total = sum(lewat.values())
-    besar = sorted(lewat.items(), key=lambda x: -x[1])[:3]
+    hitung = {n: (v[0] if isinstance(v, tuple) else v) for n, v in lewat.items()}
+    plafon = any(v[1] for v in lewat.values() if isinstance(v, tuple))
+    total = sum(hitung.values())
+    besar = sorted(hitung.items(), key=lambda x: -x[1])[:3]
     daftar = ", ".join(f"{n} ({c})" for n, c in besar)
-    return (f"{os.linesep}{os.linesep}JATAH HABIS: {total} pesan tidak ikut terbaca karena "
-            f"melebihi jatah per grup/topik — terbanyak di {daftar}. Penandanya tetap maju, "
-            f"jadi pesan-pesan itu TIDAK akan muncul lagi. Sebutkan ini di akhir jawaban "
-            f"supaya user tahu ada yang terlewat dan bisa mempersempit kategorinya.")
+    awalan = "setidaknya " if plafon else ""
+    ekor = ""
+    if (jejak or {}).get("jatah_habis"):
+        ekor = (" Jatah TOTAL juga habis, jadi sebagian grup berikutnya tidak sempat "
+                "dibaca sama sekali dan jumlahnya tidak diketahui.")
+    return (f"{os.linesep}{os.linesep}JATAH HABIS: {awalan}{total} pesan tidak ikut terbaca "
+            f"karena melebihi jatah per grup/topik — terbanyak di {daftar}. Penandanya "
+            f"tetap maju, jadi pesan-pesan itu TIDAK akan muncul lagi.{ekor} Sebutkan ini "
+            f"di akhir jawaban supaya user tahu ada yang terlewat dan bisa mempersempit "
+            f"kategorinya atau meminta lebih sering.")
 
 
 def main():
