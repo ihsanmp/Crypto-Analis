@@ -1,27 +1,18 @@
 [
  {
   "chat": "41df00a8496318d0",
-  "waktu": 1788286784.7525835,
-  "waktu_utc": "2026-09-01 18:19",
-  "pesan": "dari pola ini dan dengan pergerakan btc saat ini, bagaimana proyeksimu pada kuartal 4 2026 ini?",
-  "balasan": "Sudah saya baca dan cek semua ke data live. Ini bacaan saya.\n\n📷 YANG SAYA LIHAT\n\nTabel return kuartalan BTC dari Coinglass, 2013–2026. Screenshot diambil pukul 1.14 pagi — jadi datanya praktis real-time, bukan basi.\n\nBaris 2026: Q1 -22,2% · Q2 -14,09\n[...dipangkas...]\nbel itu alasan untuk yakin Q4 hijau. Untuk posisi siklus seperti sekarang, catatan historisnya justru 3 dari 3 merah. Yang membuat saya tidak pesimis bukan tabelnya — tapi fakta bahwa dasar sudah terbentuk di Juni dan drawdown-nya jauh lebih dangkal.",
+  "waktu": 1788350515.823758,
+  "waktu_utc": "2026-09-02 12:01",
+  "pesan": "analisa aave",
+  "balasan": "🕒 Data per 2 Sep 2026, 18:56 WIB · sumber harga Kraken (native) · 10/10 sumber terisi\n\n📊 PASAR\nBTC $76.654 (-1,8% 24j · -2,3% 7h · +22,0% 30h) · Dominasi BTC 59,02% (turun dari 59,81% pada 26 Agu ke 59,62% pada 2 Sep, -0,19 pp) · Fear & Greed 63 Gree\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+4 lainnya)",
   "angka_kunci": [
-   "harga=87.400",
-   "rsi=70,8",
-   "rsi=56,58",
-   "rsi=44,69"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1788287355.555754,
-  "waktu_utc": "2026-09-01 18:29",
-  "pesan": "hasil analisa pribadi saya begini",
-  "balasan": "Sudah saya baca chartnya dan semua angkanya saya adu ke data live. Ada satu temuan penting soal fibonya.\n\n📷 YANG SAYA LIHAT\n\nBTCUSD mingguan (Binance), harga 77.159,56 (-1,72%), candle mingguan masih sisa 5 hari 6 jam. Kamu tandai zona di sekitar 72.\n[...dipangkas...]\ndip batal dan boleh tambah di atasnya\n\nAnalisamu sendiri sebenarnya solid — zona yang kamu pilih terbukti padat konfluensi. Yang perlu dikoreksi cuma labelnya, dan konsekuensinya: itu dip dangkal, bukan golden pocket. Jangan habiskan peluru di situ.",
-  "angka_kunci": [
-   "harga=72,4",
-   "rsi=70,8",
-   "rsi=56,58"
+   "harga=126,12",
+   "invalid=104,00",
+   "ema50=131,70",
+   "ema21=115,31",
+   "ema50=104,26",
+   "rsi=64,3",
+   "skor=63"
   ]
  }
 ]
