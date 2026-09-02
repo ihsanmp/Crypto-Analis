@@ -5844,3 +5844,34 @@ def test_potongan_nama_yang_tidak_cocok_dilaporkan():
     src = open(os.path.join(AKAR, "cloud", "tgbaca.py"), encoding="utf-8").read()
     assert "ADA NAMA DI DAFTAR YANG TIDAK COCOK" in src
     assert "Hampir pasti salah ketik" in src
+
+
+def test_action_github_tidak_memakai_runtime_usang():
+    """GitHub menghentikan Node 20 di runner; action yang menargetkannya dipaksa jalan di
+    Node 24 dengan peringatan, dan pada akhirnya berhenti didukung. Peringatan itu muncul
+    di SETIAP run, jadi ia juga melatih mata untuk mengabaikan peringatan.
+
+    Ambang di bawah adalah mayor PERTAMA yang menargetkan Node 24 — diperiksa langsung ke
+    rilis masing-masing action, bukan ditebak."""
+    import glob
+    import re as _re
+    minimum = {"actions/checkout": 5, "actions/setup-python": 6,
+               "actions/setup-node": 5, "actions/upload-artifact": 5}
+    usang = []
+    for p in glob.glob(os.path.join(AKAR, ".github", "workflows", "*.yml")):
+        for aksi, ver in _re.findall(r"uses:\s+(actions/[\w-]+)@v(\d+)",
+                                     open(p, encoding="utf-8").read()):
+            if aksi in minimum and int(ver) < minimum[aksi]:
+                usang.append((os.path.basename(p), f"{aksi}@v{ver}"))
+    assert not usang, f"action bernode usang: {usang}"
+
+
+def test_semua_workflow_ter_parse():
+    """Berkas workflow yang rusak membuat GitHub menolak SELURUHNYA — runnya gagal tanpa
+    satu job pun dibuat, tanpa log, dan botnya mati empat hari tanpa ada yang tahu.
+    Sudah terjadi sekali; penjaganya tidak boleh cuma ingatan."""
+    import glob
+    yaml = pytest.importorskip("yaml")
+    for p in glob.glob(os.path.join(AKAR, ".github", "workflows", "*.yml")):
+        d = yaml.safe_load(open(p, encoding="utf-8"))
+        assert d and d.get("jobs"), os.path.basename(p)

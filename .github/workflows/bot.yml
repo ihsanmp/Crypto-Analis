@@ -69,7 +69,7 @@ jobs:
       TG_PHOTO_FILE_ID: ${{ github.event.client_payload.photo_file_id }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # WAJIB ref: main. Secara bawaan checkout mengambil commit SAAT EVENT DIBUAT,
           # bukan commit terbaru. Untuk dispatch ganda (dua event dibuat pada detik yang
@@ -80,7 +80,7 @@ jobs:
           ref: main
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
@@ -156,7 +156,7 @@ jobs:
 
       - name: Setup Node
         if: github.event_name == 'repository_dispatch' || steps.check.outputs.has_work == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "20"
 
