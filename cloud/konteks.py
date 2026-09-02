@@ -36,7 +36,10 @@ from market import tarik  # noqa: E402
 # Tanpa format yang benar, seluruh permintaan dibalas HTTP 403 — bukan error yang
 # menjelaskan dirinya, jadi mudah disalahartikan sebagai emiten tidak ditemukan.
 # Dipakai identitas yang sama dengan stockfund.py yang memang sudah berhasil.
-UA = {"User-Agent": "Crypto-Analis Research bot ihsanmaulanand@gmail.com"}
+# Kontak SEC bisa dipindah ke secret SEC_CONTACT (repo ini publik); tanpa
+# variabel itu, nilainya sama seperti sebelumnya.
+UA = {"User-Agent": "Crypto-Analis Research bot "
+                    + os.environ.get("SEC_CONTACT", "ihsanmaulanand@gmail.com")}
 SEC_SUB = "https://data.sec.gov/submissions/CIK{}.json"
 
 INDEKS = {

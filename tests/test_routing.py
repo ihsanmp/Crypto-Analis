@@ -5249,3 +5249,60 @@ def test_rumpun_diwarisi_dari_giliran_sebelumnya():
         assert bot._jenis_terakhir(chat) is None
     finally:
         bot._muat_riwayat = asli
+
+
+def test_kontak_sec_bisa_dipindah_ke_secret():
+    """SEC MEWAJIBKAN kontak di User-Agent (kebijakan fair access), jadi alamat email di
+    kode itu fungsional. Tapi repo ini PUBLIK — alamat pribadi di situ terbuka untuk
+    pemanen alamat. Harus bisa dipindah ke secret TANPA mengubah perilaku hari ini."""
+    import importlib
+    for nama in ("sec_tickers", "konteks", "stockfund"):
+        jalur = os.path.join(AKAR, "cloud", nama + ".py")
+        src = open(jalur, encoding="utf-8").read()
+        assert 'os.environ.get("SEC_CONTACT"' in src, nama
+    # Diset -> dipakai. Tidak diset -> nilai lama, supaya tidak ada yang patah.
+    lama = os.environ.pop("SEC_CONTACT", None)
+    try:
+        sys.path.insert(0, os.path.join(AKAR, "cloud"))
+        os.environ["SEC_CONTACT"] = "riset@contoh.dev"
+        m = importlib.reload(importlib.import_module("sec_tickers"))
+        assert m.UA["User-Agent"].endswith("riset@contoh.dev")
+        del os.environ["SEC_CONTACT"]
+        m = importlib.reload(importlib.import_module("sec_tickers"))
+        assert "@" in m.UA["User-Agent"], "tanpa secret harus tetap punya kontak"
+    finally:
+        os.environ.pop("SEC_CONTACT", None)
+        if lama is not None:
+            os.environ["SEC_CONTACT"] = lama
+    alur = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"),
+                encoding="utf-8").read()
+    assert "SEC_CONTACT: ${{ secrets.SEC_CONTACT }}" in alur
+
+
+def test_tidak_ada_rahasia_di_berkas_ter_commit():
+    """Repo ini publik. Token bot pernah bocor ke sini sekali (alert secret-scanning
+    "Public leak", terbuka 16 hari) — penjaganya tidak boleh cuma ingatan."""
+    import re as _re
+    import subprocess as _sp
+    pola = {
+        "token bot Telegram": _re.compile(r"\b\d{8,10}:[A-Za-z0-9_-]{30,}"),
+        "session Telethon": _re.compile(r"\b1[A-Za-z0-9+/=_-]{300,}"),
+        "kunci AWS": _re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+    }
+    berkas = _sp.run(["git", "ls-files"], capture_output=True, text=True,
+                     cwd=AKAR).stdout.split()
+    temuan = []
+    for b in berkas:
+        p = os.path.join(AKAR, b)
+        if not os.path.exists(p) or p.endswith((".gz", ".png", ".jpg")):
+            continue
+        try:
+            isi = open(p, encoding="utf-8", errors="replace").read()
+        except OSError:
+            continue
+        for nama, pl in pola.items():
+            for m in pl.findall(isi):
+                if "AbCdEfGh" in m or "1234567890:" in m:   # placeholder yang disengaja
+                    continue
+                temuan.append((b, nama, m[:20]))
+    assert not temuan, temuan

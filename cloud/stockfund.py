@@ -22,6 +22,7 @@ Pemakaian:
     python cloud/stockfund.py AAPL --price 232.5      # supaya P/E & P/S ikut dihitung
 """
 
+import os
 import argparse
 import json
 import urllib.error
@@ -31,7 +32,10 @@ from datetime import datetime, timezone
 # SEC mewajibkan User-Agent berisi identitas + kontak (kebijakan fair access).
 # JANGAN menambahkan Accept-Encoding: urllib tidak membuka gzip secara otomatis, sehingga
 # responsnya terbaca sebagai byte terkompresi dan gagal di-decode.
-UA = {"User-Agent": "Crypto-Analis Research bot ihsanmaulanand@gmail.com"}
+# Kontak SEC bisa dipindah ke secret SEC_CONTACT (repo ini publik); tanpa
+# variabel itu, nilainya sama seperti sebelumnya.
+UA = {"User-Agent": "Crypto-Analis Research bot "
+                    + os.environ.get("SEC_CONTACT", "ihsanmaulanand@gmail.com")}
 SEC = "https://data.sec.gov/api/xbrl/companyconcept"
 TICKERS = "https://www.sec.gov/files/company_tickers.json"
 TIMEOUT = 25

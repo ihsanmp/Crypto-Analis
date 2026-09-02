@@ -19,8 +19,13 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_PATH = os.path.join(BASE_DIR, "data", "sec_tickers_cache.json")
 CACHE_UMUR = 7 * 24 * 3600
 URL = "https://www.sec.gov/files/company_tickers.json"
-# SEC mewajibkan User-Agent berisi identitas + kontak (kebijakan fair access).
-UA = {"User-Agent": "Crypto-Analis Research bot ihsanmaulanand@gmail.com"}
+# SEC mewajibkan User-Agent berisi identitas + kontak (kebijakan fair access), jadi
+# alamat email di sini FUNGSIONAL — tanpa kontak yang jelas, permintaan bisa diblokir.
+# Tapi repo ini PUBLIK, dan alamat pribadi yang ditulis di sini terbuka untuk pemanen
+# alamat. Bisa dipindah ke secret SEC_CONTACT tanpa mengubah apa pun hari ini: kalau
+# variabelnya diset, nilainya yang dipakai; kalau tidak, jatuh ke nilai lama.
+UA = {"User-Agent": "Crypto-Analis Research bot "
+                    + os.environ.get("SEC_CONTACT", "ihsanmaulanand@gmail.com")}
 
 
 def peta_ticker(paksa=False):

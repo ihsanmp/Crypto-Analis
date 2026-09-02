@@ -53,6 +53,10 @@ jobs:
       # tidak tersedia; analisa saham TETAP jalan dari market.py, stockfund.py, dan
       # konteks.py — pola yang sama dengan dua kunci opsional di atas.
       FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+      # Kontak yang dikirim ke SEC di User-Agent (kebijakan fair access mereka).
+      # Kosong = pakai nilai bawaan di kode. Diisi = alamat pribadi tidak perlu ada
+      # di repo publik ini.
+      SEC_CONTACT: ${{ secrets.SEC_CONTACT }}
       # Opsional. Arus dana ETF spot berubah TIAP HARI, jadi tidak bisa disimpan sebagai
       # berkas seperti riwayat konsensus yang bulanan — harus ditarik saat analisa. Kosong
       # = bagian arus ETF dilaporkan tidak tersedia dan analisa crypto tetap jalan.
