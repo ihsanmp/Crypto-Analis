@@ -3636,7 +3636,10 @@ def audit_outlook(brief, body):
     # jalur tidak pernah terperiksa.
     if "proyeksi.py" not in brief:
         return None                      # tidak ada datanya, jadi tidak ada yang dilewatkan
-    if "sebaran_historis" not in brief:
+    # Nama bloknya berubah saat keluaran proyeksi beralih dari persentil ke peluang.
+    # Kalau penanda ini tidak ikut diubah, auditnya berhenti memeriksa apa pun dan
+    # OUTLOOK yang hilang tidak akan pernah ketahuan.
+    if "peluang_historis" not in brief:
         return None                      # scriptnya jalan tapi gagal mengisi
     return None if "OUTLOOK" in body else "HILANG"
 

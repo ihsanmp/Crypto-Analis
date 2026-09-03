@@ -29,6 +29,31 @@ from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 PERSENTIL = (10, 25, 50, 75, 90)
+# Tangga level yang dilaporkan. Angkanya sama dengan persentil di atas, tapi yang
+# DISAJIKAN adalah peluangnya, bukan label p-nya: "p75" menuntut pembacanya membalik
+# sendiri jadi 25%, dan arah pembalikannya BERBEDA untuk sisi atas dan sisi bawah
+# (p90 puncak = peluang 10%, tapi p10 dasar = peluang 10%). Itu jebakan yang sudah
+# memakan tempat sendiri di analisa.md hanya untuk menjelaskannya.
+#
+# Peluangnya DICACAH LANGSUNG dari jendela, bukan diturunkan dengan membalik persentil:
+# salah tanda menghasilkan angka yang terlihat meyakinkan tapi terbalik, dan mencacah
+# tidak bisa salah tanda. Hubungan peluang <-> persentil dipakai sebagai pemeriksa silang
+# di tes, bukan sebagai cara menghitungnya.
+
+
+def peluang_sentuh(nilai, ambang_persen, naik):
+    """Berapa persen jendela yang benar-benar mencapai ambang itu. Dicacah, bukan dibalik.
+
+    `naik=True` untuk level DI ATAS harga (dihitung dari sebaran puncak), False untuk level
+    DI BAWAH (dari sebaran dasar). Ambang dan nilai sama-sama dalam persen dari harga acuan.
+    """
+    if not nilai:
+        return None
+    if naik:
+        kena = sum(1 for x in nilai if x >= ambang_persen)
+    else:
+        kena = sum(1 for x in nilai if x <= ambang_persen)
+    return round(kena / len(nilai) * 100, 1)
 
 
 def _persentil(nilai, p):
@@ -260,25 +285,48 @@ def main():
 
     tercapai, terdalam, tertutup = sebaran_gerakan(candles, args.hari, pakai_high)
     if tercapai:
-        def ke_harga(nilai):
-            return {f"p{p}": {"persen": round(_persentil(nilai, p), 2),
-                              "harga": round(harga * (1 + _persentil(nilai, p) / 100), 8)}
-                    for p in PERSENTIL}
-        keluar["sebaran_historis"] = {
+        def tangga(nilai, naik, acuan=None):
+            """Tangga level + peluang menyentuhnya. Levelnya dari persentil sebaran itu
+            sendiri supaya rentangnya realistis; yang DILAPORKAN peluangnya."""
+            baris = []
+            for p in PERSENTIL:
+                pct = _persentil(nilai, p)
+                if pct is None:
+                    continue
+                baris.append({
+                    "harga": round(harga * (1 + pct / 100), 8),
+                    "persen_dari_harga": round(pct, 2),
+                    "peluang_persen": peluang_sentuh(acuan if acuan is not None else nilai,
+                                                     pct, naik),
+                })
+            # Urut dari yang paling mungkin ke yang paling jarang — itu urutan yang
+            # dipakai saat membaca, dan menaruh yang ekstrem di atas membuatnya
+            # terbaca seperti kasus dasar.
+            baris.sort(key=lambda b: -(b["peluang_persen"] or 0))
+            return baris
+
+        keluar["peluang_historis"] = {
             "jendela_diuji": len(tercapai),
             "jendela_riwayat": _rentang_tanggal(candles),
-            "puncak_tercapai": ke_harga(tercapai),
-            "dasar_tercapai": ke_harga(terdalam),
-            "harga_penutup": ke_harga(tertutup),
+            "menyentuh_ke_atas": tangga(tercapai, True),
+            "menyentuh_ke_bawah": tangga(terdalam, False),
+            "menutup_di_atas": tangga(tertutup, True),
             # Bukan "cara_baca" — dibuang --ringkas. Peringatan "ini BUKAN ramalan" dan
             # "frekuensi, bukan probabilitas" harus sampai ke model.
-            "wajib_dibaca": (f"Sebaran gerakan {args.hari} hari sepanjang riwayat yang ada. Ini "
-                          "BUKAN ramalan — ini rentang yang wajar secara historis. p90 "
-                          "puncak berarti hanya 10% jendela yang mencapai lebih tinggi. "
-                          "Jendela tumpang tindih, jadi ini frekuensi, bukan probabilitas."),
+            "wajib_dibaca": (
+                f"Peluang gerakan {args.hari} hari, dicacah dari tiap jendela sepanjang "
+                "riwayat yang ada. `peluang_persen` = berapa persen jendela yang benar-benar "
+                "mencapai level itu. Ini BUKAN ramalan dan BUKAN probabilitas sejati: "
+                "jendelanya saling tumpang tindih sehingga kejadiannya tidak independen, dan "
+                "angkanya frekuensi masa lalu. Sebut sebagai 'secara historis terjadi di N% "
+                "jendela', bukan 'peluangnya N%'. "
+                "`menyentuh_ke_atas` = harga PERNAH menyentuh level itu; `menutup_di_atas` = "
+                "harga BERAKHIR di atasnya. Bedanya besar: level yang tersentuh lalu balik "
+                "lagi bukan hal yang sama dengan level yang bertahan — pakai yang menyentuh "
+                "untuk target, yang menutup untuk skenario."),
         }
     else:
-        keluar["sebaran_historis"] = {
+        keluar["peluang_historis"] = {
             "tidak_tersedia": f"riwayat kurang dari {args.hari} hari perdagangan"}
 
     try:

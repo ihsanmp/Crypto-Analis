@@ -210,11 +210,11 @@ Target  $xxx → $xxx → $xxx
 R:R     1:x,x
 
 🔭 OUTLOOK <N> HARI (s/d <tanggal horizon>)
-Sebaran <jendela_diuji> jendela historis · riwayat <jendela_riwayat>
-  Puncak  p25 $xxx (+x,x%) · p50 $xxx (+x,x%) · p75 $xxx (+x,x%)
-  Dasar   p25 $xxx (-x,x%) · p50 $xxx (-x,x%)
-  Penutup p50 $xxx (x,x%)
-Target $xxx duduk di ~p<xx> tangga puncak -> tercapai di ~<xx>% jendela.
+Dicacah dari <jendela_diuji> jendela historis · riwayat <jendela_riwayat>
+  Sempat menyentuh   $xxx (+x,x%) di <xx>% jendela · $xxx (+x,x%) di <xx>% · $xxx (+x,x%) di <xx>%
+  Sempat turun ke    $xxx (-x,x%) di <xx>% jendela · $xxx (-x,x%) di <xx>%
+  Berakhir di atas   $xxx (x,x%) di <xx>% jendela
+Target $xxx: secara historis tersentuh di ~<xx>% jendela, berakhir di atasnya ~<xx>%.
 | arah  | peluang | pemicu (level, bisa diperiksa) | jangkauan |
 |-------|---------|-------------------------------|-----------|
 | NAIK  | ~xx%    | close di atas $xxx            | $xxx-xxx  |
@@ -367,19 +367,21 @@ jawaban untuk kedua keadaan itu berbeda arah sepenuhnya.
 Blok `PROYEKSI (proyeksi.py)` ada di brief pada SETIAP analisa: sebaran gerakan 60 hari
 dari ratusan jendela historis. **Seluruh angka OUTLOOK DISALIN dari sana, tidak dihitung
 sendiri:**
-`sebaran_historis.puncak_tercapai.*` · `dasar_tercapai.*` · `harga_penutup.*` ·
+`peluang_historis.menyentuh_ke_atas[]` · `menyentuh_ke_bawah[]` · `menutup_di_atas[]` ·
 `jendela_diuji` · `jendela_riwayat`. Pemicu diambil dari `level_struktural`
 (`resisten_di_atas`, `support_di_bawah`) atau `fib_ekstensi.levels`.
 
-**ARAH PEMBACAAN PERSENTIL — paling mudah terbalik, baca pelan:**
-- Tangga `puncak_tercapai`: p75 berarti 75% jendela puncaknya DI BAWAH level itu. Jadi
-  target yang duduk di p75 hanya tercapai pada **~25%** jendela — bukan 75%.
-  Rumusnya: peluang tercapai = 100 - p.
-- Tangga `dasar_tercapai`: p25 berarti 25% jendela dasarnya di bawah level itu, jadi
-  peluang harga sempat menyentuh level itu = **p** (bukan 100 - p).
-- Peluang skenario dibaca dari tangga `harga_penutup` (di mana harga BERAKHIR, bukan
-  ekstremnya): NAIK = peluang penutup di atas level resisten, TURUN = peluang penutup di
-  bawah level support, DATAR = sisanya. Ketiganya harus berjumlah ~100%.
+**CARA MEMBACA — angkanya sudah berupa peluang, jangan dibalik lagi:**
+- Tiap baris memuat `peluang_persen`: berapa persen jendela historis yang BENAR-BENAR
+  mencapai level itu. Salin apa adanya. Tidak ada persentil yang perlu dibalik — dulu
+  notasi p-nya harus dibalik sendiri, dan arahnya berbeda untuk sisi atas dan bawah.
+- `menyentuh_ke_atas` = harga PERNAH menyentuh level itu — pakai untuk menilai TARGET.
+- `menutup_di_atas` = harga BERAKHIR di atasnya — pakai untuk PELUANG SKENARIO.
+  Bedanya besar: level yang tersentuh lalu balik lagi bukan hal yang sama dengan level
+  yang bertahan. NAIK = peluang menutup di atas resisten, TURUN = sisa peluang menutup di
+  bawah support, DATAR = sisanya. Ketiganya harus berjumlah ~100%.
+- Sebut sebagai "secara historis terjadi di N% jendela", BUKAN "peluangnya N%": jendelanya
+  tumpang tindih sehingga kejadiannya tidak independen, dan ini frekuensi masa lalu.
 
 **Pemicu WAJIB berupa level atau tanggal yang bisa diperiksa.** "Kalau sentimen membaik"
 atau "kalau makro mendukung" DILARANG — itu bukan pemicu, itu tautologi yang tidak pernah
@@ -511,19 +513,18 @@ mustahil. Riwayat kripto gratis hanya sekitar satu tahun. Sebut rentangnya saat 
 pertama, karena rencananya bertahap. Kalau kamu menulis tiga target, rasio yang dinilai
 adalah rata-ratanya.
 
-# KALIBRASI SEBARAN — p10 bukan berarti 1 dari 10
+# KALIBRASI — peluang yang tertulis lebih optimistis daripada kenyataan
 
-Blok `PROYEKSI` memuat `kalibrasi_terukur`. Itu bukan hiasan: sebaran p10-p90 di sana
-diuji walk-forward atas BTC, ETH, dan SOL (1.068 titik asal, horizon 60 hari), dan
-hasilnya interval itu hanya memuat hasil sebenarnya **~72-80% kali**, bukan 80%.
+Blok `PROYEKSI` memuat `kalibrasi_terukur`. Itu bukan hiasan: pita 10%-90% di sana diuji
+walk-forward atas BTC, ETH, dan SOL (1.068 titik asal, horizon 60 hari), dan hasilnya pita
+itu hanya memuat hasil sebenarnya **~72-80% kali**, bukan 80%.
 
-Sisi BAWAH yang paling sering meleset. Artinya level p10 dasar ditembus lebih sering
-daripada satu dari sepuluh kali.
+Sisi BAWAH yang paling sering meleset. Artinya level yang tertulis "cuma 10% jendela" di
+sisi turun sebenarnya ditembus LEBIH SERING daripada 10%.
 
-**Saat mengutip p10 sisi bawah, sebut bahwa batas itu lebih sering ditembus daripada yang
-namanya sarankan.** Menyajikannya sebagai risiko yang sudah terhitung penuh membuat
-pembacanya mengira sisi bawahnya sudah dipagari — padahal justru di situ modelnya paling
-sering keliru.
+**Saat mengutip peluang sisi bawah, sebut bahwa angkanya meremehkan.** Menyajikannya
+sebagai risiko yang sudah terhitung penuh membuat pembacanya mengira sisi bawahnya sudah
+dipagari — padahal justru di situ metodenya paling sering keliru.
 
 Ini berlaku juga untuk tabel kelayakan: peluang historis di sana dihitung dari sebaran
 yang sama, jadi peluang gerakan besar cenderung DIREMEHKAN sedikit, bukan dilebihkan.

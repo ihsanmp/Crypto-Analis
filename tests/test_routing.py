@@ -2752,9 +2752,10 @@ def test_outlook_wajib_saat_datanya_ada():
     # Kedua jalur menulis judul yang BERBEDA; keduanya harus terperiksa.
     for judul in ("PROYEKSI (proyeksi.py)",                        # jalur analisa
                   "### PROYEKSI (proyeksi.py, horizon 60 hari)"):  # jalur chat
-        brief = judul + "\n{'sebaran_historis': {'p50': 8.1}}"
+        brief = judul + "\n{'peluang_historis': {'menyentuh_ke_atas': []}}"
         assert bot.audit_outlook(brief, "Target $100 -> $120") == "HILANG", judul
-    assert bot.audit_outlook(brief, "🔭 OUTLOOK 60 HARI\nPuncak p50 $83.661") is None
+    assert bot.audit_outlook(
+        brief, "🔭 OUTLOOK 60 HARI\nSempat menyentuh $83.661 di 50% jendela") is None
 
 
 def test_outlook_diam_saat_datanya_memang_tidak_ada():
@@ -2789,8 +2790,13 @@ def test_format_output_menuntut_outlook_di_kedua_pasar():
     for nama in ("analisa.md", "analisa_pasar.md"):
         t = open(os.path.join(AKAR, "cloud", "prompts", nama), encoding="utf-8").read()
         assert "OUTLOOK" in t, nama
-        assert "100 - p" in t, f"{nama}: arah pembacaan persentil harus disebut eksplisit"
-        assert "harga_penutup" in t, f"{nama}: peluang skenario harus dari tangga penutup"
+        # Dulu yang diwajibkan "100 - p": arah pembalikan persentil. Notasi itu sudah
+        # diganti peluang langsung, jadi yang harus eksplisit sekarang bedanya SENTUH
+        # (untuk target) versus TUTUP (untuk skenario) — level yang tersentuh lalu balik
+        # lagi bukan hal yang sama dengan level yang bertahan.
+        assert "menyentuh_ke_atas" in t, f"{nama}: tangga sentuh harus disebut"
+        assert "frekuensi" in t, f"{nama}: harus dibilang frekuensi, bukan probabilitas"
+        assert "menutup_di_atas" in t, f"{nama}: peluang skenario harus dari tangga penutup"
         # Pemicu tautologis membuat skenario tidak pernah bisa salah.
         assert "sentimen membaik" in t, f"{nama}: contoh pemicu terlarang harus ada"
 
@@ -3572,7 +3578,7 @@ def test_kalibrasi_terukur_ikut_ke_brief():
     assert '"wajib_dibaca"' in blok, "aturan keras tidak boleh di field yang dibuang --ringkas"
     assert '"arti":' not in blok
     t = open(os.path.join(AKAR, "cloud", "prompts", "analisa.md"), encoding="utf-8").read()
-    assert "KALIBRASI SEBARAN" in t and "lebih sering ditembus" in t
+    assert "# KALIBRASI" in t and "meremehkan" in t
 
 
 def test_bootstrap_menjepit_puncak_dan_dasar_di_nol():

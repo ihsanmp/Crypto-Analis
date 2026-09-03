@@ -497,7 +497,7 @@ Bentuknya: kolom pertama nama metrik, satu kolom per aset.
 | Volatilitas (ATR) | 0,88% | 1,24% |
 | Resisten terdekat | $64.984 (+2,12%) | $1.917 (+1,58%) |
 | Support terdekat | ... | ... |
-| Proyeksi 60 hari (p25-p75) | $50.000-$68.000 | $1.333-$2.100 |
+| Proyeksi 60 hari (75%-25% jendela) | $50.000-$68.000 | $1.333-$2.100 |
 ```
 
 Baris yang dipakai mengikuti apa yang ADA di brief — jangan menambah baris yang datanya
