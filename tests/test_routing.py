@@ -6134,3 +6134,61 @@ def test_utas_tidak_membengkakkan_sapaan():
         assert len(bot.build_chat_prompt("halo")) < 18000
     finally:
         pulih()
+
+
+def test_utas_bertahan_walau_pembukanya_sudah_lewat_jendela():
+    """Ditemukan sapuan ketujuh. Kalau giliran PEMBUKA utas ("analisa sol") sudah keluar
+    dari jendela 6 jam, sisa utasnya tidak punya penanda apa pun — dan seluruh diskusi
+    panjang runtuh jadi dua giliran justru saat paling dibutuhkan."""
+    import time as _t
+    chat = "1"
+    asli = bot._muat_riwayat
+    lama = [("analisa sol kemarin", "SOL 190 waktu itu."), ("targetnya berapa", "220.")]
+    segar = [(f"pertanyaan segar {i}", f"jawaban {i}") for i in range(8)]
+    bot._muat_riwayat = lambda: (
+        [{"chat": bot._id_chat(chat), "waktu": _t.time() - 30 * 3600 + i, "waktu_utc": "x",
+          "pesan": p, "balasan": b, "angka_kunci": []} for i, (p, b) in enumerate(lama)]
+        + [{"chat": bot._id_chat(chat), "waktu": _t.time() - (8 - i) * 300,
+            "waktu_utc": "x", "pesan": p, "balasan": b, "angka_kunci": []}
+           for i, (p, b) in enumerate(segar)])
+    try:
+        k = bot.konteks_percakapan(chat, pesan="kalau sol turun gimana")
+        assert k.count("] User:") >= 6, k.count("] User:")
+    finally:
+        bot._muat_riwayat = asli
+
+
+def test_utas_tanpa_penanda_tidak_membatalkan_pemutusan_topik():
+    """Melonggarkan ke "giliran tanpa penanda ikut" tidak boleh membuat pindah topik
+    berhenti memutus — dua sifat itu harus berlaku bersamaan."""
+    chat, pulih = _pasang_utas(_ALUR)
+    try:
+        k = bot.konteks_percakapan(chat, pesan="btc gimana")
+        assert "analisa sol" not in k and "stop di mana?" not in k
+        assert k.count("] User:") <= 3
+    finally:
+        pulih()
+
+
+def test_utas_tahan_riwayat_acak():
+    """Uji properti: 200 riwayat acak (0-40 giliran, sebagian objek kembar) tidak boleh
+    membuat _utas melempar, melebihi batas, atau mengembalikan konteks raksasa."""
+    import random as _r
+    import time as _t
+    chat = "1"
+    asli = bot._muat_riwayat
+    _r.seed(11)
+    kata = ["analisa sol", "btc gimana", "kenapa tunggu", "emas naik", "makasih",
+            "", "   ", "?", "fomc gimana"]
+    try:
+        for _ in range(200):
+            n = _r.choice([0, 1, 2, 3, 8, 21, 40])
+            bot._muat_riwayat = lambda n=n: [
+                {"chat": bot._id_chat(chat), "waktu": _t.time() - (n - i) * 120,
+                 "waktu_utc": "x", "pesan": _r.choice(kata), "balasan": _r.choice(kata),
+                 "angka_kunci": []} for i in range(n)]
+            k = bot.konteks_percakapan(chat, pesan=_r.choice(kata + [None]))
+            assert k.count("] User:") <= bot.RIWAYAT_MAKS_UTAS
+            assert len(k) < 20000
+    finally:
+        bot._muat_riwayat = asli

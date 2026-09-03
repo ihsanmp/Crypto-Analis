@@ -1011,7 +1011,11 @@ def _utas(milik, usia, pesan):
     if not acuan:
         return segar[-RIWAYAT_MAKS:]
 
-    pilih = [r for r, u in zip(segar, utas) if u & acuan][-RIWAYAT_MAKS_UTAS:]
+    # Giliran TANPA penanda sama sekali ikut: secara bentuk ia memang lanjutan, dan
+    # kalau giliran PEMBUKA utas sudah keluar dari jendela 6 jam, sisanya tidak akan
+    # punya penanda apa pun — tanpa aturan ini seluruh diskusi panjang runtuh jadi dua
+    # giliran justru saat paling dibutuhkan.
+    pilih = [r for r, u in zip(segar, utas) if not u or (u & acuan)][-RIWAYAT_MAKS_UTAS:]
     # Dua terakhir selalu ikut, walau utasnya lain.
     for r in segar[-2:]:
         if r not in pilih:
