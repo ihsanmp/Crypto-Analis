@@ -4255,8 +4255,16 @@ def test_penanda_ditulis_sebagai_calon_bukan_langsung_berlaku():
     assert "BERKAS_BATAS" not in utama
 
     alur = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"), encoding="utf-8").read()
-    langkah = alur[alur.index("Berlakukan penanda batas baca Telegram"):][:700]
-    assert "steps.jalankan.outcome == 'success'" in langkah, \
+    # Dipotong sampai langkah BERIKUTNYA, bukan pada lebar tetap: potongan [:700] dulu
+    # membuat tes ini merah hanya karena komentar di dalam langkahnya bertambah panjang.
+    i = alur.index("Berlakukan penanda batas baca Telegram")
+    langkah = alur[i:alur.index("- name:", alur.index("run: |", i))]
+    assert "steps.jalankan.outcome == 'success'" in langkah
+    # outcome 'success' SAJA tidak membuktikan user menerima jawabannya: bot_oneshot.py
+    # mengirim kegagalan model sebagai pesan lalu keluar 0, jadi outcome-nya 'success'
+    # persis seperti run yang berhasil. Yang benar-benar menegakkan janji di bawah adalah
+    # penanda gagal — lihat test_batas_telegram_tidak_maju_saat_jawaban_gagal.
+    assert "gagal.txt" in langkah, \
         "penanda hanya boleh maju kalau user benar-benar menerima jawabannya"
     assert "mv cloud/data/tg_batas_calon.json cloud/data/tg_batas.json" in langkah
     # Dan penandanya harus ikut ter-commit, kalau tidak run berikutnya lupa lagi.
@@ -6540,3 +6548,77 @@ def test_modul_stdlib_yang_dipakai_harus_diimpor():
         for m in sorted(dipakai & set(dicek) - terimpor):
             salah.append(os.path.basename(f) + " memakai " + m + ". tanpa mengimpornya")
     assert not salah, "\n".join(salah)
+
+
+
+def test_kegagalan_tidak_disimpan_sebagai_giliran_percakapan():
+    """Kehabisan kuota tidak boleh meninggalkan jejak apa pun selain kabar ke user.
+
+    Run 33767039819 kena "You've hit your session limit". Pesan errornya tersimpan sebagai
+    balasan sungguhan, jadi giliran berikutnya mewarisi "❌ Claude gagal (exit 1)" sebagai
+    balasan saya sendiri — konteks menyesatkan, token terbuang, dan angka_kunci kosong
+    memutus rantai evaluasi_diri.
+    """
+    import tempfile
+    kirim, riwayat = [], []
+    tmp = tempfile.mkdtemp()
+    asli = (bot.send_message, bot.simpan_riwayat, bot.run_claude,
+            os.environ.get("BERKAS_GAGAL"), bot.JEJAK_PATH)
+    os.environ["BERKAS_GAGAL"] = os.path.join(tmp, "gagal.txt")
+    # Jejak dedup diarahkan ke tmp: tanpa ini tes menimpa cloud/data/diproses.json
+    # milik produksi — state yang nanti ikut ter-commit.
+    bot.JEJAK_PATH = os.path.join(tmp, "diproses.json")
+    bot.send_message = lambda t, c, body: (kirim.append(body), True)[1]
+    bot.simpan_riwayat = lambda c, p_, b_: riwayat.append((p_, b_))
+    try:
+        # Teksnya dibedakan: pesan identik ditahan pencegah dispatch-ganda. Keduanya
+        # sengaja DI LUAR kosakata pasar — teks bernuansa aset memicu pipeline data
+        # sungguhan (jaringan, ~8 menit) dan menulisi cache di cloud/data/.
+        for teks, keluaran, err in [("jadi kesimpulannya apa?", "", "Claude gagal (exit 1)."),
+                                    ("lanjutkan yang tadi ya", "", None)]:
+            kirim.clear(); riwayat.clear()
+            try:
+                os.remove(os.environ["BERKAS_GAGAL"])
+            except OSError:
+                pass
+            bot.run_claude = lambda *a, _k=keluaran, _e=err, **kw: (_k, _e)
+            bot.process("token-palsu", 12345, teks)
+            assert kirim and kirim[0].startswith("❌"), "user tetap harus dikabari"
+            assert not riwayat, "kegagalan tidak boleh jadi giliran percakapan"
+            assert os.path.exists(os.environ["BERKAS_GAGAL"]), "penanda gagal wajib ada"
+    finally:
+        bot.send_message, bot.simpan_riwayat, bot.run_claude = asli[:3]
+        bot.JEJAK_PATH = asli[4]
+        if asli[3] is None:
+            os.environ.pop("BERKAS_GAGAL", None)
+        else:
+            os.environ["BERKAS_GAGAL"] = asli[3]
+
+
+def test_batas_telegram_tidak_maju_saat_jawaban_gagal():
+    """Gerbangnya tidak boleh cuma outcome langkah.
+
+    bot_oneshot.py menangkap kegagalan model, mengirimkannya sebagai pesan, lalu keluar 0 —
+    outcome-nya 'success' persis seperti run yang berhasil. Kalau penanda batas ikut maju,
+    jendela dua bulan isi grup hangus sementara user cuma memegang pesan error, dan tidak
+    ada cara mengambilnya kembali.
+    """
+    import io as _io
+    wf = _io.open(os.path.join(AKAR, ".github", "workflows", "bot.yml"),
+                  encoding="utf-8").read()
+    i = wf.index("Berlakukan penanda batas baca Telegram")
+    j = wf.index("- name:", wf.index("run: |", i))
+    langkah = wf[i:j]
+    assert "gagal.txt" in langkah, "promosi batas harus memeriksa penanda gagal"
+    assert langkah.index("gagal.txt") < langkah.index("mv cloud/data/tg_batas_calon.json"),         "penanda gagal harus diperiksa SEBELUM penanda dipindahkan"
+    assert "BERKAS_GAGAL:" in wf, "path penanda harus diberikan ke langkah yang menjalankan bot"
+
+
+def test_percakapan_tersimpan_bebas_pesan_gagal():
+    """Yang sudah terlanjur tersimpan ikut dibersihkan, bukan cuma dicegah ke depan."""
+    import io as _io
+    import json as _json
+    d = _json.load(_io.open(os.path.join(AKAR, "cloud", "data", "percakapan.json"),
+                            encoding="utf-8"))
+    racun = [e for e in d if str(e.get("balasan", "")).lstrip().startswith("❌")]
+    assert not racun, "masih ada giliran berisi pesan gagal: " + str(racun)[:200]

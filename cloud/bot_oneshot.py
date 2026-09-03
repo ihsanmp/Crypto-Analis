@@ -2992,6 +2992,30 @@ def sudah_diproses(chat_id, text, photo_file_id):
     return False
 
 
+def tandai_gagal(alasan):
+    """Tinggalkan penanda bahwa user TIDAK menerima jawaban sungguhan.
+
+    Workflow tidak bisa menyimpulkannya sendiri: skrip ini menangkap kegagalan
+    model, mengirimkannya sebagai pesan, lalu keluar 0 — jadi outcome langkahnya
+    "success" persis seperti run yang berhasil. Penanda batas baca Telegram
+    bergantung pada beda itu; tanpa penanda ini, jendela dua bulan hangus
+    sementara user cuma memegang pesan error.
+    """
+    path = os.environ.get("BERKAS_GAGAL")
+    if not path:
+        return
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(str(alasan)[:200])
+        print("[proses] penanda gagal ditulis — batas baca TIDAK akan dimajukan",
+              file=sys.stderr)
+    except OSError as e:
+        # Gagal menulis penanda berarti batas bisa maju diam-diam. Harus kelihatan.
+        print(f"[proses] PENANDA GAGAL TIDAK TERTULIS ({type(e).__name__}) — "
+              "batas baca Telegram berisiko maju padahal jawaban tidak sampai",
+              file=sys.stderr)
+
+
 def process(token, chat_id, text, photo_file_id=None):
     if sudah_diproses(chat_id, text, photo_file_id):
         return
@@ -3263,14 +3287,22 @@ def process(token, chat_id, text, photo_file_id=None):
     # Status dicetak SETELAH pengiriman dan berdasarkan hasilnya. (Dulu dicetak lebih
     # dulu, sehingga kegagalan kirim — mis. TELEGRAM_BOT_TOKEN kedaluwarsa/di-revoke —
     # tetap tampak "OK" di log dan penyebabnya jadi tersamar.)
+    # jawaban_nyata memisahkan "user menerima analisa" dari "user menerima kabar
+    # kegagalan". Keduanya sama-sama TERKIRIM, jadi keberhasilan kirim tidak bisa
+    # dipakai sebagai buktinya — dan skrip ini keluar 0 di kedua kasus.
+    jawaban_nyata = True
     if err:
         print(f"[proses] analisa GAGAL: {err[:400]}", file=sys.stderr)
         body = f"❌ {err}"
+        jawaban_nyata = False
     elif not output:
         print("[proses] output kosong dari Claude", file=sys.stderr)
         body = "❌ Selesai tapi output kosong. Coba lagi."
+        jawaban_nyata = False
     else:
         body = output
+    if not jawaban_nyata:
+        tandai_gagal(err or "output kosong")
 
     # Stempel waktu hanya untuk balasan berisi data. Menempelkannya pada pesan error
     # membuat kegagalan terlihat seolah "data per jam sekian" — membingungkan.
@@ -3317,13 +3349,22 @@ def process(token, chat_id, text, photo_file_id=None):
         print(f"[proses] balasan {len(body)} karakter TERKIRIM ke Telegram", file=sys.stderr)
         # Vonis lengkap tetap dicetak utuh ke log, bukan hanya yang terparah.
         print(f"[audit] {kesegaran}", file=sys.stderr)
-        simpan_riwayat(chat_id, text, body)
+        # KEGAGALAN BUKAN GILIRAN PERCAKAPAN. Menyimpannya membuat giliran
+        # berikutnya mewarisi "❌ Claude gagal (exit 1)" sebagai balasan saya
+        # sendiri — konteks yang menyesatkan sekaligus memboroskan token, dan
+        # angka_kunci kosong memutus rantai evaluasi_diri. Terjadi nyata pada
+        # run 33767039819: "jadi kesimpulannya apa?" tersimpan berpasangan
+        # dengan pesan errornya.
+        if jawaban_nyata:
+            simpan_riwayat(chat_id, text, body)
         # Catat PANGGILAN (bias + level) supaya bisa dinilai belakangan. Diekstraksi oleh
         # kode dari teks balasan, jadi tidak bisa dilewatkan dan tidak menambah biaya
         # giliran. DIBUNGKUS try/except: pencatatan rapor tidak boleh menggagalkan apa pun —
         # balasannya sendiri sudah terkirim di baris atas.
         try:
             aset_rapor = simbol if kind == "analisa" else simbol_chat
+            if not jawaban_nyata:
+                aset_rapor = None
             jenis_rapor = jenis if kind == "analisa" else jenis_chat
             if aset_rapor:
                 sys.path.insert(0, BASE_DIR)

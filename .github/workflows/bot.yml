@@ -187,6 +187,9 @@ jobs:
           # runnya gagal tanpa satu job pun dibuat, dan bot berhenti total selama empat
           # hari tanpa ada yang tahu. Hanya jalur berkas, bukan rahasia.
           BERKAS_TELEGRAM: ${{ runner.temp }}/telegram.txt
+          # Ditulis HANYA kalau user tidak menerima jawaban sungguhan. Skripnya keluar 0
+          # di kedua kasus, jadi outcome langkah tidak bisa membedakannya.
+          BERKAS_GAGAL: ${{ runner.temp }}/gagal.txt
         run: python cloud/bot_oneshot.py
 
       # Penanda batas baca baru BERLAKU setelah user benar-benar menerima jawabannya.
@@ -198,6 +201,17 @@ jobs:
       - name: Berlakukan penanda batas baca Telegram
         if: steps.tg.outputs.perlu == 'ya' && steps.jalankan.outcome == 'success'
         run: |
+          # outcome == 'success' TIDAK cukup. bot_oneshot.py menangkap kegagalan model
+          # (mis. "You've hit your session limit" pada run 33767039819), mengirimkannya
+          # sebagai pesan error, lalu keluar 0 — outcome-nya 'success' persis seperti run
+          # yang berhasil. Tanpa pemeriksaan ini, permintaan riset Telegram yang kena
+          # batas kuota tetap memajukan penanda: jendela dua bulan hangus dan user cuma
+          # memegang "Claude gagal (exit 1)". Itu persis bencana yang dijelaskan di atas.
+          if [ -f "${{ runner.temp }}/gagal.txt" ]; then
+            echo "jawaban tidak pernah sampai ($(cat "${{ runner.temp }}/gagal.txt")) -"
+            echo "penanda batas lama DIPERTAHANKAN, isi grup tidak hangus"
+            exit 0
+          fi
           if [ -f cloud/data/tg_batas_calon.json ]; then
             mv cloud/data/tg_batas_calon.json cloud/data/tg_batas.json
             echo "penanda batas maju - permintaan berikutnya hanya melihat yang lebih baru"
