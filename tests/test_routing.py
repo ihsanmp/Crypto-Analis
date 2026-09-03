@@ -6367,14 +6367,13 @@ def test_salah_hitung_didahulukan_di_peringatan():
     """Vonis lain menilai mutu data atau mutu saran; yang ini menyatakan angkanya SALAH,
     dihitung ulang kode dari angka yang ditulis balasan itu sendiri."""
     h = bot.audit_hitung("SOL dari $214 ke $232, naik 12%.")
+    imb = {"di_bawah_ambang": True, "rasio_imbalan_risiko": 0.3, "perlu_benar_persen": 77,
+           "risiko_persen": 7.5, "imbalan_persen": 2.2}
     pesan = bot.peringatan_audit("BURUK", "sumber tidak jelas", "KEDALUWARSA",
-                                 {"di_bawah_ambang": True, "rasio_imbalan_risiko": 0.3,
-                                  "perlu_benar_persen": 77}, None, None, h)
+                                 imb, None, None, h)
     assert "SALAH HITUNG" in pesan, pesan
     # Tanpa temuan hitung, vonis lain tetap jalan seperti sebelumnya.
-    tanpa = bot.peringatan_audit("BURUK", "", "OK",
-                                 {"di_bawah_ambang": True, "rasio_imbalan_risiko": 0.3,
-                                  "perlu_benar_persen": 77}, None, None, [])
+    tanpa = bot.peringatan_audit("BURUK", "", "OK", imb, None, None, [])
     assert tanpa and "SALAH HITUNG" not in tanpa
 
 
