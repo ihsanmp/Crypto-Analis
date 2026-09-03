@@ -5460,9 +5460,13 @@ def test_arsip_riwayat_bertahan_cukup_lama_untuk_dipakai():
     src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
     blok = src[src.index("def simpan_riwayat"):]
     blok = blok[:blok.index("def _jenis_terakhir")]
-    assert "RIWAYAT_UMUR_LANJUT" in blok, "retensi harus ikut jendela terpanjang"
+    # Yang ditegakkan maksudnya, bukan satu nama konstanta: retensi harus memakai jendela
+    # TERPANJANG yang ada. Sejak balasan-ke-pesan-lama bisa memanggil topik berminggu-minggu
+    # lalu, yang terpanjang adalah RIWAYAT_UMUR_INGAT — giliran yang sudah dibuang tidak
+    # bisa dipanggil kembali oleh mekanisme apa pun.
+    assert "RIWAYAT_UMUR_INGAT" in blok, "retensi harus ikut jendela terpanjang"
     assert "< RIWAYAT_UMUR]" not in blok
-    assert bot.RIWAYAT_UMUR_LANJUT > bot.RIWAYAT_UMUR
+    assert bot.RIWAYAT_UMUR_INGAT >= bot.RIWAYAT_UMUR_LANJUT > bot.RIWAYAT_UMUR
 
 
 def test_pewarisan_rumpun_ikut_jendela_konteks():
@@ -6622,3 +6626,161 @@ def test_percakapan_tersimpan_bebas_pesan_gagal():
                             encoding="utf-8"))
     racun = [e for e in d if str(e.get("balasan", "")).lstrip().startswith("❌")]
     assert not racun, "masih ada giliran berisi pesan gagal: " + str(racun)[:200]
+
+
+def _riwayat_campur(bot_, chat="9"):
+    """Dua topik lama (SOL, ONDO) + satu topik yang sedang berjalan (BTC)."""
+    import time as _t
+    hari, now = 86400, _t.time()
+    return [
+        dict(chat=bot_._id_chat(chat), waktu=now - 20 * hari, waktu_utc="x",
+             pesan="analisa SOL gimana?",
+             balasan="BIAS SPOT: AKUMULASI. SOL di $214, invalidasi $198, target $232.",
+             angka_kunci=["sol=214"]),
+        dict(chat=bot_._id_chat(chat), waktu=now - 20 * hari + 60, waktu_utc="x",
+             pesan="kenapa akumulasi?",
+             balasan="Karena SOL menahan support $198 dua kali.", angka_kunci=[]),
+        dict(chat=bot_._id_chat(chat), waktu=now - 25 * hari, waktu_utc="x",
+             pesan="tolong pantau ONDO, saya masuk di 0,72",
+             balasan="Dicatat. ONDO di 0,72, struktur H4 masih naik.",
+             angka_kunci=["ondo=0.72"]),
+        dict(chat=bot_._id_chat(chat), waktu=now - 600, waktu_utc="x",
+             pesan="btc hari ini?", balasan="BTC $78.000, range sempit.",
+             angka_kunci=["btc=78000"]),
+    ]
+
+
+def test_balasan_membuka_topik_lama_walau_topiknya_sudah_beda():
+    """Membalas sebuah pesan adalah penunjukan EKSPLISIT.
+
+    Tanpa ini, topik 20 hari lalu tidak mungkin terbawa: jendela biasa 6 jam, dan benang
+    yang sedang berjalan membahas aset lain. Justru melompat ke topik lain itulah gunanya,
+    jadi aturan "topik berbeda -> abaikan konteks" tidak boleh berlaku di jalur ini.
+    """
+    asli = bot._muat_riwayat
+    bot._muat_riwayat = lambda: _riwayat_campur(bot)
+    try:
+        tanpa = bot.konteks_percakapan("9", pesan="menurutmu masih bisa naik?")
+        assert "SOL" not in tanpa, "prasyarat: tanpa balasan, topik lama memang tak terbawa"
+
+        balas = {"teks": "BIAS SPOT: AKUMULASI. SOL di $214, invalidasi $198, target $232.",
+                 "dari_bot": True}
+        dengan = bot.konteks_percakapan("9", pesan="menurutmu masih bisa naik?", balas=balas)
+        assert "SOL" in dengan and "TOPIK LAMA YANG DIBUKA ULANG" in dengan
+        # Benangnya ikut, bukan satu giliran lepas.
+        assert "kenapa akumulasi" in dengan
+        # Tapi topik lain yang sama-sama lama TIDAK ikut terseret.
+        assert "ONDO" not in dengan
+        # Dan instruksi yang membatalkan fitur ini tidak boleh muncul.
+        assert "topik BARU, ABAIKAN konteks ini" not in dengan
+    finally:
+        bot._muat_riwayat = asli
+
+
+@pytest.mark.parametrize("nama,balas,ketemu", [
+    ("balasan ke pesan user sendiri",
+     {"teks": "tolong pantau ONDO, saya masuk di 0,72", "dari_bot": False}, True),
+    ("kutipan sebagian dari balasan panjang",
+     {"teks": "ONDO di 0,72, struktur H4", "dari_bot": True, "disorot": True}, True),
+    ("pesan di luar arsip",
+     {"teks": "waktu itu kamu bilang LINK akan retest 11,20 dulu", "dari_bot": True}, False),
+])
+def test_pencocokan_balasan(nama, balas, ketemu):
+    """Dicocokkan KODE, bukan ditanyakan ke model — dan kalau tidak yakin, dikatakan.
+
+    Balasan disimpan terpangkas (awal + akhir) dan pesan panjang dikirim terpecah per
+    3.900 karakter, jadi yang dikutip user bisa potongan yang tidak utuh ada di arsip.
+    """
+    asli = bot._muat_riwayat
+    bot._muat_riwayat = lambda: _riwayat_campur(bot)
+    try:
+        k = bot.konteks_percakapan("9", pesan="gimana sekarang?", balas=balas)
+        if ketemu:
+            assert "ONDO" in k and "TOPIK LAMA YANG DIBUKA ULANG" in k, nama
+        else:
+            # Tidak ketemu -> mengaku, bukan menjawab dari giliran terdekat seolah itu
+            # yang dimaksud.
+            assert "CATATANNYA TIDAK ADA" in k and "JANGAN mengarang" in k, nama
+    finally:
+        bot._muat_riwayat = asli
+
+
+def test_kutipan_terlalu_pendek_dilewati_diam_diam():
+    """"ok" cocok ke mana-mana. Menebak dari situ lebih buruk daripada mengaku tidak tahu,
+    dan mengumumkan "ada rujukan tak ketemu" sambil menyodorkan kata "ok" cuma boros."""
+    asli = bot._muat_riwayat
+    bot._muat_riwayat = lambda: _riwayat_campur(bot)
+    try:
+        k = bot.konteks_percakapan("9", pesan="gimana?", balas={"teks": "ok", "dari_bot": True})
+        assert "CATATANNYA TIDAK ADA" not in k and "TOPIK LAMA" not in k
+    finally:
+        bot._muat_riwayat = asli
+
+
+def test_balasan_terbaca_dari_update_telegram():
+    """reply_to_message dulu diabaikan sepenuhnya, jadi tidak ada yang bisa dipanggil."""
+    def upd(msg):
+        return [{"update_id": 1, "message": dict(msg, chat={"id": 9})}]
+
+    biasa = bot.actionable_messages(upd({"text": "gimana?"}), {"9"})
+    assert biasa[0][4] is None
+
+    ada = bot.actionable_messages(upd({
+        "text": "gimana sekarang?",
+        "reply_to_message": {"text": "SOL di $214, invalidasi $198", "from": {"is_bot": True}},
+    }), {"9"})[0][4]
+    assert ada["teks"].startswith("SOL di $214") and ada["dari_bot"] is True
+
+    # quote (Bot API 7.0): kalau user MENYOROT sebagian, bagian ITU yang ia maksud.
+    sorot = bot.actionable_messages(upd({
+        "text": "ini maksudnya?",
+        "quote": {"text": "invalidasi $198"},
+        "reply_to_message": {"text": "SOL di $214, invalidasi $198", "from": {"is_bot": True}},
+    }), {"9"})[0][4]
+    assert sorot["teks"] == "invalidasi $198" and sorot["disorot"] is True
+
+
+def test_kutipan_ikut_sidik_anti_duplikat():
+    """Membalas DUA pesan lama berbeda dengan teks yang sama ("lanjutkan yang ini")
+    menghasilkan sidik identik tanpa ini — yang kedua dilewati diam-diam sebagai
+    duplikat padahal maksudnya lain sama sekali."""
+    a = bot._sidik("9", "lanjutkan yang ini", None, {"teks": "soal SOL kemarin"})
+    b_ = bot._sidik("9", "lanjutkan yang ini", None, {"teks": "soal ONDO minggu lalu"})
+    assert a != b_
+    # Tanpa balasan, perilakunya tidak berubah.
+    assert bot._sidik("9", "halo", None) == bot._sidik("9", "halo", None, None)
+
+
+def test_pencocokan_balasan_tidak_dikerjakan_dua_kali():
+    """konteks_percakapan() dipanggil DUA KALI untuk satu giliran chat — sekali menimbang
+    bobot, sekali merakit prompt. Tanpa ingatan antar-panggilan, seluruh pencocokan
+    dikerjakan dua kali di jalur kritis: terukur 3,2 detik sekali jalan pada arsip penuh
+    dengan kutipan sepanjang satu potongan Telegram, jadi 6,5 detik."""
+    asli = bot._muat_riwayat
+    bot._muat_riwayat = lambda: _riwayat_campur(bot)
+    bot._COCOK_CACHE.clear()
+    balas = {"teks": "tolong pantau ONDO, saya masuk di 0,72", "dari_bot": False}
+    try:
+        a = bot.cocok_kutipan(_riwayat_campur(bot), balas)
+        assert bot._COCOK_CACHE, "hasil pencocokan harus diingat"
+        b_ = bot.cocok_kutipan(_riwayat_campur(bot), balas)
+        assert a == b_, "hasil dari cache harus sama persis"
+    finally:
+        bot._muat_riwayat = asli
+        bot._COCOK_CACHE.clear()
+
+
+def test_kutipan_panjang_tetap_cocok_lewat_tahap_sama_persis():
+    """Tahap kemiripan dibatasi KUTIPAN_BANDING_MAKS demi kecepatan. Kecocokan NYATA yang
+    letaknya di luar batas itu harus tetap tertangkap oleh tahap sama-persis — kalau tidak,
+    penghematan waktu dibayar dengan ingatan yang hilang."""
+    import time as _t
+    tersimpan = "ONDO di 0,72, struktur H4 masih naik dan volume menopang."
+    kutipan = ("basa-basi pembuka. " * 120) + tersimpan
+    assert kutipan.index(tersimpan) > bot.KUTIPAN_BANDING_MAKS, "prasyarat: di luar batas"
+    riwayat = [dict(chat=bot._id_chat("9"), waktu=_t.time() - 600, waktu_utc="x",
+                    pesan="pantau ONDO", balasan=tersimpan, angka_kunci=[])]
+    bot._COCOK_CACHE.clear()
+    idx, skor = bot.cocok_kutipan(riwayat, {"teks": kutipan, "dari_bot": True})
+    bot._COCOK_CACHE.clear()
+    assert idx == 0 and skor >= 0.99

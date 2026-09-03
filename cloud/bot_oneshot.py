@@ -20,6 +20,7 @@ Konfigurasi lewat environment variable (di-set dari GitHub Secrets):
 
 import hashlib
 import concurrent.futures
+import difflib
 import json
 import os
 import re
@@ -349,9 +350,10 @@ def allowed_chats():
 
 
 def actionable_messages(updates, allowed):
-    """Kembalikan (update_id, chat_id, text_asli, photo_file_id) untuk semua pesan
+    """Kembalikan (update_id, chat_id, text_asli, photo_file_id, balas) untuk semua pesan
     teks ATAU foto dari chat yang diizinkan. Untuk foto, text = caption (boleh kosong)
-    dan photo_file_id = file_id foto resolusi terbesar."""
+    dan photo_file_id = file_id foto resolusi terbesar. `balas` = pesan lama yang sedang
+    DIBALAS user (None kalau bukan balasan)."""
     out = []
     for upd in updates:
         msg = upd.get("message") or {}
@@ -365,8 +367,31 @@ def actionable_messages(updates, allowed):
         if chat_id not in allowed:      # fail-closed: hanya chat yang terdaftar
             print(f"[skip] chat tak terdaftar: {chat_id}")
             continue
-        out.append((upd["update_id"], chat_id, text, photo_id))
+        out.append((upd["update_id"], chat_id, text, photo_id, _balasan_ke(msg)))
     return out
+
+
+def _balasan_ke(msg):
+    """Pesan lama yang sedang DIBALAS user, atau None.
+
+    Membalas sebuah pesan adalah penunjukan eksplisit: user menyebut persis giliran mana
+    yang mau dibuka lagi. Tidak ada yang perlu ditebak dari kemiripan kata, dan topik yang
+    sedang berjalan tidak membatalkannya — justru itu gunanya.
+
+    `quote` (Bot API 7.0) dipakai lebih dulu: kalau user menyorot satu bagian dari pesan
+    panjang, bagian ITU yang ia maksud, bukan seluruh pesannya.
+    """
+    rep = msg.get("reply_to_message") or {}
+    if not rep:
+        return None
+    kutip = (msg.get("quote") or {}).get("text") or ""
+    teks = kutip or rep.get("text") or rep.get("caption") or ""
+    teks = teks.strip()
+    if not teks:
+        return None
+    return {"teks": teks,
+            "dari_bot": bool((rep.get("from") or {}).get("is_bot")),
+            "disorot": bool(kutip)}
 
 
 def write_output(has_work):
@@ -644,6 +669,21 @@ BALASAN_POTONG = 500      # balasan dipangkas supaya tidak membengkakkan prompt
 RIWAYAT_UMUR_LANJUT = 7 * 24 * 3600
 RIWAYAT_MAKS_LANJUT = 5
 
+# LAPIS KETIGA — user MEMBALAS (reply) sebuah pesan lama. Ini penunjukan eksplisit:
+# ia menyebut persis giliran mana yang mau dibuka lagi, jadi tidak ada yang perlu
+# ditebak dan topik yang sedang berjalan tidak relevan. Karena itu jendelanya paling
+# lebar dan tidak peduli benang yang sekarang.
+#
+# Yang membatasi bukan jendela ini, melainkan berapa lama catatannya BERTAHAN: giliran
+# yang sudah dibuang tidak bisa dipanggil kembali oleh mekanisme apa pun. Retensi
+# dinaikkan supaya "yang sudah lama" benar-benar ada saat dipanggil — biayanya nol
+# untuk prompt, karena yang menentukan berapa yang DIPAKAI tetap konteks_percakapan().
+RIWAYAT_UMUR_INGAT = 30 * 24 * 3600
+RIWAYAT_MAKS_INGAT = 6      # giliran yang dibawa dari benang lama itu
+RIWAYAT_SIMPAN_MAKS = 120   # dulu 40; 30 hari tidak berarti apa-apa kalau cuma 40 giliran
+KUTIPAN_MINIMUM = 12        # kutipan sependek "ok" cocok ke mana-mana — bukan bukti
+KUTIPAN_AMBANG = 0.62       # di bawah ini dianggap tidak yakin, dan itu dikatakan
+
 # "lanjutkan", "yang kemarin", "tadi kita bahas apa". Sengaja menuntut kata sambungnya —
 # "lanjut" telanjang terlalu sering berarti "teruskan analisanya", bukan "buka lagi
 # percakapan lama".
@@ -852,7 +892,7 @@ def simpan_riwayat(chat_id, pesan, balasan):
     # "lanjutkan yang kemarin" tidak akan pernah terkumpul — dibuang sebelum sempat
     # dipakai. Yang menentukan berapa yang DIPAKAI tetap konteks_percakapan().
     riwayat = [r for r in _muat_riwayat()
-               if sekarang - r.get("waktu", 0) < RIWAYAT_UMUR_LANJUT][-40:]
+               if sekarang - r.get("waktu", 0) < RIWAYAT_UMUR_INGAT][-RIWAYAT_SIMPAN_MAKS:]
     riwayat.append({
         "chat": _id_chat(chat_id),
         "waktu": sekarang,
@@ -1132,7 +1172,93 @@ def evaluasi_diri(chat_id, brief):
               "pula berpura-pura tidak pernah menyimpulkan." + NL + "---" + NL + NL)
 
 
-def konteks_percakapan(chat_id, panjang=False, pesan=None):
+_COCOK_CACHE = {}
+# Kutipan sepanjang satu potongan Telegram (3.900 karakter) membuat SequenceMatcher
+# berjalan lama untuk tiap giliran arsip. Tahap SAMA-PERSIS tetap memakai kutipan utuh;
+# yang dibatasi hanya tahap kemiripan, dan batasnya masih jauh di atas panjang balasan
+# tersimpan (500 karakter) sehingga kecocokan nyata tidak ikut terpotong.
+KUTIPAN_BANDING_MAKS = 1500
+
+
+def _rata_teks(s):
+    return " ".join((s or "").lower().split())
+
+
+def cocok_kutipan(milik, balas):
+    """Giliran mana yang sedang dibalas user. (indeks, skor); (None, skor) kalau tak yakin.
+
+    Dicocokkan oleh KODE, bukan ditanyakan ke model: model tidak punya akses ke arsip
+    percakapan, dan menyuruhnya "ingat-ingat" hanya menghasilkan karangan yang terdengar
+    meyakinkan. Yang cocok ditemukan di sini, atau tidak sama sekali — dan kalau tidak,
+    itu dikatakan apa adanya.
+
+    Dua hal membuat pencocokan tidak bisa sekadar sama-persis. Balasan disimpan TERPANGKAS
+    (awal + akhir saja), dan pesan panjang dikirim terpecah per 3.900 karakter — jadi yang
+    dikutip user bisa potongan yang tidak utuh ada di arsip. Karena itu selain kemiripan
+    menyeluruh, dihitung juga seberapa besar bagian kutipan yang muncul PERSIS di arsip.
+    """
+    if not balas or not milik:
+        return None, 0.0
+    q = _rata_teks(balas.get("teks"))
+    # DIINGAT ANTAR-PANGGILAN. konteks_percakapan() dipanggil dua kali untuk satu giliran
+    # chat — sekali menimbang bobot, sekali merakit prompt — jadi tanpa ini seluruh
+    # pencocokan dikerjakan dua kali di jalur kritis. Terukur: 3,2 detik sekali jalan pada
+    # arsip penuh dengan kutipan sepanjang satu potongan Telegram, jadi 6,5 detik.
+    kunci = (q, bool(balas.get("dari_bot")), len(milik),
+             milik[-1].get("waktu") if milik else 0)
+    if kunci in _COCOK_CACHE:
+        return _COCOK_CACHE[kunci]
+    # Kutipan sependek "ok" atau "iya" cocok ke mana-mana. Itu bukan bukti, dan menebak
+    # dari situ lebih buruk daripada mengaku tidak tahu.
+    if len(q) < KUTIPAN_MINIMUM:
+        return None, 0.0
+    dari_bot = bool(balas.get("dari_bot"))
+    terbaik, tertinggi = None, 0.0
+    for i, r in enumerate(milik):
+        for medan, bobot in (("balasan", 1.0 if dari_bot else 0.85),
+                             ("pesan", 0.85 if dari_bot else 1.0)):
+            t = _rata_teks(r.get(medan))
+            if not t:
+                continue
+            if q in t or t in q:
+                nilai = 1.0
+            else:
+                qp = q[:KUTIPAN_BANDING_MAKS]
+                m = difflib.SequenceMatcher(None, qp, t)
+                blok = m.find_longest_match(0, len(qp), 0, len(t))
+                nilai = max(m.ratio(), blok.size / len(qp))
+            nilai *= bobot
+            if nilai > tertinggi:
+                terbaik, tertinggi = i, nilai
+    hasil = (terbaik if tertinggi >= KUTIPAN_AMBANG else None), tertinggi
+    if len(_COCOK_CACHE) < 64:      # satu proses = satu giliran; tak perlu besar
+        _COCOK_CACHE[kunci] = hasil
+    return hasil
+
+
+def _benang_sekitar(milik, idx, maks=RIWAYAT_MAKS_INGAT):
+    """Giliran lain yang SATU BENANG dengan milik[idx] — sebelum maupun sesudahnya.
+
+    Membuka lagi sebuah topik berarti membawa percakapannya, bukan satu giliran lepas:
+    jawaban yang dibalas sering hanya bisa dimengerti bersama pertanyaan yang mengapitnya.
+    Penandaan utasnya memakai sapuan maju yang sama dengan _utas().
+    """
+    tanda, berjalan = [], frozenset()
+    for r in milik:
+        a, t = _tanda_pesan((r.get("pesan") or "") + " " + (r.get("balasan") or ""))
+        s = frozenset(a | t)
+        if s:
+            berjalan = s
+        tanda.append(berjalan)
+    acuan = tanda[idx]
+    if not acuan:
+        return [milik[idx]]
+    sama = sorted([i for i, s in enumerate(tanda) if s & acuan],
+                  key=lambda i: abs(i - idx))[:maks]
+    return [milik[i] for i in sorted(sama)]
+
+
+def konteks_percakapan(chat_id, panjang=False, pesan=None, balas=None):
     """Rakit konteks percakapan sebelumnya untuk disisipkan ke prompt.
 
     `panjang` = user MEMINTA melanjutkan percakapan lama, jadi jendelanya dibuka 7 hari
@@ -1144,6 +1270,33 @@ def konteks_percakapan(chat_id, panjang=False, pesan=None):
 
     def usia(r):
         return sekarang - r.get("waktu", 0)
+
+    # MEMBUKA LAGI TOPIK LAMA. User membalas sebuah pesan, jadi ia menunjuk persis giliran
+    # mana yang dimaksud. Ini tidak tunduk pada jendela 6 jam maupun pada benang yang
+    # sedang berjalan: seluruh gunanya justru untuk melompat ke topik lain.
+    ingat, catatan_ingat = [], ""
+    # Kutipan terlalu pendek untuk dicocokkan ("ok", "iya") dilewati DIAM-DIAM. Memberi
+    # tahu model "ada rujukan yang tidak ketemu" lalu menyodorkan kata "ok" sebagai
+    # petunjuknya tidak bisa dipakai untuk apa pun — cuma menambah token.
+    if balas and len(_rata_teks(balas.get("teks"))) >= KUTIPAN_MINIMUM:
+        idx, skor = cocok_kutipan(milik, balas)
+        if idx is not None:
+            ingat = _benang_sekitar(milik, idx)
+            print(f"[ingat] balasan cocok ke giliran ke-{idx} (skor {skor:.2f}) — "
+                  f"{len(ingat)} giliran dari benang itu dibawa", file=sys.stderr)
+        else:
+            # Catatannya sudah dibuang (lebih tua dari retensi), atau kutipannya terlalu
+            # pendek/terpotong untuk diyakini. Mengarang isinya jauh lebih buruk daripada
+            # mengaku tidak punya catatannya.
+            print(f"[ingat] balasan TIDAK cocok ke giliran mana pun (skor tertinggi "
+                  f"{skor:.2f})", file=sys.stderr)
+            catatan_ingat = (
+                "## USER MEMBALAS SEBUAH PESAN — CATATANNYA TIDAK ADA" + NL
+                + "Yang dibalas: " + (balas.get("teks") or "")[:200] + NL
+                + "Pesan itu di luar arsip percakapan (terlalu lama atau terpotong). "
+                  "Pakai isi kutipan di atas seadanya, dan kalau tidak cukup, KATAKAN "
+                  "kamu tidak punya catatan giliran itu dan minta user menegaskan "
+                  "maksudnya. JANGAN mengarang apa yang pernah dibahas." + NL + NL)
 
     nyambung = []
     if panjang:
@@ -1159,8 +1312,17 @@ def konteks_percakapan(chat_id, panjang=False, pesan=None):
                      if RIWAYAT_UMUR <= usia(r) < RIWAYAT_UMUR_LANJUT
                      and _masih_nyambung(pesan, r, tanda)][-2:])
         lalu = nyambung + segar
+    if ingat:
+        # Benang lama yang dipanggil MENGGANTIKAN pilihan biasa, bukan menumpuk di atasnya:
+        # membawa delapan giliran topik yang sekarang hanya memboroskan token dan
+        # mengaburkan topik yang justru diminta. Dua giliran terakhir tetap ikut supaya
+        # pesan sependek "iya yang itu" masih punya pijakan.
+        sisa = [r for r in lalu[-2:] if r not in ingat]
+        lalu = ingat + sisa
     if not lalu:
         # Diminta melanjutkan tapi tidak ada apa-apa: katakan, jangan berpura-pura ingat.
+        if catatan_ingat:
+            return catatan_ingat
         if panjang:
             return ("## MELANJUTKAN PERCAKAPAN — TIDAK ADA CATATANNYA" + NL
                     + "User meminta melanjutkan pembicaraan sebelumnya, tapi tidak ada "
@@ -1168,7 +1330,10 @@ def konteks_percakapan(chat_id, panjang=False, pesan=None):
                       "menyebutkan topiknya. JANGAN mengarang apa yang pernah dibahas."
                     + NL + NL)
         return ""
-    if panjang:
+    if ingat:
+        judul = ("## TOPIK LAMA YANG DIBUKA ULANG — user MEMBALAS pesan dari topik ini. "
+                 "Lanjutkan topik INI, walaupun giliran terakhir membahas hal lain.")
+    elif panjang:
         judul = "## MELANJUTKAN PERCAKAPAN SEBELUMNYA (user memintanya)"
     elif nyambung:
         judul = ("## PERCAKAPAN SEBELUMNYA (termasuk yang lebih lama tapi MASIH "
@@ -1183,16 +1348,34 @@ def konteks_percakapan(chat_id, panjang=False, pesan=None):
         ak = r.get("angka_kunci") or []
         if ak:
             baris.append(f"           Angka kunci saat itu ({u}): " + " · ".join(ak))
+    baris += ["", "CARA MEMAKAI konteks ini:"]
+    if ingat:
+        # "topik BARU -> ABAIKAN" justru membatalkan seluruh gunanya di sini: user MEMANG
+        # melompat dari topik yang sedang berjalan, dan ia menunjuk tujuannya sendiri.
+        baris += [
+            "- User MEMBALAS salah satu pesan di atas. Itu penunjukan yang disengaja:",
+            "  lanjutkan topik itu, JANGAN menganggapnya topik baru dan JANGAN meminta",
+            "  user mengulang duduk perkaranya.",
+            "- Yang dikutipnya: " + (balas.get("teks") or "")[:180],
+            "- Kalau pesan barunya ternyata membawa pertanyaan lain, jawab itu SAMBIL",
+            "  tetap berpijak pada topik yang ia buka lagi.",
+        ]
+    else:
+        baris += [
+            "- Kalau pesan sekarang jelas LANJUTAN (pendek, memakai kata seperti 'itu',",
+            "  'lanjutkan', 'kalau', 'bagaimana dengan', atau tidak menyebut asetnya),",
+            "  sambungkan ke topik di atas. JANGAN meminta user mengulang topiknya.",
+            "- Kalau pesan sekarang topik BARU, ABAIKAN konteks ini sepenuhnya.",
+        ]
     baris += [
-        "",
-        "CARA MEMAKAI konteks ini:",
-        "- Kalau pesan sekarang jelas LANJUTAN (pendek, memakai kata seperti 'itu',",
-        "  'lanjutkan', 'kalau', 'bagaimana dengan', atau tidak menyebut asetnya),",
-        "  sambungkan ke topik di atas. JANGAN meminta user mengulang topiknya.",
-        "- Kalau pesan sekarang topik BARU, ABAIKAN konteks ini sepenuhnya.",
         "- ANGKA di dalam konteks ini SUDAH LAMA. Jangan dikutip sebagai data terkini —",
         "  ambil ulang datanya kalau dibutuhkan.",
     ]
+    if ingat:
+        baris += [
+            "- Sebagian di atas bisa berumur berminggu-minggu. Sambungkan benangnya, lalu",
+            "  SEBUTKAN apa yang berubah sejak itu — itu justru bagian yang berguna.",
+        ]
     if nyambung:
         baris += [
             "- Sebagian di atas berumur BERHARI-HARI, ikut dibawa karena membahas aset "
@@ -1205,7 +1388,10 @@ def konteks_percakapan(chat_id, panjang=False, pesan=None):
         "- Konteks ini hanya untuk menyambung benang pembicaraan, bukan sumber fakta.",
         "",
     ]
-    return "\n".join(baris) + "\n---\n"
+    # catatan_ingat hanya terisi kalau yang dibalas TIDAK ketemu. Tetap disertakan walau
+    # ada konteks lain, supaya model tahu ada rujukan yang tak bisa dipenuhi — bukan
+    # diam-diam menjawab dari giliran terdekat seolah itu yang dimaksud.
+    return catatan_ingat + "\n".join(baris) + "\n---\n"
 
 
 
@@ -1687,7 +1873,7 @@ def _lepas_penanda_shell(teks):
     return teks.replace("<!-- SHELL -->" + NL, "").replace("<!-- /SHELL -->" + NL, "")
 
 
-def build_chat_prompt(text, chat_id=None, brief=None):
+def build_chat_prompt(text, chat_id=None, brief=None, balas=None):
     with open(CHAT_PROMPT, encoding="utf-8") as f:
         # Jenis aset ikut diberikan supaya pemilihan blok tidak jatuh ke "muat semua"
         # hanya karena kalimatnya tidak memakai kosakata rumpun.
@@ -1760,7 +1946,8 @@ def build_chat_prompt(text, chat_id=None, brief=None):
             "'koin' atau 'token'." + NL + NL + "---" + NL + NL) + base
     if chat_id is not None:
         base = (evaluasi_diri(chat_id, brief)
-                + konteks_percakapan(chat_id, panjang=_lanjut, pesan=text) + base)
+                + konteks_percakapan(chat_id, panjang=_lanjut, pesan=text,
+                                     balas=balas) + base)
     # Pesan user dikutip apa adanya. Diberi pembatas jelas supaya isinya diperlakukan
     # sebagai pertanyaan untuk dijawab, bukan sebagai instruksi yang mengubah aturan.
     if brief:
@@ -1796,11 +1983,11 @@ def download_photo(token, file_id):
         return None
 
 
-def build_photo_prompt(caption, image_path, chat_id=None):
+def build_photo_prompt(caption, image_path, chat_id=None, balas=None):
     with open(FOTO_PROMPT, encoding="utf-8") as f:
         base = f.read()
     if chat_id is not None:
-        base = konteks_percakapan(chat_id, pesan=caption) + base
+        base = konteks_percakapan(chat_id, pesan=caption, balas=balas) + base
     instruksi = (caption.strip() if caption and caption.strip()
                  else "(tidak ada caption — pakai default: identifikasi keterkaitan dengan "
                       "koin/project, cari info terkait, beri rekomendasi tindakan)")
@@ -2928,18 +3115,22 @@ def token_aktif():
     return os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
 
 
-def _sidik(chat_id, text, photo_file_id):
+def _sidik(chat_id, text, photo_file_id, balas=None):
     """Sidik pesan yang STABIL antar-proses.
 
     WAJIB hashlib, bukan hash() bawaan: hash() string diacak ulang tiap proses Python
     (PYTHONHASHSEED), sehingga pesan yang sama menghasilkan sidik berbeda di run berbeda
     dan pencegahan duplikat sama sekali tidak bekerja.
     """
-    inti = f"{chat_id}|{(text or '').strip().lower()}|{photo_file_id or ''}"
+    # Kutipan ikut disidik: membalas DUA pesan lama berbeda dengan teks yang sama
+    # ("lanjutkan yang ini") menghasilkan sidik identik tanpa ini, dan yang kedua
+    # dilewati diam-diam sebagai "duplikat" padahal maksudnya lain sama sekali.
+    kutip = ((balas or {}).get("teks") or "").strip().lower()[:120]
+    inti = f"{chat_id}|{(text or '').strip().lower()}|{photo_file_id or ''}|{kutip}"
     return hashlib.sha256(inti.encode("utf-8")).hexdigest()[:16]
 
 
-def sudah_diproses(chat_id, text, photo_file_id):
+def sudah_diproses(chat_id, text, photo_file_id, balas=None):
     """Cegah satu pesan diproses dua kali.
 
     Telegram/Cloudflare kadang mengirim dispatch GANDA untuk satu pesan — terpantau pada
@@ -2954,7 +3145,7 @@ def sudah_diproses(chat_id, text, photo_file_id):
     Jendela sengaja pendek (3 menit): duplikat nyata datang dalam hitungan detik, sedangkan
     user yang benar-benar ingin mengulang perintah yang sama biasanya berjarak lebih lama.
     """
-    sidik = _sidik(chat_id, text, photo_file_id)
+    sidik = _sidik(chat_id, text, photo_file_id, balas)
     sekarang = time.time()
     try:
         with open(JEJAK_PATH, encoding="utf-8") as f:
@@ -3016,8 +3207,8 @@ def tandai_gagal(alasan):
               file=sys.stderr)
 
 
-def process(token, chat_id, text, photo_file_id=None):
-    if sudah_diproses(chat_id, text, photo_file_id):
+def process(token, chat_id, text, photo_file_id=None, balas=None):
+    if sudah_diproses(chat_id, text, photo_file_id, balas):
         return
 
     simbol = jenis = simbol_chat = jenis_chat = None   # dipakai pencatat rapor di akhir
@@ -3035,7 +3226,7 @@ def process(token, chat_id, text, photo_file_id=None):
             return
         timeout = int(os.environ.get("ANALYSIS_TIMEOUT", "900"))
         # Model pintar (vision + penalaran); Read diizinkan untuk 'melihat' gambar.
-        output, err = run_claude(build_photo_prompt(text, img, chat_id), timeout, max_turns=45,
+        output, err = run_claude(build_photo_prompt(text, img, chat_id, balas), timeout, max_turns=45,
                                  model=MODEL_SYNTH, tools_override=ALLOWED_TOOLS_VISION)
         try:
             os.remove(img)
@@ -3176,7 +3367,9 @@ def process(token, chat_id, text, photo_file_id=None):
     else:  # chat
         # Bobot ditentukan dari BERAT pertanyaannya, bukan dari ada/tidaknya riwayat.
         # Lihat bobot_chat(): tiga tingkat, dan konteks kini MENURUNKAN bobot.
-        ada_konteks = bool(konteks_percakapan(chat_id).strip())
+        # balas ikut: membalas pesan lama BERARTI ada konteks, dan itu justru
+        # menurunkan bobot — benangnya sudah ada, tidak perlu digali dari nol.
+        ada_konteks = bool(konteks_percakapan(chat_id, balas=balas).strip())
         jatah, model_chat, putaran, tingkat = bobot_chat(text, ada_konteks)
         print(f"[proses] bobot chat: {tingkat} -> {jatah} dtk, {model_chat}, "
               f"{putaran} putaran", file=sys.stderr)
@@ -3278,7 +3471,7 @@ def process(token, chat_id, text, photo_file_id=None):
                       TOOLS_SOSIAL: "SOSIAL (tanpa MCP)"}
         print(f"[proses] chat: tool = {_nama_tool.get(tools_chat, 'LAIN')}",
               file=sys.stderr)
-        output, err = run_claude(build_chat_prompt(text, chat_id, brief),
+        output, err = run_claude(build_chat_prompt(text, chat_id, brief, balas),
                                  min(timeout, jatah), max_turns=putaran, model=model_chat,
                                  tools_override=tools_chat)
 
@@ -4060,8 +4253,8 @@ def main():
     sisa = len(jobs) - len(batch)
     print(f"[run] memproses {len(batch)} pesan"
           + (f" ({sisa} sisanya menunggu run berikutnya)." if sisa else "."))
-    for _, chat_id, text, photo_id in batch:
-        process(token, chat_id, text, photo_id)
+    for _, chat_id, text, photo_id, balas in batch:
+        process(token, chat_id, text, photo_id, balas)
 
 
 if __name__ == "__main__":
