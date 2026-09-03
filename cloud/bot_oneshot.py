@@ -3446,9 +3446,18 @@ def audit_keyakinan(brief, body):
 # Klaim persentase yang menyebut KEDUA angkanya sekaligus — satu-satunya bentuk yang bisa
 # diperiksa ulang tanpa menebak maksudnya. "naik 12%" saja tidak bisa diaudit; "dari 214 ke
 # 232 (naik 12%)" bisa, dan salahnya langsung terlihat: 232/214 itu +8,4%.
+# Kata skala ikut ditangkap: tanpa ini "dari $16,9 miliar ke $18,4 miliar, naik 25%"
+# tidak pernah diperiksa sama sekali — lolos karena tak terbaca, bukan karena benar.
+# Huruf tunggal (M/B/K) sengaja TIDAK dipakai: terlalu ambigu untuk dijadikan tuduhan.
+_SKALA = {"ribu": 1e3, "rb": 1e3, "thousand": 1e3,
+          "juta": 1e6, "jt": 1e6, "million": 1e6,
+          "miliar": 1e9, "milyar": 1e9, "billion": 1e9,
+          "triliun": 1e12, "trillion": 1e12}
 _RE_DARI_KE = re.compile(
     r"(?:dari|from)\s*[$]?\s*(\d[\d.,]*)"
+    r"(?:\s*(ribu|rb|juta|jt|miliar|milyar|triliun|thousand|million|billion|trillion)\b)?"
     r"\s*(?:ke|->|→|to|sampai|menjadi|jadi)\s*[$]?\s*(\d[\d.,]*)"
+    r"(?:\s*(ribu|rb|juta|jt|miliar|milyar|triliun|thousand|million|billion|trillion)\b)?"
     r"[^\n]{0,40}?([+-]?\d{1,3}(?:[.,]\d+)?)\s*%", re.I)
 # Rasio yang DITULIS: "R:R 1:2", "imbalan:risiko 2,1", "RR 1.8".
 _RE_RR_DITULIS = re.compile(
@@ -3470,9 +3479,15 @@ def audit_hitung(body, imbalan=None):
     daripada diam.
     """
     temuan = []
-    for a, b_, pct in _RE_DARI_KE.findall(body or ""):
+    for a, sa, b_, sb, pct in _RE_DARI_KE.findall(body or ""):
         awal, akhir, klaim = _angka_id(a), _angka_id(b_), _angka_id(pct)
         if None in (awal, akhir, klaim) or not awal:
+            continue
+        awal *= _SKALA.get(sa.lower(), 1.0)
+        akhir *= _SKALA.get(sb.lower(), 1.0)
+        # Skala timpang ("dari 16,9 ke 18,4 miliar") bikin rasio mustahil. Kalau ragu,
+        # DIAM — menuduh salah hitung padahal benar lebih merugikan daripada lewat.
+        if bool(sa) != bool(sb) and not 0.01 <= akhir / awal <= 100:
             continue
         benar = (akhir - awal) / awal * 100
         if abs(abs(benar) - abs(klaim)) > TOLERANSI_PERSEN:
@@ -3487,6 +3502,28 @@ def audit_hitung(body, imbalan=None):
                 temuan.append(f"imbalan:risiko ditulis {ditulis:g}, "
                               f"dihitung dari levelnya {nyata:g}")
     return temuan
+
+
+def _panggilan_selamat(asli, baru):
+    """Apakah panggilan yang bisa dinilai masih ada setelah jawaban ditulis ulang.
+
+    True kalau aslinya memang tidak punya panggilan (tidak ada yang bisa hilang), atau
+    kalau yang baru masih terurai DENGAN bias yang sama. Membetulkan persentase tidak
+    boleh mengubah AKUMULASI jadi HINDARI — kalau itu terjadi, yang ditulis ulang bukan
+    angkanya melainkan kesimpulannya.
+    """
+    try:
+        sys.path.insert(0, os.path.join(REPO_ROOT, "cloud"))
+        import rapor
+        lama = rapor.urai_panggilan(asli or "")
+        if not lama:
+            return True
+        kini = rapor.urai_panggilan(baru or "")
+        return bool(kini) and kini.get("bias") == lama.get("bias")
+    except Exception as e:
+        print(f"[audit] pemeriksaan jejak panggilan dilewati ({type(e).__name__})",
+              file=sys.stderr)
+        return True
 
 
 def perbaiki_hitung(body, temuan, model=None):
@@ -3526,6 +3563,15 @@ def perbaiki_hitung(body, temuan, model=None):
     if sisa:
         print(f"[audit] perbaikan hitung TIDAK menyelesaikan: {sisa} — jawaban asli dipakai",
               file=sys.stderr)
+        return body, temuan
+    # JEJAK REKAM HARUS SELAMAT. rapor.py menarik BIAS, Harga, Invalidasi, dan Target dari
+    # teks balasan untuk dinilai belakangan; perbaikan yang menulis ulang jawaban bisa
+    # menghapusnya sambil tetap lolos pemeriksaan panjang dan hitung. Panggilannya lalu
+    # lenyap dari jejak rekam — tidak pernah terbukti benar, tidak pernah terbukti salah.
+    # Diuji: perbaikan yang panjang tapi kehilangan baris itu sempat DITERIMA.
+    if not _panggilan_selamat(body, baru):
+        print("[audit] perbaikan hitung menghapus baris panggilan (BIAS/Harga/Target) — "
+              "jawaban asli dipakai", file=sys.stderr)
         return body, temuan
     print(f"[audit] salah hitung DIBETULKAN ({len(temuan)} angka), diverifikasi ulang",
           file=sys.stderr)

@@ -6446,3 +6446,97 @@ def test_evaluasi_meninggalkan_jejak_di_log():
     assert "[audit] SALAH HITUNG" in src
     assert "[audit] salah hitung DIBETULKAN" in src
     assert "[audit] perbaikan hitung TIDAK menyelesaikan" in src
+
+
+@pytest.mark.parametrize("teks,salah", [
+    # Kata skala dulu memutus regexnya: kalimat-kalimat ini tidak pernah diperiksa
+    # sama sekali, jadi yang keliru pun lolos karena tak terbaca — bukan karena benar.
+    ("TVL dari $16,9 miliar ke $18,4 miliar, naik 25%.", True),
+    ("TVL dari $16,9 miliar ke $18,4 miliar, naik 8,9%.", False),
+    ("Volume dari 950 juta ke 1,2 miliar, naik 26%.", False),
+    ("Volume dari 950 juta ke 1,2 miliar, naik 5%.", True),
+    ("Kapitalisasi dari 2,1 triliun ke 2,4 triliun, naik 14,3%.", False),
+    ("Supply dari 18 ribu ke 21 ribu, naik 16,7%.", False),
+    ("Turun dari $1,2 miliar ke $850 juta, sekitar -29,2%.", False),
+    ("Turun dari $1,2 miliar ke $850 juta, sekitar -60%.", True),
+    ("TVL from $16.9 billion to $18.4 billion, up 25%.", True),
+    # Skala timpang: rasionya mustahil, jadi lebih baik DIAM daripada menuduh keliru.
+    ("TVL dari 16,9 ke 18,4 miliar, naik 8,9%.", False),
+])
+def test_audit_hitung_membaca_kata_skala(teks, salah):
+    assert bool(bot.audit_hitung(teks)) is salah, bot.audit_hitung(teks)
+
+
+def test_perbaikan_tidak_boleh_menghapus_panggilan():
+    """Jejak rekam harus selamat.
+
+    rapor.py menarik BIAS/Harga/Invalidasi/Target dari teks balasan untuk dinilai
+    belakangan. Perbaikan yang menulis ulang jawaban bisa membuang baris itu sambil
+    tetap lolos pagar panjang dan hitung ulang — panggilannya lalu lenyap dari jejak
+    rekam, tidak pernah terbukti benar maupun salah. Diuji: dulu DITERIMA.
+    """
+    import shutil as _sh
+    import subprocess as _sp
+    which_asli, run_asli = _sh.which, _sp.run
+    _sh.which = lambda x: "/usr/bin/claude"
+
+    class _R:
+        def __init__(self, out):
+            self.returncode, self.stdout, self.stderr = 0, out, ""
+
+    isi = "Konteksnya begini. " * 25
+    asli = ("BIAS SPOT: AKUMULASI\nHarga $214,50\nInvalidasi $198\n"
+            "Target: $232 / $248\n\n" + isi
+            + "\nSOL bergerak dari $214 ke $232, naik 12% sepekan.\n")
+    benar = asli.replace("naik 12%", "naik 8,4%")
+    try:
+        assert rapor.urai_panggilan(asli), "prasyarat: aslinya memang bisa dinilai"
+        temuan = bot.audit_hitung(asli)
+        assert temuan, "prasyarat: ada salah hitung untuk dibetulkan"
+        for nama, keluaran, diterima in [
+            # Panjang cukup dan hitungnya sudah benar, tapi baris panggilan raib.
+            ("baris panggilan hilang",
+             isi + "\nSOL dari $214 ke $232, naik 8,4%.\n", False),
+            # Membetulkan persen tidak boleh mengubah kesimpulannya.
+            ("bias ikut berubah", benar.replace("AKUMULASI", "HINDARI"), False),
+            ("angka saja yang dibetulkan", benar, True),
+        ]:
+            _sp.run = lambda cmd, _o=keluaran, **k: _R(_o)
+            baru, sisa = bot.perbaiki_hitung(asli, temuan)
+            assert (baru != asli) is diterima, nama
+            p = rapor.urai_panggilan(baru)
+            assert p and p["bias"] == "AKUMULASI", nama + ": panggilan hilang/berubah"
+            assert sisa == ([] if diterima else temuan), nama
+    finally:
+        _sh.which, _sp.run = which_asli, run_asli
+
+
+
+def test_modul_stdlib_yang_dipakai_harus_diimpor():
+    """Modul yang dipakai tapi tidak diimpor hanya meledak saat baris itu benar-benar
+    dijalankan — dan yang jarang dijalankan justru penanganan error.
+
+    derivatif.py memakai sys.stderr di dalam `except OSError` tanpa `import sys`: penanganan
+    yang ditulis supaya kegagalan terlihat malah melempar NameError dan menjatuhkan
+    penulisan arsip. Impor tak terpakai tidak diperiksa di sini — itu kerapian, bukan cacat.
+    """
+    import ast
+    import glob
+    import io
+    dicek = ("sys", "os", "re", "json", "time", "math", "random", "subprocess",
+             "shutil", "difflib", "hashlib", "urllib")
+    salah = []
+    for f in sorted(glob.glob(os.path.join(AKAR, "cloud", "*.py"))):
+        pohon = ast.parse(io.open(f, encoding="utf-8").read())
+        terimpor, dipakai = set(), set()
+        for n in ast.walk(pohon):
+            if isinstance(n, ast.Import):
+                for a in n.names:
+                    terimpor.add((a.asname or a.name).split(".")[0])
+            elif isinstance(n, ast.ImportFrom) and n.level == 0 and n.module:
+                terimpor.add(n.module.split(".")[0])
+            elif isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name):
+                dipakai.add(n.value.id)
+        for m in sorted(dipakai & set(dicek) - terimpor):
+            salah.append(os.path.basename(f) + " memakai " + m + ". tanpa mengimpornya")
+    assert not salah, "\n".join(salah)
