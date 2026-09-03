@@ -161,14 +161,22 @@ def test_rakit_chat_blok(pesan, harus_ada, harus_tidak_ada):
 
 
 def test_rakit_chat_gagal_aman_masih_ada():
-    """Kalau menyentuh kosakata pasar tapi tak ada rumpun yang cocok, SEMUA blok dimuat.
+    """Menyentuh kosakata pasar tanpa rumpun yang cocok TIDAK boleh berakhir tanpa aturan.
 
-    Ini jaring pengaman terakhir; kehilangan aturan lebih merugikan daripada boros token.
+    Dulu jaringnya memuat SELURUH blok, dengan alasan "kehilangan aturan lebih merugikan
+    daripada boros token". Alasannya benar; ukurannya yang salah. Diukur pada 35 pesan
+    produksi sungguhan: lima di antaranya memuat 53-65 rb karakter karena jatuh ke sini,
+    dan semuanya jelas pertanyaan crypto. Jaringnya sekarang menebak CRYPTO — tetap
+    memberi aturan, tanpa membayar blok emas, saham, dan riset Telegram sekaligus.
     """
     teks = _muat_chat_md()
     hasil = bot.rakit_chat(teks, "menurutmu pasar gimana")
     semua = [n for n, _, _ in bot._BLOK_RE.findall(teks)]
-    assert len(_blok_aktif(hasil, semua, teks)) == len(semua)
+    aktif = _blok_aktif(hasil, semua, teks)
+    assert aktif, "pesan pasar tidak boleh berakhir tanpa satu blok pun"
+    assert len(aktif) < len(semua), "tidak perlu memuat semuanya"
+    for wajib in bot._RUMPUN_JENIS["crypto"]:
+        assert wajib in aktif, wajib
 
 
 # ------------------------------------------------------- _digit & _cocok_angka
@@ -1134,15 +1142,16 @@ def test_petunjuk_jenis_aset_mencegah_muat_semua():
 
 
 def test_gagal_aman_masih_utuh_tanpa_petunjuk():
-    """Tanpa aset yang dikenali DAN tanpa rumpun yang cocok, semua blok tetap dimuat.
-
-    Itu jaring pengaman terakhir: kehilangan aturan lebih merugikan daripada boros.
-    """
+    """Tanpa aset maupun rumpun, jaringnya menebak crypto — bukan memuat semuanya, dan
+    bukan pula membiarkan pesan pasar lewat tanpa aturan sama sekali."""
     teks = _muat_chat_md()
     hasil = bot.rakit_chat(teks, "menurutmu pasar gimana", None)
     semua = [n for n, _, _ in bot._BLOK_RE.findall(teks)]
     aktif = _blok_aktif(hasil, semua, teks)
-    assert len(aktif) == len(semua), f"hanya {len(aktif)} dari {len(semua)} blok"
+    assert aktif and len(aktif) < len(semua), f"{len(aktif)} dari {len(semua)}"
+    # Rumpun lain TIDAK boleh ikut terseret oleh tebakan ini.
+    for asing in ("gold", "telegram-riset", "fase-bulan", "gaya-mentor"):
+        assert asing not in aktif, asing
 
 
 
@@ -5239,9 +5248,11 @@ def test_rumpun_diwarisi_dari_giliran_sebelumnya():
                                   "pesan": "analisa sol", "balasan": "..."}]
     try:
         assert bot._jenis_terakhir(chat) == "crypto"
-        tanpa = len(bot.build_chat_prompt("menurutku justru masih bisa turun"))
+        # Sejak jaring terakhir menebak crypto, selisihnya tidak lagi puluhan ribu —
+        # yang dijaga sekarang: rumpun dari giliran sebelumnya benar-benar terpakai.
+        assert bot._jenis_terakhir(chat, panjang=True) == "crypto"
         dengan = len(bot.build_chat_prompt("menurutku justru masih bisa turun", chat_id=chat))
-        assert tanpa - dengan > 15000, (tanpa, dengan)
+        assert dengan < 45000, dengan
         # Rumpun yang salah tidak boleh diwarisi kalau pesannya sendiri menyebut aset.
         assert bot.aset_dari_pesan("emas gimana")[0] == "forex"
     finally:
@@ -6192,3 +6203,42 @@ def test_utas_tahan_riwayat_acak():
             assert len(k) < 20000
     finally:
         bot._muat_riwayat = asli
+
+
+def test_pesan_produksi_nyata_tidak_ada_yang_meledak():
+    """Sapuan kedelapan memakai 35 pesan SUNGGUHAN yang dipanen dari log Actions, bukan
+    contoh buatan. Lima di antaranya memuat 53-65 rb karakter — semuanya pertanyaan crypto
+    yang asetnya tidak ada di daftar 55 ticker."""
+    nyata = [
+        "bagaimana performa aster untuk seminggu kedepan",
+        "kalo buy di 0.002551 bagaimana menurutmu?",
+        "apabila dilihat di timeframe weekly, masih possible turun sampai 55k-58k",
+        "hasil analisa pribadi saya begini",
+        "tapi kenapa harga btc stagnan?",
+        "cari informasi mengenai eden, soalnya mentor saya buy spot eden",
+        "berikan alasan btc akan bull dan btc akan bear lalu padukan",
+        "bagaimana pandanganmu terhadap btc untuk seminggu kedepan?",
+    ]
+    for pesan in nyata:
+        n = len(bot.build_chat_prompt(pesan))
+        assert n < 45000, (pesan, n)
+    # Pertanyaan emas & saham TIDAK boleh kehilangan rumpunnya karena tebakan crypto.
+    assert "gold_drivers" in bot.build_chat_prompt(
+        "menurut saya gold akan naik ketika data actualnya rilis")
+    assert "Pertanyaan SAHAM" in bot.build_chat_prompt("analisa saham nvda")
+
+
+def test_permintaan_temuan_tanpa_aset_dapat_putaran_cukup():
+    """Dua pesan produksi nyata: "ada informasi baru dan menarik apa selama 7 hari
+    terakhir" dan "kalo secara fundamental di X apakah ada informasi yang menarik".
+    Tidak menyebut aset apa pun, jadi seluruh saringan melewatkannya — lalu menjalankan
+    riset web dengan 8 putaran dan terpotong di tengah."""
+    for pesan in ("ada informasi baru dan menarik apa selama 7 hari terakhir",
+                  "kalo secara fundamental di X apakah ada informasi yang menarik"):
+        detik, _m, putaran, label = bot.bobot_chat(pesan, False)
+        assert putaran >= 20, (pesan, putaran)
+        assert "temuan" in label
+    # Sapaan dan lanjutan pendek TIDAK ikut naik — obrolan_murni menyaringnya.
+    for pesan in ("halo", "makasih ya", "kok beda dengan yang tadi?", "maksudnya gimana",
+                  "bagaimana menurutmu?", "apa itu RAG?"):
+        assert bot.bobot_chat(pesan, False)[2] == 8, pesan

@@ -598,11 +598,19 @@ def rakit_chat(teks_prompt, pesan, jenis_aset_terdeteksi=None):
             # memuat 64-65 rb karakter — padahal topiknya terbaca jelas sebagai
             # fase-bulan dan ai.
             serumpun = {n for n in topik_pesan(pesan) if n in {x for x, _, _ in blok}}
-        if not serumpun and _SEBAB_PASAR.search(low):
-            # Pertanyaan "kenapa X naik" dengan X yang tidak dikenali. Bot ini terutama
-            # bot crypto, dan pertanyaan sebab untuk emas/forex/saham punya kosakatanya
-            # sendiri yang sudah ditangkap _rumpun_cocok di atas. Tanpa cabang ini,
-            # "kenapa lit naik" memuat SELURUH blok: 59 rb karakter.
+        if not serumpun:
+            # JARING TERAKHIR. Pesan pasar yang asetnya tidak dikenali dan topiknya tidak
+            # tertangkap: bot ini terutama bot CRYPTO, jadi menebak crypto jauh lebih baik
+            # daripada memuat SEMUANYA. Diukur pada 35 pesan produksi sungguhan — lima di
+            # antaranya memuat 53-65 rb karakter karena jatuh ke gagal-aman:
+            #   "bagaimana performa aster untuk seminggu kedepan"   65.086
+            #   "apabila dilihat di timeframe weekly, masih possible turun sampai 55k"
+            #   "kalo buy di 0.002551 bagaimana menurutmu?"
+            # Semuanya jelas pertanyaan crypto; tidak satu pun butuh blok emas atau saham.
+            #
+            # Emas, forex, dan saham punya kosakatanya sendiri yang sudah ditangkap
+            # _rumpun_cocok di atas, jadi tebakan ini tidak merampas rumpun mereka —
+            # diverifikasi pada pesan gold dan saham dari log yang sama.
             serumpun = _RUMPUN_JENIS.get("crypto", set())
         if serumpun:
             dipakai.update(serumpun)
@@ -1256,6 +1264,13 @@ def bobot_chat(text, ada_konteks):
     if pesan_pasar(text):
         # Satu aset, satu pertanyaan spesifik. Butuh data tapi bukan riset multi-sumber.
         return 300, MODEL_NARASI, 20, "SEDANG (pertanyaan pasar spesifik)"
+    # PERMINTAAN TEMUAN tanpa aset: "ada informasi baru dan menarik apa selama 7 hari
+    # terakhir", "kalo secara fundamental di X apakah ada informasi yang menarik". Tidak
+    # menyebut aset apa pun, jadi seluruh saringan di atas melewatkannya — lalu ia
+    # menjalankan riset web dengan 8 putaran dan terpotong di tengah. Dua-duanya pesan
+    # produksi sungguhan. Sapaan dan lanjutan pendek tidak ikut: obrolan_murni menyaringnya.
+    if _MINTA_PANTAU.search(low) and not obrolan_murni(text):
+        return 300, MODEL_NARASI, 20, "SEDANG (permintaan temuan, butuh riset)"
     return 120, MODEL_RINGAN, 8, "RINGAN (di luar kosakata pasar)"
 
 
