@@ -63,5 +63,17 @@
    "harga=2,29",
    "ema21=0,1386"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1788435803.271476,
+  "waktu_utc": "2026-09-03 11:43",
+  "pesan": "secara teknikal apakah kenaikannya akan berkelanjutan selama beberapa hari kedepan?",
+  "balasan": "Sinyal teknikal LIT saat ini CAMPUR ADUK — bukan konfirmasi kenaikan akan lanjut mulus. Tool sendiri menandai kondisi pasar CHOPPY dengan keandalan sinyal EMA RENDAH di Daily maupun 4H, jadi cross EMA rawan sinyal palsu.\n\n• Daily (close 2 Sep, $0,142\n[...dipangkas...]\n: TUNGGU DULU — butuh volume breakout riil + close 4H tembus $0,145 (R1/atas Golden Pocket) sebagai konfirmasi lanjut naik.\nSudah pegang: TAHAN, tapi waspada — kalau close 4H balik ke bawah EMA21 $0,1406, momentum jangka pendek berbalik netral/turun.",
+  "angka_kunci": [
+   "harga=0,1406",
+   "ema21=0,1386",
+   "ema21=0,1406"
+  ]
  }
 ]
