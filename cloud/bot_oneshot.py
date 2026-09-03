@@ -1456,6 +1456,19 @@ def aset_dari_pesan(teks, dalam=False):
     return None, None
 
 
+# "kenapa X naik" adalah pertanyaan PASAR apa pun X-nya. Sebelumnya penilaiannya
+# bergantung pada daftar 55 ticker, jadi "cari penyebab kenapa lit naik hari ini"
+# jatuh ke RINGAN (8 putaran) lalu MATI dengan "Reached max turns" — user menerima
+# galat, bukan jawaban. Koin yang ditanyakan justru sering yang belum terdaftar.
+#
+# Menuntut KEDUANYA: kata sebab DAN kata arah. "kenapa kamu bilang tunggu" tidak
+# punya arah, jadi ia tidak ikut naik kelas.
+_SEBAB_PASAR = re.compile(
+    r"\b(?:kenapa|mengapa|penyebab|sebab|why|apa yang bikin|apa yang buat)\b[^.?!]{0,40}\b(?:naik|turun|anjlok|jatuh|melonjak|meroket|melemah|menguat|pump|dump|reli|rally|drop|surge|crash)\b|"
+    # Urutan terbalik juga lazim: "lit naik kenapa ya".
+    r"\b(?:naik|turun|anjlok|jatuh|melonjak|meroket|melemah|menguat|pump|dump|reli|rally|drop|surge|crash)\b[^.?!]{0,20}\b(?:kenapa|mengapa|penyebab|sebab|why|apa yang bikin|apa yang buat)\b", re.I)
+
+
 def pesan_pasar(text):
     """Apakah pesan ini menyangkut pasar — penentu apakah aturan kalibrasi dimuat.
 
@@ -1468,6 +1481,10 @@ def pesan_pasar(text):
     # sana, jadi tidak boleh gugur di saringan konseptual — "bandingkan btc dan eth secara
     # detail" sempat dianggap bukan pertanyaan pasar karenanya.
     if _BERAT_RE.search(low):
+        return True
+    # Sebab-akibat harga dinilai SEBELUM saringan konseptual: "kenapa" ada di kedua sisi,
+    # dan yang menentukan adalah kata arahnya.
+    if _SEBAB_PASAR.search(low):
         return True
     if _RINGAN_RE.match(low) or _KONSEP_RE.search(low):
         return False
@@ -2709,6 +2726,19 @@ def run_claude(prompt, timeout, max_turns, model=None, with_tools=True, tools_ov
         return None, f"Waktu proses melebihi batas {timeout} detik."
     if result.returncode != 0:
         mentah = (result.stderr or result.stdout or "")
+        # KEHABISAN PUTARAN BUKAN KEGAGALAN TOTAL. Claude keluar dengan exit 1 dan pesan
+        # "Reached max turns", tapi stdout sering sudah berisi jawaban yang hampir jadi.
+        # Membuangnya dan mengirim "Claude gagal" berarti user tidak menerima apa pun,
+        # padahal seluruh pekerjaan dan tokennya sudah dibayar. Terjadi nyata pada
+        # "cari penyebab kenapa lit naik hari ini".
+        sebagian = (result.stdout or "").strip()
+        if "max turns" in mentah.lower() and len(sebagian) >= 200:
+            print(f"[claude] kehabisan putaran ({max_turns}) — mengirim jawaban sebagian "
+                  f"({len(sebagian)} karakter)", file=sys.stderr)
+            return (sebagian + NL * 2
+                    + f"_(jawaban ini terpotong: batas {max_turns} langkah tercapai "
+                      f"sebelum selesai — tanya lagi kalau ada bagian yang menggantung)_",
+                    None)
         # Log dapat detail LENGKAP; user hanya ringkasannya. Dulu 1.500 karakter stderr
         # mentah dikirim apa adanya ke Telegram — selain tak terbaca, keluaran seperti itu
         # bisa memuat potongan token, path, atau isi konfigurasi. Repo ini publik dan

@@ -5957,3 +5957,60 @@ def test_fokus_satu_grup_tidak_ikut_dibagi():
     src = open(os.path.join(AKAR, "cloud", "tgbaca.py"), encoding="utf-8").read()
     assert "if cocok and not fokus:" in src
     assert "maks_total // len(cocok)" in src
+
+
+@pytest.mark.parametrize("pesan", [
+    "cari penyebab kenapa lit naik hari ini", "kenapa lit naik", "lit naik kenapa ya",
+    "penyebab hype anjlok apa", "hype anjlok kenapa", "why did aster pump today",
+    "aster pump why", "apa yang bikin ondo melonjak", "ondo turun karena apa ya",
+])
+def test_pertanyaan_sebab_pasar_tidak_bergantung_daftar_ticker(pesan):
+    """Bug produksi 3 Sep: "cari penyebab kenapa lit naik hari ini" dinilai RINGAN
+    (8 putaran) karena LIT tidak ada di daftar 55 ticker, lalu MATI dengan "Reached max
+    turns" — user menerima galat, bukan jawaban. Koin yang ditanyakan justru sering yang
+    belum terdaftar."""
+    assert bot.pesan_pasar(pesan), pesan
+    assert bot.bobot_chat(pesan, False)[2] >= 20, pesan
+
+
+@pytest.mark.parametrize("pesan", [
+    "kenapa kamu bilang tunggu?", "halo", "makasih ya", "apa itu RAG?",
+    "kok beda dengan yang tadi?",
+])
+def test_sebab_tanpa_arah_tidak_naik_kelas(pesan):
+    """Polanya menuntut KEDUANYA: kata sebab DAN kata arah. "kenapa kamu bilang tunggu"
+    tidak punya arah, jadi ia tetap ringan."""
+    assert bot.bobot_chat(pesan, False)[2] == 8, pesan
+
+
+def test_kehabisan_putaran_mengirim_jawaban_sebagian():
+    """Claude keluar exit 1 dengan "Reached max turns", tapi stdout sering sudah berisi
+    jawaban yang hampir jadi. Membuangnya berarti user tidak menerima apa pun — padahal
+    seluruh pekerjaan dan tokennya sudah dibayar."""
+    import shutil as _sh
+    import subprocess as _sp
+    which_asli, run_asli = _sh.which, _sp.run
+    _sh.which = lambda x: "/usr/bin/claude"
+
+    class _R:
+        def __init__(self, rc, out, err):
+            self.returncode, self.stdout, self.stderr = rc, out, err
+
+    try:
+        # Ada jawaban -> dikirim, dengan penanda terpotong.
+        _sp.run = lambda cmd, **k: _R(1, "LIT naik 34% hari ini. " * 20,
+                                      "Error: Reached max turns (8)")
+        out, err = bot.run_claude("x", 10, 8)
+        assert err is None and out and "terpotong" in out
+        assert "batas 8 langkah" in out
+        # Tidak ada jawaban -> tetap galat, jangan mengirim potongan kosong.
+        _sp.run = lambda cmd, **k: _R(1, "", "Error: Reached max turns (8)")
+        assert bot.run_claude("x", 10, 8)[0] is None
+        # Terlalu pendek untuk berguna -> juga galat.
+        _sp.run = lambda cmd, **k: _R(1, "hm", "Error: Reached max turns (8)")
+        assert bot.run_claude("x", 10, 8)[0] is None
+        # Galat LAIN tetap galat — jangan mengirim stdout mentah sebagai jawaban.
+        _sp.run = lambda cmd, **k: _R(1, "x" * 500, "Error: authentication failed")
+        assert bot.run_claude("x", 10, 8)[0] is None
+    finally:
+        _sh.which, _sp.run = which_asli, run_asli
