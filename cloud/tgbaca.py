@@ -417,7 +417,10 @@ def daftar_json():
     """
     peta = {"crypto": [], "forex": [], "kerja": []}
     with klien() as k:
-        for nama in nama_grup(k):
+        # Dua dialog bisa BERNAMA SAMA — grup dan kanal terpisah dengan judul identik.
+        # Tanpa dedup, namanya muncul dua kali di JSON dan user menempelkan potongan
+        # kembar yang mubazir. Terlihat pada keluaran produksi pertama.
+        for nama in dict.fromkeys(nama_grup(k)):
             peta[_tebak_kategori(nama)].append(nama)
     for v in peta.values():
         v.sort(key=str.lower)

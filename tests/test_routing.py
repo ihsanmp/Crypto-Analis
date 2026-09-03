@@ -5875,3 +5875,35 @@ def test_semua_workflow_ter_parse():
     for p in glob.glob(os.path.join(AKAR, ".github", "workflows", "*.yml")):
         d = yaml.safe_load(open(p, encoding="utf-8"))
         assert d and d.get("jobs"), os.path.basename(p)
+
+
+def test_daftar_json_membuang_nama_kembar():
+    """Dua dialog bisa bernama SAMA — grup dan kanal terpisah dengan judul identik.
+    Tanpa dedup namanya muncul dua kali di JSON, dan user menempelkan potongan kembar
+    yang mubazir. Terlihat pada keluaran produksi pertama."""
+    import json as _json
+    import io as _io
+    class _D:
+        def __init__(self, n):
+            self.name, self.is_group, self.is_channel = n, True, False
+    class _K:
+        def iter_dialogs(self):
+            return iter([_D("Alpha Wallet"), _D("Alpha Wallet"), _D("Beta Jobs")])
+        def __enter__(self):
+            return self
+        def __exit__(self, *a):
+            return False
+    asli = _tg.klien
+    _tg.klien = lambda: _K()
+    keluar = _io.StringIO()
+    simpan = sys.stdout
+    sys.stdout = keluar
+    try:
+        _tg.daftar_json()
+    finally:
+        sys.stdout = simpan
+        _tg.klien = asli
+    d = _json.loads(keluar.getvalue())
+    semua = [x for v in d.values() for x in v]
+    assert len(semua) == len(set(semua)), semua
+    assert semua.count("Alpha Wallet") == 1
