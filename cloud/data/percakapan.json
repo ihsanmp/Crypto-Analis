@@ -75,5 +75,17 @@
    "ema21=0,1386",
    "ema21=0,1406"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1788445654.7552447,
+  "waktu_utc": "2026-09-03 14:27",
+  "pesan": "kenapa tiba tiba btc naik drastis?",
+  "balasan": "BTC sekarang $79.262–79.481 (kategori.py & proyeksi.py, data per 3 Sep 2026 14:25 UTC / 21:25 WIB), naik +2,7% dalam 24 jam. Ini pantulan dari level $76.600 yang sempat disebut di obrolan 19 jam lalu — jadi bukan lompatan dari kondisi datar, tapi kel\n[...dipangkas...]\ns://defillama.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/",
+  "angka_kunci": [
+   "harga=79.262",
+   "ema21=77.768",
+   "rsi=56,58"
+  ]
  }
 ]
