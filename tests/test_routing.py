@@ -6057,3 +6057,80 @@ def test_pertanyaan_sebab_tanpa_aset_tidak_memuat_seluruh_blok():
     assert "Pertanyaan SAHAM" in p, "rumpun saham harus menang atas jaring crypto"
     # Emas tetap ke rumpun forex/gold.
     assert "gold_drivers" in bot.build_chat_prompt("kenapa emas naik")
+
+
+def _pasang_utas(alur, jeda=300):
+    """Pasang riwayat percakapan tiruan. Return fungsi pemulih."""
+    import time as _t
+    chat = "1"
+    asli = bot._muat_riwayat
+    bot._muat_riwayat = lambda: [
+        {"chat": bot._id_chat(chat), "waktu": _t.time() - (len(alur) - i) * jeda,
+         "waktu_utc": "x", "pesan": p, "balasan": b, "angka_kunci": []}
+        for i, (p, b) in enumerate(alur)]
+    return chat, (lambda: setattr(bot, "_muat_riwayat", asli))
+
+
+_ALUR = [("analisa sol", "SOL 214, EMA21 240. TUNGGU DULU."),
+         ("kenapa tunggu?", "Karena harga di bawah EMA21 dan funding positif."),
+         ("kalau tembus 240 gimana?", "Kalau close harian di atas 240, biasnya berubah."),
+         ("volumenya gimana?", "Volume 24 jam turun 18 persen."),
+         ("berarti lemah ya?", "Ya, penurunan volume saat rebound biasanya rapuh."),
+         ("target realistisnya?", "Resistensi terdekat 232, lalu 248."),
+         ("stop di mana?", "Di bawah swing low 198."),
+         ("oke, risk rewardnya?", "Dari 214 ke 232 dengan stop 198: sekitar 1,1."),
+         ("btc gimana?", "BTC 78k, konsolidasi."),
+         ("makasih", "Sama-sama.")]
+
+
+def test_diskusi_panjang_tetap_tersambung():
+    """Batas 3 giliran memotong diskusi nyata di tempat yang salah: setelah sepuluh
+    giliran membahas SOL, "kalau sol turun ke 198 gimana" hanya membawa tiga giliran
+    TERAKHIR — yang kebetulan berisi selipan "btc gimana" dan "makasih", sementara seluruh
+    benang SOL-nya hilang."""
+    chat, pulih = _pasang_utas(_ALUR)
+    try:
+        k = bot.konteks_percakapan(chat, pesan="kalau sol turun ke 198 gimana")
+        assert k.count("] User:") >= 6, k.count("] User:")
+        for harus in ("stop di mana?", "target realistisnya?", "volumenya gimana?"):
+            assert harus in k, harus
+    finally:
+        pulih()
+
+
+def test_ganti_topik_memutus_benang_lama():
+    """"kecuali yang dibicarakan sudah beda konteks" — pindah ke BTC setelah sepuluh
+    giliran SOL tidak boleh menyeret seluruh diskusi SOL-nya."""
+    chat, pulih = _pasang_utas(_ALUR)
+    try:
+        k = bot.konteks_percakapan(chat, pesan="btc gimana")
+        assert "analisa sol" not in k and "stop di mana?" not in k, k[:400]
+        assert "btc gimana?" in k
+        assert k.count("] User:") <= 3
+    finally:
+        pulih()
+
+
+def test_lanjutan_tanpa_penanda_selalu_dapat_giliran_terakhir():
+    """Lanjutan sependek "kenapa?" tidak punya penanda apa pun, dan tidak bisa dipahami
+    tanpa giliran sebelumnya. Dua terakhir selalu ikut apa pun utasnya."""
+    chat, pulih = _pasang_utas(_ALUR)
+    try:
+        for pesan in ("kenapa?", "jadi kesimpulannya apa", "maksudnya gimana"):
+            k = bot.konteks_percakapan(chat, pesan=pesan)
+            assert k.count("] User:") >= 2, pesan
+            assert "makasih" in k, pesan
+    finally:
+        pulih()
+
+
+def test_utas_tidak_membengkakkan_sapaan():
+    """Riwayat panjang tidak boleh membuat prompt sapaan melewati penjaganya."""
+    chat, pulih = _pasang_utas(_ALUR)
+    try:
+        assert bot.RIWAYAT_MAKS_UTAS >= 6
+        k = bot.konteks_percakapan(chat, pesan="kalau sol turun ke 198 gimana")
+        assert len(k) < 3000, len(k)     # utas terpanjang pun tetap murah
+        assert len(bot.build_chat_prompt("halo")) < 18000
+    finally:
+        pulih()

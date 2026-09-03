@@ -618,7 +618,13 @@ def rakit_chat(teks_prompt, pesan, jenis_aset_terdeteksi=None):
 
 
 RIWAYAT_PATH = os.path.join(BASE_DIR, "data", "percakapan.json")
-RIWAYAT_MAKS = 3          # pasang tanya-jawab terakhir yang disertakan
+RIWAYAT_MAKS = 3          # minimum yang selalu ikut, walau topiknya berganti
+# Diskusi nyata berjalan belasan giliran. Dengan batas 3, "jadi kesimpulannya apa" setelah
+# sepuluh giliran membahas SOL hanya membawa tiga giliran TERAKHIR — dan kalau di antaranya
+# ada selipan "btc gimana" dan "makasih", justru itu yang terbawa sementara seluruh benang
+# SOL-nya hilang. Batas ini dinaikkan SELAMA masih satu topik; begitu topiknya berganti,
+# benangnya diputus di situ.
+RIWAYAT_MAKS_UTAS = 8
 RIWAYAT_UMUR = 6 * 3600   # detik; lebih tua dari ini dianggap topik lain
 BALASAN_POTONG = 500      # balasan dipangkas supaya tidak membengkakkan prompt
 
@@ -975,6 +981,45 @@ def _masih_nyambung(pesan, entri, tanda=None):
     return bool(topik and topik & topik_pesan(teks_lama))
 
 
+def _utas(milik, usia, pesan):
+    """Giliran segar yang masih SATU UTAS dengan pesan sekarang.
+
+    Tiap giliran diberi penanda utas lewat sapuan MAJU: giliran yang menyebut aset/topik
+    memulai utas baru, dan giliran tanpa penanda ("kenapa tunggu?", "stop di mana?")
+    MEWARISI utas sebelumnya — itu bentuk lanjutan yang paling lazim, dan memperlakukannya
+    sebagai netral membuat benang panjang terpotong di tempat yang salah.
+
+    Acuannya penanda pesan SEKARANG; kalau pesannya sendiri tidak berpenanda, dipakai utas
+    giliran terakhir. Giliran dari utas lain tidak ikut — itu bagian "kecuali sudah beda
+    konteks". Dua giliran terakhir selalu ikut apa pun utasnya, karena lanjutan sependek
+    "kenapa?" tidak bisa dipahami tanpanya.
+    """
+    segar = [r for r in milik if usia(r) < RIWAYAT_UMUR]
+    if not segar:
+        return []
+
+    utas, berjalan = [], frozenset()
+    for r in segar:
+        a, t = _tanda_pesan((r.get("pesan") or "") + " " + (r.get("balasan") or ""))
+        tanda = frozenset(a | t)
+        if tanda:
+            berjalan = tanda
+        utas.append(berjalan)
+
+    aset, topik = _tanda_pesan(pesan)
+    acuan = frozenset(aset | topik) or utas[-1]
+    if not acuan:
+        return segar[-RIWAYAT_MAKS:]
+
+    pilih = [r for r, u in zip(segar, utas) if u & acuan][-RIWAYAT_MAKS_UTAS:]
+    # Dua terakhir selalu ikut, walau utasnya lain.
+    for r in segar[-2:]:
+        if r not in pilih:
+            pilih.append(r)
+    urut = {id(r): i for i, r in enumerate(segar)}
+    return sorted(pilih, key=lambda r: urut[id(r)])[-RIWAYAT_MAKS_UTAS:]
+
+
 def konteks_percakapan(chat_id, panjang=False, pesan=None):
     """Rakit konteks percakapan sebelumnya untuk disisipkan ke prompt.
 
@@ -992,7 +1037,7 @@ def konteks_percakapan(chat_id, panjang=False, pesan=None):
     if panjang:
         lalu = [r for r in milik if usia(r) < RIWAYAT_UMUR_LANJUT][-RIWAYAT_MAKS_LANJUT:]
     else:
-        segar = [r for r in milik if usia(r) < RIWAYAT_UMUR][-RIWAYAT_MAKS:]
+        segar = _utas(milik, usia, pesan)
         # OTOMATIS: lebih tua dari 6 jam tapi MASIH membahas aset yang sama. User tidak
         # perlu bilang "lanjutkan" — kalau ia bertanya soal SOL lagi hari ini, percakapan
         # SOL kemarin memang nyambung. Dibatasi 2 supaya tidak menggantikan yang segar.
