@@ -1119,6 +1119,10 @@ def evaluasi_diri(chat_id, brief):
         baris.append(f"- Harga berubah {ubah:+.1f}% sejak giliran itu: {dulu:g} -> {kini:g}.")
     if not baris:
         return ""
+    print(f"[evaluasi] {len(baris)} temuan: {dulu:g} -> {kini:g} ({ubah:+.1f}%)"
+          + (" · INVALIDASI TERTEMBUS" if len(baris) > 1 or invalid and
+             ((dulu > invalid and kini < invalid) or (dulu < invalid and kini > invalid))
+             else ""), file=sys.stderr)
     return ("## EVALUASI DIRI (dihitung KODE, bukan dugaan)" + NL
             + f"Giliran sebelumnya ({lama.get('_umur', 'beberapa saat lalu')}) memakai "
               f"harga {dulu:g}." + NL + NL.join(baris) + NL + NL
@@ -3290,6 +3294,11 @@ def process(token, chat_id, text, photo_file_id=None):
         hitung = audit_hitung(body, imbalan)
         if hitung:
             print(f"[audit] SALAH HITUNG: {hitung}", file=sys.stderr)
+            # Dibetulkan DULU, bukan cuma ditempeli peringatan. Peringatan hanya dipakai
+            # kalau perbaikannya sendiri tidak lolos hitung ulang.
+            body, hitung = perbaiki_hitung(body, hitung)
+            if not hitung:
+                imbalan = audit_imbalan(body)      # levelnya mungkin ikut berubah
         catatan = peringatan_audit(jejak, asal, kesegaran, imbalan, outlook, keyakinan,
                                    hitung)
         if catatan:
@@ -3478,6 +3487,49 @@ def audit_hitung(body, imbalan=None):
                 temuan.append(f"imbalan:risiko ditulis {ditulis:g}, "
                               f"dihitung dari levelnya {nyata:g}")
     return temuan
+
+
+def perbaiki_hitung(body, temuan, model=None):
+    """Minta model MEMBETULKAN angkanya, bukan sekadar diberi peringatan.
+
+    Menempelkan "⚠️ salah hitung" di bawah jawaban tidak memperbaiki apa pun: user tetap
+    menerima angka yang salah, dan sekarang harus menghitung sendiri mana yang benar. Yang
+    berguna adalah jawaban yang BENAR.
+
+    Koreksinya sempit dan diverifikasi: kode menyebutkan persis angka mana yang salah dan
+    berapa seharusnya, model hanya menukar angkanya, lalu hasilnya DIHITUNG ULANG. Kalau
+    masih salah, jawaban aslinya yang dipakai — dengan peringatan seperti sebelumnya.
+    Perbaikan yang tidak terbukti lebih buruk daripada peringatan yang jujur.
+
+    Return (body_baru, sisa_temuan). sisa_temuan kosong berarti perbaikannya berhasil.
+    """
+    if not body or not temuan:
+        return body, temuan
+    perintah = (
+        "Di bawah ini jawaban yang KAMU tulis, lalu daftar kesalahan aritmetika yang "
+        "dihitung ULANG oleh kode dari angka di jawaban itu sendiri." + NL * 2
+        + "TUGASMU: tulis ulang jawaban itu dengan angka yang salah DIBETULKAN." + NL
+        + "- Ubah HANYA angka yang disebut salah. Jangan menyunting kalimat lain, jangan "
+          "menambah pembuka, jangan menambah catatan koreksi." + NL
+        + "- Kalau membetulkan angka membuat kesimpulannya tidak lagi masuk akal, sesuaikan "
+          "kesimpulannya juga — tapi katakan itu dalam satu kalimat singkat." + NL
+        + "- Keluarkan HANYA jawaban yang sudah dibetulkan, tanpa komentar apa pun." + NL * 2
+        + "KESALAHAN YANG DIHITUNG KODE:" + NL
+        + NL.join(f"- {t}" for t in temuan) + NL * 2
+        + "JAWABAN YANG HARUS DIBETULKAN:" + NL + body)
+    baru, err = run_claude(perintah, 90, 2, model=model or MODEL_RINGAN, with_tools=False)
+    if err or not baru or len(baru) < len(body) * 0.5:
+        print(f"[audit] perbaikan hitung gagal ({err or 'keluaran terlalu pendek'}) — "
+              f"jawaban asli dipakai dengan peringatan", file=sys.stderr)
+        return body, temuan
+    sisa = audit_hitung(baru)
+    if sisa:
+        print(f"[audit] perbaikan hitung TIDAK menyelesaikan: {sisa} — jawaban asli dipakai",
+              file=sys.stderr)
+        return body, temuan
+    print(f"[audit] salah hitung DIBETULKAN ({len(temuan)} angka), diverifikasi ulang",
+          file=sys.stderr)
+    return baru, []
 
 
 def peringatan_audit(jejak, asal, kesegaran, imbalan=None, outlook=None,

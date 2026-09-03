@@ -6382,3 +6382,67 @@ def test_audit_hitung_dipanggil_di_jalur_kirim():
     assert "hitung = audit_hitung(body, imbalan)" in src
     assert "peringatan_audit(jejak, asal, kesegaran, imbalan, outlook, keyakinan,\n" in src
     assert "[audit] SALAH HITUNG" in src
+
+
+def test_salah_hitung_dibetulkan_bukan_cuma_diperingatkan():
+    """Menempelkan "salah hitung" di bawah jawaban tidak memperbaiki apa pun: user tetap
+    menerima angka yang salah dan sekarang harus menghitung sendiri mana yang benar.
+    Koreksinya diverifikasi — kalau perbaikannya sendiri tidak lolos hitung ulang, jawaban
+    ASLI yang dipakai, karena perbaikan yang tidak terbukti lebih buruk daripada peringatan
+    yang jujur."""
+    import shutil as _sh
+    import subprocess as _sp
+    which_asli, run_asli = _sh.which, _sp.run
+    _sh.which = lambda x: "/usr/bin/claude"
+    salah = "SOL bergerak dari $214 ke $232, naik 12% sepekan. Kesimpulan: TUNGGU DULU."
+    benar = "SOL bergerak dari $214 ke $232, naik 8,4% sepekan. Kesimpulan: TUNGGU DULU."
+
+    class _R:
+        def __init__(self, rc, out):
+            self.returncode, self.stdout, self.stderr = rc, out, ""
+
+    def pasang(rc, out):
+        def f(cmd, **k):
+            return _R(rc, out)
+        _sp.run = f
+
+    try:
+        temuan = bot.audit_hitung(salah)
+        assert temuan, "fixture harus memang salah"
+        # Berhasil dibetulkan -> jawaban BARU dipakai, tidak ada sisa temuan.
+        pasang(0, benar)
+        baru, sisa = bot.perbaiki_hitung(salah, temuan)
+        assert sisa == [] and "8,4%" in baru
+        # Gagal membetulkan / terpotong / error -> jawaban ASLI dipakai apa adanya.
+        for rc, out in ((0, salah), (0, "SOL"), (1, "")):
+            baru, sisa = bot.perbaiki_hitung(salah, temuan)
+            pasang(rc, out)
+            baru, sisa = bot.perbaiki_hitung(salah, temuan)
+            assert baru == salah and sisa, (rc, out)
+        # Tanpa temuan, tidak ada panggilan model sama sekali.
+        dipanggil = []
+        _sp.run = lambda cmd, **k: (dipanggil.append(1), _R(0, benar))[1]
+        assert bot.perbaiki_hitung(salah, []) == (salah, [])
+        assert not dipanggil
+    finally:
+        _sh.which, _sp.run = which_asli, run_asli
+
+
+def test_perbaikan_dipanggil_sebelum_peringatan():
+    """Urutannya menentukan: dibetulkan DULU, dan peringatan hanya dipakai kalau
+    perbaikannya sendiri tidak lolos hitung ulang."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    i = src.index("hitung = audit_hitung(body, imbalan)")
+    j = src.index("catatan = peringatan_audit(", i)
+    antara = src[i:j]
+    assert "perbaiki_hitung(body, hitung)" in antara, "perbaikan harus sebelum peringatan"
+    assert "imbalan = audit_imbalan(body)" in antara, "level bisa ikut berubah"
+
+
+def test_evaluasi_meninggalkan_jejak_di_log():
+    """"Benar-benar dilakukan" harus bisa dibuktikan dari log produksi, bukan dipercayai."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    assert "[evaluasi]" in src
+    assert "[audit] SALAH HITUNG" in src
+    assert "[audit] salah hitung DIBETULKAN" in src
+    assert "[audit] perbaikan hitung TIDAK menyelesaikan" in src
