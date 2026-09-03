@@ -92,5 +92,18 @@
    "rsi=65,2",
    "rsi=4"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1788459693.8559597,
+  "waktu_utc": "2026-09-03 18:21",
+  "pesan": "btc berpotensi naik sampai berapa?",
+  "balasan": "BTC sekarang $81.150–81.360 (proyeksi.py & candle 4H, data per 3 Sep 2026 18:20 UTC), lagi overextended di 4H. Potensi naiknya bertingkat tergantung skenario — bukan angka tunggal.\n\nBasis: sebaran histori 60 hari (661 jendela tumpang tindih, 13 Sep 2\n[...dipangkas...]\ns://defillama.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/",
+  "angka_kunci": [
+   "harga=81.150",
+   "invalid=5",
+   "ema21=74.389",
+   "rsi=75"
+  ]
  }
 ]
