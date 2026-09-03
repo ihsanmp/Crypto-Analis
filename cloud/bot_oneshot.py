@@ -598,6 +598,12 @@ def rakit_chat(teks_prompt, pesan, jenis_aset_terdeteksi=None):
             # memuat 64-65 rb karakter — padahal topiknya terbaca jelas sebagai
             # fase-bulan dan ai.
             serumpun = {n for n in topik_pesan(pesan) if n in {x for x, _, _ in blok}}
+        if not serumpun and _SEBAB_PASAR.search(low):
+            # Pertanyaan "kenapa X naik" dengan X yang tidak dikenali. Bot ini terutama
+            # bot crypto, dan pertanyaan sebab untuk emas/forex/saham punya kosakatanya
+            # sendiri yang sudah ditangkap _rumpun_cocok di atas. Tanpa cabang ini,
+            # "kenapa lit naik" memuat SELURUH blok: 59 rb karakter.
+            serumpun = _RUMPUN_JENIS.get("crypto", set())
         if serumpun:
             dipakai.update(serumpun)
         else:

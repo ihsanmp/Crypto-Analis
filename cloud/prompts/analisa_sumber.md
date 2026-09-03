@@ -12,7 +12,7 @@ memboroskan token tanpa bisa dipakai. Yang membacanya hanya mode SCAN.
    Script ini menarik OHLC (mencoba Binance → Kraken → Coinbase → OKX → CoinGecko) dan
    menghitung EMA 13/21/33/50/100/200, RSI14, Stoch(5,3,3), Bollinger+MidBand(EMA20),
    ATR14, SuperTrend, Pivot standar, swing+Fibonacci, struktur pasar, volume
-   untuk timeframe **1w / 1d / 4h** — candle mingguan dibangun eksak dari candle harian.
+   untuk timeframe **weekly / daily / H4** — candle mingguan dibangun eksak dari candle harian.
    **JANGAN menghitung indikator secara manual.** Pakai angka dari script ini apa adanya.
    - Baca field `source` & `quality` tiap timeframe. Jika ada `quality_warning` atau
      `quality: approx_close_only`, **WAJIB sebutkan keterbatasannya di output** (EMA & RSI

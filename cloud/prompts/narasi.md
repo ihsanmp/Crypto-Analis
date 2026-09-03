@@ -82,7 +82,7 @@ sumber + tanggal; jangan memaksakan kaitan kalau beritanya tidak benar-benar rel
 
 `python cloud/indicators.py <TICKER>`
 → EMA 13/21/33/50/100/200, RSI14, Stoch(5,3,3), BB+MidBand, ATR, SuperTrend, Pivot,
-   Fibonacci, struktur, untuk 1w/1d/4h.
+   Fibonacci, struktur, untuk weekly/daily/H4.
 Yang dicari untuk akumulasi spot: harga belum jauh dari support, idealnya di area Golden Pocket
 (0.5–0.618) atau pullback sehat ke EMA21 — BUKAN yang baru saja terbang vertikal.
 Baca juga `source` & `quality`; kalau `approx_close_only`, sebutkan keterbatasannya.
@@ -154,7 +154,7 @@ WEEKLY  • Harga $xxx vs EMA21 $xxx → DI ATAS/DI BAWAH (x,x%)
         • EMA13 $xxx · EMA21 $xxx · RSI xx · Stoch K xx/D xx
         • Struktur: <...> · Fib: <zona>
 DAILY   • <format sama>
-4H      • <format sama>
+H4      • <format sama>
 
 🧭 RENCANA SPOT
 Entry   <zona akumulasi bertahap>
@@ -167,7 +167,7 @@ Target  $xxx → $xxx
 ⚠️ Riset pasar berbasis data, bukan saran keuangan. DYOR & atur risiko sendiri.
 ```
 
-**EMA21 WAJIB ditampilkan dengan angkanya di setiap timeframe** (Weekly, Daily, 4H)
+**EMA21 WAJIB ditampilkan dengan angkanya di setiap timeframe** (Weekly, Daily, H4)
 beserta posisi harga terhadapnya. Itu acuan utama tren di metodologi ini.
 
 Baris disclaimer itu adalah **BARIS TERAKHIR**. Jangan menambahkan apa pun setelahnya —

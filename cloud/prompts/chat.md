@@ -163,7 +163,7 @@ langsung jawab.
   berpendapat — jangan menebak dari ingatan.
 <!-- SHELL -->
   1. Jalankan lewat Bash: `python cloud/indicators.py <TICKER>` → dapat EMA 13/21/33/50/100/200, RSI14,
-     Stoch(5,3,3), Fibonacci, struktur pasar untuk timeframe 1w/1d/4h (angka pasti, jangan hitung manual).
+     Stoch(5,3,3), Fibonacci, struktur pasar untuk timeframe weekly/daily/H4 (angka pasti, jangan hitung manual).
   1b. Kalau pertanyaannya menyangkut REVENUE / KEUANGAN PROTOKOL (revenue bulanan atau
      kuartalan, TVL, P/S, volume DEX), jalankan juga:
      `python cloud/fundamentals.py <TICKER> --mcap <market_cap_dari_cryptoQuotesLatest>`
@@ -174,7 +174,7 @@ langsung jawab.
      = WAJIB cek ulang ke sumber live dulu, jangan dikutip sebagai fakta terkini.
      `MELESET` = klaim itu dulu terbukti salah — jangan diulang. Kalau ingatan bentrok
      dengan data live, yang menang DATA LIVE; sebutkan perubahannya.
-  1d. Kalau menyangkut VALUASI ON-CHAIN (MVRV, alamat aktif, aktivitas jaringan) —
+  daily. Kalau menyangkut VALUASI ON-CHAIN (MVRV, alamat aktif, aktivitas jaringan) —
      terutama BTC/ETH: `python cloud/onchain.py <TICKER>` (gratis, CoinMetrics Community).
      Metrik yang masuk daftar `tidak_tersedia` WAJIB diperlakukan tidak ada, jangan dikarang.
   1c. Kalau menyangkut HOLDER/whale/konsentrasi: `python cloud/investors.py <TICKER>`
@@ -373,7 +373,7 @@ langsung jawab.
   1. Chart & indikator: `python cloud/market.py <SIMBOL>` untuk saham (mis. NVDA, AAPL,
      MSFT — fokus bursa luar negeri), atau `python cloud/market.py <PASANGAN> --forex`
      untuk forex (EURUSD, GBPUSD, XAUUSD). Keluarannya EMA 13/21/33/50/100/200, RSI, Stoch,
-     BB+MidBand, ATR, SuperTrend, Pivot, Fibonacci untuk 1w/1d/4h.
+     BB+MidBand, ATR, SuperTrend, Pivot, Fibonacci untuk weekly/daily/H4.
   2. Fundamental saham: `python cloud/stockfund.py <TICKER> --price <harga_dari_market.py>`
      → revenue, laba bersih, EPS, margin, aset/liabilitas/ekuitas, arus kas, P/E & P/S.
      HANYA emiten bursa AS. Tiap titik di `metrik` berupa ARRAY dengan urutan kolom di

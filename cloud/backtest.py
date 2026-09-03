@@ -332,7 +332,8 @@ def buang_panduan(obj):
     return obj
 
 
-_NAMA_TF = {"1d": "harian", "4h": "4 jam"}
+# Notasi yang dipakai user: H1/H4 untuk jam, "daily"/"weekly" dieja penuh.
+_NAMA_TF = {"1d": "daily", "4h": "H4", "1h": "H1", "1w": "weekly"}
 _JAM_TF = {"1d": 24, "4h": 4}
 
 

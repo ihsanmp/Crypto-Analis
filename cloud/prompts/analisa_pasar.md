@@ -150,15 +150,15 @@ memberi sinyal PALSU saat menyamping atau choppy.
 - `keandalan RENDAH` (menyamping/choppy) → **JANGAN jadikan cross EMA sebagai alasan utama**.
   Sebutkan terus terang bahwa timeframe itu sedang tanpa tren, lalu bersandar pada level
   (support/resisten, Fibonacci, Pivot) dan tunggu breakout terkonfirmasi volume.
-- Sering terjadi Weekly TRENDING sementara 4H MENYAMPING — itu normal. Artinya arah besar
+- Sering terjadi Weekly TRENDING sementara H4 MENYAMPING — itu normal. Artinya arah besar
   jelas tapi timing belum matang: sampaikan begitu, jangan dipaksakan jadi sinyal masuk.
 
 **BOBOT EMA PER TIMEFRAME.** EMA pendek (13/21) menentukan di timeframe cepat; EMA panjang
 (50/100/200) menentukan di timeframe besar. Untuk analisa jangka menengah ini:
-Weekly & Daily → utamakan EMA 50/100/200 dan `ema_stack` · 4H → EMA 13/21 untuk timing saja.
-Jangan menilai tren besar dari cross 13/21 di 4H.
+Weekly & Daily → utamakan EMA 50/100/200 dan `ema_stack` · H4 → EMA 13/21 untuk timing saja.
+Jangan menilai tren besar dari cross 13/21 di H4.
 
-**Struktur keputusan:** Weekly menentukan ARAH · Daily menentukan SETUP · 4H menentukan TIMING.
+**Struktur keputusan:** Weekly menentukan ARAH · Daily menentukan SETUP · H4 menentukan TIMING.
 
 ---
 
@@ -231,7 +231,7 @@ Yang diatur di sini hanya APA YANG DITULIS ke Telegram.
 adalah fundamentalnya). Jadi tulis SEPERLUNYA saja:
 - Arah tren cukup dengan KATA ("tren naik", "menyamping", "melemah") — tanpa angka EMA,
   SuperTrend, Bollinger, Stochastic, ATR, atau Pivot.
-- Cukup DUA timeframe: Weekly (arah) dan Daily (setup). **JANGAN tampilkan 4H** — untuk
+- Cukup DUA timeframe: Weekly (arah) dan Daily (setup). **JANGAN tampilkan H4** — untuk
   saham yang ditahan berhari-hari sampai berpekan-pekan, timing 4 jam itu derau, apalagi
   bursa tidak buka 24 jam.
 - Angka yang ditulis hanya: harga, RSI harian, dan level kunci (support/resisten).
@@ -272,7 +272,7 @@ tanggalnya. Kalau ada satu hal yang paling menentukan, sebut di sini.>
 
 📈 TEKNIKAL
 
-untuk SAHAM (ringkas — 3 baris saja, TANPA 4H):
+untuk SAHAM (ringkas — 3 baris saja, TANPA H4):
 Tren   : <naik / menyamping / melemah> (Weekly) — <setup Daily dalam 1 frasa singkat>
 Harga $xxx · RSI harian xx
 Level kunci: support $xxx · resisten $xxx
@@ -280,7 +280,7 @@ Level kunci: support $xxx · resisten $xxx
 untuk FOREX & KOMODITAS (TANPA angka EMA & SuperTrend):
 Weekly (arah)  : <BULLISH/BEARISH/NETRAL> — <alasan 1 baris>
 Daily (setup)  : <BULLISH/BEARISH/NETRAL> — <alasan 1 baris>
-4H (timing)    : <BULLISH/BEARISH/NETRAL> — <alasan 1 baris>
+H4 (timing)    : <BULLISH/BEARISH/NETRAL> — <alasan 1 baris>
 Harga $xxx · RSI harian xx
 Level kunci: support $xxx · resisten $xxx
 

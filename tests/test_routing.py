@@ -4999,7 +4999,9 @@ def test_timeframe_dilaporkan_apa_adanya():
     --tf 4h, horizon 20 candle berarti 3,3 hari — bukan 20 hari — dan model membaca label
     itu apa adanya lalu salah menafsirkan seluruh angkanya."""
     bt = _muat_backtest()
-    assert bt._NAMA_TF["4h"] == "4 jam" and bt._NAMA_TF["1d"] == "harian"
+    # Notasi yang dipakai user: H1/H4 untuk jam, daily/weekly dieja penuh.
+    assert bt._NAMA_TF["4h"] == "H4" and bt._NAMA_TF["1d"] == "daily"
+    assert bt._NAMA_TF["1h"] == "H1" and bt._NAMA_TF["1w"] == "weekly"
     assert bt._setara("1d", 20) == "20.0 hari"
     assert bt._setara("4h", 20) == "3.3 hari"
     assert bt._setara("4h", 3) == "12 jam"
@@ -5715,7 +5717,8 @@ def test_gagal_aman_dipersempit_penanda_topik():
     assert "Kalimasada" not in bot.build_chat_prompt("purnama bearish?")
     assert "Riset grup Telegram" not in bot.build_chat_prompt("purnama bearish?")
     # Yang sudah benar sebelumnya tidak berubah.
-    assert abs(len(bot.build_chat_prompt("analisa sol")) - 34578) < 100
+    # Ambangnya longgar: yang dijaga adalah TIDAK meledak jadi 60 rb, bukan angka persis.
+    assert len(bot.build_chat_prompt("analisa sol")) < 40000
     assert len(bot.build_chat_prompt("halo")) < 18000
 
 
@@ -6014,3 +6017,43 @@ def test_kehabisan_putaran_mengirim_jawaban_sebagian():
         assert bot.run_claude("x", 10, 8)[0] is None
     finally:
         _sh.which, _sp.run = which_asli, run_asli
+
+
+def test_notasi_timeframe_h4_bukan_4h():
+    """Diminta user: jam ditulis H1/H4, harian/mingguan dieja penuh. Kunci DATA di brief
+    tetap `1d`/`4h`/`1w` — itu nama field yang dipakai memanggil API bursa, dan mengubahnya
+    akan memutus pengambilan data."""
+    for pesan in ("analisa sol", "menurutmu btc gimana", "kenapa lit naik"):
+        p = bot.build_chat_prompt(pesan)
+        assert "NOTASI TIMEFRAME" in p, pesan
+        assert "H1 / H4" in p and "daily" in p and "weekly" in p
+    # Sapaan tidak pernah menyebut timeframe — aturannya tidak boleh dibayar di situ.
+    assert "NOTASI TIMEFRAME" not in bot.build_chat_prompt("halo")
+    assert len(bot.build_chat_prompt("halo")) < 18000
+
+    import glob
+    for jalur in glob.glob(os.path.join(AKAR, "cloud", "prompts", "*.md")):
+        isi = open(jalur, encoding="utf-8").read()
+        # Baris ATURAN-nya sendiri memuat "4H" sebagai contoh yang DILARANG; abaikan.
+        for baris in isi.split("\n"):
+            if "NOTASI TIMEFRAME" in baris or "bukan 1H" in baris:
+                continue
+            assert "weekly/1D/4H" not in baris and "weekly/1d/4h" not in baris, jalur
+    # Kunci internal HARUS utuh, kalau tidak pengambilan candle putus.
+    ind = open(os.path.join(AKAR, "cloud", "indicators.py"), encoding="utf-8").read()
+    assert '"1d": "1d", "4h": "4h"' in ind
+    assert '"1d": 1440, "4h": 240' in ind
+
+
+def test_pertanyaan_sebab_tanpa_aset_tidak_memuat_seluruh_blok():
+    """Menaikkan "kenapa X naik" ke tingkat pasar membuatnya lolos pesan_pasar, dan tanpa
+    aset yang dikenali ia langsung jatuh ke gagal-aman: 59.337 karakter untuk satu
+    kalimat. Regresi yang lahir dari perbaikan sebelumnya di commit yang sama."""
+    assert len(bot.build_chat_prompt("kenapa lit naik")) < 40000
+    # Penanda topik harus MENANG atas jaring crypto — "kenapa nvda turun" itu saham.
+    p = bot.build_chat_prompt("kenapa nvda turun")
+    assert len(p) < 40000
+    assert "saham-forex" not in p          # penanda blok tidak boleh bocor
+    assert "Pertanyaan SAHAM" in p, "rumpun saham harus menang atas jaring crypto"
+    # Emas tetap ke rumpun forex/gold.
+    assert "gold_drivers" in bot.build_chat_prompt("kenapa emas naik")

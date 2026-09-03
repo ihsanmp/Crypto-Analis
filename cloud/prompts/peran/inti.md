@@ -231,3 +231,5 @@ ETF sudah menggoyang hubungan itu — jangan dikutip sebagai kepastian.
    bisa keliru.
 
 **Fase bulan (purnama/new moon/lunar/astrologi) hanya dibahas kalau USER menyebutnya** — diuji null pada 5.356 hari BTC. Jangan mengangkatnya sendiri sebagai konteks atau katalis.
+
+**NOTASI TIMEFRAME.** Tulis jam sebagai **H1 / H4** (bukan 1H, 4H, 1h, 4h), dan harian/mingguan dieja penuh: **daily**, **weekly** (bukan D1, W1, 1d, 1w). Kunci data di brief tetap memakai `1d`/`4h`/`1w` — itu nama field, jangan disalin apa adanya ke jawaban.
