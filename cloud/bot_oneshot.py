@@ -729,7 +729,11 @@ _LABEL_BUKAN_HARGA = ("mcap", "market cap", "volume", "kapitalisasi", "fdv", "tv
 _RE_AK_EMA = re.compile(r"EMA\s*(\d{1,3})[^$\n]{0,16}[$]\s*(\d[\d.,]*)", re.I)
 _RE_AK_RSI = re.compile(r"RSI\s*(?:14)?\s*(?:harian|daily|mingguan|weekly|4H|1D|1W|D1|H4)?\s*[:=]?\s*(\d{1,3}(?:[.,]\d+)?)\b(?!\s*[Hh]\b)", re.I)
 _RE_AK_SKOR = re.compile(r"SKOR\s*(\d{1,3})\s*/\s*100", re.I)
-_RE_AK_INVALID = re.compile(r"Invalid(?:asi)?\s*[$]?\s*(\d[\d.,]*)", re.I)
+_RE_AK_INVALID = re.compile(
+    # "Invalidasi di bawah $198" adalah frasa yang dipakai prompt ini sendiri, dan
+    # pola lama menuntut angkanya menempel langsung setelah kata itu — jadi level
+    # invalidasi tidak pernah tersimpan. Kata perantara kini diizinkan.
+    r"\binvalid(?:asi)?\b[^\d\n]{0,28}?[$]?\s*(\d[\d.,]*)", re.I)
 
 _ANGKA_MAKS = 8
 
@@ -1030,6 +1034,98 @@ def _utas(milik, usia, pesan):
             pilih.append(r)
     urut = {id(r): i for i, r in enumerate(segar)}
     return sorted(pilih, key=lambda r: urut[id(r)])[-RIWAYAT_MAKS_UTAS:]
+
+
+_RE_HARGA_BRIEF = re.compile(r'"harga_usd"' + chr(58) + r'\s*([0-9]+(?:\.[0-9]+)?)')
+EVALUASI_AMBANG = 3.0        # persen; di bawah ini geraknya derau harian biasa
+
+
+def _angka_id(teks):
+    """Ubah angka bergaya Indonesia ("78.412", "214,50") jadi float. None kalau gagal."""
+    t = (teks or "").strip()
+    if "," in t and "." in t:
+        t = t.replace(".", "").replace(",", ".") if t.rfind(",") > t.rfind(".")             else t.replace(",", "")
+    elif "," in t:
+        t = t.replace(",", ".") if len(t.split(",")[-1]) != 3 else t.replace(",", "")
+    elif t.count(".") == 1 and len(t.split(".")[-1]) == 3:
+        t = t.replace(".", "")          # "78.412" = ribuan, bukan desimal
+    try:
+        return float(t)
+    except ValueError:
+        return None
+
+
+def _kunci_lama(chat_id):
+    """{label: nilai} dari giliran TERAKHIR yang punya angka kunci. {} kalau tidak ada."""
+    if not chat_id:
+        return {}
+    sekarang = time.time()
+    milik = [r for r in _muat_riwayat()
+             if str(r.get("chat")) == _id_chat(chat_id)
+             and sekarang - r.get("waktu", 0) < RIWAYAT_UMUR]
+    for r in reversed(milik):
+        peta = {}
+        for butir in r.get("angka_kunci") or []:
+            if "=" in butir:
+                k, _, v = butir.partition("=")
+                n = _angka_id(v)
+                if n is not None:
+                    peta[k.strip().lower()] = n
+        if "harga" in peta:
+            peta["_umur"] = _usia_terbaca(sekarang - r.get("waktu", 0))
+            return peta
+    return {}
+
+
+def evaluasi_diri(chat_id, brief):
+    """Bandingkan harga SEKARANG dengan angka yang dipakai giliran sebelumnya.
+
+    KODE yang membandingkan, bukan model. Model yang membaca riwayat cenderung mengulang
+    kesimpulan lamanya utuh — itu bentuk kesalahan yang paling sulit dilihat, karena
+    jawabannya terdengar konsisten justru saat ia sudah tidak berlaku.
+
+    Dua hal yang dilaporkan: harga bergerak melewati ambang, dan level INVALIDASI yang
+    disebut sendiri di giliran lalu ternyata sudah tertembus. Yang kedua paling penting —
+    di situ kesimpulan lamanya bukan cuma usang, melainkan sudah dibatalkan oleh syarat
+    yang ia tetapkan sendiri.
+    """
+    lama = _kunci_lama(chat_id)
+    if not lama or not brief:
+        return ""
+    m = _RE_HARGA_BRIEF.search(brief)
+    if not m:
+        return ""
+    kini = _angka_id(m.group(1))
+    dulu = lama.get("harga")
+    if not kini or not dulu or dulu <= 0:
+        return ""
+    # Pagar salah-baca: "4.399" bisa berarti 4399 (ribuan) atau 4,399 (desimal), dan
+    # salah menebaknya akan melahirkan klaim "harga anjlok 99%" yang tidak pernah terjadi.
+    # Selisih sebesar itu antar-giliran dalam 6 jam jauh lebih mungkin salah baca daripada
+    # gerak nyata, jadi lebih baik DIAM daripada melaporkan yang salah.
+    if not 0.1 <= kini / dulu <= 10:
+        print(f"[evaluasi] selisih tidak masuk akal ({dulu:g} -> {kini:g}) — dilewati",
+              file=sys.stderr)
+        return ""
+    ubah = (kini - dulu) / dulu * 100
+    baris = []
+    invalid = lama.get("invalid")
+    if invalid and ((dulu > invalid and kini < invalid) or (dulu < invalid and kini > invalid)):
+        baris.append(f"- LEVEL INVALIDASI TERTEMBUS. Giliran lalu kamu menetapkan invalidasi "
+                     f"di {invalid:g}; harga sekarang {kini:g}. Kesimpulan waktu itu sudah "
+                     f"DIBATALKAN oleh syarat yang kamu tetapkan sendiri. Katakan itu di "
+                     f"awal jawaban, bukan di akhir.")
+    if abs(ubah) >= EVALUASI_AMBANG:
+        baris.append(f"- Harga berubah {ubah:+.1f}% sejak giliran itu: {dulu:g} -> {kini:g}.")
+    if not baris:
+        return ""
+    return ("## EVALUASI DIRI (dihitung KODE, bukan dugaan)" + NL
+            + f"Giliran sebelumnya ({lama.get('_umur', 'beberapa saat lalu')}) memakai "
+              f"harga {dulu:g}." + NL + NL.join(baris) + NL + NL
+            + "Periksa apakah kesimpulan lamamu MASIH BERLAKU dengan angka sekarang. Kalau "
+              "tidak, katakan terus terang apa yang berubah dan apa kesimpulan barunya — "
+              "jangan mengulang kesimpulan lama seolah tidak terjadi apa-apa, dan jangan "
+              "pula berpura-pura tidak pernah menyimpulkan." + NL + "---" + NL + NL)
 
 
 def konteks_percakapan(chat_id, panjang=False, pesan=None):
@@ -1659,7 +1755,8 @@ def build_chat_prompt(text, chat_id=None, brief=None):
             "isi utama jawaban. Kalau user memang ingin sisi koinnya, ia akan menyebut "
             "'koin' atau 'token'." + NL + NL + "---" + NL + NL) + base
     if chat_id is not None:
-        base = konteks_percakapan(chat_id, panjang=_lanjut, pesan=text) + base
+        base = (evaluasi_diri(chat_id, brief)
+                + konteks_percakapan(chat_id, panjang=_lanjut, pesan=text) + base)
     # Pesan user dikutip apa adanya. Diberi pembatas jelas supaya isinya diperlakukan
     # sebagai pertanyaan untuk dijawab, bukan sebagai instruksi yang mengubah aturan.
     if brief:
@@ -3190,7 +3287,11 @@ def process(token, chat_id, text, photo_file_id=None):
     outlook = audit_outlook(brief, body)
     keyakinan = audit_keyakinan(brief, body)
     if not body.startswith("❌"):
-        catatan = peringatan_audit(jejak, asal, kesegaran, imbalan, outlook, keyakinan)
+        hitung = audit_hitung(body, imbalan)
+        if hitung:
+            print(f"[audit] SALAH HITUNG: {hitung}", file=sys.stderr)
+        catatan = peringatan_audit(jejak, asal, kesegaran, imbalan, outlook, keyakinan,
+                                   hitung)
         if catatan:
             body = sisipkan_peringatan(body, catatan)
             print(f"[audit] peringatan DIKIRIM ke user: {catatan[:70]}", file=sys.stderr)
@@ -3333,8 +3434,54 @@ def audit_keyakinan(brief, body):
     return {"skor": skor, "berhasil": berhasil, "total": total, "persen": persen}
 
 
+# Klaim persentase yang menyebut KEDUA angkanya sekaligus — satu-satunya bentuk yang bisa
+# diperiksa ulang tanpa menebak maksudnya. "naik 12%" saja tidak bisa diaudit; "dari 214 ke
+# 232 (naik 12%)" bisa, dan salahnya langsung terlihat: 232/214 itu +8,4%.
+_RE_DARI_KE = re.compile(
+    r"(?:dari|from)\s*[$]?\s*(\d[\d.,]*)"
+    r"\s*(?:ke|->|→|to|sampai|menjadi|jadi)\s*[$]?\s*(\d[\d.,]*)"
+    r"[^\n]{0,40}?([+-]?\d{1,3}(?:[.,]\d+)?)\s*%", re.I)
+# Rasio yang DITULIS: "R:R 1:2", "imbalan:risiko 2,1", "RR 1.8".
+_RE_RR_DITULIS = re.compile(
+    r"(?:r\s*:\s*r|rr|imbalan\s*:\s*risiko|risk\s*[/:]\s*reward)"
+    r"[^\d\n]{0,12}(?:1\s*:\s*)?(\d+(?:[.,]\d+)?)", re.I)
+TOLERANSI_PERSEN = 1.0        # poin persen; di bawah ini pembulatan wajar
+
+
+def audit_hitung(body, imbalan=None):
+    """Hitung ULANG klaim aritmetika di balasan. [] kalau semuanya cocok.
+
+    Aturan proyek ini: yang bergantung pada kepatuhan model dipindah ke kode. Salah hitung
+    adalah bentuk kesalahan yang paling mudah lolos justru karena angkanya terlihat
+    otoritatif — pembaca tidak menghitung ulang "dari 214 ke 232 (naik 12%)", dan model
+    pun tidak.
+
+    Hanya klaim yang MENYEBUTKAN kedua angkanya yang diperiksa. Sisanya tidak bisa
+    diverifikasi tanpa menebak maksudnya, dan menebak lalu menuduh salah jauh lebih buruk
+    daripada diam.
+    """
+    temuan = []
+    for a, b_, pct in _RE_DARI_KE.findall(body or ""):
+        awal, akhir, klaim = _angka_id(a), _angka_id(b_), _angka_id(pct)
+        if None in (awal, akhir, klaim) or not awal:
+            continue
+        benar = (akhir - awal) / awal * 100
+        if abs(abs(benar) - abs(klaim)) > TOLERANSI_PERSEN:
+            temuan.append(f"dari {awal:g} ke {akhir:g} ditulis {klaim:g}%, "
+                          f"sebenarnya {benar:+.1f}%")
+    if imbalan and imbalan.get("rasio_imbalan_risiko"):
+        nyata = imbalan["rasio_imbalan_risiko"]
+        m = _RE_RR_DITULIS.search(body or "")
+        if m:
+            ditulis = _angka_id(m.group(1))
+            if ditulis and abs(ditulis - nyata) > max(0.3, nyata * 0.25):
+                temuan.append(f"imbalan:risiko ditulis {ditulis:g}, "
+                              f"dihitung dari levelnya {nyata:g}")
+    return temuan
+
+
 def peringatan_audit(jejak, asal, kesegaran, imbalan=None, outlook=None,
-                     keyakinan=None):
+                     keyakinan=None, hitung=None):
     """Ubah hasil audit jadi MAKSIMAL SATU baris peringatan untuk user, atau None.
 
     Ketiga audit sudah menghitung vonis nyata sejak lama, tapi hasilnya hanya dicetak ke
@@ -3352,6 +3499,15 @@ def peringatan_audit(jejak, asal, kesegaran, imbalan=None, outlook=None,
     asal = asal or ""
     jejak = jejak or ""
     kesegaran = kesegaran or ""
+
+    # PALING DIDAHULUKAN. Vonis lain menilai mutu data atau mutu saran; yang ini menyatakan
+    # angkanya SALAH — dihitung ulang oleh kode dari angka yang ditulis balasan itu sendiri,
+    # jadi tidak ada ruang tafsir. Kesalahan hitung juga paling mudah lolos justru karena
+    # angkanya terlihat otoritatif: tidak ada yang menghitung ulang "naik 12%".
+    if hitung:
+        rinci = " · ".join(hitung[:2])
+        return (f"⚠️ SALAH HITUNG di jawaban ini: {rinci}. Angka di atas dihitung ulang "
+                f"oleh kode dari angka yang tertulis sendiri — pakai yang versi kode.")
 
     # Didahulukan karena ini satu-satunya vonis tentang MUTU SARANNYA, bukan mutu datanya.
     # Data segar yang dipakai menyusun level dengan risiko sepuluh kali imbalannya tetap

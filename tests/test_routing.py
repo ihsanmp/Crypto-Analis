@@ -6242,3 +6242,144 @@ def test_permintaan_temuan_tanpa_aset_dapat_putaran_cukup():
     for pesan in ("halo", "makasih ya", "kok beda dengan yang tadi?", "maksudnya gimana",
                   "bagaimana menurutmu?", "apa itu RAG?"):
         assert bot.bobot_chat(pesan, False)[2] == 8, pesan
+
+
+# ------------------------- evaluasi diri: kesimpulan lama diperiksa ke angka baru
+
+def _pasang_kunci(balasan, jam=1):
+    import time as _t
+    chat = "1"
+    asli = bot._muat_riwayat
+    bot._muat_riwayat = lambda: [{
+        "chat": bot._id_chat(chat), "waktu": _t.time() - jam * 3600, "waktu_utc": "x",
+        "pesan": "analisa sol", "balasan": balasan,
+        "angka_kunci": bot.angka_kunci(balasan)}]
+    return chat, (lambda: setattr(bot, "_muat_riwayat", asli))
+
+
+_BAL = "SOL $214,50. RSI 62. Invalidasi di bawah $198. Kesimpulan: TUNGGU DULU."
+
+
+def test_level_invalidasi_tertembus_dilaporkan():
+    """Model yang membaca riwayat cenderung mengulang kesimpulan lamanya UTUH — bentuk
+    kesalahan yang paling sulit dilihat, karena jawabannya terdengar konsisten justru saat
+    sudah tidak berlaku. Yang paling tajam: level invalidasi yang ia tetapkan SENDIRI
+    ternyata sudah tertembus."""
+    chat, pulih = _pasang_kunci(_BAL)
+    try:
+        e = bot.evaluasi_diri(chat, '{"harga_usd": 190}')
+        assert "LEVEL INVALIDASI TERTEMBUS" in e
+        assert "198" in e and "190" in e
+        assert "di awal jawaban" in e
+        # Masih di atas level: cukup dilaporkan sebagai perubahan harga.
+        e2 = bot.evaluasi_diri(chat, '{"harga_usd": 205}')
+        assert "INVALIDASI TERTEMBUS" not in e2 and "Harga berubah" in e2
+    finally:
+        pulih()
+
+
+def test_evaluasi_diam_kalau_tidak_ada_yang_berubah():
+    """Blok ini dibayar tokennya tiap giliran kalau selalu muncul. Gerak di bawah ambang
+    adalah derau harian biasa, bukan bahan evaluasi."""
+    chat, pulih = _pasang_kunci(_BAL)
+    try:
+        assert bot.evaluasi_diri(chat, '{"harga_usd": 216}') == ""
+        assert bot.evaluasi_diri(chat, '{"mcap_usd": 999}') == ""
+        assert bot.evaluasi_diri(chat, "") == ""
+        assert bot.evaluasi_diri(None, '{"harga_usd": 190}') == ""
+    finally:
+        pulih()
+    bot._muat_riwayat = lambda: []
+    assert bot.evaluasi_diri("1", '{"harga_usd": 190}') == ""
+
+
+def test_evaluasi_diam_kalau_angkanya_tidak_masuk_akal():
+    """"4.399" bisa berarti 4399 (ribuan) atau 4,399 (desimal). Salah menebaknya melahirkan
+    klaim "harga anjlok 99%" yang tidak pernah terjadi — lebih baik DIAM."""
+    chat, pulih = _pasang_kunci(_BAL)
+    try:
+        assert bot.evaluasi_diri(chat, '{"harga_usd": 2.1}') == ""
+        assert bot.evaluasi_diri(chat, '{"harga_usd": 9999}') == ""
+    finally:
+        pulih()
+
+
+def test_angka_id_membaca_format_indonesia():
+    assert bot._angka_id("78.412") == 78412.0
+    assert bot._angka_id("214,50") == 214.5
+    assert bot._angka_id("1.864,32") == 1864.32
+    assert bot._angka_id("0.002551") == 0.002551
+    assert bot._angka_id("bukan angka") is None
+
+
+def test_level_invalidasi_tertangkap_dari_frasa_wajar():
+    """Bug di kode lama: pola menuntut angkanya menempel langsung setelah kata
+    "invalidasi", padahal frasa yang dipakai prompt ini SENDIRI adalah "invalidasi di
+    bawah $198". Levelnya tidak pernah tersimpan, jadi evaluasinya mustahil jalan."""
+    for teks in ("Invalidasi di bawah $198", "invalidasi di bawah 198",
+                 "Invalidasi: close harian di bawah $198", "Invalid $198"):
+        assert "invalid=198" in bot.angka_kunci(teks), teks
+    assert not [x for x in bot.angka_kunci("tidak ada level disebut") if "invalid" in x]
+
+
+def test_evaluasi_masuk_prompt_saat_ada_brief():
+    chat, pulih = _pasang_kunci(_BAL)
+    try:
+        p = bot.build_chat_prompt("gimana sol sekarang", chat_id=chat,
+                                  brief='{"harga_usd": 190}')
+        assert "EVALUASI DIRI" in p and "LEVEL INVALIDASI TERTEMBUS" in p
+        # Tanpa brief tidak ada yang bisa dibandingkan — jangan mengarang evaluasi.
+        assert "EVALUASI DIRI" not in bot.build_chat_prompt("gimana sol sekarang",
+                                                            chat_id=chat)
+    finally:
+        pulih()
+
+
+# ------------------------- salah hitung: dihitung ULANG oleh kode
+
+@pytest.mark.parametrize("body,salah", [
+    ("SOL bergerak dari $214 ke $232, naik 12% dalam sepekan.", True),
+    ("SOL bergerak dari $214 ke $232, naik 8,4% dalam sepekan.", False),
+    ("BTC turun dari 80.000 ke 78.000, turun 2,5%.", False),
+    ("BTC turun dari 80.000 ke 72.000, turun 2,5%.", True),
+    ("Target dari 0,0025 ke 0,0030 (naik 20%).", False),
+    ("Harganya naik 12% pekan ini.", False),          # tak bisa diaudit, jangan menuduh
+])
+def test_klaim_persentase_dihitung_ulang(body, salah):
+    """Salah hitung paling mudah lolos justru karena angkanya terlihat otoritatif —
+    tidak ada yang menghitung ulang "dari 214 ke 232 (naik 12%)", dan model pun tidak."""
+    assert bool(bot.audit_hitung(body)) is salah, bot.audit_hitung(body)
+
+
+def test_rasio_yang_ditulis_dibandingkan_dengan_yang_dihitung():
+    """analisa.md mewajibkan R:R minimal 1:2, dan menulis "1:2" jauh lebih mudah daripada
+    menyusun level yang benar-benar memberikannya."""
+    imb = {"rasio_imbalan_risiko": 1.12}
+    assert bot.audit_hitung("Entry 214, target 232, stop 198. R:R 1:2.", imb)
+    assert bot.audit_hitung("RR 2.0 menurutku", imb)
+    # Yang jujur menyebut angkanya TIDAK ditandai.
+    assert not bot.audit_hitung("Setup ini R:R 1,1 — tipis.", imb)
+    # Tanpa hasil hitung R:R, tidak ada yang bisa dibandingkan.
+    assert not bot.audit_hitung("R:R 1:2.", None)
+
+
+def test_salah_hitung_didahulukan_di_peringatan():
+    """Vonis lain menilai mutu data atau mutu saran; yang ini menyatakan angkanya SALAH,
+    dihitung ulang kode dari angka yang ditulis balasan itu sendiri."""
+    h = bot.audit_hitung("SOL dari $214 ke $232, naik 12%.")
+    pesan = bot.peringatan_audit("BURUK", "sumber tidak jelas", "KEDALUWARSA",
+                                 {"di_bawah_ambang": True, "rasio_imbalan_risiko": 0.3,
+                                  "perlu_benar_persen": 77}, None, None, h)
+    assert "SALAH HITUNG" in pesan, pesan
+    # Tanpa temuan hitung, vonis lain tetap jalan seperti sebelumnya.
+    tanpa = bot.peringatan_audit("BURUK", "", "OK",
+                                 {"di_bawah_ambang": True, "rasio_imbalan_risiko": 0.3,
+                                  "perlu_benar_persen": 77}, None, None, [])
+    assert tanpa and "SALAH HITUNG" not in tanpa
+
+
+def test_audit_hitung_dipanggil_di_jalur_kirim():
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    assert "hitung = audit_hitung(body, imbalan)" in src
+    assert "peringatan_audit(jejak, asal, kesegaran, imbalan, outlook, keyakinan,\n" in src
+    assert "[audit] SALAH HITUNG" in src
