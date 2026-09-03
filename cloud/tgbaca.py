@@ -539,6 +539,13 @@ def kumpulkan(jam=24, saring_nama=None, k=None, batas_lama=None, jejak=None,
     tutup = k is None
     k = k or klien().__enter__()
     try:
+        # DAFTARKAN DULU grup yang cocok, baru bagi jatahnya. Tanpa ini jatah TOTAL
+        # dihabiskan grup-grup pertama dalam urutan iter_dialogs (biasanya yang paling
+        # baru aktif), dan sisanya tidak pernah dibaca SAMA SEKALI — diukur pada 30 grup
+        # dengan jendela 60 hari: hanya 6 yang terbaca, 24 tidak tersentuh. Lebih buruk
+        # lagi, yang menang selalu grup yang sama, jadi sebagian grup tidak akan pernah
+        # terbaca sekali pun.
+        cocok = []
         for d in k.iter_dialogs():
             if not _grup_saja(d):
                 continue
@@ -548,6 +555,12 @@ def kumpulkan(jam=24, saring_nama=None, k=None, batas_lama=None, jejak=None,
                 if not kena:
                     continue
                 terpakai.update(kena)
+            cocok.append((d, nama))
+        if cocok and not fokus:
+            # Jatah dibagi rata, dengan lantai supaya grup sepi tetap kebagian sesuatu.
+            maks_grup = max(min(maks_grup, maks_total // len(cocok)), 8)
+        n_terbaca = 0
+        for d, nama in cocok:
             kunci = _kunci(nama)
             sejak = int((peta_lama.get(kunci) or {}).get("id") or 0)
             topik = _peta_topik(k, d.entity)
@@ -593,6 +606,8 @@ def kumpulkan(jam=24, saring_nama=None, k=None, batas_lama=None, jejak=None,
                     break                    # jatah TOTAL: sapuan berhenti sama sekali
                 if n_grup >= maks_grup:
                     penuh = True             # jatah GRUP ini saja: lanjut menghitung
+            if n_grup:
+                n_terbaca += 1
             if tertinggi > sejak:
                 penanda[kunci] = {"id": tertinggi}
             # Jatah yang habis BUKAN hal yang boleh disembunyikan: penandanya tetap maju,
@@ -616,6 +631,8 @@ def kumpulkan(jam=24, saring_nama=None, k=None, batas_lama=None, jejak=None,
         jejak["jatah_habis"] = terpakai_pesan >= maks_total
         jejak["saring_nihil"] = ([x for x in saring_nama if x not in terpakai]
                                  if saring_nama else [])
+        jejak["grup_cocok"] = len(cocok)
+        jejak["grup_terbaca"] = n_terbaca
     terkumpul.sort(key=lambda x: x[2], reverse=True)
     return terkumpul
 
@@ -722,8 +739,14 @@ def _kalimat_lewat(jejak):
     awalan = "setidaknya " if plafon else ""
     ekor = ""
     if (jejak or {}).get("jatah_habis"):
-        ekor = (" Jatah TOTAL juga habis, jadi sebagian grup berikutnya tidak sempat "
-                "dibaca sama sekali dan jumlahnya tidak diketahui.")
+        cocok = (jejak or {}).get("grup_cocok") or 0
+        terbaca = (jejak or {}).get("grup_terbaca") or 0
+        # Angkanya SEKARANG diketahui: grup yang cocok didaftarkan lebih dulu sebelum
+        # dibaca, jadi "tidak sempat dibaca" bisa disebut tepat, bukan dikira-kira.
+        sisa = max(cocok - terbaca, 0)
+        ekor = (f" Jatah TOTAL juga habis: {sisa} dari {cocok} grup tidak sempat dibaca "
+                f"sama sekali." if sisa else
+                " Jatah TOTAL juga habis, tapi semua grup sempat kebagian.")
     return (f"{os.linesep}{os.linesep}JATAH HABIS: {awalan}{total} pesan tidak ikut terbaca "
             f"karena melebihi jatah per grup/topik — terbanyak di {daftar}. Penandanya "
             f"tetap maju, jadi pesan-pesan itu TIDAK akan muncul lagi.{ekor} Sebutkan ini "

@@ -4798,8 +4798,9 @@ def test_angka_terlewat_ditandai_batas_bawah_saat_plafon_scan():
     # Bentuk lama (int polos) tetap terbaca, bukan melempar.
     assert "12" in _tg._kalimat_lewat({"lewat": {"A": 12}})
     # Jatah TOTAL habis: grup berikutnya tidak dibaca sama sekali, dan itu disebut.
-    habis = _tg._kalimat_lewat({"lewat": {"A": (5, False)}, "jatah_habis": True})
-    assert "tidak sempat" in habis and "tidak diketahui" in habis
+    habis = _tg._kalimat_lewat({"lewat": {"A": (5, False)}, "jatah_habis": True,
+                                "grup_cocok": 30, "grup_terbaca": 6})
+    assert "tidak sempat dibaca" in habis and "24 dari 30" in habis
 
 
 def test_pengecualian_telegram_tidak_memblokir_permintaan_sah():
@@ -5907,3 +5908,52 @@ def test_daftar_json_membuang_nama_kembar():
     semua = [x for v in d.values() for x in v]
     assert len(semua) == len(set(semua)), semua
     assert semua.count("Alpha Wallet") == 1
+
+
+def test_jatah_dibagi_rata_ke_semua_grup():
+    """Bug skala, ditemukan sapuan keenam: dengan 30 grup dan jendela 60 hari, jatah TOTAL
+    dihabiskan grup-grup PERTAMA dalam urutan iter_dialogs — hanya 6 dari 30 yang terbaca,
+    24 tidak tersentuh sama sekali. Dan yang menang selalu grup yang sama, jadi sebagian
+    grup tidak akan pernah terbaca sekali pun."""
+    import random as _r
+    from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+    monkey = _tg._peta_topik
+    _tg._peta_topik = lambda k, e: {}
+    _r.seed(7)
+    try:
+        grup = []
+        for i in range(30):
+            # Isi WAJIB unik per grup: dedup lintas-grup memang membuang yang kembar,
+            # dan fixture yang identik akan terlihat seperti jatah yang tidak terbagi.
+            pesan = [_Pesan(f"Grup {i:02d} pesan {j:03d}: unlock ASTER dijadwalkan "
+                            f"September 2026 menurut dokumen resmi tim",
+                            _r.randint(1, 60 * 24 * 55)) for j in range(120)]
+            pesan.sort(key=lambda x: x.date, reverse=True)
+            grup.append(_Dialog(f"Grup Nomor {i:02d}", pesan))
+        jejak = {}
+        hasil = _tg.kumpulkan(jam=1440, k=_Klien(grup), jejak=jejak)
+        assert len({x[0] for x in hasil}) == 30, len({x[0] for x in hasil})
+        assert jejak["grup_cocok"] == 30 and jejak["grup_terbaca"] == 30
+    finally:
+        _tg._peta_topik = monkey
+
+
+def test_grup_tak_terbaca_dilaporkan_dengan_angka():
+    """"jumlahnya tidak diketahui" adalah jawaban yang benar dulu — sebelum grup yang
+    cocok didaftarkan lebih dulu. Sekarang angkanya diketahui, jadi menyebut "tidak
+    diketahui" berarti menahan informasi yang ada."""
+    k = _tg._kalimat_lewat({"lewat": {"A": (5, False)}, "jatah_habis": True,
+                            "grup_cocok": 30, "grup_terbaca": 6})
+    assert "24 dari 30 grup tidak sempat dibaca" in k, k
+    penuh = _tg._kalimat_lewat({"lewat": {"A": (5, False)}, "jatah_habis": True,
+                                "grup_cocok": 30, "grup_terbaca": 30})
+    assert "semua grup sempat kebagian" in penuh
+    assert "tidak diketahui" not in k and "tidak diketahui" not in penuh
+
+
+def test_fokus_satu_grup_tidak_ikut_dibagi():
+    """Pembagian rata itu untuk sapuan banyak grup. Saat SATU grup diminta, membaginya
+    justru mengembalikan pemotongan yang baru saja dihapus."""
+    src = open(os.path.join(AKAR, "cloud", "tgbaca.py"), encoding="utf-8").read()
+    assert "if cocok and not fokus:" in src
+    assert "maks_total // len(cocok)" in src
