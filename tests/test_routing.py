@@ -6878,7 +6878,7 @@ def test_judul_aset_muncul_tepat_saat_dibutuhkan(nama, simbol, teks, lanjut, ada
     asli = bot._muat_riwayat
     bot._muat_riwayat = lambda: _riwayat_btc(bot)
     try:
-        j = bot.judul_aset(simbol, teks, "9", dilanjutkan=lanjut)
+        j = bot.judul_aset(simbol, teks, "9", asal=("lanjut" if lanjut else None))
         assert bool(j) is ada_judul, f"{nama}: {j!r}"
         if ada_judul:
             assert simbol in j, nama
@@ -6915,7 +6915,111 @@ def test_aset_dilanjutkan_dari_giliran_sebelumnya():
     finally:
         bot._muat_riwayat = asli
     src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
-    i = src.index("aset_dilanjutkan = False", src.index("jenis_chat, simbol_chat ="))
-    blok = src[i:i + 500]
-    # Sapaan tidak boleh ikut menarik data lengkap satu aset.
-    assert "pesan_pasar(text)" in blok, "carry-over harus dibatasi pertanyaan pasar"
+    i = src.index('asal_aset = "lanjut"')
+    blok = src[max(0, i - 500):i]
+    # Sapaan tidak boleh ikut menarik data lengkap satu aset, dan pertanyaan tentang
+    # pasar SECARA KESELURUHAN bukan tentang aset giliran lalu.
+    assert "pesan_pasar(text)" in blok, "bawa-aset harus dibatasi pertanyaan pasar"
+    assert "_PASAR_MENYELURUH" in blok, "pertanyaan pasar menyeluruh harus dikecualikan"
+
+
+
+def test_tidak_ada_karakter_kendali_di_sumber():
+    """Escape yang termakan di jalan menghasilkan bug DIAM.
+
+    Penulisan lewat heredoc berkali-kali mengubah backslash-b jadi karakter backspace
+    (0x08) di dalam string literal. Berkasnya tetap Python yang sah, ast.parse lolos, tes
+    lain hijau — tapi regexnya berubah dari "batas kata" jadi "karakter backspace" dan
+    TIDAK PERNAH cocok apa pun. Terjadi pada _PASAR_MENYELURUH: gerbangnya mati total dan
+    hasil pengujiannya terlihat benar karena tertahan gerbang LAIN.
+
+    Penjaga BOM dan ast.parse tidak menangkap ini — keduanya memeriksa hal yang berbeda.
+    """
+    import glob
+    import io as _io
+    kendali = {chr(8): "backspace (backslash-b termakan)",
+               chr(27): "escape (backslash-e termakan)",
+               chr(12): "formfeed (backslash-f termakan)",
+               chr(7): "bell (backslash-a termakan)"}
+    kena = []
+    for pola in ("cloud/**/*.py", "tests/**/*.py"):
+        for f in glob.glob(os.path.join(AKAR, pola), recursive=True):
+            isi = _io.open(f, encoding="utf-8").read()
+            for c, nama in kendali.items():
+                if c in isi:
+                    kena.append(os.path.relpath(f, AKAR) + ": " + nama)
+    assert not kena, "karakter kendali di sumber: " + str(kena)
+
+
+def test_balasan_mengalahkan_bawaan_giliran_terakhir():
+    """Dua fitur baru bertabrakan: user membalas pesan SOL dari tiga minggu lalu sementara
+    giliran terakhir membahas BTC. Konteks percakapan membuka benang SOL, tapi datanya
+    dikumpulkan untuk BTC dan judulnya ikut mengklaim BTC — yang ditunjuk user justru
+    satu-satunya yang tidak dipakai."""
+    import time as _t
+    hari, now = 86400, _t.time()
+    riwayat = [
+        dict(chat=bot._id_chat("9"), waktu=now - 20 * hari, waktu_utc="x",
+             pesan="analisa SOL gimana?",
+             balasan="BIAS SPOT: AKUMULASI. SOL di $214, invalidasi $198.",
+             angka_kunci=["sol=214"]),
+        dict(chat=bot._id_chat("9"), waktu=now - 1800, waktu_utc="x",
+             pesan="btc naik sampai berapa?", balasan="BTC $81.150.",
+             angka_kunci=["btc=81150"]),
+    ]
+    asli = bot._muat_riwayat
+    bot._muat_riwayat = lambda: riwayat
+    bot._COCOK_CACHE.clear()
+    balas = {"teks": "BIAS SPOT: AKUMULASI. SOL di $214, invalidasi $198.", "dari_bot": True}
+    try:
+        assert bot._simbol_terakhir("9") == "BTC", "prasyarat: giliran terakhir BTC"
+        assert bot._simbol_dari_balasan("9", balas) == "SOL", "yang DIBALAS harus menang"
+        assert bot._simbol_dari_balasan("9", None) is None
+        j = bot.judul_aset("SOL", "menurutmu masih valid?", "9", asal="balas")
+        assert "SOL" in j and "membalas" in j.lower()
+    finally:
+        bot._muat_riwayat = asli
+        bot._COCOK_CACHE.clear()
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    i = src.index('asal_aset = "balas"')
+    j2 = src.index('asal_aset = "lanjut"')
+    assert i < j2, "yang dibalas harus diperiksa SEBELUM bawaan giliran terakhir"
+
+
+@pytest.mark.parametrize("teks,bawa", [
+    ("menurutmu masih bisa naik?", True),
+    # Pertanyaan tentang pasar SECARA KESELURUHAN bukan tentang aset giliran lalu.
+    # Menariknya jadi analisa BTC bukan cuma salah data — judulnya ikut mengklaim
+    # sesuatu yang tidak diminta user.
+    ("gimana kondisi pasar crypto keseluruhan?", False),
+    ("sentimen market gimana hari ini?", False),
+    ("altcoin season sudah mulai belum?", False),
+    ("dominance gimana sekarang?", False),
+    ("makasih ya", False),
+    ("halo", False),
+])
+def test_bawa_aset_tidak_menyambar_pertanyaan_pasar_menyeluruh(teks, bawa):
+    picu = bool(not bot._PASAR_MENYELURUH.search(teks)
+                and (bot.pesan_pasar(teks) or bot._MINTA_PANTAU.search(teks.lower())))
+    assert picu is bawa, teks
+
+
+def test_judul_aset_tanpa_markdown():
+    """Telegram dikirim TANPA parse_mode, jadi bintang tampil mentah di layar. Aturan itu
+    sudah tertulis di analisa.md untuk model, dan berlaku sama untuk teks tempelan kode."""
+    import time as _t
+    asli = bot._muat_riwayat
+    bot._muat_riwayat = lambda: [dict(chat=bot._id_chat("9"), waktu=_t.time() - 1800,
+                                      waktu_utc="x", pesan="btc naik sampai berapa?",
+                                      balasan="BTC $81.150.", angka_kunci=[])]
+    try:
+        for simbol, teks, asal in [("SHORT", "koreksi untuk short term", None),
+                                   ("BTC", "bagaimana pandanganmu?", "lanjut"),
+                                   ("SOL", "menurutmu masih valid?", "balas")]:
+            j = bot.judul_aset(simbol, teks, "9", asal=asal)
+            assert j and "*" not in j and "_" not in j and "`" not in j, (simbol, j)
+    finally:
+        bot._muat_riwayat = asli
+    # Ketiga cabang judul_aset sudah diuji di atas lewat hasilnya yang sebenarnya.
+    # Memindai sumbernya justru salah tuduh: docstring-nya memuat "**BTC**" sebagai
+    # CONTOH yang dilarang, dan itu memang harus ada di sana.

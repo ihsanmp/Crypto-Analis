@@ -477,6 +477,16 @@ _PASAR_UMUM = re.compile(
     r"volume|funding|likuidasi|unlock|listing|airdrop|staking|narasi|sektor|etf|institusi|"
     r"suku bunga|inflasi|makro|fed|cpi|nfp|yield|dolar|rupiah)\b",
     re.IGNORECASE)
+# Pertanyaan tentang pasar SECARA KESELURUHAN, bukan tentang satu aset. Bawa-aset tidak
+# boleh menyambar ini: "gimana kondisi pasar crypto keseluruhan?" setelah giliran BTC akan
+# menarik data BTC lalu menulis "Masih tentang BTC" di paling atas — datanya salah, dan
+# judulnya mengklaim sesuatu yang tidak diminta. Gerbang ini hanya menahan BAWA-aset;
+# aset yang disebut user sendiri tetap lewat seperti biasa.
+_PASAR_MENYELURUH = re.compile(
+    r"\b(?:keseluruhan|secara umum|overall|semua koin|seluruh koin|"
+    r"altcoin season|altseason|alt season|dominasi btc|btc dominance|dominance|"
+    r"sentimen|kondisi pasar|pasar crypto|pasar kripto|market crypto|"
+    r"market cap total|total market cap|kapitalisasi total)\b", re.I)
 _BLOK_RE = re.compile(
     r"<!-- BLOK: ([\w-]+) \| pemicu: ([^>]*?) -->\n(.*?)\n<!-- /BLOK -->\n?",
     re.DOTALL)
@@ -3258,7 +3268,9 @@ def process(token, chat_id, text, photo_file_id=None, balas=None):
     simbol = jenis = simbol_chat = jenis_chat = None   # dipakai pencatat rapor di akhir
     # Disiapkan di sini, bukan hanya di cabang chat: jalur analisa/narasi tidak pernah
     # melewatinya, dan judul_aset() di ujung dipakai oleh SEMUA jalur.
-    aset_dilanjutkan = False
+    #   None = user menyebut sendiri / ditebak · "balas" = dari pesan yang dibalas
+    #   "lanjut" = dibawa dari giliran terakhir
+    asal_aset = None
     brief = None          # DATA BRIEF tahap-1 (hanya terisi di analisa koin); dipakai
                           # audit keterlacakan angka. Dideklarasikan di sini supaya
                           # SELALU terdefinisi di semua cabang, termasuk mode foto.
@@ -3438,12 +3450,20 @@ def process(token, chat_id, text, photo_file_id=None, balas=None):
         #
         # Dibatasi pesan yang memang soal pasar: tanpa itu "makasih" ikut menarik data
         # lengkap satu aset. _simbol_terakhir sendiri hanya melihat 6 jam terakhir.
-        aset_dilanjutkan = False
-        if not simbol_chat and (pesan_pasar(text) or _MINTA_PANTAU.search(text.lower())):
+        # Urutannya menentukan: disebut sendiri > yang DIBALAS > giliran terakhir.
+        # Membalas pesan lama adalah penunjukan eksplisit dan harus mengalahkan bawaan.
+        if not simbol_chat:
+            ditunjuk = _simbol_dari_balasan(chat_id, balas)
+            if ditunjuk:
+                jenis_chat, simbol_chat = jenis_aset(ditunjuk)[0], ditunjuk
+                asal_aset = "balas"
+                print(f"[aset] dari pesan yang dibalas: {ditunjuk}", file=sys.stderr)
+        if (not simbol_chat and not _PASAR_MENYELURUH.search(text or "")
+                and (pesan_pasar(text) or _MINTA_PANTAU.search(text.lower()))):
             dulu = _simbol_terakhir(chat_id)
             if dulu:
                 jenis_chat, simbol_chat = jenis_aset(dulu)[0], dulu
-                aset_dilanjutkan = True
+                asal_aset = "lanjut"
                 print(f"[aset] tidak disebut di pesan — melanjutkan {dulu} dari giliran "
                       f"sebelumnya", file=sys.stderr)
         # Dua aset atau lebih -> pertanyaan PERBANDINGAN. aset_dari_pesan sengaja menolak
@@ -3598,8 +3618,7 @@ def process(token, chat_id, text, photo_file_id=None, balas=None):
         # ASET YANG DIBAHAS, DI PALING ATAS. Ditempel kode supaya tidak bisa terlewat:
         # saat "short term" dibaca sebagai koin SHORT, jawabannya tidak pernah menyebut
         # koin apa pun dan satu-satunya petunjuk cuma tautan di kaki sumber.
-        judul = judul_aset(simbol or simbol_chat, text, chat_id,
-                           dilanjutkan=aset_dilanjutkan)
+        judul = judul_aset(simbol or simbol_chat, text, chat_id, asal=asal_aset)
         if judul:
             body = judul + "\n\n" + body.lstrip()
             print(f"[aset] judul disisipkan: {judul[:60]}", file=sys.stderr)
@@ -4052,6 +4071,29 @@ def _simbol_terakhir(chat_id):
     return None
 
 
+def _simbol_dari_balasan(chat_id, balas):
+    """Aset dari giliran yang SEDANG DIBALAS user. None kalau tidak ada.
+
+    Membalas sebuah pesan adalah penunjukan eksplisit, jadi ia harus MENGALAHKAN bawaan
+    dari giliran terakhir. Tanpa urutan itu keduanya bertabrakan: user membalas pesan SOL
+    dari tiga minggu lalu, konteks percakapan membuka benang SOL, tapi datanya dikumpulkan
+    untuk BTC — aset giliran terakhir — dan judulnya ikut mengklaim BTC. Yang ditunjuk user
+    justru satu-satunya yang tidak dipakai.
+    """
+    if not balas or not chat_id:
+        return None
+    milik = [r for r in _muat_riwayat() if str(r.get("chat")) == _id_chat(chat_id)]
+    idx, _ = cocok_kutipan(milik, balas)
+    if idx is None:
+        return None
+    r = milik[idx]
+    for medan in ("pesan", "balasan"):
+        sim = aset_dari_pesan(r.get(medan) or "")[1]
+        if sim:
+            return sim
+    return None
+
+
 def _disebut_di_pesan(teks, simbol):
     """Apakah user sendiri menyebut aset ini — lewat tickernya atau nama panjangnya."""
     if not teks or not simbol:
@@ -4071,7 +4113,7 @@ def _disebut_di_pesan(teks, simbol):
     return True
 
 
-def judul_aset(simbol, teks, chat_id, dilanjutkan=False):
+def judul_aset(simbol, teks, chat_id, asal=None):
     """Baris pembuka yang menyebut aset mana yang dianalisa. "" kalau tidak diperlukan.
 
     KENAPA DISISIPKAN KODE. "koreksi untuk short term" pernah membuat kata "short" dibaca
@@ -4085,22 +4127,28 @@ def judul_aset(simbol, teks, chat_id, dilanjutkan=False):
     boleh bergantung pada kepatuhan model: kalau modelnya lupa menyebut — persis yang
     terjadi — tidak ada yang tahu. Jadi barisnya ditempel kode, bukan diminta lewat prompt.
 
+    TANPA MARKDOWN. Telegram dikirim tanpa parse_mode, jadi "**BTC**" tampil sebagai
+    bintang mentah di layar user. Aturan itu sudah tertulis di analisa.md untuk model,
+    dan berlaku sama untuk teks yang ditempel kode.
+
     Hanya muncul kalau user TIDAK menyebut asetnya sendiri: kalau ia mengetik "analisa
     BTC", memberitahunya bahwa ini BTC cuma kebisingan.
     """
     if not simbol or _disebut_di_pesan(teks, simbol):
         return ""
-    if dilanjutkan:
+    if asal == "balas":
+        return (f"📌 Kembali ke {simbol} — kamu membalas pesan dari obrolan itu.")
+    if asal == "lanjut":
         # Dibawa dari giliran sebelumnya, bukan ditebak dari kata di kalimat. Bedanya
         # penting buat user: yang satu "aku melanjutkan topik kita", yang satu lagi
         # "aku menyimpulkan sendiri" — dan yang kedua jauh lebih perlu dicurigai.
-        return (f"📌 Masih tentang **{simbol}** — dilanjutkan dari obrolan sebelumnya, "
+        return (f"📌 Masih tentang {simbol} — dilanjutkan dari obrolan sebelumnya, "
                 f"karena pesanmu tidak menyebut aset lain.")
     dulu = _simbol_terakhir(chat_id)
     if dulu and dulu != simbol:
-        return (f"📌 Ini analisa **{simbol}** — bukan {dulu} yang kita bahas sebelumnya. "
+        return (f"📌 Ini analisa {simbol} — bukan {dulu} yang kita bahas sebelumnya. "
                 f"Kalau bukan itu maksudmu, sebut asetnya ya.")
-    return (f"📌 Ini analisa **{simbol}** — aset itu yang aku baca dari pesanmu. "
+    return (f"📌 Ini analisa {simbol} — aset itu yang aku baca dari pesanmu. "
             f"Kalau bukan itu maksudmu, sebut asetnya ya.")
 
 
