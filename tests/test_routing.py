@@ -6848,3 +6848,74 @@ def test_ticker_ambigu_menuntut_tanda_disengaja():
     assert bot._disengaja_sebagai_koin("$near gimana", "NEAR")
     src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
     assert src.count("_TICKER_AMBIGU and not _disengaja_sebagai_koin") == 2,         "pagarnya harus dipasang di daftar ticker DAN di pencarian dalam"
+
+
+def _riwayat_btc(bot_, chat="9", umur=1800):
+    import time as _t
+    return [dict(chat=bot_._id_chat(chat), waktu=_t.time() - umur, waktu_utc="x",
+                 pesan="btc berpotensi naik sampai berapa?",
+                 balasan="BTC sekarang $81.150.", angka_kunci=["btc=81150"])]
+
+
+@pytest.mark.parametrize("nama,simbol,teks,lanjut,ada_judul", [
+    # Aset DITEBAK dan berbeda dari yang sedang dibahas: inilah kasus yang dulu lewat
+    # tanpa jejak sama sekali.
+    ("ditebak, beda dari sebelumnya", "SHORT", "koreksi untuk short term", False, True),
+    ("ditebak lewat kata fungsi", "NYA", "trend nya gimana", False, True),
+    ("ticker ambigu sebagai kata biasa", "NEAR", "target sudah near", False, True),
+    # Dilanjutkan dari giliran lalu: tetap diberi tahu, tapi kalimatnya beda — "aku
+    # melanjutkan topik kita" bukan hal yang sama dengan "aku menyimpulkan sendiri".
+    ("dilanjutkan dari giliran lalu", "BTC", "bagaimana pandanganmu?", True, True),
+    # User menyebut sendiri -> judulnya cuma kebisingan.
+    ("user menyebut ticker", "BTC", "analisa BTC dong", False, False),
+    ("user menyebut nama panjang", "BTC", "bitcoin gimana?", False, False),
+    ("user menyebut NEAR disengaja", "NEAR", "analisa NEAR", False, False),
+])
+def test_judul_aset_muncul_tepat_saat_dibutuhkan(nama, simbol, teks, lanjut, ada_judul):
+    """Jawaban wajib menyebut aset mana yang dibahas — ditempel KODE, bukan diminta ke
+    model. Saat "short term" dibaca sebagai koin SHORT, jawabannya tidak pernah menyebut
+    koin apa pun; satu-satunya petunjuk cuma tautan /coins/short di kaki sumber."""
+    asli = bot._muat_riwayat
+    bot._muat_riwayat = lambda: _riwayat_btc(bot)
+    try:
+        j = bot.judul_aset(simbol, teks, "9", dilanjutkan=lanjut)
+        assert bool(j) is ada_judul, f"{nama}: {j!r}"
+        if ada_judul:
+            assert simbol in j, nama
+            if lanjut:
+                assert "dilanjutkan" in j.lower(), nama
+            else:
+                assert "BTC" in j, f"{nama}: harus menyebut aset sebelumnya"
+    finally:
+        bot._muat_riwayat = asli
+
+
+def test_kata_biasa_di_pesan_bukan_penyebutan_aset():
+    """"koreksi untuk short term" memuat kata "short" PERSIS KARENA user tidak sedang
+    membicarakan koin SHORT. Menganggapnya penyebutan akan menelan judulnya tepat pada
+    kasus yang paling membutuhkannya."""
+    assert not bot._disebut_di_pesan("koreksi untuk short term", "SHORT")
+    assert not bot._disebut_di_pesan("target sudah near", "NEAR")
+    assert bot._disebut_di_pesan("analisa NEAR sekarang", "NEAR")
+    assert bot._disebut_di_pesan("harga near berapa", "NEAR")
+    assert bot._disebut_di_pesan("analisa BTC", "BTC")
+    assert bot._disebut_di_pesan("bitcoin gimana", "BTC")   # nama panjang
+
+
+def test_aset_dilanjutkan_dari_giliran_sebelumnya():
+    """Pesan lanjutan sering tidak menyebut asetnya lagi. Tanpa ini brief-nya kosong —
+    dan kekosongan itu dulu diisi tebakan dari kata dalam kalimat."""
+    asli = bot._muat_riwayat
+    bot._muat_riwayat = lambda: _riwayat_btc(bot)
+    try:
+        assert bot._simbol_terakhir("9") == "BTC"
+        # Lebih tua dari jendela 6 jam -> tidak dibawa; topiknya sudah lain.
+        bot._muat_riwayat = lambda: _riwayat_btc(bot, umur=bot.RIWAYAT_UMUR + 60)
+        assert bot._simbol_terakhir("9") is None
+    finally:
+        bot._muat_riwayat = asli
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    i = src.index("aset_dilanjutkan = False", src.index("jenis_chat, simbol_chat ="))
+    blok = src[i:i + 500]
+    # Sapaan tidak boleh ikut menarik data lengkap satu aset.
+    assert "pesan_pasar(text)" in blok, "carry-over harus dibatasi pertanyaan pasar"
