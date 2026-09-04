@@ -1690,7 +1690,44 @@ _KATA_UMUM_BUKAN_KOIN = {
     # tanpa baris ini, "halo" mengembalikan analisa aset.
     "HALO", "HAI", "PAGI", "SIANG", "SORE", "MALAM", "OKE", "OKEY", "SIP", "PING",
     "THANKS", "MAKASIH", "TERIMA", "KASIH", "MAAF", "TOLONG", "COBA", "LAGI",
+    # KOSAKATA TRADING. Ini justru kata yang PALING sering muncul di percakapan pasar,
+    # dan banyak di antaranya token sungguhan di CoinGecko. Terjadi nyata: "koreksi untuk
+    # short term" dibaca sebagai koin SHORT (market cap $97 juta), sehingga pertanyaan
+    # lanjutan tentang BTC dijawab dengan analisa koin mikro lengkap dengan grafiknya —
+    # dan tidak ada satu pun tanda bahwa asetnya sudah berganti.
+    "SHORT", "LONG", "SPOT", "HOLD", "HODL", "TOP", "DIP", "PUMP", "DUMP", "MOON",
+    "BULL", "BEAR", "TREND", "ENTRY", "EXIT", "STOP", "LOSS", "PROFIT", "CUAN",
+    "RISK", "SETUP", "CHART", "SINYAL", "LEVEL", "ZONA", "ZONE", "RANGE", "SWING",
+    "SCALP", "BREAK", "TERM", "NEXT", "SOON", "SAFE", "WAIT", "BUY", "SELL",
+    "SIZE", "TREN", "KOREKSI", "REBOUND", "PANIC", "GREED", "VOLUME", "CANDLE",
+    # KATA FUNGSI BAHASA INDONESIA. "nya" ditulis terpisah ("trend nya gimana", "volume
+    # nya kecil") adalah koin NYA yang benar-benar ada — dan pola itu muncul di hampir
+    # setiap kalimat. Pemindaian hanya mengambil kata 3-6 huruf, jadi yang panjang aman
+    # dengan sendirinya; yang pendek inilah yang berbahaya.
+    "NYA", "YANG", "DARI", "PADA", "SAYA", "KAMU", "AKU", "DONG", "AJA", "SAJA",
+    "SIH", "KAH", "PUN", "LAH", "JUGA", "MAU", "BUAT", "KALO", "KALAU", "GITU",
+    "UDAH", "TADI", "NANTI", "BANGET", "MASA", "KOK", "YA", "DEH", "NIH", "TUH",
+    "BIAR", "SOAL", "ITU", "KITA", "MEREKA", "DIA", "ADA", "JADI", "TAPI", "KARNA",
 }
+
+# Ticker yang JUGA kata biasa dalam kalimat. "target sudah near" bukan pertanyaan tentang
+# NEAR, dan "cek link nya" bukan tentang LINK — tapi "analisa NEAR" jelas iya. Keduanya
+# koin besar sungguhan, jadi tidak bisa sekadar dibuang seperti daftar di atas: yang
+# dituntut adalah TANDA bahwa penyebutannya disengaja.
+_TICKER_AMBIGU = {"LINK", "NEAR"}
+_PENANDA_KOIN = (r"(?:koin|token|coin|analisa|analisis|analyze|harga|chart|candle|"
+                 r"update|kondisi|pantau|prospek|beli|jual|buy|sell)")
+
+
+def _disengaja_sebagai_koin(teks, atas):
+    """Apakah kata ini benar-benar dimaksudkan sebagai nama koin, bukan kata biasa."""
+    t = teks or ""
+    if re.search(r"\b" + atas + r"\b", t):            # ditulis HURUF BESAR = disengaja
+        return True
+    if re.search(r"[$]" + atas + r"\b", t, re.I):     # $NEAR = jelas ticker
+        return True
+    # Didahului kata penanda: "harga near", "analisa link".
+    return bool(re.search(_PENANDA_KOIN + r"\s+" + atas + r"\b", t, re.I))
 
 
 def aset_dari_pesan(teks, dalam=False):
@@ -1750,6 +1787,8 @@ def aset_dari_pesan(teks, dalam=False):
     for k in kata:
         atas = k.upper()
         if atas in _TICKER_UMUM and atas not in _KATA_BUKAN_TICKER:
+            if atas in _TICKER_AMBIGU and not _disengaja_sebagai_koin(teks, atas):
+                continue
             return "crypto", atas
         # "$ADA" ditulis dengan dolar = jelas ticker, pengecualian tidak berlaku.
     for m2 in re.finditer(r"[$]([A-Za-z]{2,6})\b", teks or ""):
@@ -1798,6 +1837,11 @@ def aset_dari_pesan(teks, dalam=False):
         if len(atas) < 3 or atas in _KATA_BUKAN_TICKER or atas in _BUKAN_TICKER_SAHAM:
             continue
         if atas in _SETELAH_TRANSAKSI_BUKAN_ASET or atas in _KATA_UMUM_BUKAN_KOIN:
+            continue
+        # Aturan yang sama seperti di daftar ticker: kata yang JUGA kata biasa hanya
+        # diterima kalau penyebutannya disengaja. Tanpa ini, "target sudah near" lolos
+        # dari gerbang di atas lalu ditangkap lagi di sini lewat jaringan.
+        if atas in _TICKER_AMBIGU and not _disengaja_sebagai_koin(teks, atas):
             continue
         if dicoba >= 2:            # batas keras: dua panggilan jaringan per pesan
             break

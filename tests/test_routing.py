@@ -6790,3 +6790,61 @@ def test_kutipan_panjang_tetap_cocok_lewat_tahap_sama_persis():
     idx, skor = bot.cocok_kutipan(riwayat, {"teks": kutipan, "dari_bot": True})
     bot._COCOK_CACHE.clear()
     assert idx == 0 and skor >= 0.99
+
+
+@pytest.mark.parametrize("teks", [
+    # Kejadian nyata: pertanyaan LANJUTAN tentang BTC dijawab dengan analisa koin SHORT
+    # (market cap $97 juta) lengkap dengan grafiknya, dan tidak ada satu pun tanda bahwa
+    # asetnya sudah berganti. Kata "short term" yang jadi tickernya.
+    "saya melihat adanya koreksi untuk short term selama beberapa hari kedepan, "
+    "bagaimana pandanganmu?",
+    "koreksi untuk short term",
+    "mau long atau short?",
+    "top 10 koin apa",
+    "hold dulu ya",
+    "stop loss di mana",
+    "entry di zona mana",
+    "ini pump besar",
+    # "nya" ditulis terpisah adalah koin NYA yang benar-benar ada — dan polanya muncul
+    # di hampir setiap kalimat bahasa Indonesia.
+    "trend nya gimana",
+    "volume nya kecil",
+    "harga nya berapa",
+    # Ticker yang juga kata biasa, dipakai sebagai kata biasa.
+    "target sudah near",
+    "cek link nya dong",
+])
+def test_kosakata_trading_bukan_ticker(teks):
+    """Kata yang paling sering muncul di percakapan pasar justru banyak yang jadi token
+    sungguhan di CoinGecko. Salah menariknya bukan sekadar meleset: seluruh brief berisi
+    aset lain, dan audit keterlacakan ikut membenarkannya."""
+    assert bot.aset_dari_pesan(teks, dalam=True)[1] is None, bot.aset_dari_pesan(teks, dalam=True)
+
+
+@pytest.mark.parametrize("teks,simbol", [
+    # Penyebutan yang DISENGAJA harus tetap tertangkap — pagar di atas tidak boleh
+    # membuat koin yang benar-benar ditanyakan jadi ikut hilang.
+    ("analisa NEAR dong", "NEAR"),
+    ("harga near sekarang berapa", "NEAR"),   # didahului kata penanda
+    ("$LINK gimana", "LINK"),
+    ("analisa link", "LINK"),
+    ("analisa BTC", "BTC"),
+    ("prospek SOL", "SOL"),
+    ("gimana ETH hari ini", "ETH"),
+])
+def test_penyebutan_koin_yang_disengaja_tetap_tertangkap(teks, simbol):
+    assert bot.aset_dari_pesan(teks, dalam=True)[1] == simbol
+
+
+def test_ticker_ambigu_menuntut_tanda_disengaja():
+    """LINK dan NEAR koin besar sungguhan, jadi tidak bisa sekadar dibuang seperti kata
+    trading. Yang dituntut TANDA: huruf besar, awalan $, atau kata penanda di depannya.
+    Aturan ini harus berlaku di KEDUA jalur — daftar ticker dan pencarian dalam — karena
+    "target sudah near" dulu lolos gerbang pertama lalu ditangkap lagi oleh yang kedua."""
+    assert bot._TICKER_AMBIGU, "daftarnya tidak boleh kosong"
+    assert not bot._disengaja_sebagai_koin("target sudah near", "NEAR")
+    assert bot._disengaja_sebagai_koin("analisa NEAR", "NEAR")
+    assert bot._disengaja_sebagai_koin("harga near berapa", "NEAR")
+    assert bot._disengaja_sebagai_koin("$near gimana", "NEAR")
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    assert src.count("_TICKER_AMBIGU and not _disengaja_sebagai_koin") == 2,         "pagarnya harus dipasang di daftar ticker DAN di pencarian dalam"
