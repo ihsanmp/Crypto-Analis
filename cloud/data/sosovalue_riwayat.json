@@ -1,5 +1,5 @@
 {
- "ditarik_utc": "2026-08-30 10:14",
+ "ditarik_utc": "2026-09-06 09:07",
  "sumber": "SoSoValue OpenAPI /macro/events/{acara}/history",
  "acara": {
   "NFP": {
@@ -1203,16 +1203,16 @@
     },
     {
      "date": "2026-09-04",
-     "actual": "",
-     "forecast": "58",
+     "actual": "162",
+     "forecast": "55",
      "previous": "-23"
     }
    ]
   },
   "CPI": {
    "nama": "CPI (MoM)",
-   "jumlah": 198,
-   "rentang": "2010-01-15 s/d 2026-08-12",
+   "jumlah": 199,
+   "rentang": "2010-01-15 s/d 2026-09-11",
    "data": [
     {
      "date": "2010-01-15",
@@ -2401,13 +2401,19 @@
      "actual": "0.1%",
      "forecast": "0.1%",
      "previous": "-0.4%"
+    },
+    {
+     "date": "2026-09-11",
+     "actual": "",
+     "forecast": "0.4%",
+     "previous": "0.1%"
     }
    ]
   },
   "CORE CPI": {
    "nama": "Core CPI (MoM)",
-   "jumlah": 198,
-   "rentang": "2010-01-15 s/d 2026-08-12",
+   "jumlah": 199,
+   "rentang": "2010-01-15 s/d 2026-09-11",
    "data": [
     {
      "date": "2010-01-15",
@@ -3596,13 +3602,19 @@
      "actual": "0.2%",
      "forecast": "0.2%",
      "previous": "0%"
+    },
+    {
+     "date": "2026-09-11",
+     "actual": "",
+     "forecast": "0.2%",
+     "previous": "0.2%"
     }
    ]
   },
   "PPI": {
    "nama": "PPI (MoM)",
-   "jumlah": 199,
-   "rentang": "2010-01-20 s/d 2026-08-13",
+   "jumlah": 200,
+   "rentang": "2010-01-20 s/d 2026-09-10",
    "data": [
     {
      "date": "2010-01-20",
@@ -4797,6 +4809,12 @@
      "actual": "0%",
      "forecast": "0.2%",
      "previous": "-0.3%"
+    },
+    {
+     "date": "2026-09-10",
+     "actual": "",
+     "forecast": "0.4%",
+     "previous": "0%"
     }
    ]
   }
