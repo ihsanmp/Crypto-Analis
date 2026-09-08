@@ -7224,3 +7224,130 @@ def test_seed_dokumen_dimuat_dan_bertingkat():
     mode = open(os.path.join(AKAR, "cloud", "prompts", "pdf.md"), encoding="utf-8").read()
     assert "Tanpa markdown" in mode
     assert len(mode) < 2000, "prompt mode harus ramping; disiplinnya ada di seed"
+
+
+@pytest.fixture
+def masukan_tmp(tmp_path):
+    """Arahkan simpanan masukan ke tmp. Tanpa ini tes menulisi cloud/data/ produksi."""
+    sys.path.insert(0, os.path.join(AKAR, "cloud"))
+    import masukan
+    asli_path, asli_modul = masukan.MASUKAN_PATH, bot._masukan
+    masukan.MASUKAN_PATH = str(tmp_path / "masukan.jsonl")
+    bot._masukan = lambda: masukan
+    try:
+        yield masukan
+    finally:
+        masukan.MASUKAN_PATH = asli_path
+        bot._masukan = asli_modul
+
+
+@pytest.mark.parametrize("teks,masukan_bukan_pertanyaan", [
+    ("jangan pakai 4H lagi ya, harusnya H4", True),
+    ("mulai sekarang jawabannya lebih ringkas", True),
+    ("koreksi: RSI itu bukan indikator tren", True),
+    ("pelajari ini", True),
+    ("kedepannya sebutkan sumbernya", True),
+    # Pertanyaan pasar biasa TIDAK boleh dibaca sebagai koreksi cara kerja: aturan
+    # sampah ikut ke SETIAP prompt sesudahnya, jadi salah tangkap di sini mahal.
+    ("btc gimana hari ini?", False),
+    ("analisa SOL dong", False),
+    ("jangan lupa cek funding", False),
+    ("berapa target realistisnya?", False),
+])
+def test_deteksi_masukan_bukan_pertanyaan_biasa(teks, masukan_bukan_pertanyaan):
+    assert bot.minta_belajar(teks) is masukan_bukan_pertanyaan, teks
+
+
+def test_aturan_ditegakkan_kode_bukan_diharapkan(masukan_tmp):
+    """Menyimpan koreksi user lalu berharap model mengingatnya adalah kegagalan senyap
+    yang proyek ini hindari di tempat lain. Aturan berbentuk "jangan X, pakai Y" adalah
+    penggantian literal — dikerjakan kode, tanpa memanggil model."""
+    e, err = masukan_tmp.tambah("Timeframe jam ditulis H4, bukan 4H",
+                                jangan="4H", pakai="H4", sumber="teks")
+    assert e and e["jangan"] == "4H"
+    body = ("BIAS SPOT: AKUMULASI" + chr(10) + "Harga $214,50" + chr(10)
+            + "Invalidasi $198" + chr(10) + "Target: $232" + chr(10) + chr(10)
+            + "Di 4H strukturnya masih naik.")
+    langgar = bot.audit_masukan(body)
+    assert len(langgar) == 1, langgar
+    baru, sisa = bot.perbaiki_masukan(body, langgar)
+    assert "H4 strukturnya" in baru and "4H" not in baru and sisa == []
+    # Baris panggilan yang dinilai rapor.py harus selamat.
+    sys.path.insert(0, os.path.join(AKAR, "cloud"))
+    import rapor
+    assert rapor.urai_panggilan(baru), "penggantian tidak boleh merusak jejak rekam"
+
+
+def test_aturan_tanpa_pengganti_dilaporkan_bukan_didiamkan(masukan_tmp):
+    """Aturan yang tidak punya penggantinya tidak bisa dibetulkan sendiri. Membiarkannya
+    lewat membuat user mengira masukannya sudah dipatuhi."""
+    masukan_tmp.tambah("Jangan menggurui", jangan="perlu diingat bahwa", sumber="teks")
+    body = "Perlu diingat bahwa pasar bisa berbalik."
+    langgar = bot.audit_masukan(body)
+    baru, sisa = bot.perbaiki_masukan(body, langgar)
+    assert len(langgar) == 1 and baru == body and len(sisa) == 1
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    i = src.index("langgar = audit_masukan(body)")
+    assert "Masukanmu belum sepenuhnya kuikuti" in src[i:i + 2500],         "sisa pelanggaran harus sampai ke user"
+
+
+def test_masukan_masuk_ke_setiap_prompt(masukan_tmp):
+    """Disuntikkan lewat header_waktu(), yang dilewati SEMUA mode — teks, gambar, PDF,
+    analisa, narasi. Kalau tiap perakit prompt harus mengingatnya sendiri, yang
+    ditambahkan nanti pasti ada yang lupa."""
+    masukan_tmp.tambah("Timeframe jam ditulis H4, bukan 4H", jangan="4H", pakai="H4")
+    h = bot.header_waktu()
+    assert "MASUKAN USER YANG SUDAH BERLAKU" in h and "H4" in h
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    i = src.index("def header_waktu(")
+    assert "blok_masukan()" in src[i:src.index("def build_analisa_prompt")]
+
+
+def test_masukan_menolak_data_pribadi(masukan_tmp):
+    """Repo ini PUBLIK dan riwayat git permanen. Penyaringnya sama dengan memori.py
+    supaya cuma ada SATU definisi 'data pribadi' — dua definisi berarti salah satunya
+    pasti tertinggal saat diperbarui."""
+    e, err = masukan_tmp.tambah(
+        "Ingat dompet saya 0x742d35Cc6634C0532925a3b844Bc454e4438f44e")
+    assert e is None and "privasi" in (err or "").lower()
+    assert not os.path.exists(masukan_tmp.MASUKAN_PATH) or         "0x742d35" not in open(masukan_tmp.MASUKAN_PATH, encoding="utf-8").read()
+
+
+def test_masukan_tidak_menumpuk_duplikat_dan_bisa_dicabut(masukan_tmp):
+    """User sering mengulang koreksi yang sama; duplikatnya memakan jatah MAKS_AKTIF
+    tanpa menambah apa pun, dan jatah itu yang membatasi biaya token tiap pesan."""
+    a, _ = masukan_tmp.tambah("Jawaban lebih ringkas")
+    b_, catatan = masukan_tmp.tambah("jawaban   LEBIH ringkas")
+    assert b_["id"] == a["id"] and "sudah ada" in catatan
+    assert len(masukan_tmp.aktif()) == 1
+    assert masukan_tmp.nonaktifkan(a["id"]) and masukan_tmp.aktif() == []
+    # Barisnya tidak dihapus — jejaknya harus tetap ada.
+    assert len(masukan_tmp.baca_semua()) == 1
+
+
+def test_masukan_dibatasi_supaya_tidak_membengkak(masukan_tmp):
+    """Masukan yang menumpuk berbulan-bulan pelan-pelan memakan jendela konteks SETIAP
+    pesan — biaya yang tidak pernah terlihat karena bertambahnya sedikit demi sedikit."""
+    for i in range(masukan_tmp.MAKS_AKTIF + 8):
+        masukan_tmp.tambah(f"Aturan nomor {i}")
+    assert len(masukan_tmp.aktif()) == masukan_tmp.MAKS_AKTIF
+    assert len(masukan_tmp.blok_prompt()) < 4000
+    panjang = masukan_tmp.tambah("x" * 400)[0]["aturan"]
+    assert len(panjang) <= masukan_tmp.ATURAN_MAKS + 1
+
+
+def test_masukan_ikut_tercommit():
+    """Aturan yang dipelajari hilang setiap run selesai kalau tidak ikut di-commit —
+    dan fitur ini seluruhnya bergantung pada aturannya bertahan antar-run."""
+    alur = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"),
+                encoding="utf-8").read()
+    assert alur.count("cloud/data/masukan.jsonl") >= 2,         "harus ada di pemeriksaan status DAN di git add"
+
+
+@pytest.mark.parametrize("sumber", ["teks", "gambar", "pdf"])
+def test_belajar_dari_ketiga_jalur_masuk(sumber):
+    """Masukan bisa datang sebagai teks, gambar, atau PDF. Ketiga cabang harus
+    memanggil pembelajarannya — cabang yang lupa berarti masukan lewat jalur itu
+    hilang tanpa jejak."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    assert 'belajar_dari(token, chat_id, text, body, sumber="' + sumber + '")' in src

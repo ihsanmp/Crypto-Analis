@@ -447,6 +447,45 @@ _BULAN_ID = ("Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Ag
              "Sep", "Okt", "Nov", "Des")
 
 
+# Pesan yang MENGOREKSI cara kerja, bukan menanyakan pasar. Sengaja menuntut penanda
+# yang jelas: menebak-nebak mana yang "masukan" dari kalimat biasa akan memenuhi daftar
+# aturan dengan sampah, dan aturan sampah ikut ke SETIAP prompt sesudahnya.
+_MINTA_BELAJAR = re.compile(
+    r"\b(?:jangan|hindari|stop)\b[^.?!]{0,60}\b(?:lagi|ya|dong|kalau|kalo|pakai|pake|"
+    r"tulis|sebut|bilang)\b|"
+    r"\b(?:harusnya|seharusnya|mestinya|bukan begitu|salah|keliru)\b|"
+    r"\b(?:mulai sekarang|ke depan(?:nya)?|selanjutnya|lain kali|kedepannya)\b|"
+    r"\b(?:ingat|catat|pelajari|camkan|perhatikan)\b[^.?!]{0,20}\b(?:ya|ini|itu|dong)\b|"
+    r"\b(?:pelajari|catat|ingat) ini\b|"
+    r"\b(?:koreksi|masukan|masukkan|feedback)\b", re.I)
+
+
+def minta_belajar(teks):
+    """Apakah pesan ini masukan tentang CARA KERJA, bukan pertanyaan pasar."""
+    return bool(_MINTA_BELAJAR.search(teks or ""))
+
+
+def _masukan():
+    """Modul masukan, atau None kalau gagal dimuat. Tidak boleh mematikan alur."""
+    try:
+        sys.path.insert(0, BASE_DIR)
+        import masukan
+        return masukan
+    except Exception as e:
+        print(f"[masukan] modul gagal dimuat ({type(e).__name__})", file=sys.stderr)
+        return None
+
+
+def blok_masukan():
+    """Aturan dari user yang sudah berlaku. "" kalau belum ada."""
+    m = _masukan()
+    try:
+        return m.blok_prompt() if m else ""
+    except Exception as e:
+        print(f"[masukan] gagal merakit blok ({type(e).__name__})", file=sys.stderr)
+        return ""
+
+
 def header_waktu():
     """Suntikkan TANGGAL HARI INI ke setiap prompt, deterministik dari Python.
 
@@ -470,6 +509,10 @@ def header_waktu():
         "diam-diam memilih satu seolah pasti.\n"
         "- Hasil WebSearch: cek TANGGAL artikelnya, utamakan yang terbaru; artikel lama "
         "boleh dipakai hanya kalau disebut tanggalnya.\n\n"
+        # DISUNTIKKAN DI SINI, bukan di tiap perakit prompt. header_waktu() dilewati
+        # SEMUA mode — teks, gambar, PDF, analisa, narasi — jadi tidak ada perakit yang
+        # bisa lupa membawanya, dan mode yang ditambahkan nanti ikut dengan sendirinya.
+        + blok_masukan()
     )
 
 
@@ -3590,6 +3633,7 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
             print(f"[proses] balasan PDF {len(body)} karakter TERKIRIM", file=sys.stderr)
             if not body.startswith("❌"):
                 simpan_riwayat(chat_id, f"[PDF] {nama} — {text}".strip(" —"), body)
+                belajar_dari(token, chat_id, text, body, sumber="pdf")
         return
 
     # --- Mode FOTO (analis visual) -----------------------------------------
@@ -3632,6 +3676,7 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
             # Tanpa ini, pertanyaan lanjutan sesudah kirim gambar ("jadi menurutmu
             # gimana?") datang tanpa tahu gambar apa yang barusan dibahas.
             simpan_riwayat(chat_id, text or "(mengirim gambar)", body)
+            belajar_dari(token, chat_id, text, body, sumber="gambar")
         else:
             print("[proses] GAGAL KIRIM balasan foto — cek TELEGRAM_BOT_TOKEN", file=sys.stderr)
         return
@@ -3916,6 +3961,13 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
     outlook = audit_outlook(brief, body)
     keyakinan = audit_keyakinan(brief, body)
     if not body.startswith("❌"):
+        # Aturan user ditegakkan KODE, bukan diharapkan. Pelanggaran yang punya
+        # penggantinya dibetulkan langsung tanpa memanggil model; yang tidak punya
+        # dilaporkan ke user supaya ia tahu masukannya belum terpakai, bukan mengira
+        # sudah dipatuhi.
+        langgar = audit_masukan(body)
+        if langgar:
+            body, langgar = perbaiki_masukan(body, langgar)
         hitung = audit_hitung(body, imbalan)
         if hitung:
             print(f"[audit] SALAH HITUNG: {hitung}", file=sys.stderr)
@@ -3926,6 +3978,13 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
                 imbalan = audit_imbalan(body)      # levelnya mungkin ikut berubah
         catatan = peringatan_audit(jejak, asal, kesegaran, imbalan, outlook, keyakinan,
                                    hitung)
+        if langgar:
+            sisa = " · ".join(x["aturan"][:60] for x in langgar[:2])
+            body = sisipkan_peringatan(
+                body, "⚠️ Masukanmu belum sepenuhnya kuikuti di jawaban ini: "
+                + sisa)
+            print(f"[masukan] {len(langgar)} aturan TIDAK terpenuhi, user diberi tahu",
+                  file=sys.stderr)
         if catatan:
             body = sisipkan_peringatan(body, catatan)
             print(f"[audit] peringatan DIKIRIM ke user: {catatan[:70]}", file=sys.stderr)
@@ -3957,6 +4016,7 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
         # dengan pesan errornya.
         if jawaban_nyata:
             simpan_riwayat(chat_id, text, body)
+            belajar_dari(token, chat_id, text, body, sumber="teks")
         # Catat PANGGILAN (bias + level) supaya bisa dinilai belakangan. Diekstraksi oleh
         # kode dari teks balasan, jadi tidak bisa dilewatkan dan tidak menambah biaya
         # giliran. DIBUNGKUS try/except: pencatatan rapor tidak boleh menggagalkan apa pun —
@@ -4108,6 +4168,156 @@ _RE_RR_DITULIS = re.compile(
     r"(?:r\s*:\s*r|rr|imbalan\s*:\s*risiko|risk\s*[/:]\s*reward)"
     r"[^\d\n]{0,12}(?:1\s*:\s*)?(\d+(?:[.,]\d+)?)", re.I)
 TOLERANSI_PERSEN = 1.0        # poin persen; di bawah ini pembulatan wajar
+
+
+def belajar_dari(token, chat_id, teks, body, sumber="teks"):
+    """Pelajari masukan user, lalu KATAKAN apa yang dipelajari.
+
+    Dijalankan SESUDAH balasan terkirim: mengekstrak aturan tidak boleh menunda jawaban
+    yang user tunggu, dan kalau ekstraksinya gagal pun jawabannya sudah sampai.
+
+    Konfirmasinya bukan basa-basi. Aturan yang salah tangkap akan ikut ke SETIAP prompt
+    sesudahnya, jadi user harus bisa melihat dan mencabutnya — diam-diam menyimpan hasil
+    tafsir sendiri atas ucapannya justru lebih buruk daripada tidak belajar sama sekali.
+
+    Untuk gambar dan PDF, isinya hanya ada di balasan agent (gambar tidak bisa dibaca
+    kode, dan teks PDF sudah dirangkum di jawabannya). Jadi jawaban itu ikut jadi bahan.
+    """
+    if not minta_belajar(teks):
+        return []
+    tambahan = body if sumber in ("gambar", "pdf") else None
+    try:
+        aturan = pelajari_masukan(teks, sumber=sumber, tambahan=tambahan)
+    except Exception as e:
+        print(f"[masukan] belajar gagal ({type(e).__name__}) — diabaikan", file=sys.stderr)
+        return []
+    if not aturan:
+        return []
+    baris = ["📝 Oke, aku catat ini dan akan kupakai seterusnya:"]
+    for a in aturan:
+        b = f"• {a['aturan']}"
+        if a.get("jangan") and a.get("pakai"):
+            b += f" (aku akan menulis \"{a['pakai']}\", bukan \"{a['jangan']}\")"
+        baris.append(b)
+    baris.append("")
+    baris.append("Kalau ada yang salah kutangkap, bilang saja — nanti kucabut.")
+    send_message(token, chat_id, "\n".join(baris))
+    return aturan
+
+
+def audit_masukan(body):
+    """Aturan user yang DILANGGAR balasan ini. [] kalau bersih.
+
+    Hanya aturan berbentuk "jangan tulis X" yang diperiksa — sisanya panduan yang
+    kepatuhannya memang tidak bisa dibuktikan kode. Yang bisa diperiksa, diperiksa:
+    menyimpan koreksi user lalu berharap model mengingatnya adalah persis kegagalan
+    senyap yang proyek ini hindari di tempat lain.
+    """
+    m = _masukan()
+    if not m or not body:
+        return []
+    temuan = []
+    for aturan in m.paksaan():
+        pola = aturan.get("jangan")
+        if not pola:
+            continue
+        try:
+            if re.search(r"(?<![A-Za-z0-9])" + re.escape(pola) + r"(?![A-Za-z0-9])",
+                         body, re.I):
+                temuan.append(aturan)
+        except re.error:
+            continue
+    return temuan
+
+
+def perbaiki_masukan(body, temuan):
+    """Betulkan pelanggaran dengan MENGGANTI teksnya. Return (body_baru, sisa).
+
+    Tidak memanggil model. Aturan "tulis H4, bukan 4H" adalah penggantian literal, dan
+    menyerahkannya ke model berarti membayar satu panggilan untuk pekerjaan yang pasti —
+    sekaligus membuka peluang jawabannya ikut berubah di tempat lain.
+
+    Aturan tanpa `pakai` TIDAK bisa dibetulkan sendiri (tidak ada gantinya). Itu tetap
+    dikembalikan sebagai sisa, supaya user diberi tahu alih-alih dibiarkan mengira
+    masukannya sudah dipatuhi.
+    """
+    if not body or not temuan:
+        return body, temuan
+    baru, sisa = body, []
+    for aturan in temuan:
+        pola, ganti = aturan.get("jangan"), aturan.get("pakai")
+        if not ganti:
+            sisa.append(aturan)
+            continue
+        try:
+            baru = re.sub(r"(?<![A-Za-z0-9])" + re.escape(pola) + r"(?![A-Za-z0-9])",
+                          ganti, baru, flags=re.I)
+        except re.error:
+            sisa.append(aturan)
+    # Penggantian tidak boleh merusak baris panggilan yang dinilai rapor.py — penjaga
+    # yang sama dengan perbaikan salah hitung.
+    if not _panggilan_selamat(body, baru):
+        print("[masukan] perbaikan menghapus baris panggilan — balasan asli dipakai",
+              file=sys.stderr)
+        return body, temuan
+    if baru != body:
+        print(f"[masukan] {len(temuan) - len(sisa)} pelanggaran DIBETULKAN di kode",
+              file=sys.stderr)
+    return baru, sisa
+
+
+_RE_ATURAN = re.compile(r"^ATURAN:\s*(.+)$", re.M)
+_RE_JANGAN = re.compile(r"^JANGAN:\s*(.+)$", re.M)
+_RE_PAKAI = re.compile(r"^PAKAI:\s*(.+)$", re.M)
+
+
+def pelajari_masukan(teks, sumber="teks", tambahan=None):
+    """Ubah masukan user jadi aturan yang tersimpan. Return daftar aturan yang disimpan.
+
+    Ekstraksinya butuh model — mengubah kalimat bebas ("jangan 4H dong, harusnya H4")
+    jadi aturan berbentuk tetap tidak bisa dilakukan regex tanpa menebak. Tapi yang
+    MENYIMPAN dan yang MENEGAKKAN tetap kode, jadi kegagalan model paling buruk berarti
+    aturannya tidak tersimpan — bukan tersimpan salah lalu diam-diam dipatuhi.
+    """
+    m = _masukan()
+    if not m:
+        return []
+    bahan = (teks or "").strip()
+    if tambahan:
+        bahan += "\n\n[yang dibaca agent dari lampiran]\n" + tambahan[:1500]
+    perintah = (
+        "Kamu mengubah masukan user jadi ATURAN KERJA yang bisa dipakai lagi nanti.\n\n"
+        "Keluarkan HANYA baris-baris berikut, tanpa kalimat lain:\n"
+        "ATURAN: <satu kalimat perintah, maksimal 25 kata>\n"
+        "JANGAN: <teks persis yang tidak boleh ditulis>   (opsional)\n"
+        "PAKAI: <teks penggantinya>                        (opsional)\n\n"
+        "Aturan sebanyak-banyaknya 3. JANGAN/PAKAI hanya diisi kalau masukannya memang "
+        "soal penulisan yang bisa dicocokkan huruf per huruf (mis. '4H' -> 'H4'). "
+        "Kalau masukannya soal sikap atau kedalaman analisa, isi ATURAN saja.\n"
+        "Kalau ini BUKAN masukan tentang cara kerja (cuma pertanyaan biasa), "
+        "jawab persis: TIDAK ADA\n\n"
+        "--- masukan user ---\n" + bahan[:3000] + "\n--- selesai ---\n")
+    keluar, err = run_claude(perintah, 90, 2, model=MODEL_GATHER, with_tools=False)
+    if err or not keluar or "TIDAK ADA" in keluar[:40].upper():
+        print(f"[masukan] tidak ada aturan yang diekstrak"
+              + (f" ({err[:80]})" if err else ""), file=sys.stderr)
+        return []
+    aturan_list = _RE_ATURAN.findall(keluar)
+    jangan_list = _RE_JANGAN.findall(keluar)
+    pakai_list = _RE_PAKAI.findall(keluar)
+    disimpan = []
+    for i, a in enumerate(aturan_list[:3]):
+        entri, err2 = m.tambah(a.strip(),
+                               jangan_list[i].strip() if i < len(jangan_list) else None,
+                               pakai_list[i].strip() if i < len(pakai_list) else None,
+                               sumber=sumber, asal=teks)
+        if entri:
+            disimpan.append(entri)
+            print(f"[masukan] disimpan #{entri['id']}: {entri['aturan'][:70]}"
+                  + (f" ({err2})" if err2 else ""), file=sys.stderr)
+        else:
+            print(f"[masukan] TIDAK disimpan: {err2}", file=sys.stderr)
+    return disimpan
 
 
 def audit_hitung(body, imbalan=None):
