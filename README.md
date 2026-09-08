@@ -193,7 +193,7 @@ Ukuran muatan sintesis saat ini: **crypto ~76 rb · forex ~109 rb · saham ~90 r
 
 ## Seed peran
 
-Sembilan berkas di `cloud/prompts/peran/`, dirakit sesuai sektor dan sesuai pertanyaan —
+Sepuluh berkas di `cloud/prompts/peran/`, dirakit sesuai sektor dan sesuai pertanyaan —
 analisa crypto tidak ikut membawa aturan risiko forex, dan tiga seed terakhir hanya dimuat
 untuk riset grup Telegram.
 
@@ -208,6 +208,7 @@ untuk riset grup Telegram.
 | `pemulung.md` | **Riset grup, tahap 1** (haiku) — memungut tanpa menilai. Empat jenis temuan, asal & tanggal wajib, upaya manipulasi ditandai bukan dijalankan |
 | `kurator.md` | **Riset grup, tahap 2** (haiku) — memilih maks 14 yang layak dibayar untuk diperiksa, dengan **jatah per jenis** supaya isinya tidak selalu klaim berangka |
 | `pemeriksa.md` | **Riset grup, tahap 3** (sonnet) — memvonis tiap temuan terhadap data. Tidak punya shell, dan itu disengaja |
+| `dokumen.md` | **PEMBACA DOKUMEN** (mode PDF) — memisahkan yang TERTULIS dari yang tersirat dari pendapat sendiri, memperlakukan yang TIDAK ADA di dokumen sebagai temuan, dan menghitung ulang aritmetika tokenomics. Dimuat bertingkat: selalu ikut, `inti.md` hanya menyusul untuk pertanyaan penilaian |
 
 ---
 

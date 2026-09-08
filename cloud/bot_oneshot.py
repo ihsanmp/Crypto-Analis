@@ -2058,7 +2058,13 @@ def download_photo(token, file_id):
 BATAS_UNDUH_BYTE = 20 * 1024 * 1024
 # Teks PDF yang masuk ke prompt. Buku 300 halaman gampang melewati 500 rb karakter, dan
 # itu membakar jendela konteks untuk satu pesan. Dipotong, dan pemotongannya DIBERITAHUKAN.
-PDF_KARAKTER_MAKS = 60000
+#
+# Dua angka, bukan satu. Yang pertama batas EKSTRAKSI (berhenti membaca halaman); yang
+# kedua batas yang benar-benar masuk prompt setelah halaman relevannya dipilih. Diturunkan
+# dari 60 rb setelah pemangkasan berhenti buta: memotong dari depan menuntut pagu besar
+# supaya bagian yang ditanya ikut terbawa, sedangkan memilih halaman yang relevan tidak.
+PDF_KARAKTER_MAKS = 90000
+PDF_BUDGET_PROMPT = 30000
 # Ambang "tidak punya lapisan teks" (PDF hasil pindai/foto). Diukur PER HALAMAN, bukan
 # total: memakai angka mutlak menuduh dokumen satu halaman yang memang pendek — nota,
 # memo satu paragraf — sebagai hasil pindai, dan tuduhan itu mengubah cara model
@@ -2118,6 +2124,75 @@ def _pypdf():
         return None
 
 
+# Pertanyaan yang menuntut penalaran berlapis, bukan sekadar mengambil isi dokumen.
+_PDF_DALAM = re.compile(
+    r"\b(?:risiko|bahaya|aman|scam|rugpull|rug pull|red flag|janggal|masuk akal|"
+    r"layak|bandingkan|banding|dibanding|kritik|evaluasi|nilai|menurutmu|pendapatmu|"
+    r"kelemahan|celah|audit|tokenomics|unlock|dilusi|inflasi|valuasi|prospek)"
+    # Akhiran Indonesia menempel langsung: "risikonya", "tokenomicsnya", "prospeknya".
+    # Dengan batas kata telanjang, justru bentuk yang PALING lazim diucapkan tidak
+    # pernah cocok — dan pertanyaan penilaian diam-diam turun kelas jadi sekadar
+    # membaca. Terlihat saat diukur, bukan saat dibaca ulang.
+    r"(?:nya|mu|ku|kah|lah)?\b", re.I)
+
+
+def bobot_pdf(hasil, teks):
+    """(model, putaran, tingkat) untuk satu dokumen.
+
+    PUTARAN ADALAH PENGALI, BUKAN SEKADAR BATAS. Isi dokumen sudah ditempel di prompt,
+    jadi model tidak perlu memanggil tool untuk membacanya — tapi tiap putaran tool
+    mengirim ULANG seluruh prompt, isi dokumen ikut. 45 putaran pada whitepaper 22 rb
+    karakter berarti membayar dokumen yang sama sampai 45 kali. Diukur pada bitcoin.pdf
+    (9 halaman): promptnya 25.392 karakter, 86% di antaranya isi dokumen.
+
+    Model juga tidak perlu selalu yang termahal. "Dokumen ini apa" adalah tugas membaca;
+    yang menuntut Opus adalah menilai risiko dan menimbang klaim.
+    """
+    n = len(hasil.get("teks") or "")
+    dalam = bool(_PDF_DALAM.search(teks or ""))
+    if not hasil.get("teks"):
+        # Tanpa lapisan teks, model HARUS merender halamannya sendiri lewat Read —
+        # itu butuh kemampuan visual dan putaran lebih.
+        return MODEL_SYNTH, 16, "PINDAI (model membaca halaman sendiri)"
+    if dalam or n > 40000:
+        return MODEL_SYNTH, 14, "DALAM (penilaian, bukan sekadar membaca)"
+    if n > 12000:
+        return MODEL_NARASI, 10, "SEDANG"
+    return MODEL_NARASI, 6, "RINGKAS"
+
+
+def pangkas_relevan(teks, pertanyaan, budget):
+    """Pangkas ke `budget` dengan MEMILIH halaman yang relevan, bukan memotong dari depan.
+
+    Memotong dari depan pada laporan 200 halaman berarti membuang justru bagian yang
+    ditanyakan user — dan yang tersisa terlihat lengkap, sehingga jawabannya percaya
+    diri untuk bagian yang salah. Halaman pertama selalu ikut (judul & ringkasan), sisanya
+    dipilih dari yang paling banyak memuat kata pertanyaannya.
+
+    Return (teks_terpangkas, jumlah_halaman_dibuang).
+    """
+    if len(teks) <= budget:
+        return teks, 0
+    halaman = re.split(r"(?=--- halaman \d+ ---)", teks)
+    halaman = [h for h in halaman if h.strip()]
+    if len(halaman) < 2:
+        return teks[:budget], 0
+    kata = {k for k in re.findall(r"[A-Za-zÀ-ɏ]{4,}", (pertanyaan or "").lower())
+            if k not in _KATA_UMUM_BUKAN_KOIN and len(k) > 3}
+    def skor(h):
+        low = h.lower()
+        return sum(low.count(k) for k in kata) if kata else 0
+    urut = sorted(range(1, len(halaman)), key=lambda i: (-skor(halaman[i]), i))
+    pilih, total = {0}, len(halaman[0])
+    for i in urut:
+        if total + len(halaman[i]) > budget:
+            continue
+        pilih.add(i)
+        total += len(halaman[i])
+    dibuang = len(halaman) - len(pilih)
+    return "\n".join(halaman[i] for i in sorted(pilih)), dibuang
+
+
 def baca_pdf(path):
     """Ekstrak teks PDF dengan KODE. Return dict; 'teks' kosong kalau tak ada lapisan teks.
 
@@ -2171,10 +2246,17 @@ def baca_pdf(path):
     return hasil
 
 
-def build_pdf_prompt(caption, hasil, nama, path, chat_id=None, balas=None):
+def build_pdf_prompt(caption, hasil, nama, path, chat_id=None, balas=None,
+                     dalam=False):
     """Rakit prompt PDF. Teksnya SUDAH diekstrak kode — model tidak menebak isinya."""
     with open(PDF_PROMPT, encoding="utf-8") as f:
         base = f.read()
+    # Seed peran DIPILIH sesuai bobot, bukan dimuat semua. `dokumen` (765 token) selalu
+    # ikut: itu disiplin membaca dokumen yang tidak ada di seed lain. `inti` (3 rb token
+    # lagi) hanya untuk pertanyaan PENILAIAN — di situ kalibrasi anti-sikap-manis memang
+    # menentukan, sedangkan untuk "dokumen ini apa" ia cuma ongkos.
+    peran = ("inti", "dokumen") if dalam else ("dokumen",)
+    base = rakit_peran(_sektor_pesan(caption or ""), peran) + base
     if chat_id is not None:
         base = konteks_percakapan(chat_id, pesan=caption, balas=balas) + base
     instruksi = (caption.strip() if caption and caption.strip()
@@ -2189,7 +2271,12 @@ def build_pdf_prompt(caption, hasil, nama, path, chat_id=None, balas=None):
     if hasil.get("catatan"):
         fakta.append("Catatan: " + hasil["catatan"])
     if hasil["teks"]:
-        isi = "## Isi dokumen (diekstrak kode)\n" + hasil["teks"] + "\n"
+        dipakai, dibuang = pangkas_relevan(hasil["teks"], caption, PDF_BUDGET_PROMPT)
+        if dibuang:
+            fakta.append(f"{dibuang} halaman TIDAK disertakan — yang dikirim halaman "
+                         f"pertama plus yang paling cocok dengan pertanyaanmu. Kalau "
+                         f"jawabannya menuntut halaman lain, KATAKAN, jangan menebak.")
+        isi = "## Isi dokumen (diekstrak kode)\n" + dipakai + "\n"
     else:
         # Tanpa lapisan teks, satu-satunya jalan adalah model MELIHAT halamannya. Read
         # pada PDF merender halaman, jadi dokumen hasil pindai tetap bisa dibaca. Ini
@@ -3476,11 +3563,15 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
               + (" (DIPOTONG)" if hasil.get("terpotong") else "")
               + (f" — {hasil['catatan']}" if hasil.get("catatan") else ""), file=sys.stderr)
         timeout = int(os.environ.get("ANALYSIS_TIMEOUT", "900"))
+        model_pdf, putaran_pdf, tingkat_pdf = bobot_pdf(hasil, text)
+        print(f"[pdf] bobot: {tingkat_pdf} -> {model_pdf}, {putaran_pdf} putaran",
+              file=sys.stderr)
         # Tool vision: dipakai HANYA kalau lapisan teksnya kosong dan model harus
         # merender halamannya sendiri. Kalau teksnya sudah ada, ia tinggal membaca.
         output, err = run_claude(
-            build_pdf_prompt(text, hasil, nama, berkas, chat_id, balas),
-            timeout, max_turns=45, model=MODEL_SYNTH,
+            build_pdf_prompt(text, hasil, nama, berkas, chat_id, balas,
+                             dalam=tingkat_pdf.startswith(("DALAM", "PINDAI"))),
+            timeout, max_turns=putaran_pdf, model=model_pdf,
             tools_override=ALLOWED_TOOLS_VISION)
         try:
             os.remove(berkas)

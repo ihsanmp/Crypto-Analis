@@ -7142,3 +7142,85 @@ def test_prompt_pdf_melarang_markdown():
     """Telegram dikirim tanpa parse_mode; bintang tampil mentah di layar."""
     t = open(os.path.join(AKAR, "cloud", "prompts", "pdf.md"), encoding="utf-8").read()
     assert "Tanpa markdown" in t
+
+
+def test_bobot_pdf_tidak_selalu_tier_termahal():
+    """Putaran adalah PENGALI, bukan sekadar batas: isi dokumen sudah ditempel di prompt,
+    tapi tiap putaran tool mengirim ULANG seluruh prompt. 45 putaran pada whitepaper 22 rb
+    karakter berarti membayar dokumen yang sama sampai 45 kali."""
+    kecil = {"teks": "x" * 5000, "halaman": 3, "terpotong": False, "catatan": None}
+    sedang = {"teks": "x" * 22000, "halaman": 9, "terpotong": False, "catatan": None}
+    besar = {"teks": "x" * 50000, "halaman": 80, "terpotong": True, "catatan": None}
+    pindai = {"teks": "", "halaman": 8, "terpotong": False, "catatan": "pindai"}
+
+    m, put, tk = bobot_pdf_(kecil, "ini dokumen apa?")
+    assert m == bot.MODEL_NARASI and put <= 8, (m, put, tk)
+    m, put, tk = bobot_pdf_(sedang, "ringkas dong")
+    assert m == bot.MODEL_NARASI and put <= 12, (m, put, tk)
+    # Penilaian & dokumen besar tetap dapat model terkuat.
+    for h, q in ((sedang, "apa risikonya?"), (besar, "ringkas dong")):
+        m, put, tk = bobot_pdf_(h, q)
+        assert m == bot.MODEL_SYNTH, (q, m, tk)
+    # Tanpa lapisan teks model harus merender halamannya sendiri -> butuh putaran lebih.
+    m, put, tk = bobot_pdf_(pindai, "ini apa?")
+    assert m == bot.MODEL_SYNTH and put >= 14 and "PINDAI" in tk
+    # Semuanya harus JAUH di bawah 45 putaran yang dipakai sebelumnya.
+    for h in (kecil, sedang, besar, pindai):
+        for q in ("ringkas dong", "apa risikonya?"):
+            assert bobot_pdf_(h, q)[1] <= 16
+
+
+def bobot_pdf_(h, q):
+    return bot.bobot_pdf(h, q)
+
+
+@pytest.mark.parametrize("q", ["apa risikonya?", "tokenomicsnya gimana?",
+                               "prospeknya bagaimana?", "ini aman?"])
+def test_akhiran_indonesia_tidak_menurunkan_kelas(q):
+    """Akhiran Indonesia menempel langsung: "risikonya", "tokenomicsnya". Dengan batas
+    kata telanjang, justru bentuk yang PALING lazim diucapkan tidak pernah cocok — dan
+    pertanyaan penilaian diam-diam turun kelas jadi sekadar membaca. Terlihat saat
+    diukur, bukan saat kodenya dibaca ulang."""
+    h = {"teks": "x" * 22000, "halaman": 9, "terpotong": False, "catatan": None}
+    assert bot.bobot_pdf(h, q)[0] == bot.MODEL_SYNTH, q
+
+
+def test_pangkas_memilih_halaman_relevan_bukan_memotong_depan():
+    """Memotong dari depan pada laporan 60 halaman membuang justru bagian yang ditanya —
+    dan yang tersisa terlihat lengkap, sehingga jawabannya percaya diri untuk bagian yang
+    salah."""
+    hal = []
+    for i in range(1, 61):
+        isi = f"Bagian rutin nomor {i}. " * 40
+        if i == 47:
+            isi = "JADWAL UNLOCK: tim 20 persen cliff 12 bulan, vesting 36 bulan. " * 12
+        hal.append("--- halaman " + str(i) + " ---" + chr(10) + isi)
+    teks = (chr(10) * 2).join(hal)
+    assert len(teks) > bot.PDF_BUDGET_PROMPT, "prasyarat: memang melebihi pagu"
+    dipakai, dibuang = bot.pangkas_relevan(teks, "bagaimana jadwal unlock timnya?",
+                                           bot.PDF_BUDGET_PROMPT)
+    assert len(dipakai) <= bot.PDF_BUDGET_PROMPT and dibuang > 0
+    assert "halaman 47" in dipakai, "halaman yang ditanya harus ikut"
+    assert "--- halaman 1 ---" in dipakai, "halaman pertama (judul) selalu ikut"
+    assert "halaman 47" not in teks[:bot.PDF_BUDGET_PROMPT], "prasyarat: potong depan gagal"
+    # Muat seluruhnya kalau memang cukup.
+    utuh, nol = bot.pangkas_relevan("pendek saja", "apa pun", bot.PDF_BUDGET_PROMPT)
+    assert utuh == "pendek saja" and nol == 0
+
+
+def test_seed_dokumen_dimuat_dan_bertingkat():
+    """Seed baru harus BENAR-BENAR sampai ke prompt — seed yang ditulis tapi tidak pernah
+    dimuat adalah biaya menulis tanpa efek apa pun. `inti` (3 rb token) hanya untuk
+    pertanyaan penilaian; untuk sekadar membaca ia cuma ongkos."""
+    assert os.path.exists(os.path.join(AKAR, "cloud", "prompts", "peran", "dokumen.md"))
+    h = {"teks": "Tokenomics ACME. " * 300, "halaman": 9, "terpotong": False,
+         "catatan": None}
+    ringan = bot.build_pdf_prompt("ini dokumen apa?", h, "wp.pdf", "/tmp/x.pdf",
+                                  dalam=False)
+    berat = bot.build_pdf_prompt("apa risikonya?", h, "wp.pdf", "/tmp/x.pdf", dalam=True)
+    assert "PEMBACA DOKUMEN" in ringan and "PEMBACA DOKUMEN" in berat
+    assert len(berat) > len(ringan), "tingkat DALAM memuat inti juga"
+    # Dan pdf.md tidak boleh mengulang isi seed — itu membayar dua kali.
+    mode = open(os.path.join(AKAR, "cloud", "prompts", "pdf.md"), encoding="utf-8").read()
+    assert "Tanpa markdown" in mode
+    assert len(mode) < 2000, "prompt mode harus ramping; disiplinnya ada di seed"
