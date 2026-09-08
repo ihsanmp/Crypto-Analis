@@ -812,8 +812,13 @@ def test_sec_tickers_menyimpan_nama_bukan_hanya_cik():
 
     Regresi nyata saat cache diperkenalkan: pemanggil lama mengambil nama dari respons
     yang sama, jadi setelah dialihkan ke cache kolom namanya kosong tanpa error apa pun.
+
+    Cache-nya sudah dialihkan ke tmp untuk SELURUH sesi (lihat conftest): peta_ticker()
+    menulis ulang cache begitu umurnya lewat, dan cache itu ikut ter-commit.
     """
     import sec_tickers
+    assert os.environ.get("CACHE_DIR_SEC"), "cache SEC harus dialihkan selama tes"
+    assert sec_tickers.CACHE_PATH.startswith(os.environ["CACHE_DIR_SEC"]),         "modulnya harus ikut teralihkan, termasuk setelah reload"
     peta, _, _err = sec_tickers.peta_ticker()
     if not peta:
         return                       # jaringan tidak tersedia: lewati

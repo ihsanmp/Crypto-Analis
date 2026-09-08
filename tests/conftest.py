@@ -32,7 +32,29 @@ def _sidik_data():
     return hasil
 
 
+def _alihkan_cache_sec():
+    """Arahkan cache SEC ke tmp, DISALIN dari yang asli.
+
+    peta_ticker() menulis ulang cache-nya begitu umurnya lewat 7 hari, dan cache itu
+    ikut ter-commit. Pemanggilnya bukan cuma satu tes: _semua_aset() memanggilnya untuk
+    hampir setiap pesan, jadi tes routing mana pun ikut memicunya begitu fetch ke SEC
+    kebetulan berhasil — dan itu membuat CI merah dengan cara yang tidak menunjuk ke
+    tes mana pun secara khusus.
+
+    DISALIN, bukan dikosongkan: cache kosong memaksa setiap tes menembak jaringan.
+    """
+    import shutil
+    import tempfile
+    d = tempfile.mkdtemp(prefix="cache_sec_")
+    for akhiran in (".gz", ""):
+        asal = os.path.join(DATA, "sec_tickers_cache.json" + akhiran)
+        if os.path.exists(asal):
+            shutil.copyfile(asal, os.path.join(d, os.path.basename(asal)))
+    os.environ["CACHE_DIR_SEC"] = d
+
+
 def pytest_sessionstart(session):
+    _alihkan_cache_sec()
     _sidik.update(_sidik_data())
 
 

@@ -16,7 +16,14 @@ import time
 import urllib.request
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CACHE_PATH = os.path.join(BASE_DIR, "data", "sec_tickers_cache.json")
+# Direktori cache bisa dialihkan lewat env. Alasannya bukan kenyamanan: peta_ticker()
+# MENULIS ULANG cache begitu umurnya lewat 7 hari, dan cache itu ikut ter-commit — jadi
+# suite tes diam-diam mengubah data repo setiap kali umurnya lewat. Pemanggilnya bukan
+# cuma satu tes: _semua_aset() memanggil ini untuk hampir setiap pesan, sehingga tes
+# routing mana pun bisa memicunya begitu fetch ke SEC kebetulan berhasil. Dibaca saat
+# impor DAN saat reload, jadi tes yang me-reload modul tetap ikut teralihkan.
+CACHE_DIR = os.environ.get("CACHE_DIR_SEC") or os.path.join(BASE_DIR, "data")
+CACHE_PATH = os.path.join(CACHE_DIR, "sec_tickers_cache.json")
 CACHE_UMUR = 7 * 24 * 3600
 URL = "https://www.sec.gov/files/company_tickers.json"
 # SEC mewajibkan User-Agent berisi identitas + kontak (kebijakan fair access), jadi
