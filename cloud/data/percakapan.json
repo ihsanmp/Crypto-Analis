@@ -148,5 +148,17 @@
   "angka_kunci": [
    "harga=81.156"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1788848399.610503,
+  "waktu_utc": "2026-09-08 06:19",
+  "pesan": "Ini adalah framework yang menilai probabilitas perubahan regime makro (market regime shift) dalam jangka menengah–panjang (3–12 bulan). Model ini menggabungkan berbagai indikator seperti growth (GDP), inflasi, dan kondisi makro lainnya, lalu mengklasifikasikan kondisi ekonomi ke dalam 4 regime: Gold",
+  "balasan": "🕒 Data live per 8 September 2026, 13.16 WIB\n\nYang saya lihat di gambar: slide 63 dari deck 42 Macro LLC, judulnya \"We Use Our GRID Model To Assess The Probability Of Regime Change In Asset Markets\". Sumber data Bloomberg. Kolom Jul-24 sampai Jul-27,\n[...dipangkas...]\ns keluar.\nSudah pegang: TAHAN — pembatalnya tutup harian di bawah $76.200 (rusak swing low + EMA21). Kalau itu jebol, kurangi sebagian dan tunggu $72.000–$72.700. Kalau tutup harian di bawah $72.000, tesis Goldilocks Q4 praktis batal untuk sementara.",
+  "angka_kunci": [
+   "harga=78.564,71",
+   "rsi=42",
+   "rsi=62,7"
+  ]
  }
 ]
