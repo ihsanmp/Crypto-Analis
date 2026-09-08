@@ -468,7 +468,7 @@ def minta_belajar(teks):
 def _masukan():
     """Modul masukan, atau None kalau gagal dimuat. Tidak boleh mematikan alur."""
     try:
-        sys.path.insert(0, BASE_DIR)
+        _pastikan_path(BASE_DIR)
         import masukan
         return masukan
     except Exception as e:
@@ -484,6 +484,23 @@ def blok_masukan():
     except Exception as e:
         print(f"[masukan] gagal merakit blok ({type(e).__name__})", file=sys.stderr)
         return ""
+
+
+def _pastikan_path(jalur):
+    """Sisipkan jalur ke sys.path SEKALI. Menyisipkan berulang adalah kebocoran.
+
+    Delapan fungsi di berkas ini menyisipkan jalur tiap kali dipanggil, dan sebagian
+    ada di jalur panas: header_waktu() dipanggil untuk SETIAP prompt, audit_* untuk
+    setiap balasan. Di bot_oneshot.py itu terbatas satu run, tapi bot_daemon.py jalan
+    terus-menerus — 200 pesan menumbuhkan sys.path dari 11 jadi 612 entri, dan Python
+    memindai daftar itu SECARA LINIER untuk tiap impor.
+
+    Terukur: 300 resolusi impor makan 241 ms pada 11 entri, dan 60.481 ms pada 1.211
+    entri — melambat 250 kali. Mode server akan tercekik sendiri tanpa pernah ada
+    yang error.
+    """
+    if jalur not in sys.path:
+        sys.path.insert(0, jalur)
 
 
 def header_waktu():
@@ -963,7 +980,7 @@ def simpan_riwayat(chat_id, pesan, balasan):
     Balasan juga dipangkas — yang dibutuhkan cuma benang topiknya, bukan isi lengkapnya.
     """
     try:
-        sys.path.insert(0, BASE_DIR)
+        _pastikan_path(BASE_DIR)
         from memori import masalah_privasi
         if masalah_privasi(f"{pesan} {balasan}"):
             print("[riwayat] tidak disimpan — memuat data pribadi", file=sys.stderr)
@@ -2949,7 +2966,7 @@ def _sisipkan_jejak(bagian):
     ke matanya. Hanya muncul saat ada peringatan nyata, jadi biayanya nol di hari biasa.
     """
     try:
-        sys.path.insert(0, os.path.join(REPO_ROOT, "cloud"))
+        _pastikan_path(os.path.join(REPO_ROOT, "cloud"))
         from rapor import catatan_untuk_brief
         t = catatan_untuk_brief()
         if t:
@@ -2992,7 +3009,7 @@ def data_mentah_crypto(coin):
     # justru bagian yang menentukan. Satu panggilan CoinGecko gratis menutupnya.
     mcap = None
     try:
-        sys.path.insert(0, os.path.join(REPO_ROOT, "cloud"))
+        _pastikan_path(os.path.join(REPO_ROOT, "cloud"))
         from kategori import data_koin
         pasar_koin = data_koin(cg_id or coin)
         mcap = pasar_koin.get("mcap_usd")
@@ -4027,7 +4044,7 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
                 aset_rapor = None
             jenis_rapor = jenis if kind == "analisa" else jenis_chat
             if aset_rapor:
-                sys.path.insert(0, BASE_DIR)
+                _pastikan_path(BASE_DIR)
                 from rapor import catat as catat_rapor
                 rid = catat_rapor(body, aset_rapor, jenis_rapor, kind)
                 if rid:
@@ -4063,7 +4080,7 @@ def audit_imbalan(body):
     yang diperiksa persis angka yang nanti dinilai.
     """
     try:
-        sys.path.insert(0, os.path.join(REPO_ROOT, "cloud"))
+        _pastikan_path(os.path.join(REPO_ROOT, "cloud"))
         import rapor
         import statistik
         p = rapor.urai_panggilan(body or "")
@@ -4136,7 +4153,7 @@ def audit_keyakinan(brief, body):
         return None
     persen = round(berhasil / total * 100)
     try:
-        sys.path.insert(0, os.path.join(REPO_ROOT, "cloud"))
+        _pastikan_path(os.path.join(REPO_ROOT, "cloud"))
         import rapor
         p = rapor.urai_panggilan(body)
         skor = (p or {}).get("skor")
@@ -4250,8 +4267,14 @@ def perbaiki_masukan(body, temuan):
             sisa.append(aturan)
             continue
         try:
+            # Penggantinya dipakai lewat lambda, BUKAN sebagai string template. re.sub
+            # menafsirkan "\1" dan "\g<0>" di dalam pengganti sebagai rujukan grup —
+            # diuji: pakai="\g<0>x" menghasilkan "RSIx", dan pakai="\1 indeks" melempar
+            # error sehingga aturannya diam-diam tidak pernah berlaku. Nilai itu datang
+            # dari ekstraksi model atas kalimat user, jadi isinya tidak bisa dipercaya
+            # bebas dari karakter khusus.
             baru = re.sub(r"(?<![A-Za-z0-9])" + re.escape(pola) + r"(?![A-Za-z0-9])",
-                          ganti, baru, flags=re.I)
+                          lambda _m, _g=ganti: _g, baru, flags=re.I)
         except re.error:
             sisa.append(aturan)
     # Penggantian tidak boleh merusak baris panggilan yang dinilai rapor.py — penjaga
@@ -4367,7 +4390,7 @@ def _panggilan_selamat(asli, baru):
     angkanya melainkan kesimpulannya.
     """
     try:
-        sys.path.insert(0, os.path.join(REPO_ROOT, "cloud"))
+        _pastikan_path(os.path.join(REPO_ROOT, "cloud"))
         import rapor
         lama = rapor.urai_panggilan(asli or "")
         if not lama:

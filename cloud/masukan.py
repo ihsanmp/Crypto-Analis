@@ -57,7 +57,8 @@ def masalah_privasi(teks):
     dan yang tertinggal itu tidak akan ketahuan sampai ada yang bocor.
     """
     try:
-        sys.path.insert(0, BASE_DIR)
+        if BASE_DIR not in sys.path:      # menyisipkan berulang membocorkan sys.path
+            sys.path.insert(0, BASE_DIR)
         from memori import masalah_privasi as saring
         return saring(teks)
     except Exception:

@@ -7351,3 +7351,49 @@ def test_belajar_dari_ketiga_jalur_masuk(sumber):
     hilang tanpa jejak."""
     src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
     assert 'belajar_dari(token, chat_id, text, body, sumber="' + sumber + '")' in src
+
+
+def test_sys_path_tidak_tumbuh_di_jalur_panas():
+    """Menyisipkan sys.path berulang adalah kebocoran yang tidak pernah memunculkan error.
+
+    Delapan fungsi menyisipkan jalur tiap dipanggil, dan sebagian ada di jalur panas:
+    header_waktu() untuk SETIAP prompt, audit_* untuk setiap balasan. bot_oneshot.py
+    terbatas satu run, tapi bot_daemon.py jalan terus-menerus — 200 pesan menumbuhkan
+    sys.path dari 11 jadi 612 entri, dan Python memindainya SECARA LINIER tiap impor.
+    Terukur: 300 resolusi impor makan 241 ms pada 11 entri, 60.481 ms pada 1.211 entri.
+    """
+    awal = len(sys.path)
+    for _ in range(200):
+        bot.header_waktu()
+        bot.audit_masukan("teks balasan biasa")
+        bot.audit_imbalan("teks balasan biasa")
+    tumbuh = len(sys.path) - awal
+    assert tumbuh <= 3, f"sys.path tumbuh {tumbuh} entri untuk 200 pesan"
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    # Satu-satunya sys.path.insert yang boleh tersisa ada DI DALAM penjaganya sendiri.
+    assert src.count("sys.path.insert(0, ") == 1, "pakai _pastikan_path(), bukan insert langsung"
+    i = src.index("def _pastikan_path(")
+    assert "sys.path.insert(0, " in src[i:i + 1200]
+
+
+def test_pengganti_aturan_diperlakukan_literal(masukan_tmp):
+    r"""re.sub menafsirkan "\1" dan "\g<0>" di dalam PENGGANTI sebagai rujukan grup.
+
+    Diuji sebelum diperbaiki: pakai="\g<0>x" menghasilkan "RSIx" (bukan teks aslinya),
+    dan pakai="\1 indeks" melempar re.error sehingga aturannya diam-diam tidak pernah
+    berlaku. Nilai itu datang dari ekstraksi model atas kalimat user, jadi isinya tidak
+    bisa dipercaya bebas karakter khusus.
+    """
+    body = "SOL naik, RSI 58."
+    for pakai in (r"\g<0>x", r"\1 indeks", "indeks kekuatan", "$100 & <tanda>"):
+        masukan_tmp.MASUKAN_PATH = str(tmp_path_baru())
+        masukan_tmp.tambah("uji", jangan="RSI", pakai=pakai)
+        baru, sisa = bot.perbaiki_masukan(body, bot.audit_masukan(body))
+        assert pakai in baru, (pakai, baru)
+        assert sisa == [], pakai
+
+
+def tmp_path_baru():
+    import tempfile
+    import pathlib
+    return pathlib.Path(tempfile.mkdtemp()) / "m.jsonl"
