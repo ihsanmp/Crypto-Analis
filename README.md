@@ -17,6 +17,7 @@ sebagai sentimen timing.
 | `carikan koin narasi yang menarik` | Bot memetakan sendiri sektor yang sedang bergerak, lalu pilih koin terbaik |
 | ngobrol bebas | "menurutmu btc gimana?" — jawaban santai, tetap berbasis data yang ditarik saat itu |
 | **kirim FOTO/screenshot** + caption | Mode analis visual: baca chart/pengumuman, cari kaitannya, gali data, beri penilaian |
+| **kirim PDF** + caption | Baca dokumen (whitepaper, tokenomics, laporan riset/audit). Teksnya diekstrak **kode** — jumlah halaman & karakter dilaporkan apa adanya, termasuk saat dokumennya terpotong atau ternyata hasil pindai tanpa lapisan teks |
 | `carikan informasi menarik dari telegram saya` | Membaca grup Telegram-mu sendiri, **memeriksa** temuannya ke data, lalu melapor. Hanya yang **baru sejak terakhir kali diminta** |
 | `apa yang menarik di tele seminggu terakhir` | Sama, tapi rentangnya kamu yang tentukan — mengalahkan penanda batas |
 | `/help` | Bantuan |
@@ -297,8 +298,8 @@ untuk riset grup Telegram.
 | [cloud/prompts/analisa_pasar.md](cloud/prompts/analisa_pasar.md) | Metodologi untuk forex/emas/saham |
 | [cloud/prompts/analisa_sumber.md](cloud/prompts/analisa_sumber.md) | Instruksi sumber data — sengaja dipisah supaya tidak ikut terkirim ke tahap sintesis yang tidak punya tool |
 | [cloud/prompts/chat.md](cloud/prompts/chat.md) | Mode ngobrol, berblok: aturan domain dimuat hanya bila pemicunya cocok |
-| [cloud/prompts/narasi.md](cloud/prompts/narasi.md) · [foto.md](cloud/prompts/foto.md) | Mode screening narasi & mode analis visual |
-| [tests/test_routing.py](tests/test_routing.py) | **446 tes** (pytest, tabel, hermetis — jaringan diblokir): routing, bobot, perakitan prompt, audit angka, penyaring privasi, uji rezim, label divergensi, dan **penjaga struktural** seperti "aturan keras tidak boleh berada di field yang dibuang `--ringkas`". Job CI-nya SENGAJA merah kalau ada yang gagal |
+| [cloud/prompts/narasi.md](cloud/prompts/narasi.md) · [foto.md](cloud/prompts/foto.md) · [pdf.md](cloud/prompts/pdf.md) | Mode screening narasi, analis visual & pembaca dokumen PDF |
+| [tests/test_routing.py](tests/test_routing.py) | **846 tes** (pytest, tabel, hermetis — jaringan diblokir): routing, bobot, perakitan prompt, audit angka, penyaring privasi, uji rezim, label divergensi, dan **penjaga struktural** seperti "aturan keras tidak boleh berada di field yang dibuang `--ringkas`". Job CI-nya SENGAJA merah kalau ada yang gagal |
 
 ---
 

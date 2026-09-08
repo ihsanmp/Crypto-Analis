@@ -7023,3 +7023,117 @@ def test_judul_aset_tanpa_markdown():
     # Ketiga cabang judul_aset sudah diuji di atas lewat hasilnya yang sebenarnya.
     # Memindai sumbernya justru salah tuduh: docstring-nya memuat "**BTC**" sebagai
     # CONTOH yang dilarang, dan itu memang harus ada di sana.
+
+
+def _upd_dok(dok=None, **msg):
+    m = dict(msg, chat={"id": 9})
+    if dok is not None:
+        m["document"] = dok
+    return [{"update_id": 1, "message": m}]
+
+
+@pytest.mark.parametrize("nama,dok,teks,diterima,is_pdf", [
+    ("PDF + caption", {"file_id": "F1", "file_name": "wp.pdf",
+                       "mime_type": "application/pdf"}, "ini aman?", True, True),
+    # PDF TANPA caption dulu dibuang di parser: pesannya tidak punya teks maupun foto,
+    # jadi user mengirim berkas lalu tidak menerima balasan apa pun dan tidak ada
+    # jejaknya di log.
+    ("PDF tanpa caption", {"file_id": "F2", "file_name": "wp.pdf",
+                           "mime_type": "application/pdf"}, "", True, True),
+    # Sebagian klien mengirim mime generik; namanya yang menentukan.
+    ("PDF lewat nama saja", {"file_id": "F3", "file_name": "laporan.PDF",
+                             "mime_type": "application/octet-stream"}, "", True, True),
+    # Jenis lain tetap SAMPAI ke process supaya user diberi tahu, bukan didiamkan.
+    ("dokumen bukan PDF", {"file_id": "F4", "file_name": "data.xlsx",
+                           "mime_type": "application/vnd.ms-excel"}, "", True, False),
+])
+def test_pdf_terbaca_dari_update_telegram(nama, dok, teks, diterima, is_pdf):
+    hasil = bot.actionable_messages(_upd_dok(dok, caption=teks), {"9"})
+    assert bool(hasil) is diterima, nama
+    assert len(hasil[0]) == 6, "arity berubah -> bot_daemon harus ikut"
+    assert hasil[0][5]["pdf"] is is_pdf, nama
+
+
+def test_pesan_biasa_tidak_terpengaruh_dukungan_pdf():
+    assert bot.actionable_messages(_upd_dok(None, text="halo"), {"9"})[0][5] is None
+    assert not bot.actionable_messages(_upd_dok(None), {"9"}), "pesan kosong tetap dibuang"
+
+
+def _pdf_palsu(tmpdir, halaman, baris_per_hal):
+    reportlab = pytest.importorskip("reportlab")   # noqa: F841
+    from reportlab.pdfgen import canvas
+    p = os.path.join(tmpdir, f"uji_{halaman}_{baris_per_hal}.pdf")
+    c = canvas.Canvas(p)
+    for h in range(halaman):
+        for i in range(baris_per_hal):
+            c.drawString(72, 800 - i * 14, f"Baris {i} halaman {h}: tokenomics dan unlock.")
+        c.showPage()
+    c.save()
+    return p
+
+
+@pytest.mark.parametrize("halaman,baris,ditandai_pindai", [
+    (1, 1, False),      # memo satu paragraf: pendek TAPI sah
+    (3, 20, False),     # whitepaper biasa
+    (8, 0, True),       # hasil pindai: nol teks di semua halaman
+])
+def test_ambang_pindai_diukur_per_halaman(tmp_path, halaman, baris, ditandai_pindai):
+    """Ambang mutlak menuduh dokumen satu halaman yang memang pendek sebagai hasil
+    pindai, dan tuduhan itu mengubah cara model memperlakukan isinya. Halaman pindai
+    menghasilkan NOL teks, bukan sedikit."""
+    pytest.importorskip("pypdf")
+    h = bot.baca_pdf(_pdf_palsu(str(tmp_path), halaman, baris))
+    assert h["halaman"] == halaman
+    assert bool(h["catatan"]) is ditandai_pindai, h
+
+
+def test_pdf_rusak_dan_pypdf_absen_tidak_meledak():
+    """Ekstraksi yang gagal harus jadi CATATAN, bukan exception: kegagalan yang lolos
+    ke atas membuat user menerima galat internal alih-alih alasan yang bisa dimengerti."""
+    import tempfile as _tf
+    p = os.path.join(_tf.mkdtemp(), "rusak.pdf")
+    with open(p, "wb") as f:
+        f.write(b"bukan pdf sama sekali")
+    if __import__("importlib").util.find_spec("pypdf"):
+        h = bot.baca_pdf(p)
+        assert h["teks"] == "" and h["catatan"], h
+    asli = bot._pypdf
+    bot._pypdf = lambda: None
+    try:
+        h = bot.baca_pdf(p)
+        assert h["teks"] == "" and "pypdf" in h["catatan"]
+    finally:
+        bot._pypdf = asli
+
+
+def test_pypdf_tidak_dipasang_dari_dalam_tes():
+    """Suite ini hermetik terhadap jaringan lewat blokir socket, tapi pip jalan di
+    SUBPROCESS sehingga blokir itu tidak berlaku — yang terjadi bukan gagal cepat
+    melainkan menggantung sampai timeout 180 detik."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    i = src.index("def _pypdf(")
+    blok = src[i:src.index("def baca_pdf(")]
+    assert "PYTEST_CURRENT_TEST" in blok, "pemasangan harus dilewati di dalam tes"
+    # Dibandingkan dengan PEMANGGILAN pip-nya, bukan kata "pip" — kata itu muncul lebih
+    # dulu di komentar yang menjelaskan justru kenapa penjaga ini ada.
+    assert blok.index("PYTEST_CURRENT_TEST") < blok.index('"install"'), "dicek SEBELUM pip"
+
+
+def test_prompt_pdf_menyebut_batas_yang_sebenarnya():
+    """Yang dilaporkan ke model harus angka apa adanya: halaman, karakter, dan apakah
+    dokumennya terpotong. Tanpa itu ia menyimpulkan seolah sudah membaca semuanya."""
+    hasil = {"teks": "Total supply 1.000.000.000", "halaman": 12, "terpotong": True,
+             "catatan": None}
+    p = bot.build_pdf_prompt("ini aman?", hasil, "wp.pdf", "/tmp/a.pdf")
+    assert "Halaman: 12" in p and "DIPOTONG" in p and "ini aman?" in p
+    assert "Total supply 1.000.000.000" in p
+    # Lapisan teks kosong -> satu-satunya jalan model MELIHAT halamannya sendiri.
+    kosong = {"teks": "", "halaman": 8, "terpotong": False, "catatan": "hasil pindai"}
+    p2 = bot.build_pdf_prompt("", kosong, "pindai.pdf", "/tmp/b.pdf")
+    assert "tool Read" in p2 and "/tmp/b.pdf" in p2 and "hasil pindai" in p2
+
+
+def test_prompt_pdf_melarang_markdown():
+    """Telegram dikirim tanpa parse_mode; bintang tampil mentah di layar."""
+    t = open(os.path.join(AKAR, "cloud", "prompts", "pdf.md"), encoding="utf-8").read()
+    assert "Tanpa markdown" in t

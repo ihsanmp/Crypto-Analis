@@ -46,6 +46,7 @@ NARASI_PROMPT = os.path.join(BASE_DIR, "prompts", "narasi.md")
 PASAR_PROMPT = os.path.join(BASE_DIR, "prompts", "analisa_pasar.md")
 PERAN_DIR = os.path.join(BASE_DIR, "prompts", "peran")
 FOTO_PROMPT = os.path.join(BASE_DIR, "prompts", "foto.md")
+PDF_PROMPT = os.path.join(BASE_DIR, "prompts", "pdf.md")
 MCP_CONFIG = os.path.join(BASE_DIR, ".mcp.cloud.json")
 
 # Set tool DIPISAH menurut tahap, bukan satu daftar untuk semua.
@@ -362,13 +363,43 @@ def actionable_messages(updates, allowed):
         photo_id = photos[-1]["file_id"] if photos else None      # resolusi terbesar
         text = (msg.get("caption") if photo_id else msg.get("text")) or ""
         text = text.strip()
-        if not chat_id or (not text and not photo_id):
+        # Dokumen ikut dihitung sebagai isi. Tanpa ini PDF TANPA caption dibuang di sini:
+        # pesannya tidak punya teks maupun foto, jadi user mengirim berkas lalu tidak
+        # menerima balasan apa pun — dan tidak ada jejaknya di log.
+        pdf = _pdf_dari(msg)
+        if not chat_id or (not text and not photo_id and not pdf):
             continue
+        # Dokumen jadi POKOK pesan. Caption yang menyertainya tetap ikut sebagai
+        # pertanyaan, tapi keberadaan berkas tidak boleh kalah oleh foto/teks.
         if chat_id not in allowed:      # fail-closed: hanya chat yang terdaftar
             print(f"[skip] chat tak terdaftar: {chat_id}")
             continue
-        out.append((upd["update_id"], chat_id, text, photo_id, _balasan_ke(msg)))
+        out.append((upd["update_id"], chat_id, text, photo_id, _balasan_ke(msg), pdf))
     return out
+
+
+def _pdf_dari(msg):
+    """Dokumen PDF yang dilampirkan user, atau None.
+
+    PDF datang sebagai `document`, BUKAN `photo` — jalur foto tidak pernah melihatnya.
+    Sebelum ini berkas apa pun yang dikirim user diam-diam diabaikan: pesannya tidak
+    punya teks maupun foto, jadi ia tidak lolos gerbang di atas sama sekali dan user
+    tidak menerima balasan apa pun.
+
+    Hanya PDF. Jenis lain sengaja tidak diklaim bisa dibaca — mengaku bisa lalu
+    mengembalikan sampah lebih buruk daripada mengatakan belum didukung.
+    """
+    d = msg.get("document") or {}
+    if not d.get("file_id"):
+        return None
+    nama = d.get("file_name") or ""
+    mime = (d.get("mime_type") or "").lower()
+    pdf = mime == "application/pdf" or nama.lower().endswith(".pdf")
+    # Jenis lain tetap dikembalikan, tapi ditandai TIDAK DIDUKUNG — bukan dibuang diam.
+    # Berkas yang dibuang di parser membuat user mengirim sesuatu lalu tidak menerima
+    # balasan apa pun dan tidak ada jejaknya, dan ia tidak punya cara tahu kenapa.
+    return {"file_id": d["file_id"], "nama": nama or ("dokumen.pdf" if pdf else "berkas"),
+            "ukuran": d.get("file_size") or 0, "pdf": pdf}
 
 
 def _balasan_ke(msg):
@@ -2018,6 +2049,26 @@ def build_chat_prompt(text, chat_id=None, brief=None, balas=None):
 
 def download_photo(token, file_id):
     """Unduh foto Telegram ke file sementara. Return path absolut atau None."""
+    return unduh_berkas(token, file_id, "tg_foto", ".jpg")
+
+
+# Batas getFile Telegram. Berkas yang lebih besar TIDAK bisa diambil bot sama sekali —
+# API-nya menolak, bukan memberi berkas terpotong. Diperiksa lebih dulu supaya user
+# menerima alasan yang benar, bukan "gagal mengunduh" yang menyesatkan.
+BATAS_UNDUH_BYTE = 20 * 1024 * 1024
+# Teks PDF yang masuk ke prompt. Buku 300 halaman gampang melewati 500 rb karakter, dan
+# itu membakar jendela konteks untuk satu pesan. Dipotong, dan pemotongannya DIBERITAHUKAN.
+PDF_KARAKTER_MAKS = 60000
+# Ambang "tidak punya lapisan teks" (PDF hasil pindai/foto). Diukur PER HALAMAN, bukan
+# total: memakai angka mutlak menuduh dokumen satu halaman yang memang pendek — nota,
+# memo satu paragraf — sebagai hasil pindai, dan tuduhan itu mengubah cara model
+# memperlakukan isinya. Halaman pindai menghasilkan nol, bukan sedikit.
+PDF_TEKS_MINIMUM = 30          # total; di bawah ini praktis kosong apa pun jumlah halamannya
+PDF_TEKS_PER_HALAMAN = 50      # rata-rata; di bawah ini halaman-halamannya memang tak berteks
+
+
+def unduh_berkas(token, file_id, prefix="tg_berkas", ext_default=".bin"):
+    """Unduh berkas Telegram ke file sementara. Return path absolut atau None."""
     r = tg_api(token, "getFile", {"file_id": file_id})
     if not r or not r.get("ok"):
         return None
@@ -2025,16 +2076,131 @@ def download_photo(token, file_id):
     if not remote:
         return None
     url = f"https://api.telegram.org/file/bot{token}/{remote}"
-    ext = os.path.splitext(remote)[1] or ".jpg"
-    dest = os.path.join(tempfile.gettempdir(), f"tg_foto_{int(time.time())}{ext}")
+    ext = os.path.splitext(remote)[1] or ext_default
+    dest = os.path.join(tempfile.gettempdir(), f"{prefix}_{int(time.time())}{ext}")
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "riset-koin/1.0"})
-        with urllib.request.urlopen(req, timeout=60) as resp, open(dest, "wb") as f:
+        with urllib.request.urlopen(req, timeout=120) as resp, open(dest, "wb") as f:
             f.write(resp.read())
         return dest
     except Exception as e:
-        print(f"[foto] gagal unduh: {type(e).__name__}: {e}", file=sys.stderr)
+        print(f"[berkas] gagal unduh: {type(e).__name__}: {e}", file=sys.stderr)
         return None
+
+
+def _pypdf():
+    """Muat pypdf, pasang sekali kalau belum ada. None kalau tetap tidak bisa.
+
+    Dipasang SAAT DIBUTUHKAN, bukan di setiap run: mengikuti pola telethon di workflow —
+    yang hanya dipakai jalur tertentu tidak boleh membebani jalur lain. Sebagian besar
+    pesan tidak membawa PDF, dan menambah pemasangan tetap berarti setiap sapaan ikut
+    membayar ongkosnya.
+    """
+    try:
+        import pypdf
+        return pypdf
+    except ImportError:
+        pass
+    # JANGAN memasang dari dalam tes. Suite ini hermetik terhadap jaringan lewat blokir
+    # socket, tapi pip jalan di subprocess sehingga blokir itu tidak berlaku — yang
+    # terjadi bukan gagal cepat melainkan menggantung sampai timeout 180 detik.
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        print("[pdf] pypdf tidak ada (pemasangan dilewati di dalam tes)", file=sys.stderr)
+        return None
+    print("[pdf] pypdf belum ada — memasang", file=sys.stderr)
+    try:
+        subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", "pypdf"],
+                       check=True, timeout=180, capture_output=True)
+        import pypdf
+        return pypdf
+    except Exception as e:
+        print(f"[pdf] gagal memasang pypdf ({type(e).__name__})", file=sys.stderr)
+        return None
+
+
+def baca_pdf(path):
+    """Ekstrak teks PDF dengan KODE. Return dict; 'teks' kosong kalau tak ada lapisan teks.
+
+    KENAPA KODE, BUKAN MODEL. Model bisa membaca PDF lewat tool Read, tapi hasilnya tidak
+    bisa diperiksa: kalau ia melewatkan separuh halaman, tak ada yang tahu. Diekstrak di
+    sini, jumlah halaman dan jumlah karakternya jadi angka yang bisa dilaporkan apa adanya —
+    termasuk saat isinya TIDAK terbaca.
+
+    PDF hasil pindai/foto tidak punya lapisan teks sama sekali. Itu bukan kegagalan yang
+    boleh didiamkan: tanpa penanda, ekstraksi kosong terlihat sama persis dengan dokumen
+    kosong, dan model akan menjawab seolah dokumennya memang tidak berisi apa-apa.
+    """
+    hasil = {"teks": "", "halaman": 0, "terpotong": False, "catatan": None}
+    pypdf = _pypdf()
+    if pypdf is None:
+        hasil["catatan"] = "pypdf tidak tersedia — teks tidak bisa diekstrak kode"
+        return hasil
+    try:
+        pembaca = pypdf.PdfReader(path)
+        if getattr(pembaca, "is_encrypted", False):
+            try:
+                pembaca.decrypt("")          # sebagian PDF cuma dikunci dengan sandi kosong
+            except Exception:
+                hasil["catatan"] = "PDF terkunci sandi — isinya tidak bisa dibaca"
+                return hasil
+        hasil["halaman"] = len(pembaca.pages)
+        bagian = []
+        panjang = 0
+        for i, hal in enumerate(pembaca.pages, 1):
+            try:
+                t = (hal.extract_text() or "").strip()
+            except Exception:
+                t = ""
+            if not t:
+                continue
+            bagian.append(f"--- halaman {i} ---\n{t}")
+            panjang += len(t)
+            if panjang > PDF_KARAKTER_MAKS:
+                hasil["terpotong"] = True
+                break
+        hasil["teks"] = "\n\n".join(bagian)[:PDF_KARAKTER_MAKS]
+    except Exception as e:
+        hasil["catatan"] = f"gagal membaca PDF ({type(e).__name__})"
+        return hasil
+    n = len(hasil["teks"])
+    per_hal = n / hasil["halaman"] if hasil["halaman"] else 0
+    if n < PDF_TEKS_MINIMUM or per_hal < PDF_TEKS_PER_HALAMAN:
+        hasil["catatan"] = (
+            f"PDF ini nyaris tidak punya lapisan teks ({n} karakter dari "
+            f"{hasil['halaman']} halaman) — kemungkinan hasil pindai/foto")
+    return hasil
+
+
+def build_pdf_prompt(caption, hasil, nama, path, chat_id=None, balas=None):
+    """Rakit prompt PDF. Teksnya SUDAH diekstrak kode — model tidak menebak isinya."""
+    with open(PDF_PROMPT, encoding="utf-8") as f:
+        base = f.read()
+    if chat_id is not None:
+        base = konteks_percakapan(chat_id, pesan=caption, balas=balas) + base
+    instruksi = (caption.strip() if caption and caption.strip()
+                 else "(tidak ada caption — ringkas dokumennya: ini apa, klaim utamanya "
+                      "apa, dan bagian mana yang paling penting untuk keputusan)")
+    fakta = [f"Nama berkas: {nama}",
+             f"Halaman: {hasil['halaman'] or 'tidak diketahui'}",
+             f"Karakter teks terekstrak: {len(hasil['teks'])}"]
+    if hasil.get("terpotong"):
+        fakta.append(f"DIPOTONG di {PDF_KARAKTER_MAKS} karakter — kamu TIDAK melihat "
+                     f"seluruh dokumen. Katakan itu kalau menyimpulkan.")
+    if hasil.get("catatan"):
+        fakta.append("Catatan: " + hasil["catatan"])
+    if hasil["teks"]:
+        isi = "## Isi dokumen (diekstrak kode)\n" + hasil["teks"] + "\n"
+    else:
+        # Tanpa lapisan teks, satu-satunya jalan adalah model MELIHAT halamannya. Read
+        # pada PDF merender halaman, jadi dokumen hasil pindai tetap bisa dibaca. Ini
+        # SATU-SATUNYA cabang yang menyerahkan pembacaan ke model, dan hanya karena
+        # kode memang sudah membuktikan tidak ada yang bisa diekstrak.
+        isi = ("## Isi dokumen\nTeksnya TIDAK bisa diekstrak kode. Berkasnya ada di "
+               f"path: {path}\nBaca dengan tool Read (bisa merender halaman PDF), "
+               "lalu kerjakan. Kalau tetap tidak terbaca, katakan apa adanya.\n")
+    return (f"{header_waktu()}{base}\n---\n"
+            "## Dokumen dari user\n" + "\n".join(fakta) + "\n\n" + isi
+            + f"\n## Pertanyaan user\n{instruksi}\n")
 
 
 def build_photo_prompt(caption, image_path, chat_id=None, balas=None):
@@ -3261,8 +3427,11 @@ def tandai_gagal(alasan):
               file=sys.stderr)
 
 
-def process(token, chat_id, text, photo_file_id=None, balas=None):
-    if sudah_diproses(chat_id, text, photo_file_id, balas):
+def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
+    # file_id dokumen ikut disidik: mengirim DUA PDF berbeda tanpa caption menghasilkan
+    # sidik yang identik tanpa itu, dan yang kedua dilewati diam-diam sebagai duplikat.
+    if sudah_diproses(chat_id, text, photo_file_id or (dokumen or {}).get("file_id"),
+                      balas):
         return
 
     simbol = jenis = simbol_chat = jenis_chat = None   # dipakai pencatat rapor di akhir
@@ -3274,6 +3443,63 @@ def process(token, chat_id, text, photo_file_id=None, balas=None):
     brief = None          # DATA BRIEF tahap-1 (hanya terisi di analisa koin); dipakai
                           # audit keterlacakan angka. Dideklarasikan di sini supaya
                           # SELALU terdefinisi di semua cabang, termasuk mode foto.
+
+    # --- Mode PDF (baca dokumen) -------------------------------------------
+    # Diperiksa SEBELUM foto: sebuah pesan bisa membawa dokumen sekaligus caption, dan
+    # dokumennya yang jadi pokok pesan.
+    if dokumen:
+        nama = dokumen.get("nama") or "dokumen.pdf"
+        ukuran = dokumen.get("ukuran") or 0
+        if not dokumen.get("pdf"):
+            print(f"[proses] dokumen bukan PDF: {nama!r}", file=sys.stderr)
+            send_message(token, chat_id,
+                         f"📎 Aku terima {nama}, tapi sejauh ini aku baru bisa membaca "
+                         f"PDF. Kalau isinya penting, kirim versi PDF-nya atau tempel "
+                         f"bagian yang relevan sebagai teks ya.")
+            return
+        print(f"[proses] kind=pdf nama={nama!r} ukuran={ukuran}", file=sys.stderr)
+        if ukuran > BATAS_UNDUH_BYTE:
+            # Batas API, bukan batas kita — dan alasannya harus benar. "Gagal mengunduh"
+            # akan membuat user mencoba lagi berkali-kali untuk sesuatu yang mustahil.
+            send_message(token, chat_id,
+                         f"❌ PDF-nya {ukuran / 1024 / 1024:.1f} MB. Bot Telegram cuma "
+                         f"bisa mengambil berkas sampai 20 MB, jadi ini di luar "
+                         f"jangkauanku. Coba kirim bagian yang relevan saja.")
+            return
+        send_message(token, chat_id, f"📄 Oke, aku baca {nama} dulu...")
+        berkas = unduh_berkas(token, dokumen["file_id"], "tg_pdf", ".pdf")
+        if not berkas:
+            send_message(token, chat_id, "❌ Gagal mengunduh PDF-nya. Coba kirim ulang ya.")
+            return
+        hasil = baca_pdf(berkas)
+        print(f"[pdf] {hasil['halaman']} halaman, {len(hasil['teks'])} karakter"
+              + (" (DIPOTONG)" if hasil.get("terpotong") else "")
+              + (f" — {hasil['catatan']}" if hasil.get("catatan") else ""), file=sys.stderr)
+        timeout = int(os.environ.get("ANALYSIS_TIMEOUT", "900"))
+        # Tool vision: dipakai HANYA kalau lapisan teksnya kosong dan model harus
+        # merender halamannya sendiri. Kalau teksnya sudah ada, ia tinggal membaca.
+        output, err = run_claude(
+            build_pdf_prompt(text, hasil, nama, berkas, chat_id, balas),
+            timeout, max_turns=45, model=MODEL_SYNTH,
+            tools_override=ALLOWED_TOOLS_VISION)
+        try:
+            os.remove(berkas)
+        except OSError:
+            pass
+        if err:
+            print(f"[proses] pdf GAGAL: {err[:300]}", file=sys.stderr)
+            body = f"❌ {err}"
+            tandai_gagal(err)
+        elif not output:
+            body = "❌ Selesai tapi output kosong. Coba lagi."
+            tandai_gagal("output kosong")
+        else:
+            body = output
+        if send_message(token, chat_id, body):
+            print(f"[proses] balasan PDF {len(body)} karakter TERKIRIM", file=sys.stderr)
+            if not body.startswith("❌"):
+                simpan_riwayat(chat_id, f"[PDF] {nama} — {text}".strip(" —"), body)
+        return
 
     # --- Mode FOTO (analis visual) -----------------------------------------
     if photo_file_id:
@@ -4442,8 +4668,8 @@ def main():
     sisa = len(jobs) - len(batch)
     print(f"[run] memproses {len(batch)} pesan"
           + (f" ({sisa} sisanya menunggu run berikutnya)." if sisa else "."))
-    for _, chat_id, text, photo_id, balas in batch:
-        process(token, chat_id, text, photo_id, balas)
+    for _, chat_id, text, photo_id, balas, pdf in batch:
+        process(token, chat_id, text, photo_id, balas, pdf)
 
 
 if __name__ == "__main__":

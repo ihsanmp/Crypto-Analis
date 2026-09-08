@@ -84,17 +84,17 @@ def main():
             # Ack semua update yang sudah diambil supaya tidak terproses dua kali
             offset = max(u["update_id"] for u in updates) + 1
 
-            # actionable_messages mengembalikan LIMA nilai sejak dukungan balasan
+            # actionable_messages mengembalikan ENAM nilai sejak dukungan PDF
             # ditambahkan. Berkas ini masih membongkar tiga, sehingga setiap pesan
             # menimbulkan ValueError dan daemon tidak pernah memproses apa pun — mode
             # server praktis mati tanpa pernah terlihat, karena jalur produksi memakai
             # webhook dan berkas ini tidak pernah dijalankan.
-            for _, chat_id, text, photo_id, balas in actionable_messages(
+            for _, chat_id, text, photo_id, balas, pdf in actionable_messages(
                     updates, allowed):
-                jenis = "foto" if photo_id else "teks"
+                jenis = "pdf" if pdf else ("foto" if photo_id else "teks")
                 log(f"pesan {jenis} dari {chat_id}: {text[:70]!r}")
                 try:
-                    process(token, chat_id, text, photo_id, balas)
+                    process(token, chat_id, text, photo_id, balas, pdf)
                 except Exception as e:
                     # Satu pesan gagal tidak boleh mematikan bot
                     log(f"ERROR saat memproses: {type(e).__name__}: {e}")
