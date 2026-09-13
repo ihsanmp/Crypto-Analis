@@ -3207,15 +3207,28 @@ def data_proyeksi(teks, jenis, simbol):
                           + (keluar2 if not err2 else f"tidak tersedia: {err2}"))
             break
 
-    # PPI -> kejutan CPI. Ditarik hanya kalau PPI memang disebut: pertanyaan CPI biasa
-    # tidak perlu membayar blok ini. Bot pernah menjawab pertanyaan ini dengan mengaku
-    # tidak punya model teruji — benar saat itu, dan blok inilah penggantinya.
-    if _MINTA_PPI_CPI.search(low):
-        keluar3, err3 = _jalankan_terukur("PPI->KEJUTAN CPI (ppi_cpi.py)",
-                                          ["cloud/ppi_cpi.py", "--json"])
-        bagian.append("### APAKAH PPI MEMPREDIKSI KEJUTAN CPI (ppi_cpi.py)\n"
-                      + (keluar3 if not err3 else f"tidak tersedia: {err3}"))
     return "\n\n".join(bagian)
+
+
+def data_ppi_cpi():
+    """Hasil uji PPI -> kejutan CPI, atau "" kalau gagal. Dipanggil BERDIRI SENDIRI.
+
+    Versi pertamanya bersarang di dalam data_proyeksi(), yang hanya jalan kalau ADA
+    aset terdeteksi DAN kata proyeksi cocok. Akibatnya "ppi hari ini gimana dampaknya ke
+    cpi besok?" — pertanyaan PERSIS yang memicu dibuatnya berkas ini — tidak pernah
+    menjalankannya: tidak ada aset di kalimat itu, jadi seluruh cabang data dilewati.
+    Sistemnya dibangun, diuji, di-commit, lulus CI, dan tidak pernah dipakai.
+
+    Bug yang sama persis sudah pernah terjadi pada riset Telegram dan diperbaiki dengan
+    cara yang sama. Tesnya kini menjalankan jalur process() sungguhan, bukan sekadar
+    memeriksa nama berkasnya ada di sumber — pemeriksaan dangkal itulah yang meloloskan
+    kesalahan ini.
+    """
+    keluar, err = _jalankan_terukur("PPI->KEJUTAN CPI (ppi_cpi.py)",
+                                    ["cloud/ppi_cpi.py", "--json"])
+    if err or not keluar:
+        return ""
+    return "### APAKAH PPI MEMPREDIKSI KEJUTAN CPI (ppi_cpi.py)\n" + keluar
 
 
 def jenis_banding(aset):
@@ -3892,6 +3905,14 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
                 brief = None
                 print(f"[proses] chat: pengumpulan data gagal ({type(e).__name__}) — "
                       f"model mencari sendiri", file=sys.stderr)
+        # PPI -> KEJUTAN CPI BERDIRI SENDIRI, dengan alasan yang sama seperti riset
+        # Telegram di bawah: pertanyaan PPI hampir tidak pernah menyebut aset.
+        if _MINTA_PPI_CPI.search(text or ""):
+            ppi = data_ppi_cpi()
+            if ppi:
+                brief = (brief + chr(10) * 2 if brief else "") + ppi
+                print(f"[proses] chat: uji PPI->kejutan CPI {len(ppi)} karakter",
+                      file=sys.stderr)
         # RISET TELEGRAM BERDIRI SENDIRI. Sebelumnya blok ini berada di dalam
         # "elif simbol_chat", sehingga "carikan info dari telegram saya" — yang tidak
         # menyebut aset apa pun — tidak pernah membacanya. Fiturnya diam-diam tidak
@@ -4666,6 +4687,13 @@ def _disebut_di_pesan(teks, simbol):
     for nama, tik in _ALIAS_KOIN.items():
         if tik == simbol and re.search(r"\b" + re.escape(nama) + r"\b", teks, re.I):
             return True
+    # Aset NON-crypto punya petanya sendiri. Tanpa ini "emas gimana?" dianggap tidak
+    # menyebut asetnya — simbolnya GC=F dan kata "emas" tidak ada di peta crypto — sehingga
+    # judul "aset itu yang aku baca dari pesanmu" menyala untuk SETIAP pertanyaan emas dan
+    # perak yang user sebut sendiri dengan jelas.
+    for nama, tik in _ALIAS_FX.items():
+        if tik == simbol and re.search(r"\b" + re.escape(nama) + r"\b", teks, re.I):
+            return True
     if not re.search(r"\b" + re.escape(simbol) + r"\b", teks, re.I):
         return False
     # Kata itu ADA di pesan — tapi kalau ia juga kata biasa, keberadaannya bukan bukti
@@ -4675,6 +4703,10 @@ def _disebut_di_pesan(teks, simbol):
     if simbol in _KATA_UMUM_BUKAN_KOIN or simbol in _TICKER_AMBIGU:
         return _disengaja_sebagai_koin(teks, simbol)
     return True
+
+
+# Nama yang ditampilkan ke user untuk simbol yang kodenya tidak terbaca manusia.
+_NAMA_TAMPIL = {"GC=F": "emas (XAU/USD)", "SI=F": "perak (XAG/USD)"}
 
 
 def judul_aset(simbol, teks, chat_id, asal=None):
@@ -4700,19 +4732,22 @@ def judul_aset(simbol, teks, chat_id, asal=None):
     """
     if not simbol or _disebut_di_pesan(teks, simbol):
         return ""
+    # Nama yang DITAMPILKAN, bukan kode pengambil data. "GC=F" benar untuk menarik harga
+    # dari Yahoo, tapi tidak terbaca siapa pun di layar Telegram.
+    tampil = _NAMA_TAMPIL.get(simbol, simbol)
     if asal == "balas":
-        return (f"📌 Kembali ke {simbol} — kamu membalas pesan dari obrolan itu.")
+        return (f"📌 Kembali ke {tampil} — kamu membalas pesan dari obrolan itu.")
     if asal == "lanjut":
         # Dibawa dari giliran sebelumnya, bukan ditebak dari kata di kalimat. Bedanya
         # penting buat user: yang satu "aku melanjutkan topik kita", yang satu lagi
         # "aku menyimpulkan sendiri" — dan yang kedua jauh lebih perlu dicurigai.
-        return (f"📌 Masih tentang {simbol} — dilanjutkan dari obrolan sebelumnya, "
+        return (f"📌 Masih tentang {tampil} — dilanjutkan dari obrolan sebelumnya, "
                 f"karena pesanmu tidak menyebut aset lain.")
     dulu = _simbol_terakhir(chat_id)
     if dulu and dulu != simbol:
-        return (f"📌 Ini analisa {simbol} — bukan {dulu} yang kita bahas sebelumnya. "
-                f"Kalau bukan itu maksudmu, sebut asetnya ya.")
-    return (f"📌 Ini analisa {simbol} — aset itu yang aku baca dari pesanmu. "
+        return (f"📌 Ini analisa {tampil} — bukan {_NAMA_TAMPIL.get(dulu, dulu)} yang "
+                f"kita bahas sebelumnya. Kalau bukan itu maksudmu, sebut asetnya ya.")
+    return (f"📌 Ini analisa {tampil} — aset itu yang aku baca dari pesanmu. "
             f"Kalau bukan itu maksudmu, sebut asetnya ya.")
 
 

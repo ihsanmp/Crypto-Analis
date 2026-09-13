@@ -7474,12 +7474,84 @@ def test_ppi_cpi_membedakan_lag_yang_sah_dari_yang_bersyarat():
 
 
 def test_ppi_cpi_terjangkau_dari_bot():
-    """Skrip yang tidak pernah dipanggil sama saja tidak ada. Dan pemicunya menuntut kata
-    PPI — pertanyaan CPI biasa tidak boleh ikut membayar dua tarikan FRED plus 2.000
-    pengacakan."""
-    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
-    assert "cloud/ppi_cpi.py" in src
-    assert bot._MINTA_PPI_CPI.search("ppi hari ini gimana?")
-    assert bot._MINTA_PPI_CPI.search("producer price index naik")
-    assert not bot._MINTA_PPI_CPI.search("cpi besok bagaimana?")
-    assert not bot._MINTA_PPI_CPI.search("inflasi masih tinggi?")
+    """Skrip yang tidak pernah dipanggil sama saja tidak ada.
+
+    Versi pertama tes ini cuma memeriksa nama berkasnya ADA di sumber dan regex-nya
+    cocok — dan lulus, sementara blok PPI bersarang di data_proyeksi() yang hanya jalan
+    kalau ada aset terdeteksi. "ppi hari ini gimana dampaknya ke cpi besok?" — pertanyaan
+    PERSIS yang memicu dibuatnya sistem ini — tidak pernah menjalankannya. Maka tes ini
+    menjalankan jalur process() SUNGGUHAN dan memeriksa datanya sampai ke prompt.
+    """
+    import tempfile as _tf
+    asli = (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.data_ppi_cpi,
+            bot.run_claude, bot.data_mentah_pasar, bot.data_mentah_crypto)
+    bot.JEJAK_PATH = os.path.join(_tf.mkdtemp(), "d.json")
+    bot.simpan_riwayat = lambda *a: None
+    bot.send_message = lambda *a: True
+    bot.data_mentah_pasar = lambda *a: "### DATA"
+    bot.data_mentah_crypto = lambda *a: "### DATA"
+    dipanggil, prompt = [], {}
+    bot.data_ppi_cpi = lambda: (dipanggil.append(1), "### APAKAH PPI MEMPREDIKSI KEJUTAN CPI")[1]
+    bot.run_claude = lambda p, *a, **k: (prompt.__setitem__("p", p), ("ok", None))[1]
+    try:
+        for teks, harus in [("ppi hari ini gimana dampaknya ke cpi besok?", True),
+                            ("PPI naik, apa artinya buat CPI?", True),
+                            ("emas setelah rilis ppi hari ini gimana?", True),
+                            ("cpi besok bagaimana?", False)]:
+            dipanggil.clear(); prompt.clear()
+            bot.process("tok", "9", teks)
+            sampai = "APAKAH PPI MEMPREDIKSI" in prompt.get("p", "")
+            assert bool(dipanggil) is harus and sampai is harus, (teks, dipanggil, sampai)
+    finally:
+        (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.data_ppi_cpi,
+         bot.run_claude, bot.data_mentah_pasar, bot.data_mentah_crypto) = asli
+
+
+def test_uji_acak_ppi_per_blok_bukan_per_bulan():
+    """Inflasi berautokorelasi (PPI 0,47, kejutan CPI 0,42 pada lag satu bulan). Mengocok
+    bulan satu per satu menghancurkan autokorelasi itu, sehingga korelasi sungguhan
+    terlihat jauh lebih langka dari kenyataan. Versi pertama melaporkan p=0,000 dengan
+    cara itu; per blok 12 bulan, angka yang jujur p=0,0135 — sekitar 13 kali lebih lemah."""
+    pc = _pc()
+    assert pc.BLOK_ACAK >= 6, "blok harus cukup panjang untuk mempertahankan autokorelasi"
+    n = 96
+    x = [float(i % 7) for i in range(n)]
+    y = [float((i * 3) % 5) for i in range(n)]
+    h = pc.uji_acak(x, y, putaran=200)
+    assert h["blok_bulan"] == pc.BLOK_ACAK
+    # Benih tetap = hasil bisa diulang orang lain.
+    assert pc.uji_acak(x, y, putaran=200) == h
+
+
+def test_ppi_cpi_mengakui_bias_revisi():
+    """Angka PPI dari FRED adalah versi revisi terakhir, bukan yang tersedia saat rilis.
+    Tidak bisa diukur dari sumber gratis — jadi wajib diakui ke model, bukan didiamkan."""
+    src = open(os.path.join(AKAR, "cloud", "ppi_cpi.py"), encoding="utf-8").read()
+    i = src.index('"wajib_dibaca"')
+    assert "REVISI TERAKHIR" in src[i:i + 1600]
+
+
+@pytest.mark.parametrize("teks,simbol", [
+    ("emas setelah rilis ppi hari ini gimana?", "GC=F"),
+    ("gold gimana?", "GC=F"),
+    ("perak naik?", "SI=F"),
+])
+def test_judul_aset_mengenali_emas_dan_perak(teks, simbol):
+    """_ALIAS_KOIN hanya memuat alias crypto. Tanpa peta non-crypto, "emas gimana?" dianggap
+    TIDAK menyebut asetnya, sehingga judul "aset itu yang aku baca dari pesanmu" menyala
+    untuk SETIAP pertanyaan emas — dan menampilkan kode Yahoo "GC=F" yang tak terbaca."""
+    assert bot._disebut_di_pesan(teks, simbol)
+    assert bot.judul_aset(simbol, teks, None) == ""
+
+
+def test_judul_aset_tidak_menampilkan_kode_yahoo():
+    import time as _t
+    asli = bot._muat_riwayat
+    bot._muat_riwayat = lambda: [dict(chat=bot._id_chat("9"), waktu=_t.time() - 1800,
+                                      waktu_utc="x", pesan="btc naik sampai berapa?",
+                                      balasan="BTC $81.150.", angka_kunci=[])]
+    try:
+        j = bot.judul_aset("GC=F", "bagaimana pandanganmu?", "9", asal="lanjut")
+        assert "emas" in j and "GC=F" not in j, j
+    finally:
+        bot._muat_riwayat = asli

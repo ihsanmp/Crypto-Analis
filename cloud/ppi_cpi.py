@@ -195,25 +195,36 @@ def uji_luar_sampel(x, y, bagian=0.6):
     }
 
 
-def uji_acak(x, y, putaran=2000, benih=12345):
-    """Seberapa sering korelasi sekuat ini muncul dari data yang DIACAK.
+BLOK_ACAK = 12      # bulan per blok saat mengacak
+
+
+def uji_acak(x, y, putaran=2000, benih=12345, blok=BLOK_ACAK):
+    """Seberapa sering korelasi sekuat ini muncul dari data yang DIACAK — PER BLOK.
 
     Tanpa ini, "r = 0,3" tidak bisa dibedakan dari kebetulan pada sampel sekecil ini.
-    Benihnya tetap supaya hasilnya bisa diulang orang lain — angka yang berubah tiap
-    dijalankan tidak bisa diperiksa siapa pun.
+    Benihnya tetap supaya hasilnya bisa diulang orang lain.
+
+    KENAPA PER BLOK, BUKAN PER BULAN. Inflasi berautokorelasi: terukur PPI 0,47 dan
+    kejutan CPI 0,42 pada lag satu bulan. Mengocok bulan satu per satu menghancurkan
+    autokorelasi itu, sehingga data acaknya jauh lebih "berantakan" daripada data asli —
+    dan korelasi sungguhan jadi terlihat jauh lebih langka daripada kenyataannya.
+    Versi pertama berkas ini melaporkan p=0,000 dengan cara itu. Dikocok per blok 12
+    bulan, lag bulan-sebelumnya naik ke p=0,0135: masih signifikan, tapi sekitar 13 kali
+    lebih lemah dari yang sempat diklaim.
     """
     r_asli = korelasi(x, y)
     if r_asli is None:
         return None
     rng = random.Random(benih)
-    acak = list(y)
+    potongan = [y[i:i + blok] for i in range(0, len(y), blok)]
     lebih = 0
     for _ in range(putaran):
-        rng.shuffle(acak)
+        rng.shuffle(potongan)
+        acak = [v for b in potongan for v in b][:len(x)]
         r = korelasi(x, acak)
         if r is not None and abs(r) >= abs(r_asli):
             lebih += 1
-    return {"putaran": putaran, "p_acak": round(lebih / putaran, 4)}
+    return {"putaran": putaran, "blok_bulan": blok, "p_acak": round(lebih / putaran, 4)}
 
 
 def rezim(bulan):
@@ -328,7 +339,11 @@ def jalankan(paksa=False):
         "sezaman — bukan ramalan. "
         "Porsi terbesar CPI adalah sewa/OER yang sama sekali tidak ada di PPI, jadi PPI "
         "memang bukan pemandu mekanis untuk CPI; hubungan apa pun di sini condong, bukan "
-        "kepastian. Kejutannya juga terhadap model Cleveland Fed, bukan konsensus pasar.")
+        "kepastian. Kejutannya juga terhadap model Cleveland Fed, bukan konsensus pasar. "
+        # Tidak bisa diukur dari sumber gratis, jadi WAJIB diakui, bukan didiamkan.
+        "Angka PPI dari FRED adalah versi REVISI TERAKHIR, bukan angka yang tersedia saat "
+        "rilis — PPI memang direvisi. Artinya uji historis ini sedikit lebih optimistis "
+        "daripada yang bisa dicapai secara nyata di waktu itu.")
     return keluar
 
 
