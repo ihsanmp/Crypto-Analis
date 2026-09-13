@@ -1,5 +1,5 @@
 {
- "ditarik_utc": "2026-09-06 09:07",
+ "ditarik_utc": "2026-09-13 09:57",
  "sumber": "SoSoValue OpenAPI /macro/events/{acara}/history",
  "acara": {
   "NFP": {
@@ -2404,7 +2404,7 @@
     },
     {
      "date": "2026-09-11",
-     "actual": "",
+     "actual": "0.4%",
      "forecast": "0.4%",
      "previous": "0.1%"
     }
@@ -3605,7 +3605,7 @@
     },
     {
      "date": "2026-09-11",
-     "actual": "",
+     "actual": "0.3%",
      "forecast": "0.2%",
      "previous": "0.2%"
     }
@@ -4812,7 +4812,7 @@
     },
     {
      "date": "2026-09-10",
-     "actual": "",
+     "actual": "0.4%",
      "forecast": "0.4%",
      "previous": "0%"
     }
