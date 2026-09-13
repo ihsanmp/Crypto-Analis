@@ -31,7 +31,10 @@ jobs:
           python-version: "3.11"
 
       - name: Pasang pytest
-        run: pip install pytest
+        # pillow bukan kenyamanan: tanpa itu tes kebenaran-acuan sentix (digitasi vs
+        # angka legenda resmi) DILEWATI diam-diam lewat importorskip, dan regresi
+        # yang pernah membuat bacaan 0,55 alih-alih 0,324 akan lolos CI dengan hijau.
+        run: pip install pytest pillow
 
       - name: Jalankan tes
         run: pytest tests/ -v

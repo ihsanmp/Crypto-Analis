@@ -7555,3 +7555,96 @@ def test_judul_aset_tidak_menampilkan_kode_yahoo():
         assert "emas" in j and "GC=F" not in j, j
     finally:
         bot._muat_riwayat = asli
+
+
+def _sx():
+    jalur = os.path.join(AKAR, "cloud")
+    if jalur not in sys.path:
+        sys.path.insert(0, jalur)
+    import sentix
+    return sentix
+
+
+FIXTURE_SENTIX = os.path.join(AKAR, "tests", "fixtures", "sentix_20260905.png")
+# Angka RESMI yang tercetak di legenda grafik itu: "sentix Sentiment Bitcoins H1: 0.324".
+LEGENDA_SENTIX = 0.324
+
+
+def test_sentix_digitasi_cocok_dengan_legenda_resmi():
+    """KEBENARAN ACUAN, bukan pemeriksaan-diri.
+
+    Pemeriksa geometri (jarak label rata, label nol segaris garis nol, nilai dalam [-1,1])
+    SEMUANYA lolos pada digitasi yang salah: bilah judul grafik berwarna biru tua mirip
+    garis sentimen, jadi rata-rata tiap kolom tertarik ke atas. Hasilnya 0,55 padahal
+    legenda 0,324, dan 69 dari 137 minggu terbaca "optimis ekstrem" dengan NOL minggu
+    pesimis. Yang menangkapnya cuma perbandingan dengan angka resmi — maka itu jadi tes.
+    """
+    pytest.importorskip("PIL")
+    from datetime import date
+    sx = _sx()
+    deret, kal = sx.digitasi(FIXTURE_SENTIX, date(2026, 9, 5))
+    assert abs(deret[-1][1] - LEGENDA_SENTIX) <= 0.02, deret[-1]
+    # Skala dari geometri: 0,1 per ~27 piksel, nol di baris 220,5 pada grafik ini.
+    assert abs(kal["px_per_satuan"] / 10 - 27.17) < 0.5
+    nilai = [v for _, v in deret]
+    # Sebaran harus mirip grafiknya: garis jelas turun di bawah nol berkali-kali.
+    assert sum(1 for v in nilai if v < 0) > 30, "digitasi tercemar: nyaris tak ada nilai negatif"
+    assert min(nilai) < -0.2 and max(nilai) < 0.7
+    # Tanggal: dari Jan 2024 sampai dekat tanggal grafik.
+    assert deret[0][0].year == 2024 and deret[0][0].month == 1
+    assert abs((date(2026, 9, 5) - deret[-1][0]).days) <= 14
+
+
+def test_sentix_menolak_grafik_yang_tata_letaknya_berubah(tmp_path):
+    """Angka salah yang terlihat presisi jauh lebih berbahaya daripada 'tidak tersedia'."""
+    Image = pytest.importorskip("PIL.Image")
+    from datetime import date
+    sx = _sx()
+    kosong = str(tmp_path / "putih.png")
+    Image.new("RGB", (710, 376), (255, 255, 255)).save(kosong)
+    with pytest.raises(sx.GagalKalibrasi):
+        sx.digitasi(kosong, date(2026, 9, 5))
+
+
+@pytest.mark.parametrize("v,kata", [(0.45, "OPTIMIS EKSTREM"), (0.30, "OPTIMIS EKSTREM"),
+                                    (0.1, "netral condong optimis"),
+                                    (-0.1, "netral condong pesimis"),
+                                    (-0.35, "PESIMIS EKSTREM")])
+def test_sentix_zona(v, kata):
+    assert kata in _sx().zona(v)
+
+
+def test_sentix_uji_kontrarian_menilai_tiap_sisi_terpisah():
+    """Menuntut kedua sisi cukup sampel sebelum mengatakan apa pun mengubur temuan yang
+    relevan: sisi optimis n=15 memperlihatkan BTC naik LEBIH dari rata-rata sesudah zona
+    'peringatan'. User yang menjual di zona merah perlu tahu itu."""
+    from datetime import date, timedelta
+    sx = _sx()
+    awal = date(2024, 1, 1)
+    harga = {awal + timedelta(days=i): 100.0 * (1.002 ** i) for i in range(900)}
+    deret = [((awal + timedelta(days=7 * i)).isoformat(), 0.45 if i % 4 == 0 else 0.0)
+             for i in range(110)]
+    h = sx.uji_kontrarian(deret, harga)
+    assert h["optimis_ekstrem"]["n"] >= 5 and h["pesimis_ekstrem"]["n"] == 0
+    assert "optimis ekstrem (n=" in h["vonis"] and "terlalu sedikit" in h["vonis"]
+    assert "tumpang tindih" in h["vonis"], "keterbatasan sampel wajib disebut"
+
+
+def test_sentix_wajib_dibaca_membawa_batasnya():
+    """Tiga salah baca yang paling mungkin, semuanya harus sampai ke model."""
+    src = open(os.path.join(AKAR, "cloud", "sentix.py"), encoding="utf-8").read()
+    i = src.index('"wajib_dibaca"')
+    blok = src[i:i + 1500]
+    assert "bukan VALUASI" in blok          # user sempat menyebutnya pengukur valuasi
+    assert "KONTRARIAN" in blok
+    assert "BUKAN timeframe 1 jam" in blok   # "H1" di legenda = horizon 1 bulan
+
+
+def test_sentix_terjangkau_dari_analisa_crypto():
+    """Modul yang tidak pernah dipanggil sama saja tidak ada — kesalahan yang baru saja
+    terjadi pada ppi_cpi.py."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    i = src.index("def data_mentah_crypto(")
+    j = src.index(chr(10) + "def ", i + 10)
+    assert '"cloud/sentix.py"' in src[i:j], "sentix harus dijalankan di brief crypto"
+    assert '("sentix.py", "sentix"' in src, "atribusi sumbernya harus ada"

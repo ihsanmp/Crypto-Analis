@@ -3021,6 +3021,10 @@ def data_mentah_crypto(coin):
              ("INGATAN (memori.py)", ["cloud/memori.py", "cari", coin], 0),
              ("UJI BALIK (backtest.py)", ["cloud/backtest.py", coin, "--ringkas"], 1200),
              ("SENTIMEN (sentiment.py)", ["cloud/sentiment.py", coin], 0)]
+    # sentix mengukur ekspektasi investor terhadap BITCOIN, bukan koin lain. Untuk altcoin
+    # tetap disertakan sebagai konteks selera risiko pasar crypto — tapi sumbernya harus
+    # jelas BTC, bukan dibaca seolah sentimen koin yang ditanyakan.
+    tugas.append(("SENTIX BTC (sentix.py)", ["cloud/sentix.py", "--json"], 0))
     lewat = []
     if t in _TANPA_PROTOKOL:
         lewat.append(f"fundamentals.py ({t} tidak punya protokol berpendapatan)")
@@ -4569,6 +4573,8 @@ _SUMBER_TAUT = (
     ("makro.py", "FRED", "https://fred.stlouisfed.org"),
     ("kejutan.py", "Cleveland Fed", "https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting"),
     ("sentiment.py", "Fear & Greed", "https://alternative.me/crypto/fear-and-greed-index/"),
+    ("sentix.py", "sentix", "https://www.crypto-sentiment.com/bitcoin-sentiment"),
+    ("ppi_cpi.py", "FRED", "https://fred.stlouisfed.org"),
 )
 
 _URL_RE = re.compile(r"https?://[^\s\"'<>,;)\]}]+")
