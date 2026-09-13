@@ -7397,3 +7397,89 @@ def tmp_path_baru():
     import tempfile
     import pathlib
     return pathlib.Path(tempfile.mkdtemp()) / "m.jsonl"
+
+
+def _pc():
+    sys.path.insert(0, os.path.join(AKAR, "cloud")) if os.path.join(AKAR, "cloud") not in sys.path else None
+    import ppi_cpi
+    return ppi_cpi
+
+
+def test_ppi_cpi_geser_bulan_dan_mom():
+    """Aritmetika bulan yang salah menggeser SELURUH studi satu bulan tanpa satu error
+    pun — hasilnya tetap terlihat masuk akal, cuma mengukur hubungan yang lain."""
+    pc = _pc()
+    assert pc.geser_bulan("2026-1", -1) == "2025-12"
+    assert pc.geser_bulan("2025-12", 1) == "2026-1"
+    assert pc.geser_bulan("2026-3", -5) == "2025-10"
+    seri = {"2026-1": 100.0, "2026-2": 101.0}
+    assert round(pc.mom(seri, "2026-2"), 4) == 1.0
+    assert pc.mom(seri, "2026-1") is None      # bulan sebelumnya tidak ada
+    assert pc.mom({"2026-1": 0.0, "2026-2": 5.0}, "2026-2") is None   # pembagi nol
+
+
+def test_ppi_cpi_korelasi_dan_arah():
+    pc = _pc()
+    n = pc.MINIMUM_SAMPEL + 6
+    naik = list(range(n))
+    assert round(pc.korelasi(naik, naik), 3) == 1.0
+    assert round(pc.korelasi(naik, [-v for v in naik]), 3) == -1.0
+    assert pc.korelasi([1, 2], [1, 2]) is None, "sampel kecil harus menolak, bukan menebak"
+    assert pc._arah_cocok([1, -1, 1], [1, -1, -1]) == pytest.approx(66.67, abs=0.1)
+
+
+def test_ppi_cpi_menolak_prediktor_palsu():
+    """Kontrol negatif. Alat ini dibuat supaya bot berhenti menebak — kalau angka acak
+    pun lolos jadi 'sinyal', alatnya justru memperparah masalah yang mau diobati."""
+    import random
+    pc = _pc()
+    rng = random.Random(7)
+    y = [rng.gauss(0, 0.1) for _ in range(120)]
+    for i in range(3):
+        palsu = [rng.gauss(0, 0.3) for _ in y]
+        h = {"korelasi": pc.korelasi(palsu, y), "arah_cocok_persen": pc._arah_cocok(palsu, y),
+             "luar_sampel": pc.uji_luar_sampel(palsu, y),
+             "acak": pc.uji_acak(palsu, y, putaran=300, benih=i), "per_rezim": {}}
+        assert "TIDAK ADA EDGE" in pc.vonis(h) or "TIDAK MEYAKINKAN" in pc.vonis(h), h
+
+
+def test_ppi_cpi_vonis_menyebut_rezim_yang_mati():
+    """Versi pertama pemeriksa ini meloloskan hubungan yang di era 2013-2019 korelasinya
+    0,022 — praktis nol — sebagai "konsisten", cuma karena angkanya kebetulan positif.
+    Padahal justru itu peringatan terpentingnya: hidup di rezim inflasi tinggi, mati di
+    rezim tenang, dan rata-rata seluruh periode menyembunyikannya."""
+    pc = _pc()
+    h = {"korelasi": 0.30, "arah_cocok_persen": 57.0,
+         "luar_sampel": {"korelasi_uji": 0.34}, "acak": {"p_acak": 0.0},
+         "per_rezim": {"2013-2019 (inflasi rendah)": {"korelasi": 0.022},
+                       "2020-2022 (pandemi & lonjakan)": {"korelasi": 0.35}}}
+    v = pc.vonis(h)
+    assert "BERGANTUNG REZIM" in v and "2013-2019" in v, v
+    # Kalau semua rezim hidup, vonisnya boleh lebih lunak.
+    h["per_rezim"]["2013-2019 (inflasi rendah)"]["korelasi"] = 0.28
+    assert "LEMAH TAPI NYATA" in pc.vonis(h)
+
+
+def test_ppi_cpi_membedakan_lag_yang_sah_dari_yang_bersyarat():
+    """Lag 'bulan sama' korelasinya lebih tinggi dan itu menggoda. Ia hanya sah kalau PPI
+    benar-benar terbit LEBIH DULU dari CPI pada siklus itu — kalau tidak, itu hubungan
+    sezaman, bukan ramalan. Syarat itu WAJIB ikut, tidak boleh dikutip telanjang."""
+    src = open(os.path.join(AKAR, "cloud", "ppi_cpi.py"), encoding="utf-8").read()
+    assert "SEBELUMNYA (selalu sah untuk meramal)" in src
+    assert "SAMA (sah HANYA bila PPI terbit lebih dulu)" in src
+    # Batas konseptualnya juga harus sampai ke model, bukan cuma ada di komentar kode.
+    i = src.index('"wajib_dibaca"')
+    blok = src[i:i + 1200]
+    assert "sewa/OER" in blok and "Cleveland Fed" in blok
+
+
+def test_ppi_cpi_terjangkau_dari_bot():
+    """Skrip yang tidak pernah dipanggil sama saja tidak ada. Dan pemicunya menuntut kata
+    PPI — pertanyaan CPI biasa tidak boleh ikut membayar dua tarikan FRED plus 2.000
+    pengacakan."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    assert "cloud/ppi_cpi.py" in src
+    assert bot._MINTA_PPI_CPI.search("ppi hari ini gimana?")
+    assert bot._MINTA_PPI_CPI.search("producer price index naik")
+    assert not bot._MINTA_PPI_CPI.search("cpi besok bagaimana?")
+    assert not bot._MINTA_PPI_CPI.search("inflasi masih tinggi?")

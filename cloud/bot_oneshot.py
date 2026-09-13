@@ -3131,6 +3131,11 @@ _HORIZON_KATA = ((r"\b(?:tahun|setahun|jangka panjang|long term)\b", 250),
 _INDIKATOR_KEJUTAN = ((r"\bcore\s*pce\b", "Core PCE"), (r"\bcore\s*cpi\b", "Core CPI"),
                       (r"\bpce\b", "PCE"), (r"\b(?:cpi|inflasi|inflation)\b", "CPI"))
 
+# PPI disebut = pertanyaannya menyangkut hubungan PPI dengan inflasi konsumen. Menuntut
+# kata PPI-nya, bukan sekadar "inflasi": pertanyaan CPI biasa tidak perlu membayar blok
+# ini, dan ppi_cpi.py menarik dua seri FRED plus 2.000 pengacakan.
+_MINTA_PPI_CPI = re.compile(r"\bppi\b|\bproducer price\b|\bharga produsen\b", re.I)
+
 
 def _ke_angka(teks, akhiran):
     """Ubah '4.000' / '55,5' / '200' jadi float. Ribuan vs desimal dibedakan dari posisinya."""
@@ -3201,6 +3206,15 @@ def data_proyeksi(teks, jenis, simbol):
             bagian.append(f"### REAKSI HISTORIS TERHADAP RILIS {ind} (kejutan.py)\n"
                           + (keluar2 if not err2 else f"tidak tersedia: {err2}"))
             break
+
+    # PPI -> kejutan CPI. Ditarik hanya kalau PPI memang disebut: pertanyaan CPI biasa
+    # tidak perlu membayar blok ini. Bot pernah menjawab pertanyaan ini dengan mengaku
+    # tidak punya model teruji — benar saat itu, dan blok inilah penggantinya.
+    if _MINTA_PPI_CPI.search(low):
+        keluar3, err3 = _jalankan_terukur("PPI->KEJUTAN CPI (ppi_cpi.py)",
+                                          ["cloud/ppi_cpi.py", "--json"])
+        bagian.append("### APAKAH PPI MEMPREDIKSI KEJUTAN CPI (ppi_cpi.py)\n"
+                      + (keluar3 if not err3 else f"tidak tersedia: {err3}"))
     return "\n\n".join(bagian)
 
 
