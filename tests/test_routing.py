@@ -7648,3 +7648,131 @@ def test_sentix_terjangkau_dari_analisa_crypto():
     j = src.index(chr(10) + "def ", i + 10)
     assert '"cloud/sentix.py"' in src[i:j], "sentix harus dijalankan di brief crypto"
     assert '("sentix.py", "sentix"' in src, "atribusi sumbernya harus ada"
+
+
+def _dv():
+    jalur = os.path.join(AKAR, "cloud")
+    if jalur not in sys.path:
+        sys.path.insert(0, jalur)
+    import deviasi
+    return deviasi
+
+
+def _candles_deviasi(dengan_deviasi=True, rebut=True):
+    """Range di 100-110 selama 60 candle, lalu (opsional) deviasi ke 94 selama 6 candle,
+    lalu (opsional) close kembali di atas zona. Bentuk yang sama dengan NEAR Agustus."""
+    c, ts = [], 0
+    def tambah(o, h, l, cl):
+        nonlocal ts
+        c.append([ts, o, h, l, cl, 1000.0])
+        ts += 86400000
+    for i in range(60):
+        dasar = 100 + (i % 10)            # bolak-balik, lantai 100 disentuh berkali-kali
+        tambah(dasar + 0.5, dasar + 1.5, dasar - 0.5 if i % 10 else 99.5, dasar + 0.8)
+    if dengan_deviasi:
+        # Dangkal: stop di bawah low deviasi masih cukup dekat untuk R:R >= 1. Versi
+        # pertama fixture ini menyapu sampai 93,5 dan setupnya (dengan benar) ditolak
+        # karena targetnya lebih dekat daripada stopnya.
+        for lv in (99.0, 98.5, 98.0, 98.5, 99.0):
+            tambah(lv + 0.5, lv + 1.0, lv - 0.5, lv)
+    if rebut:
+        tambah(99.0, 102.5, 98.8, 102.2)
+    return c
+
+
+def test_deviasi_terpicu_pada_bentuk_setup_mentor():
+    dv = _dv()
+    c = _candles_deviasi()
+    s = dv.cek_candle(c, len(c) - 1)
+    assert s, "range -> deviasi -> rebut kembali harus terpicu"
+    assert s["low_deviasi"] < s["support"] < s["masuk"] < s["target"]
+    assert s["stop"] < s["low_deviasi"], "stop di BAWAH low deviasi"
+    assert s["lama_deviasi"] >= 1 and s["rr"] >= dv.RR_MIN
+
+
+def test_deviasi_tidak_terpicu_tanpa_sapuan_atau_tanpa_rebut():
+    dv = _dv()
+    tanpa_rebut = _candles_deviasi(rebut=False)
+    assert dv.cek_candle(tanpa_rebut, len(tanpa_rebut) - 1) is None, "belum direbut kembali"
+    tanpa_deviasi = _candles_deviasi(dengan_deviasi=False)
+    assert dv.cek_candle(tanpa_deviasi, len(tanpa_deviasi) - 1) is None, "tidak ada sapuan"
+
+
+def test_deviasi_tidak_melihat_ke_depan():
+    """Deteksi di candle i hanya boleh bergantung pada candle sampai i. Backtest yang
+    diam-diam memakai candle sesudahnya terlihat luar biasa dan tidak bisa diulang."""
+    dv = _dv()
+    c = _candles_deviasi()
+    i = len(c) - 1
+    a = dv.cek_candle(c, i)
+    ekor = c + [[c[-1][0] + 86400000 * k, 50.0, 200.0, 10.0, 150.0, 1.0] for k in range(1, 30)]
+    b = dv.cek_candle(ekor, i, dv.siapkan(ekor))
+    assert a == b
+
+
+def test_deviasi_stop_dan_target_candle_sama_dihitung_stop():
+    """Dari OHLC tidak bisa diketahui mana yang tersentuh duluan. Menganggap target duluan
+    adalah cara paling sunyi membuat backtest terlihat lebih bagus dari kenyataan."""
+    dv = _dv()
+    c = _candles_deviasi()
+    s = dv.cek_candle(c, len(c) - 1)
+    c.append([c[-1][0] + 86400000, s["masuk"], s["target"] + 1, s["stop"] - 1, s["masuk"], 1.0])
+    r, alasan, _ = dv.hasil_perdagangan(c, s)
+    assert alasan == "stop" and r < -1.0      # -1R dikurangi biaya
+
+
+def test_deviasi_menolak_sumber_close_only(monkeypatch):
+    """Deviasi adalah sapuan SUMBU di bawah zona. Tanpa high/low asli sapuan itu tidak
+    pernah terlihat, jadi candle close-only harus ditolak, bukan dinilai 'tidak ada setup'."""
+    dv = _dv()
+    import indicators
+    monkeypatch.setattr(indicators, "fetch_base",
+                        lambda *a, **k: ([[0, 1, 1, 1, 1, 0]] * 100, "coingecko",
+                                         "approx_close_only", None))
+    monkeypatch.setattr(indicators, "resolve_cg_id", lambda s: "x")
+    h = dv.analisa("NEAR", "1d")
+    assert "close-only" in h["tidak_tersedia"]
+
+
+def test_deviasi_satu_aturan_untuk_bot_dan_backtest():
+    """Kalau pendeteksi untuk analisa langsung dan untuk backtest dipisah, yang dipakai bot
+    pelan-pelan menyimpang dari yang teruji tanpa ada yang tahu."""
+    src = open(os.path.join(AKAR, "cloud", "uji_deviasi.py"), encoding="utf-8").read()
+    assert "import deviasi as dv" in src and "dv.cek_candle(" in src
+    assert "def cek_candle" not in src
+
+
+def test_deviasi_terjangkau_dari_analisa_crypto():
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    i = src.index("def data_mentah_crypto(")
+    j = src.index(chr(10) + "def ", i + 10)
+    assert '"cloud/deviasi.py"' in src[i:j]
+
+
+def test_angka_uji_deviasi_konsisten_di_semua_tempat():
+    """Angka hasil uji muncul di tiga tempat: konstanta di deviasi.py, catatan wajib-baca
+    yang ikut ke brief, dan dokumen gaya. Kalau salah satu diperbarui sendirian, bot akan
+    mengutip angka yang sudah tidak benar — dan tidak ada yang error."""
+    dv = _dv()
+    doc = open(os.path.join(AKAR, "cloud", "data", "gaya_kalimasada.md"),
+               encoding="utf-8").read()
+    blok = open(os.path.join(AKAR, "cloud", "prompts", "chat.md"), encoding="utf-8").read()
+    for tf, h in dv.HASIL_UJI.items():
+        e = f"{h['ekspektansi_r']:+.3f}".replace(".", ",").replace("+", "")
+        assert e in dv.WAJIB_DIBACA.replace(".", ",") or str(h["ekspektansi_r"]) in dv.WAJIB_DIBACA
+        assert str(h["n"]) in doc.replace(".", "") or f"{h['n']:,}".replace(",", ".") in doc
+        assert e in doc.replace(".", ","), (tf, e)
+        assert e in blok.replace(".", ","), (tf, e)
+    # Vonis H1 harus keras di semua tempat: 19 dari 20 koin negatif.
+    for teks in (dv.WAJIB_DIBACA, doc, blok):
+        assert "H1" in teks and ("rugi" in teks.lower() or "RUGI" in teks)
+
+
+def test_dokumen_gaya_menyebut_bias_seleksi_chart_mentor():
+    """Sepuluh chart yang dikirim semuanya contoh BERHASIL. Tanpa menyebut itu, deretan
+    chart terbaca seperti bukti tingkat keberhasilan."""
+    doc = open(os.path.join(AKAR, "cloud", "data", "gaya_kalimasada.md"),
+               encoding="utf-8").read()
+    assert "yang gagal tidak diposting" in doc
+    assert "funding tidak dihitung" in doc.lower() or "funding** tidak dihitung" in doc.lower()
+    assert "delisting tidak ikut" in doc

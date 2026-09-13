@@ -642,7 +642,7 @@ likuiditas. Kalau `catatan` muncul, kepadatannya di bawah setengah — sebut seb
 petunjuk arah, bukan hubungan yang mapan.
 <!-- /BLOK -->
 
-<!-- BLOK: gaya-mentor | pemicu: kalimasada,gaya mentor,gaya trading mentor,mentor saya,order block,orderblock,ema 13/21,ema13/21,color switch,acending,ascending triangle,tembus range,breakout range,supply demand,zona demand,zona supply -->
+<!-- BLOK: gaya-mentor | pemicu: kalimasada,gaya mentor,gaya trading mentor,mentor saya,order block,orderblock,ema 13/21,ema13/21,color switch,acending,ascending triangle,tembus range,breakout range,supply demand,zona demand,zona supply,deviation,deviasi,sweep,liquidity sweep,sapu likuiditas,reclaim,rebut zona,swing failure,sfp -->
 ## Kerangka TA "#Kalimasada" (gaya mentor user)
 
 Acuan lengkap: `cloud/data/gaya_kalimasada.md`, diekstrak dari 12 chart TradingView milik
@@ -660,6 +660,34 @@ dengan OHLC sungguhan, dibandingkan **lantai acak di rezim yang sama**:
 | golden cross 13×21 | naik & turun | +1,0 dan +7,0 — **dua-duanya di dalam derau** |
 | pullback ke EMA21 | **naik** | **−6,6, di luar 2 SE, bertahan di 3 era** |
 | pullback ke EMA21 | turun | +4,2 — di dalam derau |
+
+### Setup "DEVIATION" (10 chart 13 Sep 2026) — SUDAH DIUKUR DENGAN STOP & TARGET
+
+Range di atas zona support yang disentuh berkali-kali → harga menembus ke BAWAH zona
+(menyapu likuiditas) → close kembali di ATAS zona = masuk → stop di bawah low deviasi →
+target di swing high range. Dideteksi KODE oleh `deviasi.py`; blok `SETUP DEVIATION` ikut
+di brief crypto.
+
+| timeframe | n | menang | ekspektansi | pembanding tanpa pemicu |
+|---|---|---|---|---|
+| daily | 516 | 33,3% | **+0,150R** (SE 0,083) | +0,014R |
+| H4 | 2.884 | 30,7% | **-0,006R** | -0,118R |
+| H1 | 5.968 | 29,2% | **-0,112R** | -0,131R |
+
+- **Daily lemah positif tapi belum meyakinkan** — selisihnya ~1,5 galat baku, dan 2022
+  serta 2025 negatif.
+- **H4 impas setelah biaya.** Pemicunya jelas menambah informasi (jauh di atas pembanding),
+  tapi habis dimakan biaya.
+- **H1 RUGI**, bahkan tanpa biaya. Jangan menyarankan setup ini di H1.
+- **Menang 1 dari 3.** Dua dari tiga setup kena stop; yang membuat daily positif adalah
+  pemenangnya besar (2-5R). Chart mentor semuanya contoh BERHASIL — yang gagal tidak
+  diposting, jadi tidak bisa dipakai menilai seberapa sering ini jalan.
+- Merebut EMA menaikkan tingkat menang tapi TIDAK menaikkan ekspektansi. Volume di atas
+  median satu-satunya konfirmasi yang searah di daily dan H4 (eksploratif).
+
+**Sebut setup deviation hanya kalau `setup_aktif` terisi di brief.** Jangan menggambar
+sendiri dari chart: pola "turun lalu naik" paling mudah ditemukan dengan mata di chart apa
+pun, dan justru itu yang membuat angka di atas diperlukan.
 
 Jadi: golden cross tidak punya edge yang bisa dipisahkan dari derau, dan pullback ke
 EMA21 sebagai entry BERDIRI SENDIRI di tren naik justru **lebih buruk daripada masuk di

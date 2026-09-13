@@ -130,13 +130,105 @@ ini; JANGAN menempelkan angka kemenangan padanya, dan JANGAN menyebutnya teruji.
 
 ---
 
+## Setup "DEVIATION" — dari 10 chart 13 Sep 2026 (TAO, NEAR, CHIP, DXY)
+
+Ini yang mengisi celah terbesar catatan di atas: **setup dengan stop dan target eksplisit**,
+jadi yang diukur bukan lagi sekadar peluang menang melainkan **ekspektansi dalam R**.
+
+**Bentuknya:** range di atas satu zona support yang disentuh berkali-kali → harga menembus
+ke BAWAH zona itu (menyapu stop & likuiditas) → harga close lagi di ATAS zona = masuk →
+stop di bawah low deviasi → target di swing high range. Konfirmasi yang terlihat di
+chartnya: EMA 13/21 direbut kembali, Stoch RSI berbalik dari oversold (TAO), OI + volume
+naik (panel CoinGlass TAO).
+
+Dikodekan di `cloud/deviasi.py` — **fungsi yang sama** dipakai analisa langsung dan
+backtest, supaya yang dipakai bot persis yang teruji.
+
+### Divalidasi dulu ke chart mentornya sendiri
+
+| chart mentor | deteksi kode | hasil |
+|---|---|---|
+| NEAR daily, deviasi ~3 minggu Agustus | terpicu 20 Agu, zona 1,723, low 1,538, target 2,389 | kena target **+2,63R** |
+| TAO H4, mangkuk 2-3 Sep, low ~214,5 | terpicu 3 Sep 04:00, zona 218,7, low 214,9, target 261,3 | kena target **+4,99R** |
+
+Versi pertama aturannya hanya mengenali sapuan dalam 5 candle dan **gagal** di sini: ia
+menangkap lantai kecil 1,571 di DALAM mangkuk NEAR, bukan zona range Juni-Juli. Diperbaiki
+**sebelum** satu pun angka backtest dilihat.
+
+### Hasil uji: 20 koin, OHLC asli Binance, biaya 0,1% pulang-pergi
+
+Reproduksi: `python cloud/uji_deviasi.py`
+
+| timeframe | n | menang | ekspektansi | galat baku | pembanding* | vonis |
+|---|---|---|---|---|---|---|
+| **daily** (2020-2026) | 516 | 33,3% | **+0,150R** | 0,083 | +0,014R | lemah positif, belum meyakinkan |
+| **H4** (2022-2026) | 2.884 | 30,7% | **-0,006R** | 0,031 | -0,118R | impas setelah biaya |
+| **H1** (2024-2026) | 5.968 | 29,2% | **-0,112R** | 0,021 | -0,131R | **rugi** |
+
+\* pembanding = entri TANPA pemicu deviasi memakai geometri yang SAMA (range sama, stop di
+bawah low 5 candle, target di swing high, R:R >= 1). Tanpa pembanding ini, ekspektansi
+positif bisa saja datang dari bentuk R:R-nya saja, bukan dari deviasinya.
+
+**Daily: +0,150R, tapi selisihnya terhadap pembanding cuma ~1,5 galat baku** — belum lolos
+ambang. Dan tidak stabil antar tahun: 2021 +0,88 · **2022 -0,31** · 2023 +0,49 · 2024 +0,16
+· **2025 -0,07** · 2026 +0,13. Per koin 14 dari 20 positif.
+
+**H4: pemicunya JELAS menambah sesuatu** (-0,006R vs pembanding -0,118R, selisih ~3,5 galat
+baku) — tapi hasil akhirnya tetap impas. Polanya membawa informasi; informasi itu habis
+dimakan biaya.
+
+**H1: rugi, dan bukan karena biaya.** Tanpa biaya sekalipun -0,062R. 19 dari 20 koin
+negatif, tiap tahun negatif. Range 40 candle di H1 cuma 40 jam — jauh lebih pendek daripada
+range ~5 hari yang digambar mentor di chart H1-nya. **Jumlah candle yang sama tidak berarti
+struktur yang sama antar timeframe.**
+
+### Menang 1 dari 3 — dan itu memang bentuk normalnya
+
+Tingkat menang 30-33% di ketiga timeframe. Yang membuat daily positif adalah rata-rata
+pemenangnya besar (target sering 2-5R). Artinya **dua dari tiga setup kena stop**. Chart
+yang dibagikan mentor semuanya contoh yang berhasil — yang gagal tidak diposting — jadi
+deretan chart itu tidak bisa dipakai menilai seberapa sering setup ini jalan.
+
+### Konfirmasi: yang menambah dan yang tidak
+
+| konfirmasi | daily dengan / tanpa | H4 dengan / tanpa |
+|---|---|---|
+| volume di atas median | +0,221 / -0,010 | +0,049 / -0,111 |
+| Stoch RSI dari oversold | +0,250 / -0,082 | -0,009 / +0,002 |
+| harga merebut EMA 13/21 | +0,145 / +0,150 | -0,022 / -0,004 |
+
+**Merebut EMA menaikkan tingkat menang tapi TIDAK menaikkan ekspektansi** (daily 42,7% vs
+31,4% menang, ekspektansi sama) — masuk lebih lambat, jadi pemenangnya lebih kecil. Volume
+di atas median satu-satunya yang searah di daily dan H4. Semua ini **eksploratif**: banyak
+pembandingan diuji sekaligus, jadi perlakukan sebagai petunjuk, bukan aturan.
+
+**OI (panel CoinGlass di chart TAO) TIDAK diuji** — arsip candle tidak memuatnya.
+
+### Batas yang wajib disebut saat mengutip
+
+- Koinnya dipilih hari ini dari yang masih likuid — koin yang mati dan delisting tidak ikut,
+  dan itu memihak setup long.
+- Semua koin bergerak bersama pasar: transaksi di tanggal berdekatan tidak independen, jadi
+  galat baku di atas **terlalu optimistis**.
+- Spot Binance, bukan perpetual: **funding tidak dihitung**.
+- Stop dan target di candle yang sama dihitung **kena stop** — dari OHLC tidak bisa
+  diketahui mana yang duluan.
+
+### Cara memakainya di jawaban
+
+Sebut setup deviation hanya kalau `deviasi.py` melaporkan `setup_aktif` — **jangan
+menggambar setupnya sendiri dari chart**, karena pola "turun lalu naik" adalah yang paling
+mudah ditemukan dengan mata di chart mana pun. Kutip ekspektansinya apa adanya, termasuk
+bahwa H1 rugi dan daily belum meyakinkan.
+
+---
+
 ## Yang perlu diuji kalau mau dilanjutkan
 
 - Riwayat 4h lebih panjang dari 30 hari (butuh sumber lain; CoinGecko hanya menyimpan ~30).
 - Pembanding beli-dan-tahan pada tiap sinyal, bukan hanya persentase menang.
 - ~~Jendela yang memuat pasar TURUN~~ — **sudah, lihat Temuan 3.**
-- **Ekspektansi dengan stop & target eksplisit**, bukan hanya peluang menang. Ini yang
-  paling menentukan dan yang paling mungkin membalikkan vonis di atas.
+- ~~Ekspektansi dengan stop & target eksplisit~~ — **sudah, lihat bagian Setup DEVIATION.**
 - Altcoin dengan OHLC asli riwayat panjang — pengujian pasar turun di atas BTC saja.
 - Biaya: perpetual punya funding, dan setup intraday berpindah posisi jauh lebih sering.
 

@@ -3025,6 +3025,11 @@ def data_mentah_crypto(coin):
     # tetap disertakan sebagai konteks selera risiko pasar crypto — tapi sumbernya harus
     # jelas BTC, bukan dibaca seolah sentimen koin yang ditanyakan.
     tugas.append(("SENTIX BTC (sentix.py)", ["cloud/sentix.py", "--json"], 0))
+    # Setup deviation gaya mentor, dideteksi KODE dengan aturan yang sama persis dengan
+    # yang diuji uji_deviasi.py. Tanpa blok ini model akan "melihat" setup deviation di
+    # chart mana pun yang kebetulan pernah turun lalu naik — pola yang paling mudah
+    # ditemukan kalau dicari dengan mata.
+    tugas.append(("SETUP DEVIATION (deviasi.py)", ["cloud/deviasi.py", coin, "--json"], 0))
     lewat = []
     if t in _TANPA_PROTOKOL:
         lewat.append(f"fundamentals.py ({t} tidak punya protokol berpendapatan)")
