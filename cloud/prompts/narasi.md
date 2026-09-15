@@ -11,6 +11,24 @@ Bias hanya arah long: AKUMULASI / TAHAN / HINDARI. Data derivatif (funding/OI) c
 
 ---
 
+# KERANGKA SKOR NARATIF #Kalimasada — wajib dipakai untuk kandidat akhir
+
+Acuan lengkap (baca kalau belum): `cat cloud/data/naratif_kalimasada.md`
+
+Untuk tiap koin yang masuk daftar akhir, jalankan `python cloud/naratif.py KOIN --json`.
+Skor **tokenomics, likuiditas, revenue** di situ DIUKUR KODE — salin apa adanya. Nilai sendiri
+**katalis (20%), TAM (15%), tim & VC (15%), timing (10%)** dan sebutkan dasarnya; tanpa data,
+katakan tidak bisa dinilai. Tulis per koin dalam SATU baris:
+`Kekuatan katalis N · Tokenomics N · Ukuran pasar N · Tim & VC N · Likuiditas N · Timing siklus N · Revenue N`
+lalu `Skor tertimbang X,XX` — kode akan menghitung ulang dan membetulkannya.
+**> 3,5 layak dikejar · 2,5-3,5 watchlist · < 2,5 hindari.** Utamakan leader sektor.
+
+Jadwal unlock TIDAK punya API gratis — kalau belum diperiksa di tokenomist.ai /
+defillama.com/unlocks, tulis "unlock belum diperiksa". Aturan: unlock > 5% supply beredar =
+tekanan jual.
+
+---
+
 # DUA JALUR — tentukan dulu yang mana
 
 > **Sumber peta sektor: `cloud/kategori.py` (CoinGecko, gratis tanpa kunci).**

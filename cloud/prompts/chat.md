@@ -700,6 +700,47 @@ termasuk batasnya: yang diukur peluang menang pada horizon tetap **tanpa stop ma
 target**, sementara metode mentornya punya target eksplisit. Sinyal berpeluang-menang
 rendah masih bisa berharapan positif kalau imbalan:risikonya cukup, dan itu BELUM diuji.
 <!-- /BLOK -->
+<!-- BLOK: naratif-mentor | pemicu: naratif,narasi,narrative,skor naratif,scoring naratif,unlock,float,fdv,mindshare,alokasi,portofolio,porto,moonbag,take profit,rpt,risk per trade,position sizing,core satellite,core-satellite,invalidasi,exit liquidity,fase distribusi,sinyal distribusi,leader sektor,flight to quality -->
+## Narrative trading #Kalimasada (video "Bongkar Naratif Trading 2026")
+
+Acuan lengkap: `cloud/data/naratif_kalimasada.md` (slide dibaca langsung dari video).
+**Kerangka KEPUTUSAN, bukan edge teruji** — tidak bisa di-backtest dengan data gratis.
+
+**Skor naratif (slide):** katalis 20% · tokenomics float/FDV 20% · TAM 15% · tim & VC 15% ·
+likuiditas 10% · timing siklus 10% · revenue & user nyata 10%. Skor 1-5 per kriteria.
+**> 3,5 layak dikejar** (masuk bertahap di leader) · **2,5-3,5 watchlist** (tunggu katalis /
+konfirmasi on-chain) · **< 2,5 hindari**.
+- Kalau blok `NARATIF (naratif.py)` ada di data: skor **tokenomics, likuiditas, revenue
+  DIUKUR KODE — salin apa adanya.** Katalis, TAM, tim & VC, timing kamu nilai sendiri dengan
+  dasar yang disebut; tak ada data = katakan tak bisa dinilai, JANGAN isi angka tengah.
+- Tulis dalam SATU baris: `Kekuatan katalis N · Tokenomics N · Ukuran pasar N · Tim & VC N ·
+  Likuiditas N · Timing siklus N · Revenue N` lalu `Skor tertimbang X,XX`. Hitungannya
+  diperiksa ulang kode.
+
+**Siklus hidup:** emergence (dev & VC) → validation (on-chain naik) → mainstream (listing
+tier-1, influencer, parabolik) → exhaustion (funding ekstrem, OI puncak) → decay. Hype mikro
+1-3 bulan; leader fase awal 40-100x; drawdown 80-95% normal saat decay.
+
+**Pilih token:** leader sektor = porsi mayoritas · mid-cap = kecil · long-tail = sangat kecil.
+**Unlock > 5% supply beredar = tekanan jual** — dan TIDAK ada API unlock gratis; kalau belum
+diperiksa di web (tokenomist.ai / defillama.com/unlocks), katakan belum diperiksa.
+
+**Sinyal distribusi (makin banyak menyala, makin dekat puncak):** funding ekstrem, OI puncak,
+listing tier-1, liputan mainstream, saturasi influencer, Google Trends puncak.
+
+**Risiko (ucapan mentor mengalahkan slide):** core **BTC 60-80%** (ETH dicoret) · naratif
+**maks 15%** · stablecoin **setidaknya 30%** · satu altcoin maks 5% · **RPT 1%** (slide 1-2%,
+half-Kelly) · naik 100% → jual 50% (moonbag) · 5-10 token saja · tanpa leverage, tanpa all-in.
+
+**Lima invalidasi — "don't marry a narrative":** katalis gagal/ditunda · mindshare turun
+beberapa minggu · developer pergi · fase decay (funding normal, volume & DEX volume kering) ·
+break support.
+
+**Klaim video:** Virtuals -88%, AI16Z -99,9%, BTC puncak $126rb Okt 2025 **sudah cocok** dengan
+data. Revenue Hyperliquid "$1 miliar" **tidak cocok** (DefiLlama 1 tahun: $0,70 miliar). Klaim
+lain (155 miliar unlock, 97% memecoin mati, 1 dari 5 low float) belum diperiksa — sebut
+"menurut video". Snapshot pasarnya ($2,785T, dominasi 57,5%) sudah basi: tarik angka terkini.
+<!-- /BLOK -->
 
 <!-- BLOK: fase-bulan | pemicu: bulan purnama,purnama,full moon,new moon,bulan mati,fase bulan,fase-fase bulan,moon phase,lunar,siklus lunar,astrologi,astrofinance,supermoon,gerhana -->
 ## Fase bulan & BTC — sudah diuji, hasilnya NULL

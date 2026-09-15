@@ -88,7 +88,7 @@ def unduh(tujuan):
     try:
         p = subprocess.run(["curl", "-s", "-L", "--max-time", "45", "-A", UA,
                             "-D", header, "-o", tujuan, URL_GAMBAR],
-                           capture_output=True, text=True, timeout=60)
+                           capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
         if p.returncode != 0 or not os.path.exists(tujuan) or os.path.getsize(tujuan) < 1000:
             return False, None, "gambar sentix gagal diunduh"
         with open(tujuan, "rb") as f:
@@ -349,7 +349,7 @@ def _harga_btc():
     try:
         p = subprocess.run(["curl", "-s", "--max-time", "45", "-A", "riset-koin/1.0",
                             "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CBBTCUSD"],
-                           capture_output=True, text=True, timeout=60)
+                           capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
         keluar = {}
         for r in list(csv.reader(io.StringIO(p.stdout)))[1:]:
             if len(r) >= 2 and r[1] not in (".", ""):

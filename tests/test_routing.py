@@ -7776,3 +7776,152 @@ def test_dokumen_gaya_menyebut_bias_seleksi_chart_mentor():
     assert "yang gagal tidak diposting" in doc
     assert "funding tidak dihitung" in doc.lower() or "funding** tidak dihitung" in doc.lower()
     assert "delisting tidak ikut" in doc
+
+
+def _nr():
+    jalur = os.path.join(AKAR, "cloud")
+    if jalur not in sys.path:
+        sys.path.insert(0, jalur)
+    import naratif
+    return naratif
+
+
+def test_bobot_skor_naratif_sesuai_slide_video():
+    """Bobotnya dibaca dari SLIDE, bukan dari transkrip: transkrip menyebut kriteria pertama
+    "kekuatan naratif" dan tidak mengucapkan tiga bobotnya. Totalnya harus 100."""
+    nr = _nr()
+    assert nr.BOBOT == {"katalis": 20, "tokenomics": 20, "tam": 15, "tim_vc": 15,
+                        "likuiditas": 10, "timing": 10, "revenue": 10}
+    assert sum(nr.BOBOT.values()) == 100
+    assert nr.vonis(3.51) == "LAYAK DIKEJAR"
+    assert nr.vonis(3.5) == "WATCHLIST"          # slide: "> 3,5" layak, "2,5-3,5" watchlist
+    assert nr.vonis(2.5) == "WATCHLIST"
+    assert nr.vonis(2.49) == "HINDARI"
+
+
+def test_skor_tertimbang_menolak_skor_sebagian():
+    """Skor sebagian yang dibaca sebagai skor akhir adalah salah baca yang paling mudah."""
+    nr = _nr()
+    penuh = {"katalis": 4, "tokenomics": 2, "tam": 4, "tim_vc": 4, "likuiditas": 3,
+             "timing": 3, "revenue": 5}
+    assert nr.skor_tertimbang(penuh) == 3.5
+    kurang = dict(penuh)
+    kurang["katalis"] = None
+    assert nr.skor_tertimbang(kurang) is None
+
+
+@pytest.mark.parametrize("float_p,skor", [(95, 5), (80, 5), (65, 4), (45, 3), (22.2, 2), (8, 1),
+                                          (None, None)])
+def test_skor_tokenomics_dari_float(float_p, skor):
+    assert _nr().skor_tokenomics(float_p) == skor
+
+
+def test_skor_likuiditas_menolak_volume_tipis():
+    nr = _nr()
+    assert nr.skor_likuiditas(500_000, 10_000_000) == 1     # rasio 5% tapi volume < $1jt
+    assert nr.skor_likuiditas(745_072_481, 17_106_073_973) == 3
+    assert nr.skor_likuiditas(None, 1e9) is None
+
+
+def _brief_naratif(tok=2, lik=3, rev=5):
+    data = {"kriteria": {"tokenomics": {"skor": tok}, "likuiditas": {"skor": lik},
+                         "revenue": {"skor": rev}}}
+    return bot.PENANDA_NARATIF + " (naratif.py) - HYPE" + chr(10) + json.dumps(data)
+
+
+def test_audit_skor_naratif_menegakkan_kriteria_terukur_kode():
+    """Menaikkan skor tokenomics dari 2 ke 4 adalah cara paling sunyi membuat koin favorit
+    lolos ambang: 3,50 WATCHLIST jadi 3,90 LAYAK DIKEJAR."""
+    body = ("Kekuatan katalis 4 · Tokenomics 4 · Ukuran pasar 4 · Tim & VC 4 · Likuiditas 3 · "
+            "Timing siklus 3 · Revenue 5" + chr(10) + "Skor tertimbang 3,90 → LAYAK DIKEJAR")
+    baru, cat = bot.audit_skor_naratif(body, _brief_naratif())
+    assert "Tokenomics 2" in baru and "3,50" in baru and "WATCHLIST" in baru
+    assert "LAYAK DIKEJAR" not in baru
+    assert len(cat) == 3
+
+
+def test_audit_skor_naratif_menghitung_ulang():
+    body = ("Kekuatan katalis 4 · Tokenomics 2 · Ukuran pasar 4 · Tim & VC 4 · Likuiditas 3 · "
+            "Timing siklus 3 · Revenue 5" + chr(10) + "Skor tertimbang 3,70 → LAYAK DIKEJAR")
+    baru, cat = bot.audit_skor_naratif(body, None)
+    assert "3,50" in baru and "WATCHLIST" in baru
+
+
+def test_audit_skor_naratif_tidak_menebak_baris_tak_lengkap():
+    """Menebak angka yang hilang lebih buruk daripada tidak memeriksa."""
+    body = "Kekuatan katalis 4 · Tokenomics 2" + chr(10) + "Skor tertimbang 3,70"
+    assert bot.audit_skor_naratif(body, None) == (body, [])
+
+
+def test_audit_skor_naratif_hanya_membaca_baris_skor():
+    """Kalimat di paragraf lain seperti "revenue 5 tahun terakhir" tidak boleh terbaca
+    sebagai skor revenue."""
+    body = ("Revenue 5 tahun terakhir tumbuh." + chr(10) +
+            "Kekuatan katalis 4 · Tokenomics 2 · Ukuran pasar 4 · Tim & VC 4 · Likuiditas 3 · "
+            "Timing siklus 3 · Revenue 1" + chr(10) + "Skor tertimbang 3,10")
+    baru, cat = bot.audit_skor_naratif(body, None)
+    assert "Revenue 5 tahun" in baru
+    assert "3,10" in baru and not cat
+
+
+def test_audit_skor_naratif_dipanggil_di_jalur_kirim():
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    assert "body, _koreksi_naratif = audit_skor_naratif(body, brief)" in src
+
+
+def test_naratif_terjangkau_lewat_process_sungguhan():
+    """Skrip yang tidak dipanggil sama saja tidak ada. Pemeriksaan pertama keterjangkauan ini
+    memakai frasa yang juga ada di instruksi blok prompt, sehingga melaporkan data sampai
+    padahal naratif.py tidak pernah dipanggil - maka penandanya kini khusus data."""
+    import tempfile as _tf
+    asli = (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.data_naratif,
+            bot.run_claude, bot.data_mentah_crypto, bot.data_mentah_pasar, bot.data_proyeksi,
+            bot.data_sebab, bot.belajar_dari)
+    bot.JEJAK_PATH = os.path.join(_tf.mkdtemp(), "d.json")
+    bot.simpan_riwayat = lambda *a: None
+    bot.send_message = lambda *a: True
+    bot.data_mentah_crypto = lambda *a: "### DATA"
+    bot.data_mentah_pasar = lambda *a: "### DATA"
+    bot.data_proyeksi = lambda *a, **k: ""
+    bot.data_sebab = lambda *a, **k: ""
+    bot.belajar_dari = lambda *a, **k: []
+    dip, pr = [], {}
+    bot.data_naratif = lambda s: (dip.append(s), bot.PENANDA_NARATIF + " - " + s)[1]
+    bot.run_claude = lambda p, *a, **k: (pr.__setitem__("p", p), ("ok", None))[1]
+    try:
+        for teks, harus in [("skor naratif ONDO gimana?", True),
+                            ("ONDO masih layak dikejar?", True),
+                            ("unlock ONDO kapan?", True),
+                            ("harga ONDO berapa?", False)]:
+            dip.clear()
+            pr.clear()
+            bot.process("tok", "9", teks)
+            assert bool(dip) is harus, teks
+            assert (bot.PENANDA_NARATIF in pr.get("p", "")) is harus, teks
+    finally:
+        (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.data_naratif,
+         bot.run_claude, bot.data_mentah_crypto, bot.data_mentah_pasar, bot.data_proyeksi,
+         bot.data_sebab, bot.belajar_dari) = asli
+    for f in ("chat.md", "narasi.md", "analisa.md"):
+        teks = open(os.path.join(AKAR, "cloud", "prompts", f), encoding="utf-8").read()
+        assert bot.PENANDA_NARATIF not in teks, f
+
+
+def test_dokumen_naratif_membedakan_slide_ucapan_dan_klaim():
+    """Slide menulis naratif 10-40% dan stablecoin 10-15%; mentornya secara lisan mencoretnya
+    jadi maks 15% dan setidaknya 30%. Klaim yang tidak cocok dengan data harus ditandai."""
+    d = open(os.path.join(AKAR, "cloud", "data", "naratif_kalimasada.md"), encoding="utf-8").read()
+    assert "maksimal 15%" in d and "setidaknya 30%" in d and "ETH **dicoret**" in d
+    assert "tidak cocok" in d and "0,70 miliar" in d
+    assert "Tidak ada API unlock" in d
+    blok = open(os.path.join(AKAR, "cloud", "prompts", "chat.md"), encoding="utf-8").read()
+    assert "BLOK: naratif-mentor" in blok and "0,70 miliar" in blok
+
+
+def test_curl_modul_baru_memakai_utf8():
+    """subprocess text=True memakai encoding bawaan OS. Di Windows (cp1252) RSS berita yang
+    memuat karakter non-ASCII mematikan thread pembacanya diam-diam dan datanya kosong -
+    dan di runner Linux bug ini tidak pernah terlihat."""
+    for f in ("naratif.py", "ppi_cpi.py", "sentix.py"):
+        src = open(os.path.join(AKAR, "cloud", f), encoding="utf-8").read()
+        assert "capture_output=True, text=True, timeout" not in src, f

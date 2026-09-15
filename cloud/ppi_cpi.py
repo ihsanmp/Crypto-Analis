@@ -72,7 +72,7 @@ def _unduh(seri):
     url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={seri}"
     try:
         p = subprocess.run(["curl", "-s", "--max-time", "45", "-A", "riset-koin/1.0", url],
-                           capture_output=True, text=True, timeout=60)
+                           capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
         if p.returncode != 0 or not p.stdout.strip():
             return {}
         keluar = {}

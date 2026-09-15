@@ -3145,6 +3145,27 @@ _INDIKATOR_KEJUTAN = ((r"\bcore\s*pce\b", "Core PCE"), (r"\bcore\s*cpi\b", "Core
 # ini, dan ppi_cpi.py menarik dua seri FRED plus 2.000 pengacakan.
 _MINTA_PPI_CPI = re.compile(r"\bppi\b|\bproducer price\b|\bharga produsen\b", re.I)
 
+# Pertanyaan yang meminta kerangka narrative trading #Kalimasada (naratif_kalimasada.md).
+# Menuntut kata yang memang khas kerangka itu: naratif.py menembak lima sumber berbeda, dan
+# pertanyaan harga biasa tidak boleh ikut membayarnya.
+_MINTA_NARATIF = re.compile(
+    r"\b(?:naratif|narasi|narrative|skor naratif|scoring|unlock|float|fdv|mindshare|"
+    r"tokenomics?|layak dikejar|watchlist|leader sektor|fase distribusi|invalidasi)\b", re.I)
+# Penanda data, sengaja berbeda dari teks mana pun di prompt. Pemeriksaan pertama memakai
+# "NARATIF (naratif.py)" — frasa yang juga muncul di instruksi blok prompt — sehingga
+# simulasi melaporkan data sampai padahal naratif.py tidak pernah dipanggil.
+PENANDA_NARATIF = "### DATA NARATIF TERUKUR"
+
+
+def data_naratif(simbol):
+    """Kriteria skor naratif yang terukur kode. "" kalau gagal — model lalu menyebut tak
+    bisa dinilai, bukan mengarang."""
+    keluar, err = _jalankan_terukur(f"NARATIF {simbol} (naratif.py)",
+                                    ["cloud/naratif.py", simbol, "--json"])
+    if err or not keluar:
+        return ""
+    return f"{PENANDA_NARATIF} (naratif.py) — {simbol}" + NL + keluar
+
 
 def _ke_angka(teks, akhiran):
     """Ubah '4.000' / '55,5' / '200' jadi float. Ribuan vs desimal dibedakan dari posisinya."""
@@ -3803,6 +3824,8 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
             send_message(token, chat_id, f"⏳ Oke, riset koin {coin}. Tahap 1: kumpulkan data...")
             t_gather = min(timeout, 300)
             mentah = data_mentah_crypto(coin)
+            if _MINTA_NARATIF.search(text or ""):
+                mentah += NL + NL + data_naratif(coin)
             berita, err = run_claude(build_gather_prompt(coin), t_gather, max_turns=20,
                                      model=MODEL_GATHER, tools_override=TOOLS_WEB)
             if err or not berita:
@@ -3899,6 +3922,8 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
                          else data_mentah_pasar(simbol_chat, jenis_chat))
                 # Pertanyaan proyeksi butuh angka yang tidak ada di brief biasa: sebaran
                 # historis, ATR, dan — kalau user menyebut target — pengujian target itu.
+                if _MINTA_NARATIF.search(text or ""):
+                    brief += "\n\n" + data_naratif(simbol_chat)
                 if _MINTA_PROYEKSI.search(text.lower()):
                     brief += "\n\n" + data_proyeksi(text, jenis_chat, simbol_chat)
                 # Pertanyaan SEBAB butuh pemisahan berlapis: berapa bagian gerakan ini
@@ -4029,6 +4054,7 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
         langgar = audit_masukan(body)
         if langgar:
             body, langgar = perbaiki_masukan(body, langgar)
+        body, _koreksi_naratif = audit_skor_naratif(body, brief)
         hitung = audit_hitung(body, imbalan)
         if hitung:
             print(f"[audit] SALAH HITUNG: {hitung}", file=sys.stderr)
@@ -4229,6 +4255,91 @@ _RE_RR_DITULIS = re.compile(
     r"(?:r\s*:\s*r|rr|imbalan\s*:\s*risiko|risk\s*[/:]\s*reward)"
     r"[^\d\n]{0,12}(?:1\s*:\s*)?(\d+(?:[.,]\d+)?)", re.I)
 TOLERANSI_PERSEN = 1.0        # poin persen; di bawah ini pembulatan wajar
+
+
+# Label baris skor naratif persis seperti yang diminta blok naratif-mentor.
+_LABEL_SKOR_NARATIF = (
+    ("katalis", r"Kekuatan katalis"), ("tokenomics", r"Tokenomics"),
+    ("tam", r"Ukuran pasar"), ("tim_vc", r"Tim\s*&\s*VC"), ("likuiditas", r"Likuiditas"),
+    ("timing", r"Timing siklus"), ("revenue", r"Revenue"))
+_RE_SKOR_TERTIMBANG = re.compile(r"(Skor tertimbang\s*:?\s*)(\d+(?:[.,]\d+)?)", re.I)
+_TERUKUR_KODE = ("tokenomics", "likuiditas", "revenue")
+
+
+def audit_skor_naratif(body, brief=None):
+    """Periksa ulang baris skor naratif di balasan. Return (body_baru, catatan).
+
+    Dua hal ditegakkan KODE, bukan diharapkan:
+      1. Tiga kriteria yang diukur naratif.py (tokenomics, likuiditas, revenue) harus sama
+         dengan hasil ukurnya. Menaikkannya adalah cara paling sunyi membuat koin favorit
+         lolos ambang "layak dikejar".
+      2. Skor tertimbang dihitung ulang dari tujuh angka. Rata-rata tertimbang tujuh bilangan
+         adalah hitungan yang model kerjakan di kepala dan sering meleset satu-dua persepuluh
+         — cukup untuk memindahkan koin dari WATCHLIST ke LAYAK DIKEJAR.
+    Hanya dijalankan kalau ketujuh label ada; baris yang tidak lengkap dibiarkan, karena
+    menebak angka yang hilang lebih buruk daripada tidak memeriksa.
+    """
+    if not body or "Skor tertimbang" not in body:
+        return body, []
+    _pastikan_path(BASE_DIR)          # jalur panas: dipanggil untuk setiap balasan
+    try:
+        import naratif as nr
+    except Exception:
+        return body, []
+    # Hanya di BARIS skor (yang memuat "Kekuatan katalis"), bukan di seluruh balasan: kalimat
+    # biasa seperti "revenue 5 tahun terakhir" di paragraf lain akan terbaca sebagai skor.
+    awal_baris = body.find("Kekuatan katalis")
+    if awal_baris < 0:
+        return body, []
+    awal_baris = body.rfind(NL, 0, awal_baris) + 1
+    akhir_baris = body.find(NL, awal_baris)
+    akhir_baris = len(body) if akhir_baris < 0 else akhir_baris
+    baris_skor = body[awal_baris:akhir_baris]
+    skor, posisi = {}, {}
+    for kunci, label in _LABEL_SKOR_NARATIF:
+        m = re.search(label + r"\s*:?\s*([1-5])(?:\s*/\s*5)?\b", baris_skor, re.I)
+        if not m:
+            return body, []
+        skor[kunci] = int(m.group(1))
+        posisi[kunci] = (awal_baris + m.start(1), awal_baris + m.end(1))
+    catatan = []
+    terukur = {}
+    if brief and PENANDA_NARATIF in brief:
+        try:
+            baris = brief.split(PENANDA_NARATIF, 1)[1].split(NL, 2)[1]
+            data = json.loads(baris)
+            terukur = {k: data["kriteria"][k]["skor"] for k in _TERUKUR_KODE
+                       if data["kriteria"].get(k, {}).get("skor") is not None}
+        except (IndexError, KeyError, ValueError, TypeError):
+            terukur = {}
+    baru = body
+    # Diganti dari belakang supaya posisi karakter yang lebih awal tetap sah.
+    for kunci in sorted(terukur, key=lambda k: -posisi[k][0]):
+        if skor[kunci] != terukur[kunci]:
+            a, z = posisi[kunci]
+            catatan.append(f"{kunci} ditulis {skor[kunci]}, diukur kode {terukur[kunci]}")
+            baru = baru[:a] + str(terukur[kunci]) + baru[z:]
+            skor[kunci] = terukur[kunci]
+    benar = nr.skor_tertimbang(skor)
+    m = _RE_SKOR_TERTIMBANG.search(baru)
+    if benar is not None and m:
+        ditulis = float(m.group(2).replace(",", "."))
+        teks_benar = f"{benar:.2f}".replace(".", ",")
+        if abs(ditulis - benar) > 0.005:
+            catatan.append(f"skor tertimbang ditulis {m.group(2)}, dihitung {teks_benar}")
+            baru = baru[:m.start(2)] + teks_benar + baru[m.end(2):]
+        v = nr.vonis(benar)
+        salah = [x for x in ("LAYAK DIKEJAR", "WATCHLIST", "HINDARI") if x != v]
+        ekor = baru[m.start(2):m.start(2) + 60]
+        for x in salah:
+            if x in ekor.upper():
+                i = m.start(2) + ekor.upper().index(x)
+                baru = baru[:i] + v + baru[i + len(x):]
+                catatan.append(f"vonis ditulis {x}, seharusnya {v}")
+                break
+    if catatan:
+        print(f"[naratif] skor DIBETULKAN kode: {'; '.join(catatan)}", file=sys.stderr)
+    return baru, catatan
 
 
 def belajar_dari(token, chat_id, teks, body, sumber="teks"):
