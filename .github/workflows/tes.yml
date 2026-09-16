@@ -34,7 +34,13 @@ jobs:
         # pillow bukan kenyamanan: tanpa itu tes kebenaran-acuan sentix (digitasi vs
         # angka legenda resmi) DILEWATI diam-diam lewat importorskip, dan regresi
         # yang pernah membuat bacaan 0,55 alih-alih 0,324 akan lolos CI dengan hijau.
-        run: pip install pytest pillow
+        #
+        # pyyaml, pypdf, reportlab: alasan yang sama, dan sempat terjadi. Tanpa ketiganya,
+        # log run 35054875219 menunjukkan 5 tes DILEWATI — termasuk test_semua_workflow_
+        # ter_parse, penjaga yang dibuat setelah workflow rusak mematikan bot empat hari.
+        # Penjaga itu tidak pernah benar-benar jalan di CI sampai baris ini ditambah.
+        # numpy sengaja TIDAK dipasang: hanya harness evaluasi yang memakainya.
+        run: pip install pytest pillow pyyaml pypdf reportlab
 
       - name: Jalankan tes
         run: pytest tests/ -v
