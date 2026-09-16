@@ -252,13 +252,24 @@ jobs:
       - name: Simpan ingatan terverifikasi
         if: always() && (github.event_name == 'repository_dispatch' || steps.check.outputs.has_work == 'true')
         run: |
-          if [ -z "$(git status --porcelain cloud/data/memori.jsonl cloud/data/diproses.json cloud/data/percakapan.json cloud/data/kalender_cache.json cloud/data/rapor.jsonl cloud/data/sec_tickers_cache.json.gz cloud/data/kejutan_cache.json cloud/data/ppi_cache.json cloud/data/jadwal_cache.json cloud/data/arsip_konsensus.jsonl cloud/data/sosovalue_riwayat.json cloud/data/derivatif_arsip.jsonl cloud/data/tg_batas.json cloud/data/masukan.jsonl cloud/data/musim_cache.json cloud/data/eko_repos.json)" ]; then
+          # HANYA berkas yang benar-benar ada yang boleh masuk `git add`. Berkas yang tidak
+          # ada membuat git add keluar dengan kode 128 dan SELURUH langkah ini batal.
+          # Itu terjadi 8-16 Sep 2026: masukan.jsonl baru ada setelah masukan pertama, jadi
+          # setiap run gagal menyimpan ingatan, riwayat percakapan, daftar pesan terproses,
+          # dan penanda baca Telegram — sementara balasannya tetap terkirim, sehingga dari
+          # luar botnya terlihat sehat. 1 sukses dari 16 run, dibanding 18/18 minggu sebelumnya.
+          BERKAS="cloud/data/memori.jsonl cloud/data/diproses.json cloud/data/percakapan.json cloud/data/kalender_cache.json cloud/data/rapor.jsonl cloud/data/sec_tickers_cache.json.gz cloud/data/kejutan_cache.json cloud/data/ppi_cache.json cloud/data/jadwal_cache.json cloud/data/arsip_konsensus.jsonl cloud/data/sosovalue_riwayat.json cloud/data/derivatif_arsip.jsonl cloud/data/tg_batas.json cloud/data/masukan.jsonl cloud/data/musim_cache.json cloud/data/eko_repos.json"
+          ADA=""
+          for f in $BERKAS; do
+            [ -e "$f" ] && ADA="$ADA $f"
+          done
+          if [ -z "$ADA" ] || [ -z "$(git status --porcelain $ADA)" ]; then
             echo "tidak ada ingatan baru — lewati commit"
             exit 0
           fi
           git config user.name "crypto-analis-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add cloud/data/memori.jsonl cloud/data/diproses.json cloud/data/percakapan.json cloud/data/kalender_cache.json cloud/data/rapor.jsonl cloud/data/sec_tickers_cache.json.gz cloud/data/kejutan_cache.json cloud/data/ppi_cache.json cloud/data/jadwal_cache.json cloud/data/arsip_konsensus.jsonl cloud/data/sosovalue_riwayat.json cloud/data/derivatif_arsip.jsonl cloud/data/tg_batas.json cloud/data/masukan.jsonl cloud/data/musim_cache.json cloud/data/eko_repos.json
+          git add $ADA
           git commit -m "Ingatan, jejak pesan & riwayat percakapan dari run ${GITHUB_RUN_ID}"
           # Run lain bisa menambah commit lebih dulu; rebase supaya tidak saling menimpa.
           for i in 1 2 3; do

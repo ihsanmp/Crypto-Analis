@@ -1499,16 +1499,33 @@ def test_batas_nfp_fomc_dinyatakan_di_seed():
     assert "TIDAK punya jejak vintage" in teks, "batas konsensus SoSoValue hilang"
 
 
+def _berkas_disimpan_workflow():
+    """Berkas yang disimpan langkah "Simpan ingatan terverifikasi" di bot.yml.
+
+    Daftarnya ditulis SEKALI di BERKAS, lalu dipakai pemeriksaan status maupun git add
+    lewat $ADA (hanya berkas yang benar-benar ada). Dulu daftar itu ditulis dua kali dan
+    tes-tes di bawah menghitung kemunculan teksnya — tapi hitungan itu justru yang
+    memastikan masukan.jsonl ada di git add, penyebab crash penyimpanan 8-16 Sep 2026.
+    Pemeriksaan ini struktural: berkasnya terdaftar, dan daftarnya dipakai keduanya.
+    """
+    import re
+    alur = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"),
+                encoding="utf-8").read()
+    m = re.search(r'BERKAS="([^"]+)"', alur)
+    assert m, "daftar BERKAS di langkah simpan ingatan hilang"
+    assert "git status --porcelain $ADA" in alur and "git add $ADA" in alur,         "BERKAS harus dipakai pemeriksaan status DAN git add"
+    return set(m.group(1).split())
+
+
 def test_cache_baru_ikut_disimpan_workflow():
     """Runner ephemeral: cache yang tidak di-commit balik berarti ditarik ulang tiap run.
 
     Untuk jadwal.py itu bukan sekadar boros — BLS tanpa kunci dibatasi 25 permintaan
     per hari, jadi cache yang tidak bertahan bisa menghabiskan kuotanya.
     """
-    alur = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"),
-                encoding="utf-8").read()
+    disimpan = _berkas_disimpan_workflow()
     for berkas in ("cloud/data/kejutan_cache.json", "cloud/data/jadwal_cache.json"):
-        assert alur.count(berkas) == 2, f"{berkas} harus ada di pemeriksaan DAN git add"
+        assert berkas in disimpan, f"{berkas} harus ikut disimpan"
 
 
 # ------------------------------------------------- arsip konsensus Forex Factory
@@ -1584,9 +1601,7 @@ def test_arsip_status_menandai_sampel_kecil(tmp_path, monkeypatch):
 
 def test_arsip_dilindungi_workflow():
     """Hanya-tambah: ikut di-commit balik, dan dijaga agar tidak menyusut."""
-    bot_yml = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"),
-                   encoding="utf-8").read()
-    assert bot_yml.count("cloud/data/arsip_konsensus.jsonl") == 2
+    assert "cloud/data/arsip_konsensus.jsonl" in _berkas_disimpan_workflow()
     tes_yml = open(os.path.join(AKAR, ".github", "workflows", "tes.yml"),
                    encoding="utf-8").read()
     assert "arsip_konsensus.jsonl" in tes_yml and "menyusut" in tes_yml
@@ -4279,7 +4294,7 @@ def test_penanda_ditulis_sebagai_calon_bukan_langsung_berlaku():
         "penanda hanya boleh maju kalau user benar-benar menerima jawabannya"
     assert "mv cloud/data/tg_batas_calon.json cloud/data/tg_batas.json" in langkah
     # Dan penandanya harus ikut ter-commit, kalau tidak run berikutnya lupa lagi.
-    assert alur.count("cloud/data/tg_batas.json") >= 3
+    assert "cloud/data/tg_batas.json" in _berkas_disimpan_workflow()
     assert "--sejak-terakhir" in alur
 
 
@@ -7339,9 +7354,7 @@ def test_masukan_dibatasi_supaya_tidak_membengkak(masukan_tmp):
 def test_masukan_ikut_tercommit():
     """Aturan yang dipelajari hilang setiap run selesai kalau tidak ikut di-commit —
     dan fitur ini seluruhnya bergantung pada aturannya bertahan antar-run."""
-    alur = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"),
-                encoding="utf-8").read()
-    assert alur.count("cloud/data/masukan.jsonl") >= 2,         "harus ada di pemeriksaan status DAN di git add"
+    assert "cloud/data/masukan.jsonl" in _berkas_disimpan_workflow()
 
 
 @pytest.mark.parametrize("sumber", ["teks", "gambar", "pdf"])
@@ -7925,3 +7938,54 @@ def test_curl_modul_baru_memakai_utf8():
     for f in ("naratif.py", "ppi_cpi.py", "sentix.py"):
         src = open(os.path.join(AKAR, "cloud", f), encoding="utf-8").read()
         assert "capture_output=True, text=True, timeout" not in src, f
+
+
+def _bash_nyata():
+    """bash yang memahami path repo. Di Windows, `bash` di PATH bisa berupa bash WSL yang
+    melihat sistem berkas lain — pakai bash milik Git kalau ada."""
+    import shutil
+    git = shutil.which("git")
+    if os.name == "nt" and git:
+        for kandidat in (os.path.join(os.path.dirname(os.path.dirname(git)), "bin", "bash.exe"),
+                         os.path.join(os.path.dirname(os.path.dirname(git)), "usr", "bin", "bash.exe")):
+            if os.path.exists(kandidat):
+                return kandidat
+    return shutil.which("bash")
+
+
+def test_simpan_ingatan_tahan_berkas_yang_belum_ada(tmp_path):
+    """REGRESI 8-16 Sep 2026: `git add` diberi cloud/data/masukan.jsonl, berkas yang baru
+    ada setelah masukan pertama. git add keluar dengan kode 128 dan langkah penyimpanan
+    batal di SETIAP run — 1 sukses dari 16. Balasan tetap terkirim, jadi tidak ada yang
+    sadar ingatan, riwayat percakapan, dan penanda baca Telegram tidak pernah tersimpan.
+
+    Tes ini MENJALANKAN skrip langkah itu (sampai sebelum commit) di repo sementara yang
+    sengaja tidak punya masukan.jsonl, bukan mencocokkan teksnya.
+    """
+    import subprocess
+    yaml = pytest.importorskip("yaml")
+    bash = _bash_nyata()
+    if not bash:
+        pytest.skip("bash tidak tersedia")
+    wf = yaml.safe_load(open(os.path.join(AKAR, ".github", "workflows", "bot.yml"),
+                             encoding="utf-8"))
+    langkah = next(s for j in wf["jobs"].values() for s in j["steps"]
+                   if s.get("name") == "Simpan ingatan terverifikasi")
+    skrip = langkah["run"].split("git commit")[0]
+
+    repo = tmp_path / "repo"
+    (repo / "cloud" / "data").mkdir(parents=True)
+    git = lambda *a: subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t",
+                                     *a], cwd=repo, capture_output=True, text=True)
+    git("init", "-q")
+    (repo / "cloud" / "data" / "percakapan.json").write_text("{}", encoding="utf-8")
+    (repo / "cloud" / "data" / "tg_batas.json").write_text("1", encoding="utf-8")
+    git("add", "-A")
+    git("commit", "-qm", "awal")
+    # Ada perubahan yang harus disimpan; masukan.jsonl & kawan-kawan sengaja TIDAK ada.
+    (repo / "cloud" / "data" / "percakapan.json").write_text('{"baru": 1}', encoding="utf-8")
+
+    p = subprocess.run([bash, "-c", skrip], cwd=repo, capture_output=True, text=True)
+    assert p.returncode == 0, p.stderr
+    staged = git("diff", "--cached", "--name-only").stdout.split()
+    assert "cloud/data/percakapan.json" in staged
