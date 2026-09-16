@@ -27,7 +27,8 @@ Ambangnya ditulis terbuka di bawah supaya bisa diperdebatkan, dan tidak boleh di
 "menurut mentor".
 
 SUMBER — semuanya diuji tanpa bayar dan tanpa kunci (16 Sep 2026):
-  CoinGecko coin & trending · DefiLlama fees/revenue · Santiment dev_activity ·
+  CoinGecko coin, trending & tickers · DefiLlama fees/revenue · Santiment dev_activity ·
+  GitHub + taksonomi Electric Capital (devkode.py) · Altcoin Season Index (musim.py) ·
   Wikipedia pageviews · Google News RSS.
 Yang DITOLAK karena berbayar/berkunci meski dipakai di video: jadwal unlock DefiLlama (402),
 Tokenomist, Token Terminal, CryptoRank, Kaito, Dune, dan social volume Santiment — paket
@@ -160,7 +161,8 @@ def coingecko(cg_id):
             "harga": usd("current_price"), "ath": usd("ath"),
             "ubah_30h": m.get("price_change_percentage_30d"),
             "ubah_1thn": m.get("price_change_percentage_1y"),
-            "kategori": d.get("categories") or []}
+            "kategori": d.get("categories") or [],
+            "repo": (((d.get("links") or {}).get("repos_url") or {}).get("github") or [])[:3]}
 
 
 def trending_ids():
@@ -219,6 +221,75 @@ def berita_7_hari(nama):
     return f">={n} (batas RSS)" if n >= BATAS_RSS else n
 
 
+# Daftar bursa "tier-1" INI MILIK ALAT INI, bukan dari video. Videonya menyebut "listing
+# tier-1" sebagai salah satu sinyal fase distribusi tanpa pernah menyebut bursa mana saja.
+# Yang di bawah dipilih dari bursa dengan trust score tertinggi CoinGecko plus bursa berizin
+# di pasar besar (Korea, Jepang, AS, Eropa). Nama pengenalnya ikut CoinGecko.
+TIER1 = {"binance": "Binance", "gdax": "Coinbase", "coinbase_international": "Coinbase Intl",
+         "upbit": "Upbit", "bithumb": "Bithumb", "okex": "OKX", "bybit_spot": "Bybit",
+         "kraken": "Kraken", "kucoin": "KuCoin", "bitget": "Bitget", "gate": "Gate",
+         "htx": "HTX", "huobi": "HTX", "crypto_com": "Crypto.com", "bitstamp": "Bitstamp",
+         "bitflyer": "bitFlyer", "gemini": "Gemini"}
+
+
+def bursa_tier1(cg_id):
+    """Bursa tier-1 tempat koin ini diperdagangkan, dan porsi volumenya.
+
+    BATASNYA HARUS IKUT DIBACA: yang terukur di sini KEBERADAAN listing, bukan KAPAN
+    listingnya. Sinyal distribusi di video adalah listing tier-1 yang BARU terjadi
+    ("akhirnya masuk Binance" di puncak hype), dan tanggal listing tidak ada di API gratis
+    mana pun yang diuji. Jadi koin lama yang sudah bertahun-tahun di Binance akan terlihat
+    sama dengan koin yang baru listing kemarin.
+    """
+    d = _json(f"https://api.coingecko.com/api/v3/coins/{cg_id}/tickers?depth=false")
+    return ringkas_tickers((d or {}).get("tickers"))
+
+
+def ringkas_tickers(tik):
+    """Bagian hitungnya dipisah dari pengambilannya supaya bisa diuji tanpa jaringan."""
+    if not tik:
+        return None
+    total = 0.0
+    per_bursa = {}
+    for t in tik:
+        v = (t.get("converted_volume") or {}).get("usd") or 0
+        if t.get("is_anomaly") or t.get("is_stale"):
+            continue
+        ident = (t.get("market") or {}).get("identifier")
+        total += v
+        if ident in TIER1:
+            per_bursa[TIER1[ident]] = per_bursa.get(TIER1[ident], 0) + v
+    if not total:
+        return None
+    vol_t1 = sum(per_bursa.values())
+    return {"bursa_tier1": sorted(per_bursa, key=lambda k: -per_bursa[k]),
+            "n_bursa_tier1": len(per_bursa),
+            "porsi_volume_tier1_persen": round(vol_t1 / total * 100, 1),
+            "n_pasar_terbaca": len(tik),
+            "catatan": "TANGGAL listing tidak tersedia di sumber gratis — yang terukur hanya "
+                       "ADA/TIDAKNYA listing, bukan listing BARU yang jadi sinyal distribusi"}
+
+
+def data_musim():
+    if BASE_DIR not in sys.path:
+        sys.path.insert(0, BASE_DIR)
+    try:
+        import musim
+        return musim.musim()
+    except Exception:
+        return None
+
+
+def data_devkode(simbol, nama, repo):
+    if BASE_DIR not in sys.path:
+        sys.path.insert(0, BASE_DIR)
+    try:
+        import devkode
+        return devkode.analisa(simbol, nama=nama, repo_coingecko=repo)
+    except Exception:
+        return None
+
+
 def revenue_1thn(simbol):
     if BASE_DIR not in sys.path:
         sys.path.insert(0, BASE_DIR)
@@ -248,7 +319,7 @@ def analisa(simbol):
     cg_id = ind.resolve_cg_id(simbol.upper())
     if not cg_id:
         return {"koin": simbol.upper(), "tidak_tersedia": "koin tidak dikenali CoinGecko"}
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=7) as ex:
         f_cg = ex.submit(coingecko, cg_id)
         f_tr = ex.submit(trending_ids)
         f_dev = ex.submit(dev_activity, cg_id)
@@ -258,8 +329,12 @@ def analisa(simbol):
             return {"koin": simbol.upper(), "tidak_tersedia": "data CoinGecko gagal diambil"}
         f_pv = ex.submit(pageviews, cg["nama"] or simbol)
         f_nw = ex.submit(berita_7_hari, cg["nama"] or simbol)
+        f_ms = ex.submit(data_musim)
+        f_br = ex.submit(bursa_tier1, cg_id)
+        f_dk = ex.submit(data_devkode, simbol.upper(), cg["nama"], cg.get("repo"))
         trending, dev, rev, pv, berita = (f_tr.result(), f_dev.result(), f_rev.result(),
                                           f_pv.result(), f_nw.result())
+        musim_alt, bursa, devkode_hasil = f_ms.result(), f_br.result(), f_dk.result()
 
     float_p = (cg["beredar"] / cg["maks"] * 100) if cg["beredar"] and cg["maks"] else None
     mcap_fdv = (cg["mcap"] / cg["fdv"] * 100) if cg["mcap"] and cg["fdv"] else None
@@ -287,15 +362,20 @@ def analisa(simbol):
                 "sumber_disarankan": "python cloud/kategori.py --cari <sektor> (kapitalisasi "
                                      "sektor, gratis)"},
         "tim_vc": {"skor": None, "dinilai": True,
+                   "data": {"aktivitas_developer": (devkode_hasil or {}).get("github"),
+                            "ekosistem_electric_capital":
+                                (devkode_hasil or {}).get("ekosistem_electric_capital")},
                    "sumber_disarankan": "cryptorank.io & chainbroker.io (web gratis, API "
-                                        "berkunci). Electric Capital untuk tim developer."},
+                                        "berkunci) untuk daftar VC-nya. Aktivitas developer "
+                                        "di sini sudah dari GitHub langsung (devkode.py)."},
         "timing": {"skor": None, "dinilai": True,
                    "data": {"jarak_dari_ath_persen": round((1 - cg["harga"] / cg["ath"]) * 100, 1)
                             if cg["harga"] and cg["ath"] else None,
                             "ubah_30_hari_persen": round(cg["ubah_30h"], 1) if cg["ubah_30h"] is not None else None,
                             "ubah_1_tahun_persen": round(cg["ubah_1thn"], 1) if cg["ubah_1thn"] is not None else None,
                             "trending_coingecko": cg_id in trending,
-                            "wikipedia_pageviews": pv},
+                            "wikipedia_pageviews": pv,
+                            "musim_altcoin": musim_alt},
                    "catatan": "Timing tidak diberi angka kode: tidak ada pemetaan teruji dari "
                               "data ini ke 'early' vs 'mainstream'. Baca bersama siklus hidup "
                               "naratif di bawah."},
@@ -316,6 +396,17 @@ def analisa(simbol):
                        f"(cakupan {bobot_terukur}% bobot). BUKAN skor akhir — skor akhir butuh "
                        f"ketujuh kriteria."},
         "developer_santiment": dev,
+        "developer_github": devkode_hasil,
+        "sinyal_distribusi": {
+            "listing_tier1": bursa,
+            "musim_altcoin": musim_alt,
+            "liputan_berita_7_hari": berita,
+            "belum_ada_sumbernya": ["saturasi influencer (butuh data X/Twitter berbayar)",
+                                    "TANGGAL listing tier-1 (yang ada hanya ada/tidaknya)",
+                                    "Google Trends (menolak akses dari server)"],
+            "sudah_ada_di_tempat_lain": "funding rate & open interest — derivatif.py dan "
+                                        "coinalyze.py, bukan di sini",
+        },
         "wajib_dibaca": WAJIB_DIBACA,
     }
 
@@ -330,7 +421,13 @@ WAJIB_DIBACA = (
     "hitungannya diperiksa kode: 'Kekuatan katalis N · Tokenomics N · Ukuran pasar N · Tim & "
     "VC N · Likuiditas N · Timing siklus N · Revenue N' lalu 'Skor tertimbang X,XX'. "
     "Ambang 1-5 untuk tiga kriteria terukur adalah milik alat ini, BUKAN dari video. "
-    "Jadwal unlock tidak punya sumber gratis — sebutkan bahwa itu belum diperiksa.")
+    "Jadwal unlock tidak punya sumber gratis — sebutkan bahwa itu belum diperiksa. "
+    "Aktivitas developer di 'developer_github' dihitung dari commit GitHub repo ekosistem "
+    "(aturan invalidasi ke-3); kalau tren-nya 'melemah', itu alasan mengurangi skor tim & VC, "
+    "dan sebutkan repo mana yang jadi dasarnya. Indeks musim altcoin: angka 90 hari adalah "
+    "TERBITAN blockchaincenter, yang 30 hari DIHITUNG SENDIRI — jangan tukar keduanya. "
+    "Listing tier-1 hanya menunjukkan ADA/TIDAKNYA listing, bukan listing BARU, jadi ia "
+    "belum cukup untuk menyebut fase distribusi sendirian.")
 
 
 def main():

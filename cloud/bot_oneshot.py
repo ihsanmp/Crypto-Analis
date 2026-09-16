@@ -3030,6 +3030,9 @@ def data_mentah_crypto(coin):
     # chart mana pun yang kebetulan pernah turun lalu naik — pola yang paling mudah
     # ditemukan kalau dicari dengan mata.
     tugas.append(("SETUP DEVIATION (deviasi.py)", ["cloud/deviasi.py", coin, "--json"], 0))
+    # Musim altcoin: konteks rotasi modal untuk SEMUA pembahasan koin, bukan cuma saat
+    # kerangka naratif diminta. Hasilnya di-cache 6 jam, jadi hampir selalu nol permintaan.
+    tugas.append(("MUSIM ALTCOIN (musim.py)", ["cloud/musim.py", "--json"], 0))
     lewat = []
     if t in _TANPA_PROTOKOL:
         lewat.append(f"fundamentals.py ({t} tidak punya protokol berpendapatan)")

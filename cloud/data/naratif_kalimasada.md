@@ -77,12 +77,23 @@ Bitcoin season). Pada 16 Sep 2026 CoinGecko mencatat $2,620T, BTC 58,4%, ETH 11,
 
 | sinyal | tool yang disebut di video | status gratis (diuji 16 Sep 2026) |
 |---|---|---|
-| 1 Developer activity | Electric Capital Developer Report ("sinyal paling hulu") | **Santiment `dev_activity`: gratis, data terkini** · Electric Capital: web & repo taksonomi GitHub gratis · GitHub API gratis |
+| 1 Developer activity | Electric Capital Developer Report ("sinyal paling hulu") | **SUDAH DISAMBUNG** lewat `devkode.py`: taksonomi Electric Capital (open-dev-data) + GitHub API, keduanya gratis. Santiment `dev_activity` tetap dipakai sebagai pembanding |
 | 2 Funding VC | CryptoRank, Galaxy Research ("mendahului ritel 6-12 bulan"); ChainBroker disebut lisan | CryptoRank & ChainBroker: **web gratis, API berkunci** · Galaxy: laporan web |
 | 3 Mindshare | Kaito AI, Cookie.fun, LunarCrush, Santiment | **Tidak ada yang gratis untuk data terkini.** Kaito/LunarCrush berbayar; social volume Santiment gratis tapi rentang terbarunya ditolak. Pengganti: CoinGecko trending, Wikipedia pageviews, grup Telegram user |
 | 4 Data on-chain | DefiLlama, Token Terminal, Dune, Nansen, rwa.xyz | **DefiLlama fees/revenue/TVL gratis** · Token Terminal & Nansen berbayar · Dune butuh kunci (akun gratis) · rwa.xyz web |
 | 5 Katalis regulasi | GENIUS Act, CLARITY Act, persetujuan ETF, kebijakan Fed | Google News RSS gratis · kalender makro bot |
 | 6 Airdrop & testnet | farming, Kaito Yaps | web |
+
+### Yang SUDAH tersambung ke kode (16 Sep 2026)
+
+| apa | modul | catatan penting |
+|---|---|---|
+| Aktivitas developer | `devkode.py` | Repo dipilih **lintas organisasi**, yang paling baru di-push. Repo tunjukan CoinGecko bisa sudah mati: untuk TAO ia menunjuk `opentensor/bittensor` (0 commit/8 minggu) padahal kerjanya pindah ke `RaoFoundation/subtensor` (367) |
+| Altcoin season index | `musim.py` | 30 hari dihitung sendiri, 90 hari dari blockchaincenter, saling diperiksa tiap run |
+| Listing tier-1 | `naratif.py` | Hanya **ada/tidaknya** listing + porsi volumenya. **Tanggal** listing tidak ada di sumber gratis, padahal sinyal distribusinya adalah listing yang BARU |
+
+Sinyal distribusi yang masih kosong: **saturasi influencer** (butuh data X/Twitter berbayar)
+dan **Google Trends** (menolak akses dari server; diganti Wikipedia pageviews).
 
 Unlock (langkah 4): video memakai **Tokenomist** dan CoinMarketCap. **Tidak ada API unlock
 yang gratis** — DefiLlama unlocks membalas 402, Tokenomist & CryptoRank berkunci. Periksa di

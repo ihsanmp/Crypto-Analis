@@ -727,6 +727,19 @@ diperiksa di web (tokenomist.ai / defillama.com/unlocks), katakan belum diperiks
 
 **Sinyal distribusi (makin banyak menyala, makin dekat puncak):** funding ekstrem, OI puncak,
 listing tier-1, liputan mainstream, saturasi influencer, Google Trends puncak.
+- Yang TERUKUR di data: funding & OI (derivatif.py, coinalyze.py), listing tier-1 dan liputan
+  berita (blok naratif). Listing tier-1 hanya menunjukkan **ada/tidaknya** listing, bukan
+  listing BARU — jangan sebut "baru listing" kalau datanya cuma menyebut bursanya.
+- Yang TIDAK ada sumbernya: **saturasi influencer** dan **Google Trends**. Kalau menyebut
+  keduanya, sebut juga bahwa itu belum diperiksa.
+
+**Aktivitas developer (`developer_github`)** menjawab aturan invalidasi ke-3. Kalau trennya
+**melemah**, itu alasan sah menurunkan skor tim & VC — sebutkan repo dan angkanya. Repo yang
+ditunjuk CoinGecko sering sudah ditinggalkan, jadi pakai yang dari blok ini, bukan tebakan.
+
+**Musim altcoin (`musim.py`):** angka **90 hari** adalah terbitan blockchaincenter; angka
+**30 hari** dihitung sendiri dari harga. Sebut yang mana yang kamu kutip, jangan tukar. Kalau
+`periksa_silang.cocok` bernilai false, angka 90 harinya sedang meragukan — katakan begitu.
 
 **Risiko (ucapan mentor mengalahkan slide):** core **BTC 60-80%** (ETH dicoret) · naratif
 **maks 15%** · stablecoin **setidaknya 30%** · satu altcoin maks 5% · **RPT 1%** (slide 1-2%,

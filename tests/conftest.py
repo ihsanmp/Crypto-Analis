@@ -53,8 +53,27 @@ def _alihkan_cache_sec():
     os.environ["CACHE_DIR_SEC"] = d
 
 
+def _alihkan_cache_lain():
+    """Cache musim.py dan devkode.py juga diarahkan ke tmp.
+
+    Keduanya menulis begitu isinya kedaluwarsa, tanpa ada tes yang sengaja memanggilnya:
+    cukup satu tes yang menjalankan naratif.py ujung-ke-ujung. Disalin, bukan dikosongkan,
+    supaya tes tidak malah memicu pengambilan jaringan yang sudah diblokir.
+    """
+    import shutil
+    import tempfile
+    for nama_env, berkas in (("CACHE_DIR_MUSIM", "musim_cache.json"),
+                             ("CACHE_DIR_EKO", "eko_repos.json")):
+        d = tempfile.mkdtemp(prefix=nama_env.lower() + "_")
+        asal = os.path.join(DATA, berkas)
+        if os.path.exists(asal):
+            shutil.copyfile(asal, os.path.join(d, berkas))
+        os.environ[nama_env] = d
+
+
 def pytest_sessionstart(session):
     _alihkan_cache_sec()
+    _alihkan_cache_lain()
     _sidik.update(_sidik_data())
 
 

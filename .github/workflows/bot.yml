@@ -44,6 +44,9 @@ jobs:
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       COINGLASS_API_KEY: ${{ secrets.COINGLASS_API_KEY }}
       COINMARKETCAP_API_KEY: ${{ secrets.COINMARKETCAP_API_KEY }}
+      # Token bawaan Actions: menaikkan batas GitHub API dari 60/jam jadi 5.000/jam untuk
+      # devkode.py. Tanpa ini aktivitas developer sering gagal terbaca di tengah jalan.
+      GITHUB_TOKEN: ${{ github.token }}
       COINALYZE_API_KEY: ${{ secrets.COINALYZE_API_KEY }}
       # Untuk holder/wallet multi-chain (BSC, Base, Arbitrum, Solana, dll) via cloud/
       # investors.py & wallet.py. GRATIS — daftar di moralis.com. Kalau kosong, chain
@@ -249,13 +252,13 @@ jobs:
       - name: Simpan ingatan terverifikasi
         if: always() && (github.event_name == 'repository_dispatch' || steps.check.outputs.has_work == 'true')
         run: |
-          if [ -z "$(git status --porcelain cloud/data/memori.jsonl cloud/data/diproses.json cloud/data/percakapan.json cloud/data/kalender_cache.json cloud/data/rapor.jsonl cloud/data/sec_tickers_cache.json.gz cloud/data/kejutan_cache.json cloud/data/ppi_cache.json cloud/data/jadwal_cache.json cloud/data/arsip_konsensus.jsonl cloud/data/sosovalue_riwayat.json cloud/data/derivatif_arsip.jsonl cloud/data/tg_batas.json cloud/data/masukan.jsonl)" ]; then
+          if [ -z "$(git status --porcelain cloud/data/memori.jsonl cloud/data/diproses.json cloud/data/percakapan.json cloud/data/kalender_cache.json cloud/data/rapor.jsonl cloud/data/sec_tickers_cache.json.gz cloud/data/kejutan_cache.json cloud/data/ppi_cache.json cloud/data/jadwal_cache.json cloud/data/arsip_konsensus.jsonl cloud/data/sosovalue_riwayat.json cloud/data/derivatif_arsip.jsonl cloud/data/tg_batas.json cloud/data/masukan.jsonl cloud/data/musim_cache.json cloud/data/eko_repos.json)" ]; then
             echo "tidak ada ingatan baru — lewati commit"
             exit 0
           fi
           git config user.name "crypto-analis-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add cloud/data/memori.jsonl cloud/data/diproses.json cloud/data/percakapan.json cloud/data/kalender_cache.json cloud/data/rapor.jsonl cloud/data/sec_tickers_cache.json.gz cloud/data/kejutan_cache.json cloud/data/ppi_cache.json cloud/data/jadwal_cache.json cloud/data/arsip_konsensus.jsonl cloud/data/sosovalue_riwayat.json cloud/data/derivatif_arsip.jsonl cloud/data/tg_batas.json cloud/data/masukan.jsonl
+          git add cloud/data/memori.jsonl cloud/data/diproses.json cloud/data/percakapan.json cloud/data/kalender_cache.json cloud/data/rapor.jsonl cloud/data/sec_tickers_cache.json.gz cloud/data/kejutan_cache.json cloud/data/ppi_cache.json cloud/data/jadwal_cache.json cloud/data/arsip_konsensus.jsonl cloud/data/sosovalue_riwayat.json cloud/data/derivatif_arsip.jsonl cloud/data/tg_batas.json cloud/data/masukan.jsonl cloud/data/musim_cache.json cloud/data/eko_repos.json
           git commit -m "Ingatan, jejak pesan & riwayat percakapan dari run ${GITHUB_RUN_ID}"
           # Run lain bisa menambah commit lebih dulu; rebase supaya tidak saling menimpa.
           for i in 1 2 3; do
