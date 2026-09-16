@@ -218,3 +218,23 @@ def test_tiket_basi_dibuang():
 def test_tanpa_tiket_mengembalikan_none():
     assert naratif.ringkas_tickers([]) is None
     assert naratif.ringkas_tickers(None) is None
+
+
+def test_push_terbaru_dari_repo_terbaru(monkeypatch):
+    """REGRESI: "push terbaru di ekosistem" harus tanggal repo TERBARU, bukan repo pertama
+    yang kebetulan dikembalikan organisasi pertama.
+
+    Ketahuan saat uji live: dilaporkan 2026-05-07 padahal repo teratasnya di-push
+    2026-09-16. Penyebabnya pilih_repo mengembalikan SALINAN terurut, sedangkan kolam
+    aslinya tidak pernah ikut terurut — tanggal yang dilaporkan jadi acak, dan tetap masuk
+    akal dibaca, jadi tidak ada yang curiga. Diuji lewat aktivitas(), bukan lewat
+    pilih_repo: yang salah dulu pemanggilnya, bukan pengurutannya.
+    """
+    isi = {"besar": [{"penuh": "besar/lama", "push": "2026-05-07T10:00:00Z"}],
+           "kecil": [{"penuh": "kecil/baru", "push": "2026-09-16T02:58:20Z"}]}
+    monkeypatch.setattr(devkode, "_repo_org", lambda org: isi.get(org, []))
+    monkeypatch.setattr(devkode, "_mingguan", lambda penuh, ulang=1: [1] * 52)
+    h = devkode.aktivitas(["besar", "kecil"])
+    assert h["push_terbaru_di_ekosistem"] == "2026-09-16"
+    assert h["repo_dipantau"][0]["repo"] in ("besar/lama", "kecil/baru")
+    assert h["n_repo_dilihat"] == 2

@@ -356,7 +356,11 @@ def aktivitas(orgs):
             "commit_per_minggu_12_minggu_sebelumnya": round(lama, 1),
             "tren": tren,
             "n_repo_dilihat": len(kolam),
-            "push_terbaru_di_ekosistem": kolam[0]["push"][:10],
+            # Dari `pilih`, yang SUDAH terurut — bukan dari `kolam`, yang tidak pernah
+            # diurutkan (pilih_repo mengembalikan salinan). Versi sebelumnya melaporkan
+            # tanggal repo pertama yang kebetulan dikembalikan organisasi pertama: 2026-05-07
+            # dilaporkan sebagai "push terbaru" padahal repo teratasnya di-push 2026-09-16.
+            "push_terbaru_di_ekosistem": pilih[0]["push"][:10],
             "repo_dipantau": sorted(dipakai, key=lambda x: -x["commit_4_minggu"])}
 
 
