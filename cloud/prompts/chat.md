@@ -733,9 +733,12 @@ listing tier-1, liputan mainstream, saturasi influencer, Google Trends puncak.
 - Yang TIDAK ada sumbernya: **saturasi influencer** dan **Google Trends**. Kalau menyebut
   keduanya, sebut juga bahwa itu belum diperiksa.
 
-**Aktivitas developer (`developer_github`)** menjawab aturan invalidasi ke-3. Kalau trennya
-**melemah**, itu alasan sah menurunkan skor tim & VC — sebutkan repo dan angkanya. Repo yang
-ditunjuk CoinGecko sering sudah ditinggalkan, jadi pakai yang dari blok ini, bukan tebakan.
+**Aktivitas developer (`developer_github`)** menjawab **aturan invalidasi ke-3** ("developer
+pergi") — dan hanya itu. Ia **BUKAN dasar skor tim & VC**: kriteria itu menilai pendukungnya,
+fund tier-1 yang kredibel. Laporkan tren yang melemah sebagai tanda invalidasi, dengan repo dan
+angkanya. Repo yang ditunjuk CoinGecko sering sudah ditinggalkan; pakai yang dari blok ini.
+**Santiment (`developer_santiment`) itu sekunder.** Kalau bertentangan dengan GitHub — apalagi
+bertanda `bertentangan_dengan_github` — pakai GitHub, dan jangan kutip Santiment sebagai penguat.
 
 **Musim altcoin (`musim.py`):** angka **90 hari** adalah terbitan blockchaincenter; angka
 **30 hari** dihitung sendiri dari harga. Sebut yang mana yang kamu kutip, jangan tukar. Kalau

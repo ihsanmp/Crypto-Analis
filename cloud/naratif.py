@@ -245,6 +245,34 @@ def dev_activity(slug):
             "tren": tren}
 
 
+def bandingkan_santiment(santiment, github):
+    """Santiment turun jadi SEKUNDER saat GitHub langsung tersedia, dan DITANDAI bertentangan
+    saat ia melaporkan nol sementara GitHub mencatat commit.
+
+    Bukan dugaan. 16 Sep 2026 untuk TAO: Santiment nol, GitHub langsung ~70 commit/minggu di
+    RaoFoundation/subtensor — Santiment melacak repo opentensor yang sudah ditinggalkan. Lalu
+    di run 35185856360 model tetap mengutip "skor dev Santiment turun 32 -> 0" sebagai PENGUAT
+    kesimpulan developer melemah. Instruksi prompt saja tidak mencegahnya; tandanya harus ada
+    di datanya.
+    """
+    if not santiment:
+        return santiment
+    hasil = dict(santiment)
+    if not github:
+        return hasil
+    hasil["peran"] = "sekunder — GitHub langsung tersedia; kalau berbeda, pakai GitHub"
+    commit_gh = github.get("commit_per_minggu_4_minggu") or 0
+    if (santiment.get("rata_4_minggu") or 0) == 0 and commit_gh > 0:
+        hasil["bertentangan_dengan_github"] = True
+        hasil["catatan"] = (f"Santiment melaporkan NOL, padahal GitHub langsung mencatat "
+                            f"{commit_gh} commit/minggu. Santiment kemungkinan melacak repo yang "
+                            "sudah ditinggalkan. JANGAN dikutip sebagai bukti apa pun.")
+    elif santiment.get("tren") and github.get("tren") and santiment["tren"] != github["tren"]:
+        hasil["catatan"] = (f"Tren Santiment ({santiment['tren']}) berbeda dari GitHub langsung "
+                            f"({github['tren']}). Pakai GitHub.")
+    return hasil
+
+
 def pageviews(judul):
     """Wikipedia pageviews — pengganti Google Trends yang menolak akses dari server (429)."""
     akhir = datetime.now(timezone.utc) - timedelta(days=1)
@@ -436,13 +464,15 @@ def analisa(simbol, cg_id=None):
         "tam": {"skor": None, "dinilai": True, "data": {"kategori_coingecko": cg["kategori"][:5]},
                 "sumber_disarankan": "python cloud/kategori.py --cari <sektor> (kapitalisasi "
                                      "sektor, gratis)"},
+        # Data developer SENGAJA tidak ditaruh di sini. Versi sebelumnya menaruhnya di
+        # tim_vc.data, dan model di run 35185856360 menilai "Tim & VC: 2" hanya dari commit
+        # yang melemah — padahal pertanyaan kriteria ini di slide adalah soal PENDUKUNG.
         "tim_vc": {"skor": None, "dinilai": True,
-                   "data": {"aktivitas_developer": (devkode_hasil or {}).get("github"),
-                            "ekosistem_electric_capital":
-                                (devkode_hasil or {}).get("ekosistem_electric_capital")},
+                   "catatan": "Kriteria ini tentang PENDUKUNG: didukung fund tier-1 yang kredibel? "
+                              "(slide video). Aktivitas developer BUKAN dasarnya — itu ada di "
+                              "developer_github dan dipakai untuk aturan invalidasi ke-3.",
                    "sumber_disarankan": "cryptorank.io & chainbroker.io (web gratis, API "
-                                        "berkunci) untuk daftar VC-nya. Aktivitas developer "
-                                        "di sini sudah dari GitHub langsung (devkode.py)."},
+                                        "berkunci) untuk daftar VC-nya."},
         "timing": {"skor": None, "dinilai": True,
                    "data": {"jarak_dari_ath_persen": round((1 - cg["harga"] / cg["ath"]) * 100, 1)
                             if cg["harga"] and cg["ath"] else None,
@@ -470,7 +500,7 @@ def analisa(simbol, cg_id=None):
             "catatan": f"Rata-rata tertimbang dari {len(terukur)} kriteria yang diukur kode "
                        f"(cakupan {bobot_terukur}% bobot). BUKAN skor akhir — skor akhir butuh "
                        f"ketujuh kriteria."},
-        "developer_santiment": dev,
+        "developer_santiment": bandingkan_santiment(dev, (devkode_hasil or {}).get("github")),
         "developer_github": devkode_hasil,
         "sinyal_distribusi": {
             "listing_tier1": bursa,
@@ -497,9 +527,11 @@ WAJIB_DIBACA = (
     "VC N · Likuiditas N · Timing siklus N · Revenue N' lalu 'Skor tertimbang X,XX'. "
     "Ambang 1-5 untuk tiga kriteria terukur adalah milik alat ini, BUKAN dari video. "
     "Jadwal unlock tidak punya sumber gratis — sebutkan bahwa itu belum diperiksa. "
-    "Aktivitas developer di 'developer_github' dihitung dari commit GitHub repo ekosistem "
-    "(aturan invalidasi ke-3); kalau tren-nya 'melemah', itu alasan mengurangi skor tim & VC, "
-    "dan sebutkan repo mana yang jadi dasarnya. Indeks musim altcoin: angka 90 hari adalah "
+    "Aktivitas developer di 'developer_github' (commit GitHub repo ekosistem) dipakai untuk "
+    "ATURAN INVALIDASI ke-3 'developer pergi' — BUKAN untuk skor tim & VC, yang menilai "
+    "pendukungnya (fund tier-1). Sebutkan repo yang jadi dasarnya. 'developer_santiment' itu "
+    "sekunder: kalau bertentangan dengan GitHub, pakai GitHub dan jangan kutip Santiment "
+    "sebagai penguat. Indeks musim altcoin: angka 90 hari adalah "
     "TERBITAN blockchaincenter, yang 30 hari DIHITUNG SENDIRI — jangan tukar keduanya. "
     "Listing tier-1 hanya menunjukkan ADA/TIDAKNYA listing, bukan listing BARU, jadi ia "
     "belum cukup untuk menyebut fase distribusi sendirian.")

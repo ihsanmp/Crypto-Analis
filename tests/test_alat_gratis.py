@@ -429,3 +429,91 @@ def test_bot_meneruskan_cg_id_ke_naratif(monkeypatch):
                         lambda label, args, min_kar=0: dijalankan.append(args) or ("{}", None))
     bot.data_naratif("TAO")
     assert dijalankan[0][-2:] == ["--cg-id", "bittensor"]
+
+
+# ---------------------------------------------------------------- tim & VC vs developer
+#
+# Run 35185856360 (17 Sep 2026): model menilai "Tim & VC: 2 — aktivitas dev MELEMAH", padahal
+# pertanyaan kriteria itu di slide adalah "didukung fund tier-1 yang kredibel?". Dan ia
+# mengutip "skor dev Santiment turun 32 -> 0" sebagai penguat, padahal sehari sebelumnya
+# terbukti Santiment melacak repo yang sudah ditinggalkan. Keduanya bersumber dari alat ini
+# sendiri: data developer ditaruh DI DALAM tim_vc, dan prompt menyebutnya alasan menurunkan skor.
+
+import re       # noqa: E402
+
+GH_TAO = {"commit_per_minggu_4_minggu": 79.0, "commit_per_minggu_12_minggu_sebelumnya": 151.0,
+          "tren": "melemah"}
+
+
+def test_santiment_nol_padahal_github_aktif_ditandai_bertentangan():
+    """Angka nyata run 35185856360: Santiment 32 -> 0, GitHub 79 commit/minggu."""
+    s = naratif.bandingkan_santiment(
+        {"rata_4_minggu": 0.0, "rata_12_minggu_sebelumnya": 32.0, "tren": "melemah"}, GH_TAO)
+    assert s["bertentangan_dengan_github"] is True
+    assert "JANGAN" in s["catatan"] and "79" in s["catatan"]
+
+
+def test_santiment_sejalan_tetap_sekunder_tanpa_tanda_konflik():
+    s = naratif.bandingkan_santiment(
+        {"rata_4_minggu": 40.0, "rata_12_minggu_sebelumnya": 80.0, "tren": "melemah"}, GH_TAO)
+    assert "bertentangan_dengan_github" not in s
+    assert s["peran"].startswith("sekunder")
+
+
+def test_santiment_tren_berbeda_diberi_catatan():
+    s = naratif.bandingkan_santiment(
+        {"rata_4_minggu": 60.0, "rata_12_minggu_sebelumnya": 20.0, "tren": "menguat"}, GH_TAO)
+    assert "bertentangan_dengan_github" not in s
+    assert "Pakai GitHub" in s["catatan"]
+
+
+def test_santiment_tanpa_github_tidak_diturunkan():
+    """Tanpa GitHub, Santiment satu-satunya sumber — jangan diberi label sekunder palsu."""
+    asli = {"rata_4_minggu": 5.0, "rata_12_minggu_sebelumnya": 5.0, "tren": "stabil"}
+    assert naratif.bandingkan_santiment(asli, None) == asli
+
+
+def _cg_palsu():
+    return {"nama": "Bittensor", "peringkat": 40, "beredar": 11.34e6, "maks": 21e6,
+            "total": 21e6, "mcap": 2.55e9, "fdv": 4.7e9, "volume": 1.87e8, "harga": 263.0,
+            "ath": 767.0, "ubah_30h": 17.0, "ubah_1thn": -40.0, "kategori": ["AI"],
+            "repo": [], "tickers": []}
+
+
+def test_tim_vc_tidak_berisi_data_developer(monkeypatch):
+    monkeypatch.setattr(naratif, "coingecko", lambda cg_id: _cg_palsu())
+    monkeypatch.setattr(naratif, "trending_ids", lambda: set())
+    monkeypatch.setattr(naratif, "dev_activity",
+                        lambda slug: {"rata_4_minggu": 0.0, "rata_12_minggu_sebelumnya": 32.0,
+                                      "tren": "melemah"})
+    monkeypatch.setattr(naratif, "revenue_1thn", lambda s: None)
+    monkeypatch.setattr(naratif, "data_musim", lambda: None)
+    monkeypatch.setattr(naratif, "pageviews", lambda j: None)
+    monkeypatch.setattr(naratif, "berita_7_hari", lambda n: 37)
+    monkeypatch.setattr(naratif, "data_devkode", lambda s, n, r: {"github": GH_TAO})
+    h = naratif.analisa("TAO", cg_id="bittensor")
+    tim_vc = h["kriteria"]["tim_vc"]
+    teks = str(tim_vc)
+    assert "commit" not in teks and "aktivitas_developer" not in teks
+    assert "PENDUKUNG" in tim_vc["catatan"]
+    # Data developer tetap ada — di tempatnya sendiri.
+    assert h["developer_github"] == {"github": GH_TAO}
+    assert h["developer_santiment"]["bertentangan_dengan_github"] is True
+
+
+_MENGAITKAN_DEV_KE_TIM = re.compile(r"(menurunkan|mengurangi) skor tim", re.I)
+
+
+def test_wajib_dibaca_tidak_mengaitkan_developer_ke_skor_tim():
+    assert not _MENGAITKAN_DEV_KE_TIM.search(naratif.WAJIB_DIBACA)
+    assert "BUKAN untuk skor tim & VC" in naratif.WAJIB_DIBACA
+    assert "invalidasi" in naratif.WAJIB_DIBACA.lower()
+
+
+def test_prompt_chat_tidak_mengaitkan_developer_ke_skor_tim():
+    teks = open(os.path.join(AKAR, "cloud", "prompts", "chat.md"), encoding="utf-8").read()
+    i = teks.index("BLOK: naratif-mentor")
+    blok = teks[i:teks.find("<!-- BLOK:", i + 10) if "<!-- BLOK:" in teks[i + 10:] else None]
+    assert not _MENGAITKAN_DEV_KE_TIM.search(blok)
+    assert "BUKAN dasar skor tim & VC" in blok
+    assert "bertentangan_dengan_github" in blok
