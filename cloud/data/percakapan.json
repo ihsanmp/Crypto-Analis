@@ -168,5 +168,13 @@
   "pesan": "skor naratif TAO",
   "balasan": "🕒 Data per 17 September 2026, 10:41 WIB\n\nSkor naratif #Kalimasada TAO nggak bisa dihitung lengkap kali ini — naratif.py gagal narik data CoinGecko-nya sendiri (kemungkinan kena limit request), jadi tokenomics, likuiditas, listing tier-1, timing siklu\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+1 lainnya)",
   "angka_kunci": []
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1789623024.0040174,
+  "waktu_utc": "2026-09-17 05:30",
+  "pesan": "skor naratif TAO",
+  "balasan": "Skor naratif #Kalimasada TAO sekarang bisa dihitung — data CoinGecko sudah kebaca (percobaan 2 jam lalu gagal karena limit request). Ini per data 17 Sep 2026, 12:29 WIB:\n\n• Katalis: 2 — cuma ada volume berita (37 dalam 7 hari), tanpa event konkret (l\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+2 lainnya)",
+  "angka_kunci": []
  }
 ]
