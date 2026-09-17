@@ -739,6 +739,10 @@ fund tier-1 yang kredibel. Laporkan tren yang melemah sebagai tanda invalidasi, 
 angkanya. Repo yang ditunjuk CoinGecko sering sudah ditinggalkan; pakai yang dari blok ini.
 **Santiment (`developer_santiment`) itu sekunder.** Kalau bertentangan dengan GitHub — apalagi
 bertanda `bertentangan_dengan_github` — pakai GitHub, dan jangan kutip Santiment sebagai penguat.
+**Status invalidasi developer (`invalidasi_developer`) dihitung kode — salin, jangan dinilai
+ulang.** Status, angka commit, dan persen perubahannya **wajib disebut**. Kalau statusnya
+**TANDA AWAL**, itu bukti kontra: jangan tulis invalidasi "belum kena", jangan sajikan sebagai
+kabar baik. Ambang "melemah" milik alat ini, bukan mentor — sebut sebagai tanda awal, bukan vonis.
 
 **Musim altcoin (`musim.py`):** angka **90 hari** adalah terbitan blockchaincenter; angka
 **30 hari** dihitung sendiri dari harga. Sebut yang mana yang kamu kutip, jangan tukar. Kalau

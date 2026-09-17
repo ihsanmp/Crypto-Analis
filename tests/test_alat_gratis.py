@@ -517,3 +517,107 @@ def test_prompt_chat_tidak_mengaitkan_developer_ke_skor_tim():
     assert not _MENGAITKAN_DEV_KE_TIM.search(blok)
     assert "BUKAN dasar skor tim & VC" in blok
     assert "bertentangan_dengan_github" in blok
+
+
+# ---------------------------------------------------------------- invalidasi developer
+#
+# Run 35186837828: data berstatus melemah (151 -> 79 commit/minggu, -48%), tapi balasannya
+# menulis "developer masih aktif (78,8 commit/minggu di RaoFoundation/subtensor), jadi
+# invalidasi 'developer pergi' belum kena" — tanpa menyebut trennya, di bagian bukti kontra.
+
+GH_MELEMAH = {"commit_per_minggu_4_minggu": 78.8, "commit_per_minggu_12_minggu_sebelumnya": 151.2,
+              "tren": "melemah"}
+KALIMAT_TAO = ('Sisi baiknya: developer masih aktif (78,8 commit/minggu di RaoFoundation/subtensor), '
+               'jadi invalidasi "developer pergi" belum kena — abaikan Santiment yang bilang nol.')
+
+
+def test_status_invalidasi_melemah_adalah_tanda_awal_dengan_angka():
+    s = naratif.status_invalidasi_developer(GH_MELEMAH)
+    assert s["status"].startswith("TANDA AWAL")
+    assert s["perubahan_persen"] == -48
+    assert s["commit_per_minggu"] == "151.2 -> 78.8"
+    assert "30%" in s["ambang"] and "BUKAN dari mentor" in s["ambang"]
+
+
+@pytest.mark.parametrize("tren", ["stabil", "menguat"])
+def test_status_invalidasi_tanpa_tanda(tren):
+    s = naratif.status_invalidasi_developer(dict(GH_MELEMAH, tren=tren))
+    assert s["status"] == f"tidak ada tanda — aktivitas {tren}"
+
+
+def test_status_invalidasi_tanpa_github():
+    assert naratif.status_invalidasi_developer(None) is None
+    assert naratif.status_invalidasi_developer({"tren": None}) is None
+
+
+@pytest.mark.parametrize("rasio,harap", [(0.69, "melemah"), (0.71, "stabil"),
+                                         (1.29, "stabil"), (1.31, "menguat")])
+def test_ambang_tren_devkode(monkeypatch, rasio, harap):
+    """Teks ambang yang dilihat model dibaca dari konstanta yang SAMA dengan yang dipakai."""
+    minggu = [0] * 36 + [100] * 12 + [round(100 * rasio)] * 4
+    monkeypatch.setattr(devkode, "_repo_org", lambda org: [{"penuh": "a/b", "push": "2026-09-16"}])
+    monkeypatch.setattr(devkode, "_mingguan", lambda penuh, ulang=1: minggu)
+    assert devkode.aktivitas(["a"])["tren"] == harap
+
+
+def _brief_naratif(status):
+    import json
+    import bot_oneshot as bot
+    data = {"koin": "TAO", "kriteria": {}, "invalidasi_developer": status}
+    return f"{bot.PENANDA_NARATIF} (naratif.py) — TAO\n" + json.dumps(data)
+
+
+def test_audit_mengoreksi_kalimat_tao_yang_menyangkal_invalidasi():
+    import bot_oneshot as bot
+    body = "Skor naratif TAO ...\n\n" + KALIMAT_TAO + "\n\n🔗 Sumber: CoinGecko"
+    baru, catatan = bot.audit_invalidasi_developer(
+        body, _brief_naratif(naratif.status_invalidasi_developer(GH_MELEMAH)))
+    assert catatan == ["invalidasi developer disangkal"]
+    assert "TANDA AWAL" in baru and "−48%" in baru and "151.2 -> 78.8" in baru
+    assert "TIDAK sesuai data" in baru
+    # Koreksi muncul SEBELUM baris sumber, bukan setelahnya.
+    assert baru.index("TANDA AWAL") < baru.index("🔗 Sumber")
+    assert KALIMAT_TAO in baru        # kalimat asli tidak ditulis ulang
+
+
+def test_audit_mengoreksi_saat_tren_tidak_disebut_sama_sekali():
+    import bot_oneshot as bot
+    body = "Developer aktif, 78,8 commit/minggu. Tokenomics 3."
+    baru, catatan = bot.audit_invalidasi_developer(
+        body, _brief_naratif(naratif.status_invalidasi_developer(GH_MELEMAH)))
+    assert catatan == ["tren developer tidak disebut"]
+    assert "TIDAK sesuai data" not in baru
+
+
+def test_audit_diam_saat_balasan_sudah_benar():
+    import bot_oneshot as bot
+    body = ("Aktivitas developer melemah: 151 -> 79 commit/minggu (−48%) — tanda awal "
+            "invalidasi ke-3, bukan vonis.")
+    baru, catatan = bot.audit_invalidasi_developer(
+        body, _brief_naratif(naratif.status_invalidasi_developer(GH_MELEMAH)))
+    assert (baru, catatan) == (body, [])
+
+
+def test_audit_diam_saat_developer_stabil():
+    import bot_oneshot as bot
+    status = naratif.status_invalidasi_developer(dict(GH_MELEMAH, tren="stabil"))
+    baru, catatan = bot.audit_invalidasi_developer(KALIMAT_TAO, _brief_naratif(status))
+    assert (baru, catatan) == (KALIMAT_TAO, [])
+
+
+def test_audit_diam_tanpa_blok_naratif():
+    import bot_oneshot as bot
+    assert bot.audit_invalidasi_developer(KALIMAT_TAO, "brief tanpa naratif") == (KALIMAT_TAO, [])
+
+
+def test_audit_invalidasi_dipanggil_di_jalur_balasan():
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    i = src.index("body, _koreksi_naratif = audit_skor_naratif(body, brief)")
+    assert "audit_invalidasi_developer(body, brief)" in src[i:i + 200]
+
+
+def test_prompt_mewajibkan_tren_dan_melarang_belum_kena():
+    teks = open(os.path.join(AKAR, "cloud", "prompts", "chat.md"), encoding="utf-8").read()
+    blok = teks[teks.index("BLOK: naratif-mentor"):]
+    assert "TANDA AWAL" in blok and "belum kena" in blok and "wajib disebut" in blok
+    assert "TANDA AWAL" in naratif.WAJIB_DIBACA

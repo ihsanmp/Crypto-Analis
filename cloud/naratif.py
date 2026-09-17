@@ -273,6 +273,43 @@ def bandingkan_santiment(santiment, github):
     return hasil
 
 
+def status_invalidasi_developer(github):
+    """Status aturan invalidasi ke-3 ("developer pergi"), DIHITUNG KODE dari tren GitHub.
+
+    Kenapa statusnya dihitung di sini, bukan dinilai model: run 35186837828 menulis
+    "developer masih aktif (78,8 commit/minggu), jadi invalidasi 'developer pergi' belum
+    kena" — tanpa menyebut bahwa trennya melemah 48% (151 -> 79/minggu), dan justru di
+    bagian bukti kontra. Bunyi aturan mentor adalah "aktivitas melemah". Model yang
+    menilainya sendiri menyajikan satu bukti kontra nyata sebagai kabar baik.
+
+    "TANDA AWAL", bukan "invalidasi terpicu": ambang turunnya milik alat ini, bukan dari
+    mentor, jadi statusnya tidak boleh terdengar seperti vonis.
+    """
+    if not github or not github.get("tren"):
+        return None
+    baru = github.get("commit_per_minggu_4_minggu")
+    lama = github.get("commit_per_minggu_12_minggu_sebelumnya")
+    ubah = round((baru / lama - 1) * 100) if lama and baru is not None else None
+    try:
+        import devkode
+        batas_turun = round((1 - devkode.AMBANG_MELEMAH) * 100)
+    except Exception:
+        batas_turun = 30
+    tren = github["tren"]
+    return {
+        "status": ("TANDA AWAL — aktivitas melemah" if tren == "melemah"
+                   else f"tidak ada tanda — aktivitas {tren}"),
+        "commit_per_minggu": f"{lama} -> {baru}",
+        "perubahan_persen": ubah,
+        "aturan": "Invalidasi ke-3 kerangka mentor: developer pergi — aktivitas melemah.",
+        "ambang": (f"'melemah' = turun lebih dari {batas_turun}% (rata-rata 4 minggu terakhir "
+                   f"vs 12 minggu sebelumnya). Ambang ini milik alat ini, BUKAN dari mentor."),
+        "wajib": ("Sebut status, angka commit, dan persen perubahannya. Saat statusnya TANDA "
+                  "AWAL, itu bukti kontra: jangan menulis invalidasi 'belum kena' dan jangan "
+                  "menyajikannya sebagai kabar baik."),
+    }
+
+
 def pageviews(judul):
     """Wikipedia pageviews — pengganti Google Trends yang menolak akses dari server (429)."""
     akhir = datetime.now(timezone.utc) - timedelta(days=1)
@@ -502,6 +539,7 @@ def analisa(simbol, cg_id=None):
                        f"ketujuh kriteria."},
         "developer_santiment": bandingkan_santiment(dev, (devkode_hasil or {}).get("github")),
         "developer_github": devkode_hasil,
+        "invalidasi_developer": status_invalidasi_developer((devkode_hasil or {}).get("github")),
         "sinyal_distribusi": {
             "listing_tier1": bursa,
             "musim_altcoin": musim_alt,
@@ -531,7 +569,9 @@ WAJIB_DIBACA = (
     "ATURAN INVALIDASI ke-3 'developer pergi' — BUKAN untuk skor tim & VC, yang menilai "
     "pendukungnya (fund tier-1). Sebutkan repo yang jadi dasarnya. 'developer_santiment' itu "
     "sekunder: kalau bertentangan dengan GitHub, pakai GitHub dan jangan kutip Santiment "
-    "sebagai penguat. Indeks musim altcoin: angka 90 hari adalah "
+    "sebagai penguat. 'invalidasi_developer' WAJIB dilaporkan dengan status, angka commit, dan "
+    "persen perubahannya; saat statusnya TANDA AWAL jangan menulis invalidasi 'belum kena'. "
+    "Indeks musim altcoin: angka 90 hari adalah "
     "TERBITAN blockchaincenter, yang 30 hari DIHITUNG SENDIRI — jangan tukar keduanya. "
     "Listing tier-1 hanya menunjukkan ADA/TIDAKNYA listing, bukan listing BARU, jadi ia "
     "belum cukup untuk menyebut fase distribusi sendirian.")

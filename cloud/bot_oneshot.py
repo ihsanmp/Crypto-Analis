@@ -4079,6 +4079,7 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
         if langgar:
             body, langgar = perbaiki_masukan(body, langgar)
         body, _koreksi_naratif = audit_skor_naratif(body, brief)
+        body, _koreksi_dev = audit_invalidasi_developer(body, brief)
         hitung = audit_hitung(body, imbalan)
         if hitung:
             print(f"[audit] SALAH HITUNG: {hitung}", file=sys.stderr)
@@ -4363,6 +4364,62 @@ def audit_skor_naratif(body, brief=None):
                 break
     if catatan:
         print(f"[naratif] skor DIBETULKAN kode: {'; '.join(catatan)}", file=sys.stderr)
+    return baru, catatan
+
+
+# Kalimat yang menyimpulkan invalidasi developer TIDAK terpicu. Dicari hanya bila datanya
+# berstatus TANDA AWAL — di luar itu kalimat seperti ini memang benar.
+_RE_INVALIDASI_DISANGKAL = re.compile(
+    r"invalidasi[^.\n]{0,90}?\b(belum|tidak|bukan)\s+(kena|terkena|terpicu|berlaku|tersentuh|aktif)"
+    r"|\b(belum|tidak)\s+(kena|terkena|terpicu)[^.\n]{0,60}?invalidasi", re.I)
+_RE_KONTEKS_DEV = re.compile(r"developer|commit|\bdev\b", re.I)
+
+
+def _data_naratif_dari_brief(brief):
+    if not brief or PENANDA_NARATIF not in brief:
+        return None
+    try:
+        return json.loads(brief.split(PENANDA_NARATIF, 1)[1].split(NL, 2)[1])
+    except (IndexError, ValueError, TypeError):
+        return None
+
+
+def audit_invalidasi_developer(body, brief=None):
+    """Tegakkan status invalidasi developer yang DIHITUNG KODE. Return (body_baru, catatan).
+
+    Run 35186837828: data berstatus melemah (151 -> 79 commit/minggu, -48%), balasannya
+    menulis "developer masih aktif ... jadi invalidasi 'developer pergi' belum kena" tanpa
+    menyebut trennya — di bagian bukti kontra. Instruksi prompt sudah dua kali diperbaiki
+    untuk urusan developer dan dua kali meleset ke arah berbeda, jadi yang ini ditegakkan kode.
+
+    Kalimat balasan TIDAK ditulis ulang: menebak penggantinya lebih berbahaya daripada
+    menambahkan koreksi yang jelas. Koreksi ditambahkan saat statusnya TANDA AWAL dan
+    (a) balasan menyangkal invalidasinya, atau (b) tidak menyebut "melemah" di dekat
+    pembahasan developer.
+    """
+    data = _data_naratif_dari_brief(brief)
+    status = (data or {}).get("invalidasi_developer") or {}
+    if not body or not str(status.get("status", "")).startswith("TANDA AWAL"):
+        return body, []
+    disangkal = bool(_RE_INVALIDASI_DISANGKAL.search(body))
+    menyebut_tren = any("melemah" in body[max(0, m.start() - 150):m.end() + 150].lower()
+                        for m in _RE_KONTEKS_DEV.finditer(body))
+    if not disangkal and menyebut_tren:
+        return body, []
+    ubah = status.get("perubahan_persen")
+    teks_ubah = f", {ubah:+d}%".replace("-", "−") if isinstance(ubah, int) else ""
+    koreksi = (f"⚠️ Koreksi kode — aktivitas developer: TANDA AWAL invalidasi ke-3 "
+               f"(\"developer pergi\"). Commit per minggu {status.get('commit_per_minggu')}"
+               f"{teks_ubah}, rata-rata 4 minggu terakhir vs 12 minggu sebelumnya. "
+               f"Ambang \"melemah\" milik alat ini, bukan dari mentor — ini tanda awal, "
+               f"bukan vonis.")
+    if disangkal:
+        koreksi += " Kalimat di atas yang menyebut invalidasi ini belum/tidak kena TIDAK sesuai data."
+    i = body.find("🔗 Sumber")
+    baru = (body[:i].rstrip() + NL + NL + koreksi + NL + NL + body[i:]) if i >= 0 \
+        else (body.rstrip() + NL + NL + koreksi)
+    catatan = ["invalidasi developer disangkal" if disangkal else "tren developer tidak disebut"]
+    print(f"[naratif] invalidasi developer DIKOREKSI kode: {catatan[0]}", file=sys.stderr)
     return baru, catatan
 
 

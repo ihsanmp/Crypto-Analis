@@ -62,6 +62,11 @@ ORG_DITANYA = 15                       # organisasi teratas yang ditanyakan ke G
 REPO_DITANYA = 5                       # repo paling baru di-push, DARI SELURUH organisasi
 MINGGU_BARU = 4
 MINGGU_LAMA = 12
+# Rasio rata-rata commit 4 minggu terakhir terhadap 12 minggu sebelumnya. Ambang ini MILIK
+# ALAT INI — mentor tidak pernah memberi angka untuk "aktivitas melemah". naratif.py
+# membacanya dari sini supaya teks ambang yang dilihat model selalu sama dengan yang dipakai.
+AMBANG_MELEMAH = 0.7
+AMBANG_MENGUAT = 1.3
 
 HASIL_UJI = ("Diuji 16 Sep 2026 pada TAO: repo tunjukan CoinGecko (opentensor/bittensor) "
              "0 commit dalam 8 minggu, sedangkan repo yang benar-benar dikerjakan sudah "
@@ -351,7 +356,8 @@ def aktivitas(orgs):
     tren = None
     if lama > 0:
         r = baru / lama
-        tren = "melemah" if r < 0.7 else ("menguat" if r > 1.3 else "stabil")
+        tren = ("melemah" if r < AMBANG_MELEMAH
+                else ("menguat" if r > AMBANG_MENGUAT else "stabil"))
     elif baru > 0:
         tren = "menguat"
     return {"commit_per_minggu_4_minggu": round(baru, 1),
