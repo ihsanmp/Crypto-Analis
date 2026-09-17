@@ -20,6 +20,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
+import cgkunci  # noqa: E402  kunci Demo CoinGecko, dikirim lewat header
 
 UA = {"User-Agent": "Mozilla/5.0 (compatible; riset-koin/1.0)"}
 TIMEOUT = 25
@@ -29,7 +30,7 @@ FNG = "https://api.alternative.me/fng/?limit=2"
 
 def try_json(url):
     try:
-        req = urllib.request.Request(url, headers=UA)
+        req = urllib.request.Request(url, headers={**UA, **cgkunci.header_untuk(url)})
         with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
             return json.loads(r.read().decode())
     except urllib.error.HTTPError as e:

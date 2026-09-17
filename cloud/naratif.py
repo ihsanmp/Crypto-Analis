@@ -49,6 +49,7 @@ import sys
 import time
 import urllib.parse
 from datetime import datetime, timedelta, timezone
+import cgkunci  # noqa: E402  kunci Demo CoinGecko, dikirim lewat header
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UA = "riset-koin/1.0"
@@ -134,7 +135,8 @@ def tingkat_kapitalisasi(mcap_usd, peringkat):
 # --- Pengambil data ---------------------------------------------------------------------
 def _curl(url, timeout=35):
     try:
-        p = subprocess.run(["curl", "-s", "-L", "--max-time", str(timeout), "-A", UA, url],
+        p = subprocess.run(["curl", "-s", "-L", "--max-time", str(timeout), "-A", UA,
+                            *cgkunci.argumen_curl(url), url],
                            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout + 10)
         return p.stdout if p.returncode == 0 else ""
     except Exception:
@@ -146,7 +148,12 @@ def _curl(url, timeout=35):
 # CoinGecko duluan. Diukur 17 Sep 2026, run 35177796577: naratif.py GAGAL dalam 3,7 detik
 # di runner, sementara di laptop jalan normal dalam 14 detik. 429 bersifat sementara,
 # jadi yang benar adalah menunggu lalu mencoba lagi — bukan membuang seluruh blok.
-JEDA_ULANG_429 = (8, 20)
+#
+# Jedanya (15, 45) = 60 detik, SATU jendela kuota per menit penuh. Versi pertama memakai
+# (8, 20) = 28 detik, dan di run 35178956460 ketiga percobaannya tetap ditolak: 28 detik
+# belum melewati jendelanya. Dengan COINGECKO_DEMO_KEY (lihat cgkunci.py) 429 seharusnya
+# jarang terjadi sama sekali; jeda ini lapisan cadangan untuk run tanpa kunci.
+JEDA_ULANG_429 = (15, 45)
 
 
 def _kena_batas(d):
@@ -375,13 +382,16 @@ def hasil_tanpa_coingecko(simbol, alasan, rev=None, musim_alt=None):
     }
 
 
-def analisa(simbol):
+def analisa(simbol, cg_id=None):
+    """`cg_id` boleh diisi pemanggil yang sudah menemukannya (bot_oneshot.py menemukannya
+    saat mengumpulkan data koin). Itu menghemat satu permintaan CoinGecko — dan justru
+    permintaan pencarian inilah yang paling dulu kena batas."""
     simbol = simbol.upper()
     with concurrent.futures.ThreadPoolExecutor(max_workers=7) as ex:
         # Yang tidak butuh CoinGecko dimulai DULUAN, supaya tetap ada walau CoinGecko gagal.
         f_rev = ex.submit(revenue_1thn, simbol)
         f_ms = ex.submit(data_musim)
-        cg_id = cari_cg_id(simbol)
+        cg_id = cg_id or cari_cg_id(simbol)
         if not cg_id:
             return hasil_tanpa_coingecko(
                 simbol, "id CoinGecko tidak bisa diambil — koin tidak dikenali, ATAU "
@@ -498,9 +508,10 @@ WAJIB_DIBACA = (
 def main():
     ap = argparse.ArgumentParser(description="Kriteria skor naratif yang terukur kode")
     ap.add_argument("simbol")
+    ap.add_argument("--cg-id", help="id CoinGecko yang sudah diketahui (menghemat pencarian)")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
-    hasil = analisa(args.simbol)
+    hasil = analisa(args.simbol, cg_id=args.cg_id)
     print(json.dumps(hasil, indent=None if args.json else 2, ensure_ascii=False))
     # Selalu 0. Bot membuang SELURUH keluaran skrip yang keluar bukan 0 — termasuk alasan
     # kegagalannya dan data yang tetap berhasil diambil. Kelengkapan data tetap tercatat

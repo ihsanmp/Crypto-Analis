@@ -305,7 +305,7 @@ def test_coingecko_gagal_tetap_kirim_yang_tidak_butuh_coingecko(monkeypatch, id_
 def test_naratif_selalu_keluar_nol(monkeypatch, capsys):
     """Bot membuang keluaran skrip yang keluar bukan 0 — termasuk alasan kegagalan dan data
     yang tetap berhasil diambil. Kelengkapan tetap tercatat lewat kunci tidak_tersedia."""
-    monkeypatch.setattr(naratif, "analisa", lambda s: {"koin": s, "tidak_tersedia": "x"})
+    monkeypatch.setattr(naratif, "analisa", lambda s, cg_id=None: {"koin": s, "tidak_tersedia": "x"})
     monkeypatch.setattr(sys, "argv", ["naratif.py", "TAO", "--json"])
     assert naratif.main() == 0
     assert '"tidak_tersedia"' in capsys.readouterr().out
@@ -317,3 +317,115 @@ def test_log_bot_mencatat_alasan_gagal(monkeypatch, capsys):
     bot._jalankan_terukur("NARATIF TAO (naratif.py)", ["cloud/naratif.py", "TAO"])
     log = capsys.readouterr().err
     assert "GAGAL: data CoinGecko gagal" in log
+
+
+# ---------------------------------------------------------------- kunci Demo CoinGecko
+#
+# Run 35178956460: naratif.py ditolak 429 tiga kali walau sudah menunggu, setelah musim.py
+# di run yang sama mendapat data. API publik dibatasi per IP, dan IP runner dipakai bersama.
+# Kunci Demo memberi kuota sendiri — dan karena repo ini PUBLIK, kuncinya WAJIB lewat header.
+
+import glob     # noqa: E402
+
+import cgkunci  # noqa: E402
+
+KUNCI_PALSU = "CG-kunci-uji-rahasia"
+
+
+def test_header_hanya_untuk_coingecko_dan_hanya_kalau_ada_kunci(monkeypatch):
+    monkeypatch.delenv(cgkunci.NAMA_ENV, raising=False)
+    assert cgkunci.header_untuk("https://api.coingecko.com/api/v3/ping") == {}
+    monkeypatch.setenv(cgkunci.NAMA_ENV, KUNCI_PALSU)
+    assert cgkunci.header_untuk("https://api.coingecko.com/api/v3/ping") == \
+        {"x-cg-demo-api-key": KUNCI_PALSU}
+    # Kunci CoinGecko tidak boleh ikut terkirim ke sumber lain.
+    assert cgkunci.header_untuk("https://api.github.com/repos/a/b") == {}
+    assert cgkunci.argumen_curl("https://wikimedia.org/x") == []
+
+
+def test_kunci_tidak_pernah_lewat_url():
+    """Repo publik: URL tercetak di galat, dan kategori.py memakai URL sebagai kunci cache
+    yang ikut ter-commit. Parameter URL untuk kunci CoinGecko dilarang di seluruh kode."""
+    pelanggar = [p for p in glob.glob(os.path.join(AKAR, "cloud", "*.py"))
+                 if "x_cg_demo_api_key" in open(p, encoding="utf-8").read()]
+    assert not pelanggar, pelanggar
+
+
+def test_setiap_modul_coingecko_memakai_cgkunci():
+    """Modul baru yang memanggil CoinGecko tanpa cgkunci akan diam-diam kembali memakai API
+    publik — dan kembali kena 429 di runner, tanpa ada yang tahu kenapa."""
+    lupa = []
+    for p in glob.glob(os.path.join(AKAR, "cloud", "*.py")):
+        if os.path.basename(p) == "cgkunci.py":
+            continue
+        isi = open(p, encoding="utf-8").read()
+        if "api.coingecko.com" in isi and "cgkunci." not in isi:
+            lupa.append(os.path.basename(p))
+    assert not lupa, f"memanggil CoinGecko tanpa cgkunci: {lupa}"
+
+
+def test_curl_mengirim_header_kunci(monkeypatch):
+    dipanggil = []
+
+    class Hasil:
+        returncode, stdout = 0, "{}"
+
+    monkeypatch.setenv(cgkunci.NAMA_ENV, KUNCI_PALSU)
+    monkeypatch.setattr(naratif.subprocess, "run", lambda a, **k: dipanggil.append(a) or Hasil())
+    naratif._curl("https://api.coingecko.com/api/v3/coins/bittensor")
+    perintah = dipanggil[0]
+    assert f"x-cg-demo-api-key: {KUNCI_PALSU}" in perintah
+    assert not any(KUNCI_PALSU in x for x in perintah if x.startswith("http"))
+
+
+def test_urllib_mengirim_header_kunci(monkeypatch):
+    import io as _io
+    import indicators
+    diminta = []
+
+    class Balasan(_io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    monkeypatch.setenv(cgkunci.NAMA_ENV, KUNCI_PALSU)
+    monkeypatch.setattr(indicators.urllib.request, "urlopen",
+                        lambda req, timeout=None: diminta.append(req) or Balasan(b"{}"))
+    indicators.http_json("https://api.coingecko.com/api/v3/search?query=TAO")
+    assert diminta[0].get_header("X-cg-demo-api-key") == KUNCI_PALSU
+    assert KUNCI_PALSU not in diminta[0].full_url
+
+
+def test_jeda_ulang_melewati_satu_jendela_kuota():
+    """REGRESI: jeda (8, 20) = 28 detik belum melewati jendela per menit — run 35178956460
+    ditolak di ketiga percobaannya."""
+    assert sum(naratif.JEDA_ULANG_429) >= 60
+
+
+def test_naratif_memakai_cg_id_dari_pemanggil(monkeypatch):
+    """id yang sudah ditemukan bot tidak dicari ulang: satu permintaan CoinGecko lebih
+    sedikit, tepat saat kuota paling tipis."""
+    def jangan_dipanggil(simbol):
+        raise AssertionError("cari_cg_id tidak boleh dipanggil kalau cg_id sudah diberikan")
+
+    diminta = []
+    monkeypatch.setattr(naratif, "cari_cg_id", jangan_dipanggil)
+    monkeypatch.setattr(naratif, "coingecko", lambda cg_id: diminta.append(cg_id) or None)
+    monkeypatch.setattr(naratif, "trending_ids", lambda: None)
+    monkeypatch.setattr(naratif, "dev_activity", lambda slug: None)
+    monkeypatch.setattr(naratif, "revenue_1thn", lambda s: None)
+    monkeypatch.setattr(naratif, "data_musim", lambda: None)
+    naratif.analisa("TAO", cg_id="bittensor")
+    assert diminta == ["bittensor"]
+
+
+def test_bot_meneruskan_cg_id_ke_naratif(monkeypatch):
+    import bot_oneshot as bot
+    dijalankan = []
+    monkeypatch.setitem(bot._CG_ID_KOIN, "TAO", "bittensor")
+    monkeypatch.setattr(bot, "_jalankan_terukur",
+                        lambda label, args, min_kar=0: dijalankan.append(args) or ("{}", None))
+    bot.data_naratif("TAO")
+    assert dijalankan[0][-2:] == ["--cg-id", "bittensor"]

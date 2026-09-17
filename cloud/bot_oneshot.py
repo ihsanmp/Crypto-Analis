@@ -2980,6 +2980,12 @@ def _sisipkan_jejak(bagian):
         print(f"[jejak] dilewati ({type(e).__name__})", file=sys.stderr)
 
 
+# id CoinGecko yang ditemukan data_mentah_crypto, per simbol. naratif.py dipanggil SESUDAH
+# pengumpulan itu; tanpa ini ia mencari ulang id yang sama ke CoinGecko, satu permintaan
+# ekstra tepat saat kuota per menit paling tipis.
+_CG_ID_KOIN = {}
+
+
 def data_mentah_crypto(coin):
     """Kumpulkan data koin dengan KODE, hanya yang RELEVAN untuk koin itu.
 
@@ -2998,6 +3004,13 @@ def data_mentah_crypto(coin):
         from indicators import resolve_ticker
         tik, _cid, nama_resmi = resolve_ticker(coin)
         cg_id = _cid
+        if cg_id:
+            # Disimpan untuk masukan ASLI dan ticker hasil normalisasi: pemanggil
+            # data_naratif memakai variabel `coin` miliknya sendiri, yang tidak ikut
+            # dinormalkan ("hyperliquid" tetap "hyperliquid" di sana).
+            _CG_ID_KOIN[coin.upper()] = cg_id
+            if tik:
+                _CG_ID_KOIN[tik.upper()] = cg_id
         if tik and tik.upper() != coin.upper():
             catatan_nama = (f"Masukan '{coin}' adalah NAMA PROYEK; tickernya {tik} "
                             f"({nama_resmi}). Seluruh data di bawah diambil untuk {tik}. "
@@ -3168,8 +3181,11 @@ PENANDA_NARATIF = "### DATA NARATIF TERUKUR"
 def data_naratif(simbol):
     """Kriteria skor naratif yang terukur kode. "" kalau gagal — model lalu menyebut tak
     bisa dinilai, bukan mengarang."""
-    keluar, err = _jalankan_terukur(f"NARATIF {simbol} (naratif.py)",
-                                    ["cloud/naratif.py", simbol, "--json"])
+    args = ["cloud/naratif.py", simbol, "--json"]
+    cg_id = _CG_ID_KOIN.get((simbol or "").upper())
+    if cg_id:
+        args += ["--cg-id", cg_id]
+    keluar, err = _jalankan_terukur(f"NARATIF {simbol} (naratif.py)", args)
     if err or not keluar:
         return ""
     return f"{PENANDA_NARATIF} (naratif.py) — {simbol}" + NL + keluar

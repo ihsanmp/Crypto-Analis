@@ -39,6 +39,7 @@ import time
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
+import cgkunci  # noqa: E402  kunci Demo CoinGecko, dikirim lewat header
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_PATH = os.path.join(BASE_DIR, "data", "kategori_cache.json")
@@ -79,8 +80,9 @@ def ambil(jalur, params=None):
     if simpan.get("data") is not None and time.time() - simpan.get("waktu", 0) < CACHE_UMUR:
         return simpan["data"], True, None
     try:
-        with urllib.request.urlopen(urllib.request.Request(url, headers=UA),
-                                    timeout=TIMEOUT) as r:
+        with urllib.request.urlopen(
+                urllib.request.Request(url, headers={**UA, **cgkunci.header_untuk(url)}),
+                timeout=TIMEOUT) as r:
             data = json.loads(r.read().decode(errors="replace"))
     except Exception as e:
         kode = getattr(e, "code", None)

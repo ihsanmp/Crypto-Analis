@@ -38,6 +38,7 @@ import sys
 import time
 import urllib.request
 from datetime import datetime, timezone
+import cgkunci  # noqa: E402  kunci Demo CoinGecko, dikirim lewat header
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_PATH = os.path.join(BASE_DIR, "data", "derivatif_cache.json")
@@ -66,8 +67,9 @@ def _agregat_semua():
     if cache.get("data") and time.time() - cache.get("waktu", 0) < CACHE_UMUR:
         return cache["data"], True, None
     try:
-        with urllib.request.urlopen(urllib.request.Request(CG, headers=UA),
-                                    timeout=TIMEOUT) as r:
+        with urllib.request.urlopen(
+                urllib.request.Request(CG, headers={**UA, **cgkunci.header_untuk(CG)}),
+                timeout=TIMEOUT) as r:
             mentah = json.loads(r.read().decode(errors="replace"))
     except Exception as e:
         kode = getattr(e, "code", None)

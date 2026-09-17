@@ -39,6 +39,7 @@ import re
 import subprocess
 import sys
 import time
+import cgkunci  # noqa: E402  kunci Demo CoinGecko, dikirim lewat header
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_DIR = os.environ.get("CACHE_DIR_MUSIM") or os.path.join(BASE_DIR, "data")
@@ -65,7 +66,8 @@ HASIL_UJI = ("Diuji 16 Sep 2026: indeks 30 hari hitungan sendiri 30, terbitan "
 
 def _curl(url, timeout=40, ua=UA):
     try:
-        p = subprocess.run(["curl", "-s", "-L", "--max-time", str(timeout), "-A", ua, url],
+        p = subprocess.run(["curl", "-s", "-L", "--max-time", str(timeout), "-A", ua,
+                            *cgkunci.argumen_curl(url), url],
                            capture_output=True, text=True, encoding="utf-8",
                            errors="replace", timeout=timeout + 10)
         return p.stdout if p.returncode == 0 else ""

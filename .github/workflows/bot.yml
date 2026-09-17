@@ -44,6 +44,10 @@ jobs:
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       COINGLASS_API_KEY: ${{ secrets.COINGLASS_API_KEY }}
       COINMARKETCAP_API_KEY: ${{ secrets.COINMARKETCAP_API_KEY }}
+      # Kunci Demo CoinGecko (gratis). Tanpa kunci, API publik dibatasi per IP, dan IP
+      # runner dipakai bersama — run 35178956460: naratif.py ditolak 3x (429) setelah
+      # musim.py di run yang sama sudah menghabiskan jatahnya. Kosong = tetap jalan tanpa kunci.
+      COINGECKO_DEMO_KEY: ${{ secrets.COINGECKO_DEMO_KEY }}
       # Token bawaan Actions: menaikkan batas GitHub API dari 60/jam jadi 5.000/jam untuk
       # devkode.py. Tanpa ini aktivitas developer sering gagal terbaca di tengah jalan.
       GITHUB_TOKEN: ${{ github.token }}

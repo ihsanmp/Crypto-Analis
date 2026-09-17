@@ -47,6 +47,7 @@ import tarfile
 import tempfile
 import time
 import urllib.parse
+import cgkunci  # noqa: E402  kunci Demo CoinGecko, dikirim lewat header
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_DIR = os.environ.get("CACHE_DIR_EKO") or os.path.join(BASE_DIR, "data")
@@ -73,6 +74,7 @@ def _curl(url, timeout=40, kepala=None):
     perintah = ["curl", "-s", "-L", "--max-time", str(timeout), "-A", UA]
     for k in kepala or []:
         perintah += ["-H", k]
+    perintah += cgkunci.argumen_curl(url)
     perintah.append(url)
     try:
         p = subprocess.run(perintah, capture_output=True, text=True, encoding="utf-8",

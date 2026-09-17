@@ -30,6 +30,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
+import cgkunci  # noqa: E402  kunci Demo CoinGecko, dikirim lewat header
 
 UA = {"User-Agent": "Mozilla/5.0 (compatible; riset-koin/1.0)"}
 TIMEOUT = 8          # pendek: sumber yang diblokir harus cepat menyerah
@@ -40,7 +41,7 @@ _TICKER_MEMO = {}    # hasil resolve_ticker per run: dipanggil di routing DAN di
 # ---------------------------------------------------------------- util jaringan
 
 def http_json(url):
-    req = urllib.request.Request(url, headers=UA)
+    req = urllib.request.Request(url, headers={**UA, **cgkunci.header_untuk(url)})
     with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
         return json.loads(r.read().decode())
 

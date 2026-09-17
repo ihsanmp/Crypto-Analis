@@ -37,6 +37,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
+import cgkunci  # noqa: E402  kunci Demo CoinGecko, dikirim lewat header
 
 UA = {"User-Agent": "Mozilla/5.0 (compatible; riset-koin/1.0)"}
 TIMEOUT = 25
@@ -115,7 +116,7 @@ def klasifikasi_moralis(entity, label, is_contract):
 
 
 def try_json(url, headers=None):
-    h = dict(UA)
+    h = {**UA, **cgkunci.header_untuk(url)}
     if headers:
         h.update(headers)
     try:
