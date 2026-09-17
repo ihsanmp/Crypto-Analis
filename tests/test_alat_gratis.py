@@ -621,3 +621,96 @@ def test_prompt_mewajibkan_tren_dan_melarang_belum_kena():
     blok = teks[teks.index("BLOK: naratif-mentor"):]
     assert "TANDA AWAL" in blok and "belum kena" in blok and "wajib disebut" in blok
     assert "TANDA AWAL" in naratif.WAJIB_DIBACA
+
+
+# ---------------------------------------------------------------- pemeriksa skor naratif
+#
+# Run 35185856360 dan 35186837828 menulis "Revenue N/A" dan "Skor tertimbang (dari 90% bobot
+# ...): 2,89". Pemeriksa lama berhenti total pada "N/A", dan regexnya tidak membaca angka yang
+# didahului keterangan dalam kurung — jadi tokenomics dan likuiditas tidak diperiksa sama sekali.
+
+import json as _json   # noqa: E402
+
+GARIS_TAO = ("Kekuatan katalis 2 · Tokenomics 3 · Ukuran pasar 2 · Tim & VC 4 · Likuiditas 4 · "
+             "Timing siklus 3 · Revenue N/A")
+
+
+def _brief_skor(tok=3, lik=4, rev=None, tanpa=()):
+    import bot_oneshot as bot
+    kriteria = {"tokenomics": {"skor": tok}, "likuiditas": {"skor": lik}, "revenue": {"skor": rev}}
+    for k in tanpa:
+        kriteria.pop(k)
+    return bot.PENANDA_NARATIF + " (naratif.py) - TAO\n" + _json.dumps({"kriteria": kriteria})
+
+
+def test_skor_tertimbang_sebagian():
+    penuh = {"katalis": 4, "tokenomics": 2, "tam": 4, "tim_vc": 4, "likuiditas": 3,
+             "timing": 3, "revenue": 5}
+    assert naratif.skor_tertimbang_sebagian(penuh) == (naratif.skor_tertimbang(penuh), 100)
+    tao = {"katalis": 2, "tokenomics": 3, "tam": 2, "tim_vc": 4, "likuiditas": 4,
+           "timing": 3, "revenue": None}
+    assert naratif.skor_tertimbang_sebagian(tao) == (2.89, 90)
+    assert naratif.skor_tertimbang_sebagian({k: None for k in tao}) == (None, 0)
+
+
+def test_balasan_tao_yang_benar_tidak_diubah():
+    import bot_oneshot as bot
+    body = (GARIS_TAO + "\nSkor tertimbang (6 dari 7 kriteria terisi, bobot revenue 10% "
+            "dikeluarkan): 2,89 — masuk zona watchlist")
+    assert bot.audit_skor_naratif(body, _brief_skor()) == (body, [])
+
+
+def test_revenue_na_tidak_lagi_meloloskan_tokenomics_yang_dinaikkan():
+    """REGRESI: dengan "Revenue N/A", pemeriksa lama tidak memeriksa apa pun."""
+    import bot_oneshot as bot
+    body = (GARIS_TAO.replace("Tokenomics 3", "Tokenomics 4") +
+            "\nSkor tertimbang (dari 90% bobot): 3,11 → LAYAK DIKEJAR")
+    baru, cat = bot.audit_skor_naratif(body, _brief_skor())
+    assert "Tokenomics 3" in baru and "2,89" in baru and "WATCHLIST" in baru
+    assert "LAYAK DIKEJAR" not in baru
+    assert "tokenomics ditulis 4, diukur kode 3" in cat
+
+
+def test_keterangan_dalam_kurung_tidak_menyembunyikan_angka():
+    """REGRESI: "Skor tertimbang (dari 100% bobot): 3,90" tidak pernah terbaca regex lama."""
+    import bot_oneshot as bot
+    body = ("Kekuatan katalis 4 · Tokenomics 2 · Ukuran pasar 4 · Tim & VC 4 · Likuiditas 3 · "
+            "Timing siklus 3 · Revenue 5\nSkor tertimbang (dari 100% bobot): 3,90 → LAYAK DIKEJAR")
+    baru, cat = bot.audit_skor_naratif(body, None)
+    assert "(dari 100% bobot): 3,50" in baru and "WATCHLIST" in baru
+
+
+def test_kriteria_terukur_yang_ditulis_na_diisi_angka_ukurnya():
+    import bot_oneshot as bot
+    body = (GARIS_TAO.replace("Tokenomics 3", "Tokenomics N/A") +
+            "\nSkor tertimbang (dari 70% bobot): 3,00")
+    baru, cat = bot.audit_skor_naratif(body, _brief_skor())
+    assert "Tokenomics 3" in baru and "2,89" in baru
+    assert "tokenomics ditulis N/A, diukur kode 3" in cat
+
+
+def test_angka_untuk_kriteria_yang_tak_terukur_diganti_na():
+    """Kode mencari revenue dan tidak menemukannya. Angka revenue di balasan bukan hasil ukur."""
+    import bot_oneshot as bot
+    body = (GARIS_TAO.replace("Revenue N/A", "Revenue 3") + "\nSkor tertimbang: 2,90")
+    baru, cat = bot.audit_skor_naratif(body, _brief_skor(rev=None))
+    assert "Revenue N/A" in baru and "2,89" in baru
+    assert "revenue ditulis 3, kode tidak bisa mengukurnya" in cat
+    assert "dari 90% bobot" in baru        # cakupan tidak disebut -> disisipkan
+
+
+def test_kriteria_yang_tidak_ada_di_brief_tidak_disentuh():
+    """CoinGecko gagal -> tokenomics tidak ada di brief sama sekali. Itu BUKAN "tak terukur";
+    kode tidak tahu apa-apa soal kriteria itu, jadi angka balasan dibiarkan."""
+    import bot_oneshot as bot
+    body = GARIS_TAO + "\nSkor tertimbang (dari 90% bobot): 2,89"
+    baru, cat = bot.audit_skor_naratif(body, _brief_skor(tanpa=("tokenomics", "likuiditas")))
+    assert (baru, cat) == (body, [])
+
+
+def test_cakupan_disisipkan_bila_tidak_disebut():
+    import bot_oneshot as bot
+    body = GARIS_TAO + "\nSkor tertimbang 2,89 → WATCHLIST"
+    baru, cat = bot.audit_skor_naratif(body, _brief_skor())
+    assert "2,89 (dari 90% bobot; kriteria N/A tidak dihitung) → WATCHLIST" in baru
+    assert cat == ["cakupan 90% bobot tidak disebut"]

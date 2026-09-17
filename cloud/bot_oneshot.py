@@ -4287,24 +4287,40 @@ _LABEL_SKOR_NARATIF = (
     ("katalis", r"Kekuatan katalis"), ("tokenomics", r"Tokenomics"),
     ("tam", r"Ukuran pasar"), ("tim_vc", r"Tim\s*&\s*VC"), ("likuiditas", r"Likuiditas"),
     ("timing", r"Timing siklus"), ("revenue", r"Revenue"))
-_RE_SKOR_TERTIMBANG = re.compile(r"(Skor tertimbang\s*:?\s*)(\d+(?:[.,]\d+)?)", re.I)
+# Keterangan dalam kurung di antara label dan angkanya BOLEH ada. Balasan di run 35185856360
+# dan 35186837828 menulis "Skor tertimbang (dari 90% bobot yang tersedia, ...): 2,89", dan
+# regex lama yang menuntut angka tepat sesudah label tidak pernah membacanya sama sekali.
+_RE_SKOR_TERTIMBANG = re.compile(
+    r"(Skor tertimbang\s*(?:\([^)\n]*\))?\s*:?\s*)(\d+(?:[.,]\d+)?)", re.I)
 _TERUKUR_KODE = ("tokenomics", "likuiditas", "revenue")
+# Penanda kriteria yang SENGAJA tidak dinilai. Harus ditulis eksplisit: label yang tidak
+# muncul sama sekali tetap dianggap baris tak lengkap, dan baris itu dibiarkan.
+_PENANDA_TAK_DINILAI = (r"(N\s*/\s*A|n\.a\.|tidak tersedia|tidak bisa dinilai|tak bisa dinilai|"
+                        r"belum bisa dinilai|tidak dinilai|—|–|-(?!\d)|\?)")
 
 
 def audit_skor_naratif(body, brief=None):
     """Periksa ulang baris skor naratif di balasan. Return (body_baru, catatan).
 
-    Dua hal ditegakkan KODE, bukan diharapkan:
+    Yang ditegakkan KODE, bukan diharapkan:
       1. Tiga kriteria yang diukur naratif.py (tokenomics, likuiditas, revenue) harus sama
          dengan hasil ukurnya. Menaikkannya adalah cara paling sunyi membuat koin favorit
-         lolos ambang "layak dikejar".
-      2. Skor tertimbang dihitung ulang dari tujuh angka. Rata-rata tertimbang tujuh bilangan
-         adalah hitungan yang model kerjakan di kepala dan sering meleset satu-dua persepuluh
-         — cukup untuk memindahkan koin dari WATCHLIST ke LAYAK DIKEJAR.
-    Hanya dijalankan kalau ketujuh label ada; baris yang tidak lengkap dibiarkan, karena
-    menebak angka yang hilang lebih buruk daripada tidak memeriksa.
+         lolos ambang "layak dikejar". Kriteria terukur yang ditulis "N/A" diisi angka
+         ukurnya; kriteria yang kode TIDAK bisa ukur tapi diberi angka diganti "N/A".
+      2. Skor tertimbang dihitung ulang. Rata-rata tertimbang tujuh bilangan adalah hitungan
+         yang model kerjakan di kepala dan sering meleset satu-dua persepuluh — cukup untuk
+         memindahkan koin dari WATCHLIST ke LAYAK DIKEJAR.
+      3. Kalau ada kriteria "N/A", skornya dihitung dari bobot yang terisi, dan CAKUPANNYA
+         wajib tertulis.
+
+    Versi sebelumnya berhenti total begitu satu kriteria bertulis "N/A". Revenue sering tidak
+    tersedia, jadi di run 35185856360 dan 35186837828 tokenomics dan likuiditas sama sekali
+    tidak diperiksa — angkanya kebetulan benar, tapi tidak ada yang menjaminnya.
+
+    Label yang TIDAK DITULIS sama sekali tetap tidak ditebak: baris seperti itu dibiarkan,
+    karena menebak angka yang hilang lebih buruk daripada tidak memeriksa.
     """
-    if not body or "Skor tertimbang" not in body:
+    if not body or "Kekuatan katalis" not in body:
         return body, []
     _pastikan_path(BASE_DIR)          # jalur panas: dipanggil untuk setiap balasan
     try:
@@ -4314,8 +4330,6 @@ def audit_skor_naratif(body, brief=None):
     # Hanya di BARIS skor (yang memuat "Kekuatan katalis"), bukan di seluruh balasan: kalimat
     # biasa seperti "revenue 5 tahun terakhir" di paragraf lain akan terbaca sebagai skor.
     awal_baris = body.find("Kekuatan katalis")
-    if awal_baris < 0:
-        return body, []
     awal_baris = body.rfind(NL, 0, awal_baris) + 1
     akhir_baris = body.find(NL, awal_baris)
     akhir_baris = len(body) if akhir_baris < 0 else akhir_baris
@@ -4324,28 +4338,42 @@ def audit_skor_naratif(body, brief=None):
     for kunci, label in _LABEL_SKOR_NARATIF:
         m = re.search(label + r"\s*:?\s*([1-5])(?:\s*/\s*5)?\b", baris_skor, re.I)
         if not m:
-            return body, []
-        skor[kunci] = int(m.group(1))
+            m = re.search(label + r"\s*:?\s*" + _PENANDA_TAK_DINILAI, baris_skor, re.I)
+            if not m:
+                return body, []
+            skor[kunci] = None
+        else:
+            skor[kunci] = int(m.group(1))
         posisi[kunci] = (awal_baris + m.start(1), awal_baris + m.end(1))
     catatan = []
-    terukur = {}
-    if brief and PENANDA_NARATIF in brief:
-        try:
-            baris = brief.split(PENANDA_NARATIF, 1)[1].split(NL, 2)[1]
-            data = json.loads(baris)
-            terukur = {k: data["kriteria"][k]["skor"] for k in _TERUKUR_KODE
-                       if data["kriteria"].get(k, {}).get("skor") is not None}
-        except (IndexError, KeyError, ValueError, TypeError):
-            terukur = {}
+    diukur, tak_terukur = {}, set()
+    data = _data_naratif_dari_brief(brief)
+    for k in _TERUKUR_KODE:
+        kriteria = ((data or {}).get("kriteria") or {}).get(k)
+        if not isinstance(kriteria, dict) or "skor" not in kriteria:
+            continue                  # tidak ada di brief (mis. CoinGecko gagal): jangan disentuh
+        if kriteria["skor"] is None:
+            tak_terukur.add(k)
+        else:
+            diukur[k] = kriteria["skor"]
     baru = body
     # Diganti dari belakang supaya posisi karakter yang lebih awal tetap sah.
-    for kunci in sorted(terukur, key=lambda k: -posisi[k][0]):
-        if skor[kunci] != terukur[kunci]:
-            a, z = posisi[kunci]
-            catatan.append(f"{kunci} ditulis {skor[kunci]}, diukur kode {terukur[kunci]}")
-            baru = baru[:a] + str(terukur[kunci]) + baru[z:]
-            skor[kunci] = terukur[kunci]
-    benar = nr.skor_tertimbang(skor)
+    for kunci in sorted(set(diukur) | tak_terukur, key=lambda k: -posisi[k][0]):
+        a, z = posisi[kunci]
+        if kunci in diukur and skor[kunci] != diukur[kunci]:
+            ditulis = "N/A" if skor[kunci] is None else skor[kunci]
+            catatan.append(f"{kunci} ditulis {ditulis}, diukur kode {diukur[kunci]}")
+            baru = baru[:a] + str(diukur[kunci]) + baru[z:]
+            skor[kunci] = diukur[kunci]
+        elif kunci in tak_terukur and skor[kunci] is not None:
+            catatan.append(f"{kunci} ditulis {skor[kunci]}, kode tidak bisa mengukurnya")
+            baru = baru[:a] + "N/A" + baru[z:]
+            skor[kunci] = None
+    lengkap = all(s is not None for s in skor.values())
+    if lengkap:
+        benar, cakupan = nr.skor_tertimbang(skor), 100
+    else:
+        benar, cakupan = nr.skor_tertimbang_sebagian(skor)
     m = _RE_SKOR_TERTIMBANG.search(baru)
     if benar is not None and m:
         ditulis = float(m.group(2).replace(",", "."))
@@ -4353,9 +4381,20 @@ def audit_skor_naratif(body, brief=None):
         if abs(ditulis - benar) > 0.005:
             catatan.append(f"skor tertimbang ditulis {m.group(2)}, dihitung {teks_benar}")
             baru = baru[:m.start(2)] + teks_benar + baru[m.end(2):]
+            m = _RE_SKOR_TERTIMBANG.search(baru)
+        if not lengkap:
+            awal_kalimat = baru.rfind(NL, 0, m.start()) + 1
+            akhir_kalimat = baru.find(NL, m.end())
+            akhir_kalimat = len(baru) if akhir_kalimat < 0 else akhir_kalimat
+            kalimat = baru[awal_kalimat:akhir_kalimat].lower()
+            if "%" not in kalimat and "bobot" not in kalimat:
+                sisipan = f" (dari {cakupan}% bobot; kriteria N/A tidak dihitung)"
+                baru = baru[:m.end(2)] + sisipan + baru[m.end(2):]
+                catatan.append(f"cakupan {cakupan}% bobot tidak disebut")
+                m = _RE_SKOR_TERTIMBANG.search(baru)
         v = nr.vonis(benar)
         salah = [x for x in ("LAYAK DIKEJAR", "WATCHLIST", "HINDARI") if x != v]
-        ekor = baru[m.start(2):m.start(2) + 60]
+        ekor = baru[m.start(2):m.start(2) + 120]
         for x in salah:
             if x in ekor.upper():
                 i = m.start(2) + ekor.upper().index(x)

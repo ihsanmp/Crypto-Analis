@@ -88,6 +88,21 @@ def skor_tertimbang(skor_per_kriteria):
     return round(sum(skor_per_kriteria[k] * b for k, b in BOBOT.items()) / 100, 2)
 
 
+def skor_tertimbang_sebagian(skor_per_kriteria):
+    """(nilai, cakupan_bobot_persen) dari kriteria yang TERISI saja; (None, 0) kalau kosong.
+
+    Revenue sering tidak tersedia (DefiLlama tidak punya banyak protokol), jadi balasan
+    yang jujur menulis "Revenue N/A" dan menghitung dari bobot yang tersisa. Hitungan itu
+    tetap diperiksa kode — tapi cakupannya WAJIB ikut disebut, karena skor sebagian yang
+    dibaca sebagai skor penuh adalah salah baca yang paling mudah terjadi.
+    """
+    ada = {k: s for k, s in skor_per_kriteria.items() if k in BOBOT and s is not None}
+    bobot = sum(BOBOT[k] for k in ada)
+    if not bobot:
+        return None, 0
+    return round(sum(s * BOBOT[k] for k, s in ada.items()) / bobot, 2), bobot
+
+
 # --- Ambang milik alat ini (lihat docstring) --------------------------------------------
 def skor_tokenomics(float_persen):
     """Float = beredar / maksimum. Float rendah = pasokan besar masih menunggu dilepas."""
