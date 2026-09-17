@@ -238,3 +238,82 @@ def test_push_terbaru_dari_repo_terbaru(monkeypatch):
     assert h["push_terbaru_di_ekosistem"] == "2026-09-16"
     assert h["repo_dipantau"][0]["repo"] in ("besar/lama", "kecil/baru")
     assert h["n_repo_dilihat"] == 2
+
+
+# ---------------------------------------------------------------- naratif.py di bawah 429
+#
+# Run produksi 35177796577 (17 Sep 2026): "NARATIF TAO (naratif.py): 3.7 detik — GAGAL",
+# padahal di laptop jalan normal. Di GitHub Actions belasan skrip lain sudah menembak
+# CoinGecko duluan, jadi naratif.py kena batas permintaan — lalu membuang SELURUH blok,
+# keluar dengan kode 1, dan bot membuang keluarannya tanpa mencatat alasannya.
+
+GALAT_429 = '{"status": {"error_code": 429, "error_message": "You\'ve exceeded the Rate Limit"}}'
+
+
+def test_json_coingecko_diulang_saat_429(monkeypatch):
+    balasan = [GALAT_429, '{"ok": 1}']
+    jeda = []
+    monkeypatch.setattr(naratif, "_curl", lambda url, timeout=35: balasan.pop(0))
+    monkeypatch.setattr(naratif.time, "sleep", jeda.append)
+    assert naratif._json("https://api.coingecko.com/api/v3/coins/bittensor") == {"ok": 1}
+    assert jeda == [naratif.JEDA_ULANG_429[0]]
+
+
+def test_json_menyerah_setelah_jatah_ulang_habis(monkeypatch):
+    panggil = []
+    monkeypatch.setattr(naratif, "_curl", lambda url, timeout=35: panggil.append(url) or GALAT_429)
+    monkeypatch.setattr(naratif.time, "sleep", lambda s: None)
+    # Balasan 429 TIDAK boleh diteruskan sebagai data — pemanggil akan membacanya sebagai
+    # koin tanpa market_data dan menyimpulkan hal yang salah.
+    assert naratif._json("https://api.coingecko.com/api/v3/search?query=TAO") == {}
+    assert len(panggil) == len(naratif.JEDA_ULANG_429) + 1
+
+
+def test_json_sumber_lain_tidak_diulang(monkeypatch):
+    """Kegagalan Wikipedia atau Santiment bukan soal kuota CoinGecko; mengulangnya hanya
+    membuang puluhan detik dari jatah 300 detik bot."""
+    panggil, jeda = [], []
+    monkeypatch.setattr(naratif, "_curl", lambda url, timeout=35: panggil.append(url) or "")
+    monkeypatch.setattr(naratif.time, "sleep", jeda.append)
+    assert naratif._json("https://wikimedia.org/api/rest_v1/x") == {}
+    assert len(panggil) == 1 and jeda == []
+
+
+def test_trending_gagal_bukan_berarti_tidak_trending(monkeypatch):
+    monkeypatch.setattr(naratif, "_json", lambda url: {})
+    assert naratif.trending_ids() is None
+
+
+@pytest.mark.parametrize("id_ketemu", [False, True])
+def test_coingecko_gagal_tetap_kirim_yang_tidak_butuh_coingecko(monkeypatch, id_ketemu):
+    """REGRESI: dulu CoinGecko gagal = blok kosong. Revenue DefiLlama dan musim altcoin
+    tidak butuh CoinGecko sama sekali, jadi keduanya harus tetap sampai ke model."""
+    monkeypatch.setattr(naratif, "cari_cg_id", lambda s: "bittensor" if id_ketemu else None)
+    monkeypatch.setattr(naratif, "coingecko", lambda cg_id: None)
+    monkeypatch.setattr(naratif, "trending_ids", lambda: None)
+    monkeypatch.setattr(naratif, "dev_activity", lambda slug: None)
+    monkeypatch.setattr(naratif, "revenue_1thn", lambda s: 700e6)
+    monkeypatch.setattr(naratif, "data_musim", lambda: {"vonis_90h": "tidak keduanya"})
+    h = naratif.analisa("tao")
+    assert h["koin"] == "TAO"
+    assert "batas permintaan" in h["tidak_tersedia"]      # alasan yang jujur, bukan "tidak dikenali" saja
+    assert h["kriteria"]["revenue"]["skor"] == 5
+    assert h["sinyal_distribusi"]["musim_altcoin"] == {"vonis_90h": "tidak keduanya"}
+    assert "TIDAK terukur" in h["catatan"]
+
+
+def test_naratif_selalu_keluar_nol(monkeypatch, capsys):
+    """Bot membuang keluaran skrip yang keluar bukan 0 — termasuk alasan kegagalan dan data
+    yang tetap berhasil diambil. Kelengkapan tetap tercatat lewat kunci tidak_tersedia."""
+    monkeypatch.setattr(naratif, "analisa", lambda s: {"koin": s, "tidak_tersedia": "x"})
+    monkeypatch.setattr(sys, "argv", ["naratif.py", "TAO", "--json"])
+    assert naratif.main() == 0
+    assert '"tidak_tersedia"' in capsys.readouterr().out
+
+
+def test_log_bot_mencatat_alasan_gagal(monkeypatch, capsys):
+    import bot_oneshot as bot
+    monkeypatch.setattr(bot, "jalankan_script", lambda a, b=300, c=0: (None, "data CoinGecko\ngagal"))
+    bot._jalankan_terukur("NARATIF TAO (naratif.py)", ["cloud/naratif.py", "TAO"])
+    log = capsys.readouterr().err
+    assert "GAGAL: data CoinGecko gagal" in log

@@ -2432,8 +2432,13 @@ def _jalankan_terukur(label, args, min_kar=0):
     """
     t0 = time.time()
     keluar, err = jalankan_script(args, 300, min_kar)
+    # Alasannya IKUT dicetak. Run 35177796577 hanya mencatat "NARATIF TAO: 3.7 detik —
+    # GAGAL", dan penyebabnya harus direkonstruksi dari luar karena tidak tersisa di log.
+    alasan = ""
+    if err:
+        alasan = ": " + " ".join(str(err).split())[:160]
     print(f"[data] {label}: {time.time() - t0:.1f} detik"
-          f"{' — GAGAL' if err else ''}", file=sys.stderr)
+          f"{' — GAGAL' + alasan if err else ''}", file=sys.stderr)
     return keluar, err
 
 

@@ -46,6 +46,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import urllib.parse
 from datetime import datetime, timedelta, timezone
 
@@ -140,15 +141,40 @@ def _curl(url, timeout=35):
         return ""
 
 
-def _json(url):
-    try:
-        return json.loads(_curl(url) or "{}")
-    except json.JSONDecodeError:
-        return {}
+# CoinGecko paket gratis membalas 429 saat permintaan per menit terlampaui. Di GitHub
+# Actions itu hampir pasti: saat naratif.py mulai, belasan skrip lain sudah menembak
+# CoinGecko duluan. Diukur 17 Sep 2026, run 35177796577: naratif.py GAGAL dalam 3,7 detik
+# di runner, sementara di laptop jalan normal dalam 14 detik. 429 bersifat sementara,
+# jadi yang benar adalah menunggu lalu mencoba lagi — bukan membuang seluruh blok.
+JEDA_ULANG_429 = (8, 20)
+
+
+def _kena_batas(d):
+    st = d.get("status") if isinstance(d, dict) else None
+    return isinstance(st, dict) and st.get("error_code") == 429
+
+
+def _json(url, jeda=JEDA_ULANG_429):
+    """JSON dari url. {} kalau gagal. Permintaan ke CoinGecko diulang saat kena 429 atau
+    balasan kosong; sumber lain tidak, karena kegagalan mereka bukan soal kuota."""
+    ulang = jeda if "coingecko.com" in url else ()
+    for i in range(len(ulang) + 1):
+        teks = _curl(url)
+        try:
+            d = json.loads(teks) if teks else None
+        except json.JSONDecodeError:
+            d = None
+        if d is not None and not _kena_batas(d):
+            return d
+        if i < len(ulang):
+            time.sleep(ulang[i])
+    return {}
 
 
 def coingecko(cg_id):
-    d = _json(f"https://api.coingecko.com/api/v3/coins/{cg_id}?localization=false&tickers=false"
+    # tickers=true: bursa tier-1 dibaca dari balasan yang SAMA, bukan permintaan terpisah.
+    # Di bawah kuota per menit, satu permintaan lebih sedikit itu berarti.
+    d = _json(f"https://api.coingecko.com/api/v3/coins/{cg_id}?localization=false&tickers=true"
               f"&community_data=false&developer_data=false&sparkline=false")
     m = d.get("market_data") or {}
     if not m:
@@ -162,12 +188,30 @@ def coingecko(cg_id):
             "ubah_30h": m.get("price_change_percentage_30d"),
             "ubah_1thn": m.get("price_change_percentage_1y"),
             "kategori": d.get("categories") or [],
-            "repo": (((d.get("links") or {}).get("repos_url") or {}).get("github") or [])[:3]}
+            "repo": (((d.get("links") or {}).get("repos_url") or {}).get("github") or [])[:3],
+            "tickers": d.get("tickers") or []}
 
 
 def trending_ids():
+    """None kalau gagal diambil — BUKAN himpunan kosong. Kosong akan terbaca "tidak
+    trending", padahal yang sebenarnya "tidak diketahui"."""
     d = _json("https://api.coingecko.com/api/v3/search/trending")
-    return {c.get("item", {}).get("id") for c in d.get("coins", [])}
+    koin = d.get("coins")
+    if not isinstance(koin, list):
+        return None
+    return {c.get("item", {}).get("id") for c in koin}
+
+
+def cari_cg_id(simbol):
+    """id CoinGecko dari ticker, lewat _json yang tahan 429. indicators.resolve_cg_id
+    menelan 429 sebagai "tidak dikenali" — alasan palsu yang membuat koin besar seperti
+    TAO terdengar tidak ada."""
+    d = _json("https://api.coingecko.com/api/v3/search?query=" + urllib.parse.quote(simbol))
+    koin = d.get("coins") or []
+    for c in koin:
+        if (c.get("symbol") or "").upper() == simbol.upper():
+            return c.get("id")
+    return koin[0].get("id") if koin else None
 
 
 def dev_activity(slug):
@@ -312,26 +356,47 @@ def revenue_1thn(simbol):
 
 
 # --- Rakitan ------------------------------------------------------------------------------
+def hasil_tanpa_coingecko(simbol, alasan, rev=None, musim_alt=None):
+    """CoinGecko gagal BUKAN berarti semuanya gagal.
+
+    Versi sebelumnya langsung berhenti, jadi revenue DefiLlama dan musim altcoin — yang
+    sama sekali tidak butuh CoinGecko — ikut terbuang, dan model menerima blok kosong.
+    Yang tidak bisa diukur tanpa CoinGecko disebut terang-terangan, bukan diberi angka.
+    """
+    return {
+        "koin": simbol, "tidak_tersedia": alasan,
+        "catatan": ("Tokenomics, likuiditas, listing tier-1, timing, dan aktivitas developer "
+                    "butuh data CoinGecko dan TIDAK terukur di run ini. Jangan menaksirnya "
+                    "lalu menyebutnya hasil ukur kode."),
+        "kriteria": {"revenue": {"skor": skor_revenue(rev), "bobot": BOBOT["revenue"],
+                                 "data": {"revenue_1thn_usd": round(rev) if rev is not None else None}}},
+        "sinyal_distribusi": {"musim_altcoin": musim_alt},
+        "wajib_dibaca": WAJIB_DIBACA,
+    }
+
+
 def analisa(simbol):
-    if BASE_DIR not in sys.path:
-        sys.path.insert(0, BASE_DIR)
-    import indicators as ind
-    cg_id = ind.resolve_cg_id(simbol.upper())
-    if not cg_id:
-        return {"koin": simbol.upper(), "tidak_tersedia": "koin tidak dikenali CoinGecko"}
+    simbol = simbol.upper()
     with concurrent.futures.ThreadPoolExecutor(max_workers=7) as ex:
-        f_cg = ex.submit(coingecko, cg_id)
+        # Yang tidak butuh CoinGecko dimulai DULUAN, supaya tetap ada walau CoinGecko gagal.
+        f_rev = ex.submit(revenue_1thn, simbol)
+        f_ms = ex.submit(data_musim)
+        cg_id = cari_cg_id(simbol)
+        if not cg_id:
+            return hasil_tanpa_coingecko(
+                simbol, "id CoinGecko tidak bisa diambil — koin tidak dikenali, ATAU "
+                        "CoinGecko menolak karena batas permintaan", f_rev.result(), f_ms.result())
         f_tr = ex.submit(trending_ids)
         f_dev = ex.submit(dev_activity, cg_id)
-        f_rev = ex.submit(revenue_1thn, simbol.upper())
-        cg = f_cg.result()
+        cg = coingecko(cg_id)
         if not cg:
-            return {"koin": simbol.upper(), "tidak_tersedia": "data CoinGecko gagal diambil"}
+            return hasil_tanpa_coingecko(
+                simbol, "data koin CoinGecko gagal diambil (kemungkinan batas permintaan)",
+                f_rev.result(), f_ms.result())
         f_pv = ex.submit(pageviews, cg["nama"] or simbol)
         f_nw = ex.submit(berita_7_hari, cg["nama"] or simbol)
-        f_ms = ex.submit(data_musim)
-        f_br = ex.submit(bursa_tier1, cg_id)
-        f_dk = ex.submit(data_devkode, simbol.upper(), cg["nama"], cg.get("repo"))
+        f_br = ex.submit(ringkas_tickers, cg.get("tickers"))
+        f_dk = ex.submit(data_devkode, simbol, cg["nama"], cg.get("repo"))
         trending, dev, rev, pv, berita = (f_tr.result(), f_dev.result(), f_rev.result(),
                                           f_pv.result(), f_nw.result())
         musim_alt, bursa, devkode_hasil = f_ms.result(), f_br.result(), f_dk.result()
@@ -373,7 +438,7 @@ def analisa(simbol):
                             if cg["harga"] and cg["ath"] else None,
                             "ubah_30_hari_persen": round(cg["ubah_30h"], 1) if cg["ubah_30h"] is not None else None,
                             "ubah_1_tahun_persen": round(cg["ubah_1thn"], 1) if cg["ubah_1thn"] is not None else None,
-                            "trending_coingecko": cg_id in trending,
+                            "trending_coingecko": (cg_id in trending) if trending is not None else None,
                             "wikipedia_pageviews": pv,
                             "musim_altcoin": musim_alt},
                    "catatan": "Timing tidak diberi angka kode: tidak ada pemetaan teruji dari "
@@ -437,7 +502,10 @@ def main():
     args = ap.parse_args()
     hasil = analisa(args.simbol)
     print(json.dumps(hasil, indent=None if args.json else 2, ensure_ascii=False))
-    return 0 if not hasil.get("tidak_tersedia") else 1
+    # Selalu 0. Bot membuang SELURUH keluaran skrip yang keluar bukan 0 — termasuk alasan
+    # kegagalannya dan data yang tetap berhasil diambil. Kelengkapan data tetap tercatat
+    # benar: blok kelengkapan bot mengenali kunci "tidak_tersedia" sebagai sumber kosong.
+    return 0
 
 
 if __name__ == "__main__":
