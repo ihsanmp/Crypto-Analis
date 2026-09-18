@@ -61,7 +61,8 @@ memboroskan token tanpa bisa dipakai. Yang membacanya hanya mode SCAN.
    persen supply, **kategori otomatis tiap alamat**, dan konsentrasi. **MULTI-CHAIN:**
    chain terdeteksi otomatis dari CoinGecko; untuk memaksa chain pakai
    `python cloud/investors.py <TICKER> --chain bsc|base|arbitrum|polygon|optimism|avalanche|solana`.
-   Ethereum via Ethplorer+label lokal (tanpa key); chain lain & Solana via Moralis.
+   Ethereum via Ethplorer+label lokal; Base/Arbitrum/Optimism/Polygon via Blockscout;
+   Avalanche via Routescan — semuanya tanpa key. BSC & Solana tidak punya sumber gratis.
    **CARA MEMBACANYA:**
    - Tiap holder punya field `kategori`: BURSA / KONTRAK-PROTOKOL / TERLABELI (dari dataset
      label gratis) atau TIDAK DIKENALI. Alamat BURSA & KONTRAK **bukan** whale perorangan —
@@ -70,8 +71,11 @@ memboroskan token tanpa bisa dipakai. Yang membacanya hanya mode SCAN.
      bukan `top10_persen` mentah.
    - Alamat berlabel TIDAK DIKENALI yang porsinya besar (>2-3%): cek lewat WebSearch —
      bisa jadi whale, dana/VC, atau kontrak yang belum ada di dataset. Jangan mengarang.
-   - Kalau `error` menyebut MORALIS_API_KEY belum di-set (chain non-ETH), sebutkan data holder
-     chain itu butuh key Moralis gratis dan keluarkan F8 dari skor; ETH tetap bisa.
+   - Kalau `error` menyebut "tidak ada sumber gratis" (BSC/Solana), sebutkan data holder chain
+     itu tidak tersedia gratis dan keluarkan F8 dari skor. Jangan menyebutnya "data investor"
+     atau menjadikannya alasan Tim & VC tak bisa dinilai — ini data HOLDER, bukan data VC.
+   - Kalau `error` menyebut koin natif, kontrak yang ada hanyalah versi bridge; data holder
+     koin itu tidak tersedia dari script ini.
    - Kalau `error` lain (koin L1 sendiri seperti BTC), sebutkan data holder on-chain tidak
      tersedia untuk chain itu dan keluarkan F8 dari skor.
 
@@ -79,7 +83,7 @@ memboroskan token tanpa bisa dipakai. Yang membacanya hanya mode SCAN.
    `python cloud/wallet.py <ALAMAT>` (auto ETH/Solana) atau `--chain <chain>` untuk chain lain
    → isi dompet, nilai USD tiap aset, % portofolio, nilai bersih, dan identitas alamat bila
    dikenal (mis. "Binance 8"). Token spam sudah dibuang. Gunakan untuk menjawab "dompet ini
-   isinya apa / punya siapa / lagi ngapain". Butuh MORALIS_API_KEY (ETH label tetap jalan tanpa key).
+   isinya apa / punya siapa / lagi ngapain". Tanpa key untuk Ethereum/Base/Arbitrum/Optimism/Polygon/Avalanche; Solana hanya saldo SOL; BSC tidak tersedia.
 
 5f. **Aliran dana alamat tertentu (MCP `mcp__blockscout__*`, gratis tanpa key).**
    WAJIB panggil `__unlock_blockchain_analysis__` dulu. Lalu `get_token_transfers_by_address`

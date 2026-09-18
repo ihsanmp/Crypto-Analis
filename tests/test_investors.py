@@ -30,6 +30,8 @@ def _palsu_cg(asset_platform_id, platforms):
                     "platforms": platforms}
         if "moralis" in url:
             return {"__err": 'HTTP 401 {"message":"Token is invalid format"}'}
+        if "blockscout" in url:
+            return {"items": []} if url.endswith("/holders") else {"total_supply": "1"}
         raise AssertionError(f"URL tak terduga: {url}")
     return try_json
 
@@ -66,7 +68,9 @@ def test_token_kontrak_tetap_berjalan(monkeypatch, capsys):
 
 
 def test_401_moralis_menyebut_secret_yang_harus_diperbarui(monkeypatch, capsys):
-    monkeypatch.setattr(investors, "try_json", _palsu_cg("base", {"base": TAO_BASE}))
+    # BSC: satu-satunya chain EVM yang masih lewat Moralis.
+    monkeypatch.setattr(investors, "try_json",
+                        _palsu_cg("binance-smart-chain", {"binance-smart-chain": TAO_BASE}))
     monkeypatch.setattr(investors, "MORALIS_KEY", "kunci")
     h = _jalankan(monkeypatch, capsys, ["XYZ"])
     assert "401" in h["error"] and "MORALIS_API_KEY" in h["error"]
@@ -75,7 +79,7 @@ def test_401_moralis_menyebut_secret_yang_harus_diperbarui(monkeypatch, capsys):
 
 @pytest.mark.parametrize("platform,platforms", [
     (None, {"base": TAO_BASE}),          # jalur error natif
-    ("base", {"base": TAO_BASE}),        # jalur error 401
+    ("binance-smart-chain", {"binance-smart-chain": TAO_BASE}),   # jalur error 401
 ])
 def test_setiap_keluaran_menegaskan_holder_bukan_data_vc(monkeypatch, capsys, platform, platforms):
     monkeypatch.setattr(investors, "try_json", _palsu_cg(platform, platforms))
@@ -120,3 +124,74 @@ def test_401_kuota_dihentikan_tidak_disebut_key_salah():
         'HTTP 401 {"message":"Your Moralis Free usage is paused. Upgrade to a paid plan'
         ' to resume usage."}')
     assert "key-nya sah" in pesan and "tidak valid" not in pesan
+
+
+# ---- Pengganti Moralis (19 Sep): akun Moralis habis masa uji coba, "0 of 0" CU. ----------
+# Hasil probe: Blockscout terbuka tanpa key untuk ethereum/base/arbitrum/optimism/polygon,
+# Routescan untuk avalanche. BSC & Solana tidak punya sumber gratis tanpa key (Ankr 403,
+# Routescan 400, Etherscan v2 "upgrade", RPC publik Solana 429 untuk metode ini).
+
+AERO = "0x940181a94a35a4569e4529a3cdfb74e38fd98631"
+
+
+def _blockscout_palsu(url, headers=None):
+    if url.endswith(f"/tokens/{AERO}"):
+        return {"name": "Aerodrome", "symbol": "AERO", "holders_count": "123",
+                "total_supply": "1000", "decimals": "18"}
+    if url.endswith(f"/tokens/{AERO}/holders"):
+        return {"items": [
+            {"address": {"hash": "0xA", "is_contract": True, "name": None,
+                         "metadata": {"tags": [{"name": "Aerodrome: Voting Escrow", "tagType": "name"},
+                                               {"name": "DeFi", "tagType": "generic"}]}},
+             "value": "400"},
+            {"address": {"hash": "0xB", "is_contract": False, "name": None, "metadata": None},
+             "value": "100"},
+        ]}
+    raise AssertionError(url)
+
+
+def test_blockscout_menghitung_persen_dan_label(monkeypatch):
+    monkeypatch.setattr(investors, "try_json", _blockscout_palsu)
+    daftar, token, err = investors.blockscout_holders(AERO, "base", 10)
+    assert err is None and token["symbol"] == "AERO"
+    assert daftar[0] == {"alamat": "0xA", "persen_supply": 40.0,
+                         "label": "Aerodrome: Voting Escrow", "kategori": "KONTRAK/PROTOKOL"}
+    assert daftar[1]["persen_supply"] == 10.0
+    assert daftar[1]["kategori"].startswith("TIDAK DIKENALI")
+
+
+def test_blockscout_timeout_dilaporkan_bukan_crash(monkeypatch):
+    monkeypatch.setattr(investors, "try_json", lambda url, headers=None: {"__err": "TimeoutError: x"})
+    daftar, token, err = investors.blockscout_holders(AERO, "base", 10)
+    assert daftar is None and "Blockscout" in err
+
+
+def test_routescan_pecahan_jadi_persen(monkeypatch):
+    monkeypatch.setattr(investors, "try_json", lambda url, headers=None: {"items": [
+        {"address": "0xA", "balance": "5", "percentage": 0.209452}]})
+    daftar, _, err = investors.routescan_holders("0x" + "1" * 40, 10)
+    assert err is None and daftar[0]["persen_supply"] == 20.95
+
+
+@pytest.mark.parametrize("chain,harap", [
+    ("base", "Blockscout"), ("arbitrum", "Blockscout"), ("optimism", "Blockscout"),
+    ("polygon", "Blockscout"), ("avalanche", "Routescan"), ("ethereum", "Ethplorer"),
+])
+def test_rute_tidak_lagi_lewat_moralis(chain, harap):
+    assert harap in investors.SUMBER_CHAIN[chain]
+
+
+@pytest.mark.parametrize("chain", ["bsc", "solana"])
+def test_chain_tanpa_sumber_gratis_disebut_jujur(monkeypatch, capsys, chain):
+    monkeypatch.setattr(investors, "MORALIS_KEY", "")
+    monkeypatch.setattr(investors, "try_json", _palsu_cg("x", {investors.CHAINS[chain]["cg"]: (
+        TAO_BASE if chain == "bsc" else "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN")}))
+    h = _jalankan(monkeypatch, capsys, ["XYZ"])
+    assert "tidak ada sumber gratis" in h["error"]
+
+
+def test_kontrak_bernama_tanpa_kata_kunci_tetap_kontrak():
+    assert investors.klasifikasi_moralis(None, "Aave Matic Market AAVE", True) == (
+        "Aave Matic Market AAVE", "KONTRAK/PROTOKOL")
+    assert investors.klasifikasi_moralis(None, "Binance 8", False)[1] == "BURSA"
+    assert investors.klasifikasi_moralis(None, "Wintermute", False)[1] == "TERLABELI"

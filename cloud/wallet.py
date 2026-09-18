@@ -3,16 +3,17 @@
 Beda dengan investors.py (yang melihat holder sebuah TOKEN), script ini melihat SATU
 ALAMAT DOMPET: apa saja yang dipegang, berapa nilainya, dan (kalau dikenal) siapa dia.
 
-SUMBER:
-  - EVM (Ethereum, BSC, Base, Arbitrum, Polygon, Optimism, Avalanche) -> Moralis
-    `/wallets/{addr}/tokens` (saldo + harga + % portofolio). Butuh MORALIS_API_KEY gratis.
-  - Solana -> Moralis Solana Gateway `/account/mainnet/{addr}/portfolio`.
+SUMBER (semua tanpa key; Moralis ditinggalkan 19 Sep 2026 — akunnya habis masa uji coba):
+  - Ethereum, Base, Arbitrum, Optimism, Polygon -> Blockscout `/api/v2/addresses/{addr}`
+    (saldo native + harga) dan `/token-balances` (token + harga + reputasi).
+  - Avalanche -> Routescan `/address/{addr}/erc20-holdings` (token + nilai USD).
+  - Solana -> RPC publik `getBalance` (saldo SOL SAJA; daftar token SPL ditolak RPC publik).
+  - BSC -> tidak ada sumber gratis; Moralis dipakai hanya kalau paketnya berbayar.
   - Label alamat Ethereum diperkaya dari eth_labels.json lokal (bursa/kontrak/dll).
 
 BATASAN:
   - Alamat EVM sama bentuknya di semua chain — default Ethereum; pakai --chain untuk chain lain.
-  - Token spam/scam ditandai possible_spam dan TIDAK dihitung ke nilai bersih.
-  - USD di Solana bisa sebagian saja (tergantung ketersediaan harga di Moralis).
+  - Token berreputasi scam TIDAK dihitung; token tanpa harga ditulis usd=None, bukan 0.
 
 Pemakaian:
     python cloud/wallet.py 0xF977814e90dA44bFA03b6295A0616a897441aceC          # ETH (default)
@@ -34,6 +35,17 @@ TIMEOUT = 25
 MORALIS_EVM = "https://deep-index.moralis.io/api/v2.2"
 MORALIS_SOL = "https://solana-gateway.moralis.io"
 MORALIS_KEY = os.environ.get("MORALIS_API_KEY", "").strip()
+BLOCKSCOUT = {"ethereum": "eth.blockscout.com", "base": "base.blockscout.com",
+              "arbitrum": "arbitrum.blockscout.com", "optimism": "optimism.blockscout.com",
+              "polygon": "polygon.blockscout.com"}
+NATIVE = {"ethereum": "ETH", "base": "ETH", "arbitrum": "ETH", "optimism": "ETH",
+          "polygon": "POL"}
+ROUTESCAN = "https://api.routescan.io/v2/network/mainnet/evm"
+SOLANA_RPC = "https://api.mainnet-beta.solana.com"
+SUMBER = {**{c: "Blockscout (gratis, tanpa key)" for c in BLOCKSCOUT},
+          "avalanche": "Routescan (gratis, tanpa key)",
+          "solana": "RPC publik Solana (gratis, saldo SOL saja)",
+          "bsc": "Moralis (butuh paket berbayar)"}
 
 EVM_SLUG = {
     "ethereum": "eth", "bsc": "bsc", "polygon": "polygon", "arbitrum": "arbitrum",
@@ -71,12 +83,15 @@ def load_labels():
     return {}
 
 
-def try_json(url, headers=None):
+def try_json(url, headers=None, data=None):
     h = dict(UA)
     if headers:
         h.update(headers)
+    if data is not None:
+        h["content-type"] = "application/json"
+        data = json.dumps(data).encode()
     try:
-        req = urllib.request.Request(url, headers=h)
+        req = urllib.request.Request(url, data=data, headers=h)
         with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
             return json.loads(r.read().decode())
     except urllib.error.HTTPError as e:
@@ -102,7 +117,76 @@ def label_alamat(addr):
     return teks, kat
 
 
+def _angka(x):
+    try:
+        return float(x)
+    except (TypeError, ValueError):
+        return None
+
+
+def _rangkum(holdings, catatan=None):
+    """Urutkan per nilai, hitung nilai bersih & porsi dari aset yang BERHARGA saja."""
+    total = sum(h["usd"] for h in holdings if h["usd"])
+    for h in holdings:
+        h["persen_portofolio"] = round(h["usd"] / total * 100, 2) if total and h["usd"] else None
+    holdings.sort(key=lambda x: -(x["usd"] or 0))
+    hasil = {"nilai_bersih_usd": round(total, 2), "jumlah_aset": len(holdings),
+             "holdings": holdings[:25]}
+    if catatan:
+        hasil["catatan"] = catatan
+    return hasil
+
+
+def blockscout_wallet(addr, chain):
+    host = BLOCKSCOUT[chain]
+    info = try_json(f"https://{host}/api/v2/addresses/{addr}")
+    token = try_json(f"https://{host}/api/v2/addresses/{addr}/token-balances")
+    if isinstance(info, dict) and "__err" in info and isinstance(token, dict):
+        return {"error": f"Blockscout ({chain}) gagal: {info['__err']}"}
+    holdings = []
+    if isinstance(info, dict) and "__err" not in info:
+        jml, kurs = _angka(info.get("coin_balance")), _angka(info.get("exchange_rate"))
+        if jml:
+            jml /= 1e18
+            holdings.append({"symbol": NATIVE[chain], "nama": f"{NATIVE[chain]} (native)",
+                             "jumlah": round(jml, 6),
+                             "usd": round(jml * kurs, 2) if kurs is not None else None,
+                             "native": True})
+    for t in (token if isinstance(token, list) else []):
+        tk = t.get("token") or {}
+        if (tk.get("reputation") or "ok") != "ok":
+            continue                    # scam/spam: jangan ikut menggelembungkan nilai
+        des = _angka(tk.get("decimals")) or 0
+        jml = _angka(t.get("value"))
+        if jml is None:
+            continue
+        jml /= 10 ** des
+        kurs = _angka(tk.get("exchange_rate"))
+        holdings.append({"symbol": tk.get("symbol"), "nama": tk.get("name"),
+                         "jumlah": round(jml, 6),
+                         "usd": round(jml * kurs, 2) if kurs is not None else None,
+                         "native": False})
+    return _rangkum(holdings)
+
+
+def routescan_wallet(addr, chain_id=43114):
+    data = try_json(f"{ROUTESCAN}/{chain_id}/address/{addr}/erc20-holdings?limit=100")
+    if "__err" in data:
+        return {"error": f"Routescan gagal: {data['__err']}"}
+    holdings = []
+    for t in (data.get("items") or []):
+        jml = _angka(t.get("tokenQuantity"))
+        des = _angka(t.get("tokenDecimals")) or 0
+        usd = _angka(t.get("tokenValueInUsd"))
+        holdings.append({"symbol": t.get("tokenSymbol"), "nama": t.get("tokenName"),
+                         "jumlah": round(jml / 10 ** des, 6) if jml is not None else None,
+                         "usd": round(usd, 2) if usd is not None else None,
+                         "native": False})
+    return _rangkum(holdings, "Saldo AVAX native tidak termasuk (Routescan hanya token ERC-20).")
+
+
 def evm_wallet(addr, chain):
+    """Jalur Moralis — kini hanya untuk BSC, dan hanya berguna dengan paket berbayar."""
     if not MORALIS_KEY:
         return {"error": "MORALIS_API_KEY belum di-set."}
     slug = EVM_SLUG[chain]
@@ -134,28 +218,18 @@ def evm_wallet(addr, chain):
 
 
 def solana_wallet(addr):
-    if not MORALIS_KEY:
-        return {"error": "MORALIS_API_KEY belum di-set."}
-    data = try_json(f"{MORALIS_SOL}/account/mainnet/{addr}/portfolio",
-                    headers={"X-API-Key": MORALIS_KEY, "accept": "application/json"})
-    if "__err" in data:
-        return {"error": f"Moralis Solana gagal: {data['__err']}"}
-    holdings = []
-    native = data.get("nativeBalance") or {}
-    if native:
-        holdings.append({"symbol": "SOL", "nama": "Solana (native)",
-                         "jumlah": native.get("solana") or native.get("lamports"),
-                         "native": True})
-    for t in (data.get("tokens") or []):
-        holdings.append({
-            "symbol": t.get("symbol"),
-            "nama": t.get("name"),
-            "jumlah": t.get("amount") or t.get("amountRaw"),
-            "mint": t.get("mint") or t.get("associatedTokenAddress"),
-        })
-    return {"jumlah_aset": len(holdings),
-            "holdings": holdings[:25],
-            "catatan": "Nilai USD di Solana bisa tidak lengkap; jumlah token tetap akurat."}
+    data = try_json(SOLANA_RPC, data={"jsonrpc": "2.0", "id": 1, "method": "getBalance",
+                                      "params": [addr]})
+    if "__err" in data or "error" in data:
+        return {"error": f"RPC Solana gagal: {data.get('__err') or data.get('error')}"}
+    lamports = (data.get("result") or {}).get("value")
+    if lamports is None:
+        return {"error": "RPC Solana tidak mengembalikan saldo."}
+    return {"jumlah_aset": 1,
+            "holdings": [{"symbol": "SOL", "nama": "Solana (native)",
+                          "jumlah": lamports / 1e9, "usd": None, "native": True}],
+            "catatan": ("Hanya saldo SOL. Daftar token SPL tidak tersedia gratis (RPC publik "
+                        "menolak getTokenAccountsByOwner); cek Solscan lewat WebSearch.")}
 
 
 def main():
@@ -176,10 +250,10 @@ def main():
         "alamat": addr,
         "chain": chain,
         "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
-        "sumber": "Moralis (gratis) + label lokal etherscan-labels (khusus Ethereum)",
+        "sumber": SUMBER.get(chain, "?") + " + label lokal etherscan-labels (khusus Ethereum)",
         "peringatan": [
             "Alamat bursa memegang dana banyak nasabah — bukan kekayaan satu orang.",
-            "Token possible_spam sudah dibuang dari nilai bersih; sisa aset tak berharga bisa muncul.",
+            "Token berreputasi scam sudah dibuang dari nilai bersih; token tanpa harga bernilai usd=None.",
             "Satu alamat EVM bisa aktif di banyak chain — cek chain lain dengan --chain bila perlu.",
         ],
     }
@@ -197,16 +271,24 @@ def main():
             hasil["error"] = f"Alamat '{addr[:24]}' bukan format EVM (0x + 40 hex)."
             print(json.dumps(hasil, indent=2, ensure_ascii=False))
             return
-        hasil["portofolio"] = evm_wallet(addr, chain)
+        if chain in BLOCKSCOUT:
+            hasil["portofolio"] = blockscout_wallet(addr, chain)
+        elif chain == "avalanche":
+            hasil["portofolio"] = routescan_wallet(addr)
+        else:
+            port = evm_wallet(addr, chain)
+            if "error" in port:
+                port["error"] = (f"{chain}: tidak ada sumber gratis tanpa key untuk isi dompet "
+                                 f"chain ini. Moralis: {port['error']}")
+            hasil["portofolio"] = port
     else:
         hasil["error"] = f"Chain '{chain}' tidak dikenal. Pilihan: {list(EVM_SLUG) + ['solana']}"
         print(json.dumps(hasil, indent=2, ensure_ascii=False))
         return
 
     port = hasil.get("portofolio") or {}
-    if isinstance(port, dict) and "MORALIS_API_KEY" in str(port.get("error", "")):
-        hasil["saran"] = ("Daftar gratis di moralis.com, salin API key, simpan sebagai GitHub "
-                          "Secret MORALIS_API_KEY.")
+    if isinstance(port, dict) and port.get("error"):
+        hasil["saran"] = "Cek isi dompet lewat WebSearch di explorer chain itu, sebutkan keterbatasannya."
 
     print(json.dumps(hasil, indent=2, ensure_ascii=False))
 

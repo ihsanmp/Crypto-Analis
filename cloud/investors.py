@@ -5,16 +5,17 @@ Menjawab bagian "siapa yang memegang koin ini dan seberapa besar" dari sisi ANGK
 SUMBER per chain:
   - Ethereum  -> Ethplorer (gratis, apiKey=freekey) + pelabelan lokal eth_labels.json.
                  Jalur ini TIDAK butuh Moralis, jadi ETH tetap jalan tanpa key baru.
-  - Chain EVM lain (BSC, Base, Arbitrum, Polygon, Optimism, Avalanche) -> Moralis
-                 `/erc20/{addr}/owners` (butuh MORALIS_API_KEY gratis).
-  - Solana    -> Moralis Solana Gateway `/token/mainnet/{addr}/top-holders`
-                 (butuh MORALIS_API_KEY gratis).
+  - Base, Arbitrum, Optimism, Polygon -> Blockscout `/api/v2/tokens/{addr}/holders`
+                 (tanpa key; label dari nama kontrak & Open Labels Initiative).
+  - Avalanche -> Routescan `/erc20/{addr}/holders` (tanpa key, tanpa label).
+  - BSC, Solana -> tidak ada sumber gratis (diuji 19 Sep 2026). Moralis tetap dicoba kalau
+                 MORALIS_API_KEY berpaket berbayar; akun uji cobanya sudah berakhir.
 
 Alamat kontrak per chain diresolusi dari CoinGecko (`platforms`), keyless.
 
 BATASAN YANG HARUS DISAMPAIKAN APA ADANYA:
   1. Pelabelan paling kaya hanya di Ethereum (eth_labels.json, 29 rb alamat). Di chain
-     lain label bergantung pada data Moralis (`entity`/`is_contract`) — lebih terbatas,
+     lain label bergantung pada Blockscout (nama kontrak/tag) — lebih terbatas,
      jadi alamat "TIDAK DIKENALI" WAJIB dicek lewat WebSearch sebelum disebut whale.
   2. Porsi besar di kontrak staking/treasury/bridge BUKAN tanda konsentrasi di satu
      orang. Jangan simpulkan konsentrasi sebelum alamatnya dikenali.
@@ -47,6 +48,33 @@ MORALIS_EVM = "https://deep-index.moralis.io/api/v2.2"
 MORALIS_SOL = "https://solana-gateway.moralis.io"
 CG = "https://api.coingecko.com/api/v3"
 MORALIS_KEY = os.environ.get("MORALIS_API_KEY", "").strip()
+ROUTESCAN = "https://api.routescan.io/v2/network/mainnet/evm"
+# Pengganti Moralis (19 Sep 2026): akun Moralis habis masa uji coba — dashboard "Free Trial
+# Plan usage 0 of 0 CU", Data API terkunci. Keduanya diuji tanpa key sebelum dipakai.
+# Token dengan jutaan holder (USDC) membuat Blockscout timeout; token altcoin biasa < 3 dtk.
+BLOCKSCOUT = {
+    "ethereum": "eth.blockscout.com",   # cadangan kalau Ethplorer gagal
+    "base": "base.blockscout.com",
+    "arbitrum": "arbitrum.blockscout.com",
+    "optimism": "optimism.blockscout.com",
+    "polygon": "polygon.blockscout.com",
+}
+ROUTESCAN_CHAIN = {"avalanche": 43114}
+SUMBER_CHAIN = {
+    "ethereum": "Ethplorer (gratis) + label lokal etherscan-labels, cadangan Blockscout",
+    "base": "Blockscout (gratis, tanpa key)",
+    "arbitrum": "Blockscout (gratis, tanpa key)",
+    "optimism": "Blockscout (gratis, tanpa key)",
+    "polygon": "Blockscout (gratis, tanpa key)",
+    "avalanche": "Routescan (gratis, tanpa key)",
+    "bsc": "Moralis (butuh paket berbayar)",
+    "solana": "Moralis Solana Gateway (butuh paket berbayar)",
+}
+# Diuji 19 Sep: Ankr 403, Routescan 400 (BSC tak didukung), Etherscan v2 "upgrade your api
+# plan", RPC publik Solana 429 untuk getTokenLargestAccounts, publicnode 403.
+_TANPA_SUMBER_GRATIS = ("tidak ada sumber gratis tanpa key untuk daftar holder chain ini "
+                        "(Ankr, Routescan, Etherscan v2, dan RPC publik Solana sudah diuji "
+                        "dan menolak).")
 
 # Registry chain: nama internal -> kunci platform CoinGecko, slug chain Moralis, tipe.
 CHAINS = {
@@ -110,7 +138,12 @@ def klasifikasi_moralis(entity, label, is_contract):
     """Beri label + kategori untuk holder dari Moralis (chain non-Ethereum)."""
     teks = (entity or label or "").strip()
     if teks:
-        return teks, kategori_label(teks)
+        kat = kategori_label(teks)
+        # Nama yang tidak memuat kata kunci ("Aave Matic Market AAVE") tetap sebuah KONTRAK
+        # kalau sumbernya bilang begitu — bukan entitas yang memegang koin untuk dirinya.
+        if kat == "TERLABELI" and is_contract:
+            kat = "KONTRAK/PROTOKOL"
+        return teks, kat
     if is_contract:
         return "kontrak (tak bernama)", "KONTRAK/PROTOKOL"
     return "belum dikenali", "TIDAK DIKENALI — cek lewat WebSearch"
@@ -194,6 +227,62 @@ def ethplorer_holders(address, limit):
                        "persen_supply": round(float(share), 2) if share is not None else None,
                        "label": nm, "kategori": kat})
     return daftar, token, None
+
+
+def _nama_blockscout(alamat):
+    """Nama alamat dari Blockscout: nama kontrak, lalu tag bertipe 'name' (Open Labels)."""
+    if alamat.get("name"):
+        return alamat["name"]
+    for tag in ((alamat.get("metadata") or {}).get("tags") or []):
+        if tag.get("tagType") == "name" and tag.get("name"):
+            return tag["name"]
+    return None
+
+
+def blockscout_holders(address, chain, limit):
+    host = BLOCKSCOUT[chain]
+    info = try_json(f"https://{host}/api/v2/tokens/{address}")
+    token, supply = {}, None
+    if "__err" not in info:
+        token = {"nama": info.get("name"), "symbol": info.get("symbol"),
+                 "jumlah_holder": info.get("holders_count") or info.get("holders")}
+        try:
+            supply = float(info.get("total_supply") or 0) or None
+        except (TypeError, ValueError):
+            supply = None
+    data = try_json(f"https://{host}/api/v2/tokens/{address}/holders")
+    if "__err" in data:
+        return None, token, f"Blockscout ({chain}) gagal: {data['__err']}"
+    daftar = []
+    for h in (data.get("items") or [])[:limit]:
+        alamat = h.get("address") or {}
+        try:
+            pct = round(float(h.get("value")) / supply * 100, 2) if supply else None
+        except (TypeError, ValueError):
+            pct = None
+        nm, kat = klasifikasi_moralis(None, _nama_blockscout(alamat),
+                                      bool(alamat.get("is_contract")))
+        daftar.append({"alamat": alamat.get("hash"), "persen_supply": pct,
+                       "label": nm, "kategori": kat})
+    return daftar, token, None
+
+
+def routescan_holders(address, limit, chain_id=43114):
+    data = try_json(f"{ROUTESCAN}/{chain_id}/erc20/{address}/holders?limit={min(limit, 100)}")
+    if "__err" in data:
+        return None, {}, f"Routescan gagal: {data['__err']}"
+    items = data.get("items") or []
+    # "percentage" berupa PECAHAN (0,209 = 20,9%): saldo/porsi USDC Avalanche teratas cocok
+    # dengan pasokan ~391 jt. Dijaga seandainya suatu hari berubah jadi persen.
+    faktor = 1 if any(float(i.get("percentage") or 0) > 1 for i in items) else 100
+    daftar = []
+    for h in items[:limit]:
+        p = h.get("percentage")
+        daftar.append({"alamat": h.get("address"),
+                       "persen_supply": round(float(p) * faktor, 2) if p is not None else None,
+                       "label": "belum dikenali",
+                       "kategori": "TIDAK DIKENALI — cek lewat WebSearch"})
+    return daftar, {}, None
 
 
 def _galat_moralis(err, label="Moralis"):
@@ -376,23 +465,31 @@ def main():
     hasil["kontrak"] = address
 
     # Rute ke sumber sesuai chain.
+    hasil["sumber"] = SUMBER_CHAIN[chain] + " + CoinGecko (resolusi)"
     if chain == "ethereum":
         daftar, token, err = ethplorer_holders(address, limit)
-        hasil["sumber"] = "Ethplorer (gratis) + label lokal etherscan-labels + CoinGecko (resolusi)"
-    elif tipe == "solana":
-        daftar, token, err = moralis_solana_holders(address, limit)
-        hasil["sumber"] = "Moralis Solana Gateway (gratis) + CoinGecko (resolusi)"
+        if err:
+            daftar, token, err = blockscout_holders(address, chain, limit)
+    elif chain in BLOCKSCOUT:
+        daftar, token, err = blockscout_holders(address, chain, limit)
+    elif chain in ROUTESCAN_CHAIN:
+        daftar, token, err = routescan_holders(address, limit, ROUTESCAN_CHAIN[chain])
     else:
-        daftar, token, err = moralis_evm_holders(address, CHAINS[chain]["moralis"], limit)
-        hasil["sumber"] = f"Moralis ({chain}) (gratis) + CoinGecko (resolusi)"
+        # BSC & Solana: Moralis satu-satunya jalur, dan hanya berguna dengan paket berbayar.
+        if tipe == "solana":
+            daftar, token, err = moralis_solana_holders(address, limit)
+        else:
+            daftar, token, err = moralis_evm_holders(address, CHAINS[chain]["moralis"], limit)
+        if err:
+            err = f"{chain}: {_TANPA_SUMBER_GRATIS} Moralis: {err}"
 
     if token:
         hasil["token"] = token
     if err:
         hasil["error"] = err
-        if "MORALIS_API_KEY" in err:
-            hasil["saran"] = ("Daftar gratis di moralis.com, salin API key, simpan sebagai GitHub "
-                              "Secret MORALIS_API_KEY. Chain Ethereum tetap jalan tanpa key ini.")
+        if chain in ("bsc", "solana"):
+            hasil["saran"] = ("Cari distribusi holder lewat WebSearch di explorer chain itu "
+                              "(BscScan/Solscan), sebutkan keterbatasannya.")
         print(json.dumps(hasil, indent=2, ensure_ascii=False))
         return
 
