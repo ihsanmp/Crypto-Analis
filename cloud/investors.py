@@ -134,20 +134,23 @@ def try_json(url, headers=None):
 
 
 def cg_platforms(ticker):
-    """Kembalikan (platforms_dict, nama_koin, error) dari CoinGecko — keyless."""
+    """Kembalikan (platforms_dict, nama_koin, error, natif) dari CoinGecko — keyless.
+
+    natif=True bila koin ini aset asli chain-nya sendiri (asset_platform_id kosong). Kontrak
+    yang tercantum untuk koin natif adalah versi bridge/wrapped di chain lain."""
     s = try_json(f"{CG}/search?query={urllib.parse.quote(ticker)}")
     coins = s.get("coins") if isinstance(s, dict) else None
     if not coins:
-        return None, None, f"Koin '{ticker}' tidak ditemukan di CoinGecko."
+        return None, None, f"Koin '{ticker}' tidak ditemukan di CoinGecko.", False
     exact = [c for c in coins if (c.get("symbol") or "").upper() == ticker.upper()]
     pick = (exact or coins)[0]
     cid = pick.get("id")
     d = try_json(f"{CG}/coins/{cid}?localization=false&tickers=false"
                  "&market_data=false&community_data=false&developer_data=false")
     if not isinstance(d, dict) or "__err" in d:
-        return None, None, "Gagal mengambil detail koin dari CoinGecko."
+        return None, None, "Gagal mengambil detail koin dari CoinGecko.", False
     plats = {k: v for k, v in (d.get("platforms") or {}).items() if v}
-    return plats, d.get("name"), None
+    return plats, d.get("name"), None, not d.get("asset_platform_id")
 
 
 def deteksi_chain(platforms):
@@ -192,6 +195,13 @@ def ethplorer_holders(address, limit):
     return daftar, token, None
 
 
+def _galat_moralis(err, label="Moralis"):
+    if str(err).startswith("HTTP 401"):
+        return (f"{label} menolak API key (HTTP 401) — secret MORALIS_API_KEY tidak valid atau "
+                "kedaluwarsa; perbarui di GitHub Secrets.")
+    return f"{label} gagal: {err}"
+
+
 def moralis_evm_holders(address, chain_slug, limit):
     if not MORALIS_KEY:
         return None, {}, "MORALIS_API_KEY belum di-set (perlu untuk chain selain Ethereum)."
@@ -199,7 +209,7 @@ def moralis_evm_holders(address, chain_slug, limit):
            f"?chain={chain_slug}&order=DESC&limit={min(limit, 100)}")
     data = try_json(url, headers={"X-API-Key": MORALIS_KEY, "accept": "application/json"})
     if "__err" in data:
-        return None, {}, f"Moralis gagal: {data['__err']}"
+        return None, {}, _galat_moralis(data["__err"])
     daftar = []
     for h in (data.get("result") or []):
         pct = h.get("percentage_relative_to_total_supply")
@@ -218,7 +228,7 @@ def moralis_solana_holders(address, limit):
     url = f"{MORALIS_SOL}/token/mainnet/{address}/top-holders?limit={min(limit, 100)}"
     data = try_json(url, headers={"X-API-Key": MORALIS_KEY, "accept": "application/json"})
     if "__err" in data:
-        return None, {}, f"Moralis Solana gagal: {data['__err']}"
+        return None, {}, _galat_moralis(data["__err"], "Moralis Solana")
     rows = data.get("result") if isinstance(data, dict) else data
     daftar = []
     for h in (rows or []):
@@ -257,13 +267,17 @@ def main():
             "Alamat 'TIDAK DIKENALI' yang porsinya besar WAJIB dicek lewat WebSearch "
             "sebelum disebut whale — data label tidak mencakup semua alamat.",
             "Porsi besar di kontrak staking/treasury/bridge BUKAN tanda konsentrasi berbahaya.",
+            # Run 35289835742: kegagalan sumber ini ditulis sebagai "data investor gagal
+            # ditarik" dan dijadikan alasan Tim & VC tak bisa dinilai.
+            "Ini data HOLDER on-chain, BUKAN data VC/investor. Berhasil atau gagalnya script "
+            "ini tidak ada hubungannya dengan penilaian Tim & VC — jangan dijadikan alasannya.",
         ],
     }
 
     address = args.address
     # Resolusi alamat + (kalau perlu) auto-deteksi chain lewat CoinGecko.
     if not address or not chain:
-        plats, nama, err = cg_platforms(ticker)
+        plats, nama, err, natif = cg_platforms(ticker)
         if err:
             hasil["error"] = err
             hasil["saran"] = ("Koin L1 sendiri (BTC, dsb.) atau tak terdaftar: cari kepemilikan "
@@ -271,6 +285,16 @@ def main():
             print(json.dumps(hasil, indent=2, ensure_ascii=False))
             return
         hasil["nama"] = nama
+        # Koin natif (TAO, dsb.): kontrak yang tercantum hanyalah versi bridge. Holder-nya
+        # bukan pemegang koin itu — di run 35289835742 TAO dibaca lewat kontrak Base.
+        if natif and not chain and not address:
+            hasil["error"] = (f"{ticker} koin natif chain sendiri; kontrak di "
+                              f"{', '.join(sorted(plats)) or 'chain lain'} hanyalah versi "
+                              "bridge/wrapped, holder-nya bukan kepemilikan koin ini.")
+            hasil["saran"] = ("Cari distribusi holder lewat WebSearch di explorer chain aslinya, "
+                              "sebutkan keterbatasannya.")
+            print(json.dumps(hasil, indent=2, ensure_ascii=False))
+            return
         if not chain:
             chain, alamat_auto = deteksi_chain(plats)
             if not chain:
