@@ -83,3 +83,32 @@ def test_setiap_keluaran_menegaskan_holder_bukan_data_vc(monkeypatch, capsys, pl
     h = _jalankan(monkeypatch, capsys, ["XYZ"])
     teks = " ".join(h["peringatan"])
     assert "BUKAN data VC" in teks and "Tim & VC" in teks
+
+
+KUNCI_RAHASIA = "eyJhbGciOiJIUzI1NiJ9.eyJyYWhhc2lhIjoieWEifQ.tandatanganRahasia123"
+
+
+@pytest.mark.parametrize("jawaban,ok", [
+    ({"result": []}, True),
+    ({"__err": 'HTTP 401 {"message":"Token is invalid format"}'}, False),
+])
+def test_periksa_kunci_tidak_pernah_mencetak_isinya(monkeypatch, jawaban, ok):
+    """Log Actions repo ini publik: laporan pemeriksaan tidak boleh memuat sepotong pun kunci."""
+    monkeypatch.setattr(investors, "try_json", lambda url, headers=None: jawaban)
+    hasil, lap = investors.periksa_kunci(KUNCI_RAHASIA)
+    teks = "\n".join(lap)
+    assert hasil is ok
+    for potong in KUNCI_RAHASIA.split("."):
+        assert potong not in teks
+    assert "wajar (JWT)" in teks
+
+
+@pytest.mark.parametrize("kunci,harap", [
+    ("", "TIDAK ADA"),
+    ("abc123", "BUKAN JWT"),
+    ('"eyJa.eyJb.c"', "tanda kutip"),
+])
+def test_periksa_kunci_mendiagnosis_bentuk(monkeypatch, kunci, harap):
+    monkeypatch.setattr(investors, "try_json", lambda url, headers=None: {"__err": "HTTP 401"})
+    hasil, lap = investors.periksa_kunci(kunci) if kunci else investors.periksa_kunci("  ")
+    assert hasil is False and harap in "\n".join(lap)

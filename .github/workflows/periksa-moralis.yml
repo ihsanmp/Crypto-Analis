@@ -1,0 +1,33 @@
+# Pemeriksaan sekali jalan: apakah MORALIS_API_KEY di GitHub Secrets diterima Moralis.
+#
+# Run 35289835742 (18 Sep): investors.py kena HTTP 401 dari Moralis. Uji lokal dengan kunci
+# palsu memberi galat yang sama ("Token is invalid format"), jadi yang tersimpan kemungkinan
+# bukan kunci yang sah. Jalankan ini sesudah memperbarui secret untuk memastikannya.
+#
+# Kenapa lewat workflow: kuncinya HANYA ada di GitHub Secrets, dan memang harus begitu.
+#
+# CATATAN KEAMANAN: repo ini publik, jadi log Actions ikut terbaca publik. `--periksa` hanya
+# mencetak ada/tidak, panjang, bentuk, dan jawaban Moralis — tidak pernah isi kuncinya.
+# Jangan menambahkan `echo` apa pun terhadap kunci di sini.
+name: Periksa kunci Moralis
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  periksa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Uji kunci ke Moralis
+        env:
+          MORALIS_API_KEY: ${{ secrets.MORALIS_API_KEY }}
+        run: python cloud/investors.py --periksa

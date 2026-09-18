@@ -33,6 +33,7 @@ import gzip
 import json
 import os
 import re
+import sys
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -244,7 +245,45 @@ def moralis_solana_holders(address, limit):
     return daftar, {}, None
 
 
+# USDC di Base: token yang pasti ada, jadi galat apa pun datang dari kuncinya, bukan tokennya.
+_USDC_BASE = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
+
+
+def periksa_kunci(kunci=None):
+    """Diagnosis MORALIS_API_KEY tanpa pernah mencetak isinya (log Actions repo ini publik).
+
+    Return (ok, baris_laporan). Bentuk diperiksa dulu: kunci Moralis berupa JWT (tiga bagian
+    dipisah titik, diawali "eyJ"). Galat "Token is invalid format" dari Moralis hampir selalu
+    berarti yang tersimpan bukan kuncinya — terpotong, tertukar, atau ikut tanda kutip.
+    """
+    kunci = MORALIS_KEY if kunci is None else kunci.strip()
+    lap = []
+    if not kunci:
+        return False, ["MORALIS_API_KEY: TIDAK ADA (secret kosong/belum dibuat)."]
+    bagian = kunci.split(".")
+    lap.append(f"MORALIS_API_KEY: ada, panjang {len(kunci)} karakter, {len(bagian)} bagian bertitik.")
+    masalah = []
+    if len(bagian) != 3 or not kunci.startswith("eyJ"):
+        masalah.append("bentuknya BUKAN JWT (kunci Moralis diawali 'eyJ' dan punya 3 bagian bertitik)")
+    if any(c in kunci for c in "\"' <>"):
+        masalah.append("mengandung tanda kutip/spasi/kurung sudut — kemungkinan ikut tersalin")
+    lap.append("Bentuk: " + ("; ".join(masalah) if masalah else "wajar (JWT)."))
+    data = try_json(f"{MORALIS_EVM}/erc20/{_USDC_BASE}/owners?chain=base&limit=1",
+                    headers={"X-API-Key": kunci, "accept": "application/json"})
+    if isinstance(data, dict) and "__err" in data:
+        err = str(data["__err"])
+        # Badan galat Moralis tidak memuat kunci, tapi disaring juga untuk berjaga-jaga.
+        lap.append("Moralis: DITOLAK — " + err.replace(kunci, "***")[:160])
+        return False, lap
+    lap.append("Moralis: DITERIMA — endpoint holder ERC-20 (Base) menjawab normal.")
+    return True, lap
+
+
 def main():
+    if "--periksa" in sys.argv[1:]:
+        ok, lap = periksa_kunci()
+        print("\n".join(lap))
+        sys.exit(0 if ok else 1)
     ap = argparse.ArgumentParser()
     ap.add_argument("ticker")
     ap.add_argument("--chain", default=None,
