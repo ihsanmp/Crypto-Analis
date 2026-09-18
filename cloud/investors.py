@@ -197,6 +197,11 @@ def ethplorer_holders(address, limit):
 
 
 def _galat_moralis(err, label="Moralis"):
+    # Moralis memakai 401 juga untuk kuota gratis yang dihentikan — key-nya sah, jadi
+    # "perbarui secret" di situ menyuruh memperbaiki hal yang tidak rusak (periksa 19 Sep).
+    if str(err).startswith("HTTP 401") and ("paused" in err or "usage" in err.lower()):
+        return (f"{label} menghentikan pemakaian paket gratis akun ini (HTTP 401) — key-nya "
+                "sah; pemakaian harus dipulihkan dari dashboard moralis.com.")
     if str(err).startswith("HTTP 401"):
         return (f"{label} menolak API key (HTTP 401) — secret MORALIS_API_KEY tidak valid atau "
                 "kedaluwarsa; perbarui di GitHub Secrets.")

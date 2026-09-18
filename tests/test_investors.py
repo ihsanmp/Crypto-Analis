@@ -112,3 +112,11 @@ def test_periksa_kunci_mendiagnosis_bentuk(monkeypatch, kunci, harap):
     monkeypatch.setattr(investors, "try_json", lambda url, headers=None: {"__err": "HTTP 401"})
     hasil, lap = investors.periksa_kunci(kunci) if kunci else investors.periksa_kunci("  ")
     assert hasil is False and harap in "\n".join(lap)
+
+
+def test_401_kuota_dihentikan_tidak_disebut_key_salah():
+    """Periksa 19 Sep: key sah (JWT), tapi Moralis membalas 401 'Free usage is paused'."""
+    pesan = investors._galat_moralis(
+        'HTTP 401 {"message":"Your Moralis Free usage is paused. Upgrade to a paid plan'
+        ' to resume usage."}')
+    assert "key-nya sah" in pesan and "tidak valid" not in pesan
