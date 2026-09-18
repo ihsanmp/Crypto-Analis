@@ -4412,6 +4412,24 @@ _RE_INVALIDASI_DISANGKAL = re.compile(
     r"invalidasi[^.\n]{0,90}?\b(belum|tidak|bukan)\s+(kena|terkena|terpicu|berlaku|tersentuh|aktif)"
     r"|\b(belum|tidak)\s+(kena|terkena|terpicu)[^.\n]{0,60}?invalidasi", re.I)
 _RE_KONTEKS_DEV = re.compile(r"developer|commit|\bdev\b", re.I)
+# "Belum kena invalidasi penuh" BENAR selama tanda awalnya diakui di baris yang sama —
+# tanda awal memang bukan vonis. Run 35289835742 menulis persis itu dengan status, angka,
+# dan persen lengkap, lalu tetap ditempeli "TIDAK sesuai data". Pengakuan yang dinegasikan
+# ("tidak ada tanda awal", "tidak melemah") tidak dihitung.
+_RE_TANDA_DIAKUI = re.compile(
+    r"(?<!tidak ada )(?<!bukan )tanda awal|(?<!tidak )(?<!belum )(?<!bukan )melemah", re.I)
+
+
+def _penyangkalan_invalidasi(body):
+    """True kalau ada kalimat 'invalidasi belum/tidak kena' yang BARISNYA tidak mengakui
+    tanda awal pelemahan developer."""
+    for m in _RE_INVALIDASI_DISANGKAL.finditer(body):
+        awal = body.rfind(NL, 0, m.start()) + 1
+        akhir = body.find(NL, m.end())
+        baris = body[awal:len(body) if akhir < 0 else akhir]
+        if not _RE_TANDA_DIAKUI.search(baris):
+            return True
+    return False
 
 
 def _data_naratif_dari_brief(brief):
@@ -4440,7 +4458,7 @@ def audit_invalidasi_developer(body, brief=None):
     status = (data or {}).get("invalidasi_developer") or {}
     if not body or not str(status.get("status", "")).startswith("TANDA AWAL"):
         return body, []
-    disangkal = bool(_RE_INVALIDASI_DISANGKAL.search(body))
+    disangkal = _penyangkalan_invalidasi(body)
     menyebut_tren = any("melemah" in body[max(0, m.start() - 150):m.end() + 150].lower()
                         for m in _RE_KONTEKS_DEV.finditer(body))
     if not disangkal and menyebut_tren:

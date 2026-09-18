@@ -598,6 +598,33 @@ def test_audit_diam_saat_balasan_sudah_benar():
     assert (baru, catatan) == (body, [])
 
 
+# Run 35289835742 (18 Sep): balasannya BENAR — status, angka, dan persen disebut, lalu
+# "belum kena invalidasi penuh" (memang benar: tanda awal bukan vonis). Pemeriksa lama
+# tetap membacanya sebagai penyangkalan dan menempelkan "TIDAK sesuai data".
+KALIMAT_TAO_18SEP = ("Bukti kontra yang menentukan: developer TANDA AWAL melemah — commit turun "
+                     "dari 151,6/minggu jadi 89/minggu (-41%) di repo aktif RaoFoundation/subtensor. "
+                     "Belum kena invalidasi penuh tapi arahnya jelas negatif.")
+
+
+def test_audit_diam_saat_belum_kena_disertai_tanda_awal():
+    import bot_oneshot as bot
+    body = "Skor naratif TAO ...\n\n" + KALIMAT_TAO_18SEP + "\n\n✅ KESIMPULAN\nWatchlist."
+    baru, catatan = bot.audit_invalidasi_developer(
+        body, _brief_naratif(naratif.status_invalidasi_developer(GH_MELEMAH)))
+    assert (baru, catatan) == (body, [])
+
+
+@pytest.mark.parametrize("kalimat", [
+    "Tidak ada tanda awal pelemahan, jadi invalidasi developer belum kena.",
+    "Developer tidak melemah, invalidasi belum kena.",
+])
+def test_audit_tetap_mengoreksi_pengakuan_yang_dinegasikan(kalimat):
+    import bot_oneshot as bot
+    baru, catatan = bot.audit_invalidasi_developer(
+        kalimat, _brief_naratif(naratif.status_invalidasi_developer(GH_MELEMAH)))
+    assert catatan == ["invalidasi developer disangkal"]
+
+
 def test_audit_diam_saat_developer_stabil():
     import bot_oneshot as bot
     status = naratif.status_invalidasi_developer(dict(GH_MELEMAH, tren="stabil"))
