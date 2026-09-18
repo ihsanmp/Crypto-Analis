@@ -186,5 +186,16 @@
   "angka_kunci": [
    "harga=223,86"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1789690149.7782407,
+  "waktu_utc": "2026-09-18 00:09",
+  "pesan": "skor naratif TAO",
+  "balasan": "Skor naratif Kalimasada TAO per data 18 Sep 2026, 07:08 WIB — harga sekitar $233 (indicators.py, close daily 17 Sep) hingga $232,54 (kategori.py).\n\nKekuatan katalis 2 · Tokenomics 3 · Ukuran pasar 3 · Tim & VC N/A · Likuiditas 4 · Timing siklus 3 · R\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+2 lainnya)",
+  "angka_kunci": [
+   "harga=233",
+   "invalid=3"
+  ]
  }
 ]
