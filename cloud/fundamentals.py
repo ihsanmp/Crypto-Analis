@@ -46,6 +46,41 @@ def try_json(url):
 
 # ------------------------------------------------------------------ resolusi
 
+def resolve_chain(ticker):
+    """Kalau ticker ini adalah koin natif sebuah CHAIN, kembalikan info chain-nya.
+
+    Run 35489055215: DefiLlama punya protokol "Sui Foundation" (Canonical Bridge) dengan
+    symbol SUI, dan pencarian berbasis symbol mengambil itu — revenue chain Sui jadi
+    terbaca $826 rb TTM (fees bridge) alih-alih $88 juta, lalu dipakai menghitung P/S
+    4.082x. Untuk koin natif, sumber yang benar adalah endpoint CHAIN, bukan protokol.
+    """
+    data = try_json(f"{BASE}/v2/chains")
+    if not isinstance(data, list):
+        return None
+    for c in data:
+        if (c.get("tokenSymbol") or "").upper() == ticker.upper():
+            nama = c.get("name") or ticker
+            return {"name": nama, "slug": nama.lower().replace(" ", "-"),
+                    "category": "Chain (koin natif)", "chains": [nama],
+                    "mcap": None, "tvl_now": c.get("tvl"), "versi_lain": 0}
+    return None
+
+
+def ambil_fees_chain(slug, data_type):
+    d = try_json(f"{BASE}/overview/fees/{slug}?dataType={data_type}")
+    return (d, slug) if d and d.get("totalDataChart") else (None, None)
+
+
+def ambil_tvl_chain(slug):
+    d = try_json(f"{BASE}/v2/historicalChainTvl/{slug}")
+    if not isinstance(d, list) or not d:
+        return None, None
+    # Dibentuk ulang ke bentuk yang sama dengan endpoint protokol supaya ringkas_tvl
+    # tidak perlu tahu asal datanya.
+    return {"tvl": [{"date": x.get("date"), "totalLiquidityUSD": x.get("tvl")}
+                    for x in d if x.get("date")]}, slug
+
+
 def resolve_protocol(ticker, slug_override=None):
     """Cari protokol DefiLlama dari ticker. Return (info, kandidat_slug)."""
     if slug_override:
@@ -236,7 +271,13 @@ def main():
         "catatan": [],
     }
 
-    info, kandidat = resolve_protocol(ticker, args.slug)
+    # Chain diperiksa DULU (kecuali slug dipaksa): untuk koin natif, protokol bersymbol sama
+    # hampir selalu bridge/staking turunannya, bukan chain-nya.
+    info = None if args.slug else resolve_chain(ticker)
+    chain = bool(info)
+    kandidat = [info["slug"]] if chain else []
+    if not chain:
+        info, kandidat = resolve_protocol(ticker, args.slug)
     if not info:
         hasil["error"] = (f"Protokol untuk {ticker} tidak ditemukan di DefiLlama. "
                           "Koin ini mungkin bukan protokol (mis. koin meme/L1 murni) "
@@ -246,8 +287,16 @@ def main():
 
     hasil["protokol"] = info
 
-    rev, slug_rev = ambil_fees(kandidat, "dailyRevenue")
-    fees, slug_fee = ambil_fees(kandidat, "dailyFees")
+    if chain:
+        hasil["catatan"].append(
+            f"{ticker} adalah koin natif chain {info['name']}: revenue, fees, dan TVL di sini "
+            "adalah angka CHAIN (seluruh aktivitas di atasnya), bukan satu protokol. Jangan "
+            "dibandingkan dengan P/S protokol tunggal.")
+        rev, slug_rev = ambil_fees_chain(info["slug"], "dailyRevenue")
+        fees, slug_fee = ambil_fees_chain(info["slug"], "dailyFees")
+    else:
+        rev, slug_rev = ambil_fees(kandidat, "dailyRevenue")
+        fees, slug_fee = ambil_fees(kandidat, "dailyFees")
 
     if rev:
         hasil["revenue"] = dict(ringkas_deret(rev["totalDataChart"], "revenue") or {},
@@ -266,7 +315,7 @@ def main():
     else:
         hasil["fees"] = None
 
-    tvl_raw, slug_tvl = ambil_tvl(kandidat)
+    tvl_raw, slug_tvl = ambil_tvl_chain(info["slug"]) if chain else ambil_tvl(kandidat)
     hasil["tvl"] = dict(ringkas_tvl(tvl_raw) or {}, slug=slug_tvl) if tvl_raw else None
 
     dex, slug_dex = ambil_dex_volume(kandidat)
