@@ -8093,3 +8093,27 @@ def test_jalur_token_baru_tidak_memanggil_model():
     assert "run_claude" not in blok, "jalur token baru tidak boleh memanggil model"
     assert "tokenbaru.py" in blok and "send_message" in blok
     assert "simpan_riwayat" in blok, "balasannya tetap masuk riwayat percakapan"
+
+
+@pytest.mark.parametrize("teks,chain", [
+    ("token baru", "bsc"), ("token baru bsc", "bsc"), ("token baru bnb", "bsc"),
+    ("token baru base", "base"), ("token baru solana", "solana"),
+    ("token baru sol", "solana"), ("cek token baru di base", "base"),
+    ("/tokenbaru solana", "solana"),
+])
+def test_chain_token_baru_dibaca_dari_pesan(teks, chain):
+    assert bot.classify(teks) == "tokenbaru", teks
+    assert bot.chain_token_baru(teks) == chain, teks
+
+
+def test_chain_tak_didukung_tidak_diam_diam_jadi_bsc():
+    """"token baru arbitrum" dijawab dengan daftar BSC = jawaban yang salah tanpa tanda.
+    Lebih baik ditolak dengan menyebut pilihannya."""
+    assert bot.classify("token baru arbitrum") != "tokenbaru"
+
+
+def test_jalur_token_baru_mengirim_chain_ke_script():
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    i = src.index('if kind == "tokenbaru":')
+    blok = src[i:src.index("timeout = int(os.environ", i)]
+    assert "chain_token_baru(text)" in blok and '"--chain"' in blok

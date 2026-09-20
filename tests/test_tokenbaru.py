@@ -229,3 +229,88 @@ def test_likuiditas_tipis_memakai_format_yang_sama(monkeypatch):
 def test_ambang_kejanggalan_fdv(fdv, likuid, ditandai):
     t = tb.temuan(_aman(), {"likuiditas_usd": likuid, "fdv_usd": fdv, "umur_jam": 5.0})
     assert any("tidak konsisten" in x["pesan"].lower() for x in t) is ditandai
+
+
+# ---- Base & Solana (20 Sep 2026) ----------------------------------------------------------
+# Base memakai jalur EVM yang sama (GoPlus chain 8453). Solana TIDAK: skemanya berbeda
+# total — tidak ada honeypot/pajak, yang menentukan justru mint authority, freeze authority,
+# dan transfer hook. Menyalin aturan EVM ke Solana akan menghasilkan kartu yang diam soal
+# risiko yang paling penting di sana.
+
+SOL_MINT = "9iRbh6SiR3C7VLKcCZEFUTifmL3vRUwAB41xkuH1ULqX"
+
+
+def _sol(**ubah):
+    d = {"metadata": {"name": "Trader", "symbol": "TRADER"},
+         "mintable": {"status": "0", "authority": []},
+         "freezable": {"status": "0", "authority": []},
+         "closable": {"status": "0", "authority": []},
+         "balance_mutable_authority": {"status": "0", "authority": []},
+         "transfer_hook": [], "transfer_hook_upgradable": {"status": "0"},
+         "non_transferable": "0", "transfer_fee": {},
+         "metadata_mutable": {"status": "0"}, "total_supply": "1000000001",
+         "holder_count": None, "creators": []}
+    d.update(ubah)
+    return d
+
+
+@pytest.mark.parametrize("ubah,cuplikan,berat", [
+    ({"mintable": {"status": "1", "authority": [{"address": "0xa"}]}}, "dicetak", True),
+    ({"freezable": {"status": "1", "authority": []}}, "dibekukan", True),
+    ({"balance_mutable_authority": {"status": "1", "authority": []}}, "saldo", True),
+    ({"non_transferable": "1"}, "tidak bisa dipindah", True),
+    ({"closable": {"status": "1", "authority": []}}, "ditutup", True),
+    ({"transfer_hook": [{"address": "0xh"}]}, "transfer hook", True),
+    ({"transfer_fee": {"fee_rate": "0.05"}}, "biaya transfer", False),
+    ({"metadata_mutable": {"status": "1"}}, "metadata", False),
+])
+def test_risiko_khas_solana_punya_pesannya_sendiri(ubah, cuplikan, berat):
+    t = tb.temuan_solana(_sol(**ubah), {"likuiditas_usd": 50000.0, "umur_jam": 5.0})
+    cocok = [x for x in t if cuplikan.lower() in x["pesan"].lower()]
+    assert cocok, [x["pesan"] for x in t]
+    assert cocok[0]["berat"] is berat
+
+
+def test_solana_menyebut_yang_TIDAK_bisa_diperiksa():
+    """Di Solana tidak ada simulasi jual-beli seperti EVM. Diamnya kartu soal honeypot
+    jangan terbaca sebagai "sudah dicek dan aman"."""
+    t = tb.temuan_solana(_sol(), {"likuiditas_usd": 50000.0, "umur_jam": 5.0})
+    assert any("honeypot" in x["pesan"].lower() and "tidak" in x["pesan"].lower() for x in t)
+
+
+def test_solana_tetap_memeriksa_likuiditas_dan_umur():
+    t = tb.temuan_solana(_sol(), {"likuiditas_usd": 2000.0, "umur_jam": 0.5})
+    pesan = " ".join(x["pesan"] for x in t)
+    assert "Likuiditas cuma" in pesan and "Umur pool" in pesan
+
+
+@pytest.mark.parametrize("chain,tipe,goplus", [
+    ("bsc", "evm", 56), ("base", "evm", 8453), ("solana", "solana", None)])
+def test_registry_chain(chain, tipe, goplus):
+    assert tb.CHAIN[chain]["tipe"] == tipe and tb.CHAIN[chain].get("goplus") == goplus
+
+
+def test_alias_chain():
+    assert tb.chain_dari("bnb") == "bsc" and tb.chain_dari("sol") == "solana"
+    assert tb.chain_dari("base") == "base" and tb.chain_dari("ngawur") is None
+
+
+def test_pindai_solana_memakai_endpoint_solana(monkeypatch):
+    dipanggil = []
+
+    def palsu(url):
+        dipanggil.append(url)
+        if "geckoterminal" in url:
+            return {"data": [{"attributes": {
+                "name": "trader / SOL", "pool_created_at": "2026-09-18T05:00:00Z",
+                "reserve_in_usd": "18687.7", "fdv_usd": "50000",
+                "base_token_price_usd": "0.00005"},
+                "relationships": {"base_token": {"data": {"id": f"solana_{SOL_MINT}"}}}}]}
+        return {"result": {SOL_MINT: _sol()}}
+
+    monkeypatch.setattr(tb, "try_json", palsu)
+    monkeypatch.setattr(tb.time, "sleep", lambda *_: None)
+    hasil, err = tb.pindai("solana", 1, 0.0, None)
+    assert err is None and hasil[0]["alamat"] == SOL_MINT
+    assert any("solana/token_security" in u for u in dipanggil), dipanggil
+    assert "networks/solana/new_pools" in dipanggil[0]

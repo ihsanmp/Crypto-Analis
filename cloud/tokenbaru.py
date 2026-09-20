@@ -43,8 +43,25 @@ UA = {"User-Agent": "Mozilla/5.0 (compatible; riset-koin/1.0)", "accept": "appli
 TIMEOUT = 25
 GECKO = "https://api.geckoterminal.com/api/v2"
 GOPLUS = "https://api.gopluslabs.io/api/v1"
-# Chain yang didukung: id GeckoTerminal -> id rantai GoPlus.
-CHAIN_ID = {"bsc": 56}
+# Chain yang didukung. "tipe" menentukan pemeriksa mana yang dipakai: risiko Solana
+# BERBEDA TOTAL dari EVM (tidak ada honeypot/pajak; yang menentukan mint & freeze
+# authority), jadi aturannya tidak boleh disalin begitu saja.
+CHAIN = {
+    "bsc": {"gecko": "bsc", "goplus": 56, "tipe": "evm", "alias": ("bnb", "binance")},
+    "base": {"gecko": "base", "goplus": 8453, "tipe": "evm", "alias": ()},
+    "solana": {"gecko": "solana", "goplus": None, "tipe": "solana", "alias": ("sol", "sol.")},
+}
+
+
+def chain_dari(nama):
+    """Nama chain dari kata yang ditulis user. None kalau tidak didukung."""
+    n = (nama or "").strip().lower()
+    if n in CHAIN:
+        return n
+    for kunci, c in CHAIN.items():
+        if n in c["alias"]:
+            return kunci
+    return None
 JEDA = 0.5          # GoPlus & GeckoTerminal sama-sama membatasi ~30 permintaan/menit
 
 # Ambang, ditulis di satu tempat supaya angkanya bisa dibantah dan diubah sekaligus.
@@ -86,7 +103,8 @@ def _umur_jam(iso):
 
 def pool_baru(chain, limit):
     """Pool yang baru dibuat di chain itu. Return list (kosong kalau gagal)."""
-    data = try_json(f"{GECKO}/networks/{chain}/new_pools?page=1")
+    data = try_json(f"{GECKO}/networks/{CHAIN.get(chain, {}).get('gecko', chain)}"
+                    f"/new_pools?page=1")
     if "__err" in data:
         return []
     keluar = []
@@ -108,9 +126,14 @@ def pool_baru(chain, limit):
     return keluar
 
 
-def keamanan(alamat, chain_id):
-    """Data keamanan kontrak dari GoPlus. Return (data, error)."""
-    d = try_json(f"{GOPLUS}/token_security/{chain_id}?contract_addresses={alamat}")
+def keamanan(alamat, chain):
+    """Data keamanan dari GoPlus. Return (data, error). Endpoint Solana berbeda."""
+    c = CHAIN[chain]
+    if c["tipe"] == "solana":
+        url = f"{GOPLUS}/solana/token_security?contract_addresses={alamat}"
+    else:
+        url = f"{GOPLUS}/token_security/{c['goplus']}?contract_addresses={alamat}"
+    d = try_json(url)
     if "__err" in d:
         return None, f"GoPlus gagal: {d['__err']}"
     r = (d.get("result") or {}).get(alamat.lower()) or (d.get("result") or {}).get(alamat)
@@ -221,6 +244,17 @@ def temuan(r, pool):
     elif pembuat and pembuat >= KONSENTRASI_RINGAN:
         catat(f"Pembuat kontrak masih memegang {_persen(pembuat)} suplai")
 
+    out.extend(_temuan_pasar(pool))
+    return out
+
+
+def _temuan_pasar(pool):
+    """Temuan yang tidak bergantung pada jenis chain: likuiditas, kewajaran angka, umur."""
+    out = []
+
+    def catat(pesan, berat=False):
+        out.append({"pesan": pesan, "berat": berat})
+
     likuid = (pool or {}).get("likuiditas_usd")
     if likuid is not None and likuid < LIKUIDITAS_TIPIS:
         catat(f"Likuiditas cuma {_uang(likuid)} — keluar dari posisi saja sudah "
@@ -238,6 +272,54 @@ def temuan(r, pool):
     umur = (pool or {}).get("umur_jam")
     if umur is not None and umur < 24:
         catat(f"Umur pool baru {umur:.0f} jam — belum ada rekam jejak apa pun")
+    return out
+
+
+def _status(r, kunci):
+    """Field Solana berbentuk {"status": "1", "authority": [...]} — bukan "1"/"0" polos."""
+    nilai = r.get(kunci)
+    if isinstance(nilai, dict):
+        return str(nilai.get("status", "0")) == "1"
+    return str(nilai) == "1"
+
+
+def temuan_solana(r, pool):
+    """Pemeriksa khas Solana. Tidak ada honeypot/pajak di sini; yang menentukan adalah
+    siapa yang masih memegang wewenang atas token (mint, freeze, saldo)."""
+    out = []
+
+    def catat(pesan, berat=False):
+        out.append({"pesan": pesan, "berat": berat})
+
+    if _status(r, "mintable"):
+        catat("Wewenang cetak (mint authority) masih aktif — suplai bisa DICETAK lagi "
+              "kapan saja dan porsimu ikut diencerkan", True)
+    if _status(r, "freezable"):
+        catat("Wewenang beku (freeze authority) masih aktif — dompetmu bisa DIBEKUKAN "
+              "sehingga tokennya tidak bisa dijual", True)
+    if _status(r, "balance_mutable_authority"):
+        catat("Ada wewenang yang bisa MENGUBAH SALDO dompet orang lain", True)
+    if _status(r, "closable"):
+        catat("Akun token bisa DITUTUP sepihak oleh pemegang wewenang", True)
+    if str(r.get("non_transferable")) == "1":
+        catat("Token ini TIDAK BISA DIPINDAH (non-transferable) — dibeli pun tak bisa dijual",
+              True)
+    if r.get("transfer_hook"):
+        catat("Ada transfer hook — kode pihak ketiga ikut berjalan setiap transfer dan "
+              "bisa menolaknya", True)
+    if _status(r, "transfer_hook_upgradable"):
+        catat("Transfer hook masih bisa diubah sewaktu-waktu", True)
+    biaya = r.get("transfer_fee")
+    if isinstance(biaya, dict) and biaya:
+        rate = _angka(biaya.get("fee_rate"))
+        catat("Ada biaya transfer bawaan token"
+              + (f" ({_persen(rate)})" if rate is not None else ""))
+    if _status(r, "metadata_mutable"):
+        catat("Metadata (nama/simbol/gambar) masih bisa diubah pembuatnya")
+    # Yang TIDAK bisa diperiksa harus disebut: diam di sini mudah terbaca sebagai "aman".
+    catat("Simulasi jual-beli (honeypot) tidak tersedia untuk Solana — bagian ini "
+          "TIDAK diperiksa, bukan lolos")
+    out.extend(_temuan_pasar(pool))
     return out
 
 
@@ -267,11 +349,21 @@ def _uang(x):
     return f"${x:.{tempat}f}".rstrip("0").replace(".", ",")
 
 
+def _nama(r):
+    r = r or {}
+    return r.get("token_name") or (r.get("metadata") or {}).get("name")
+
+
+def _symbol(r):
+    r = r or {}
+    return r.get("token_symbol") or (r.get("metadata") or {}).get("symbol")
+
+
 def kartu(pool, r, daftar):
     """Satu blok teks siap kirim ke Telegram. Disusun KODE, bukan model."""
     v = vonis(daftar)
     lencana = {"BAHAYA": "🛑", "HATI-HATI": "⚠️", "BELUM ADA TANDA BAHAYA": "🔍"}[v]
-    nama = (r or {}).get("token_symbol") or (pool.get("nama_pool") or "?").split("/")[0].strip()
+    nama = _symbol(r) or (pool.get("nama_pool") or "?").split("/")[0].strip()
     baris = [f"{lencana} {nama} — {v}",
              f"CA: {pool.get('alamat_token')}",
              f"Harga {_uang(pool.get('harga_usd'))} · FDV {_uang(pool.get('fdv_usd'))} · "
@@ -304,9 +396,10 @@ def kartu(pool, r, daftar):
 
 def pindai(chain="bsc", limit=5, min_liq=0.0, umur_maks=None):
     """Return (daftar_hasil, error). Tiap hasil: pool + keamanan + temuan + vonis."""
-    if chain not in CHAIN_ID:
-        return [], f"Chain '{chain}' belum didukung. Pilihan: {list(CHAIN_ID)}"
-    mentah = try_json(f"{GECKO}/networks/{chain}/new_pools?page=1")
+    chain = chain_dari(chain) or chain
+    if chain not in CHAIN:
+        return [], f"Chain '{chain}' belum didukung. Pilihan: {list(CHAIN)}"
+    mentah = try_json(f"{GECKO}/networks/{CHAIN[chain]['gecko']}/new_pools?page=1")
     if "__err" in mentah:
         return [], f"GeckoTerminal gagal: {mentah['__err']}"
     pools = pool_baru(chain, 30)
@@ -320,14 +413,14 @@ def pindai(chain="bsc", limit=5, min_liq=0.0, umur_maks=None):
             continue
         if umur_maks is not None and (p.get("umur_jam") is None or p["umur_jam"] > umur_maks):
             continue
-        r, err = keamanan(p["alamat_token"], CHAIN_ID[chain])
+        r, err = keamanan(p["alamat_token"], chain)
         time.sleep(JEDA)
-        t = temuan(r or {}, p) if r else []
+        periksa = temuan_solana if CHAIN[chain]["tipe"] == "solana" else temuan
+        t = periksa(r or {}, p) if r else list(_temuan_pasar(p))
         if err:
             t = [{"pesan": err + " — jangan dianggap bersih", "berat": False}] + t
         hasil.append({"alamat": p["alamat_token"], "pool": p,
-                      "nama": (r or {}).get("token_name"),
-                      "symbol": (r or {}).get("token_symbol"),
+                      "nama": _nama(r), "symbol": _symbol(r),
                       "jumlah_pemegang": (r or {}).get("holder_count"),
                       "temuan": t, "vonis": vonis(t), "kartu": kartu(p, r, t)})
     return hasil, None
@@ -335,7 +428,7 @@ def pindai(chain="bsc", limit=5, min_liq=0.0, umur_maks=None):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--chain", default="bsc", help="chain GeckoTerminal (baru: bsc)")
+    ap.add_argument("--chain", default="bsc", help="bsc | base | solana")
     ap.add_argument("--limit", type=int, default=5, help="jumlah token yang diperiksa")
     ap.add_argument("--min-liq", type=float, default=5000.0,
                     help="likuiditas minimum USD (di bawah ini nyaris tak bisa dijual)")
@@ -363,7 +456,7 @@ def main():
     if not daftar:
         print("Tidak ada pool baru yang lolos saringan saat ini.")
         return
-    print(f"🆕 {len(daftar)} token terbaru di {args.chain.upper()} "
+    print(f"🆕 {len(daftar)} token terbaru di {(chain_dari(args.chain) or args.chain).upper()} "
           f"(likuiditas ≥ {_uang(args.min_liq)})\n")
     print(("\n\n" + "─" * 28 + "\n\n").join(d["kartu"] for d in daftar))
 

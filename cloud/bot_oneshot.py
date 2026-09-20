@@ -110,11 +110,13 @@ HELP_TEXT = (
     "     (ganti privacy dengan: AI, RWA, DePIN, gaming, meme, DeFi, L2, storage, dll)\n"
     "   • carikan koin narasi yang menarik   -> aku cari sendiri narasi yang lagi jalan\n"
     "   • narasi apa yang lagi jalan?\n\n"
-    "4) TOKEN YANG BARU DILUNCURKAN (BSC):\n"
-    "   • ketik: token baru   (atau: token baru bsc)\n"
+    "4) TOKEN YANG BARU DILUNCURKAN (BSC / Base / Solana):\n"
+    "   • ketik: token baru   (default BSC)\n"
+    "   • atau sebut chain-nya: token baru base · token baru solana\n"
     "   • aku ambil pool yang baru dibuat, lalu periksa kontraknya satu per satu:\n"
-    "     honeypot, pajak beli/jual, kepemilikan, mintable, likuiditas terkunci\n"
-    "     atau tidak, dan konsentrasi pemegangnya\n"
+    "     EVM: honeypot, pajak beli/jual, kepemilikan, mintable, likuiditas\n"
+    "     terkunci atau tidak, konsentrasi pemegang\n"
+    "     Solana: mint & freeze authority, transfer hook, biaya transfer\n"
     "   • aku TIDAK memberi skor keamanan — yang kutulis temuan berangka apa adanya.\n"
     "     Tidak ada temuan BUKAN berarti aman: token baru = risiko tertinggi\n\n"
     "5) NGOBROL SANTAI:\n"
@@ -194,11 +196,26 @@ def send_message(token, chat_id, text):
 # Perintah pemindai token baru. SEMPIT dengan sengaja: yang diminta di sini adalah DAFTAR
 # token yang baru muncul, bukan pendapat. "analisa token baru apa yang bagus menurutmu"
 # tetap masuk jalur chat.
+_CHAIN_TOKEN_BARU = {"bsc": "bsc", "bnb": "bsc", "binance": "bsc", "bep20": "bsc",
+                     "base": "base", "solana": "solana", "sol": "solana", "spl": "solana"}
 _RE_TOKEN_BARU = re.compile(
     r"^(?:/?tokenbaru"
     r"|(?:scan|cek|lihat|pindai|cari)?\s*(?:token|pool|koin|coin)\s+(?:yang\s+)?baru"
     r"(?:\s+(?:launch|listing|muncul|dibuat))?)"
-    r"(?:\s+(?:di\s+)?(?:bsc|bnb|binance))?\s*$", re.I)
+    r"(?:\s+(?:di\s+)?(?P<chain>" + "|".join(_CHAIN_TOKEN_BARU) + r"))?\s*$", re.I)
+
+
+def chain_token_baru(text):
+    """Chain yang diminta di pesan, default BSC.
+
+    Chain yang TIDAK didukung sengaja tidak jatuh ke BSC: "token baru arbitrum" yang
+    dijawab daftar BSC adalah jawaban salah tanpa satu pun tanda bahwa itu salah.
+    Pesan seperti itu tidak cocok dengan _RE_TOKEN_BARU, jadi masuk jalur chat biasa.
+    """
+    m = _RE_TOKEN_BARU.match((text or "").strip().lower().lstrip("/"))
+    if not m:
+        return None
+    return _CHAIN_TOKEN_BARU.get(m.group("chain") or "bsc", "bsc")
 
 
 def classify(text):
@@ -3824,9 +3841,10 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
         # TANPA MODEL. Pertanyaannya murni data: daftar pool baru + hasil pemeriksaan
         # kontraknya. Kartunya disusun KODE di tokenbaru.py, jadi tidak ada angka yang bisa
         # dikarang, tidak ada biaya model, dan jawabannya datang dalam hitungan detik.
+        chain = chain_token_baru(text) or "bsc"
         keluaran, _ = _jalankan_terukur(
-            "TOKEN BARU (tokenbaru.py)",
-            ["cloud/tokenbaru.py", "--limit", "5", "--min-liq", "5000"], 0)
+            f"TOKEN BARU {chain.upper()} (tokenbaru.py)",
+            ["cloud/tokenbaru.py", "--chain", chain, "--limit", "5", "--min-liq", "5000"], 0)
         isi = (keluaran or "").strip()
         if not isi:
             isi = ("❌ Pemindai token baru gagal menarik data (GeckoTerminal/GoPlus). "
