@@ -6432,8 +6432,10 @@ def test_salah_hitung_dibetulkan_bukan_cuma_diperingatkan():
     import subprocess as _sp
     which_asli, run_asli = _sh.which, _sp.run
     _sh.which = lambda x: "/usr/bin/claude"
-    salah = "SOL bergerak dari $214 ke $232, naik 12% sepekan. Kesimpulan: TUNGGU DULU."
-    benar = "SOL bergerak dari $214 ke $232, naik 8,4% sepekan. Kesimpulan: TUNGGU DULU."
+    # Arah yang salah: kode sengaja TIDAK menukarnya sendiri (kesimpulan ikut berubah),
+    # jadi ini justru kasus yang masih milik model.
+    salah = "SOL bergerak dari $232 ke $214, naik 8% sepekan. Kesimpulan: TUNGGU DULU."
+    benar = "SOL bergerak dari $232 ke $214, turun 7,8% sepekan. Kesimpulan: TUNGGU DULU."
 
     class _R:
         def __init__(self, rc, out):
@@ -6450,7 +6452,7 @@ def test_salah_hitung_dibetulkan_bukan_cuma_diperingatkan():
         # Berhasil dibetulkan -> jawaban BARU dipakai, tidak ada sisa temuan.
         pasang(0, benar)
         baru, sisa = bot.perbaiki_hitung(salah, temuan)
-        assert sisa == [] and "8,4%" in baru
+        assert sisa == [] and "turun 7,8%" in baru
         # Gagal membetulkan / terpotong / error -> jawaban ASLI dipakai apa adanya.
         for rc, out in ((0, salah), (0, "SOL"), (1, "")):
             baru, sisa = bot.perbaiki_hitung(salah, temuan)
@@ -6473,7 +6475,8 @@ def test_perbaikan_dipanggil_sebelum_peringatan():
     i = src.index("hitung = audit_hitung(body, imbalan)")
     j = src.index("catatan = peringatan_audit(", i)
     antara = src[i:j]
-    assert "perbaiki_hitung(body, hitung)" in antara, "perbaikan harus sebelum peringatan"
+    assert "perbaiki_hitung(body, hitung, imbalan=imbalan)" in antara, \
+        "perbaikan harus sebelum peringatan, dan membawa level untuk rasio R:R"
     assert "imbalan = audit_imbalan(body)" in antara, "level bisa ikut berubah"
 
 
@@ -6525,8 +6528,8 @@ def test_perbaikan_tidak_boleh_menghapus_panggilan():
     isi = "Konteksnya begini. " * 25
     asli = ("BIAS SPOT: AKUMULASI\nHarga $214,50\nInvalidasi $198\n"
             "Target: $232 / $248\n\n" + isi
-            + "\nSOL bergerak dari $214 ke $232, naik 12% sepekan.\n")
-    benar = asli.replace("naik 12%", "naik 8,4%")
+            + "\nSOL bergerak dari $232 ke $214, naik 8% sepekan.\n")
+    benar = asli.replace("naik 8%", "turun 7,8%")
     try:
         assert rapor.urai_panggilan(asli), "prasyarat: aslinya memang bisa dinilai"
         temuan = bot.audit_hitung(asli)
@@ -6534,7 +6537,7 @@ def test_perbaikan_tidak_boleh_menghapus_panggilan():
         for nama, keluaran, diterima in [
             # Panjang cukup dan hitungnya sudah benar, tapi baris panggilan raib.
             ("baris panggilan hilang",
-             isi + "\nSOL dari $214 ke $232, naik 8,4%.\n", False),
+             isi + "\nSOL dari $232 ke $214, turun 7,8%.\n", False),
             # Membetulkan persen tidak boleh mengubah kesimpulannya.
             ("bias ikut berubah", benar.replace("AKUMULASI", "HINDARI"), False),
             ("angka saja yang dibetulkan", benar, True),
@@ -8006,3 +8009,67 @@ def test_coinglass_tidak_kembali():
     for nama in ("analisa_sumber.md", "chat.md", "foto.md", "analisa.md"):
         isi = open(os.path.join(AKAR, "cloud", "prompts", nama), encoding="utf-8").read()
         assert "mcp__coinglass__" not in isi, nama
+
+
+# ---- perbaikan angka OLEH KODE (run 35488414351) -----------------------------------------
+# "analisa btc": balasan menulis imbalan:risiko 3,3 padahal levelnya sendiri memberi 1,62.
+# Kode mencoba menyuruh model menulis ulang, lalu kehabisan waktu di batas 90 detik, jadi
+# angka salahnya tetap berdiri di badan jawaban dengan peringatan di atasnya. Menukar angka
+# adalah pekerjaan mekanis — tidak perlu model, tidak bisa kehabisan waktu.
+
+_RR_SALAH = ("BIAS: AKUMULASI\nHarga saat panggilan: $100\nTarget: $130\n"
+             "Invalidasi: $90\n\nRasio imbalan:risiko 3,3 — layak.")
+
+
+def _imbalan(nilai):
+    return {"rasio_imbalan_risiko": nilai}
+
+
+def test_kode_membetulkan_rasio_rr_tanpa_model(monkeypatch):
+    monkeypatch.setattr(bot, "run_claude", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("model tidak boleh dipanggil")))
+    temuan = bot.audit_hitung(_RR_SALAH, _imbalan(1.62))
+    assert temuan, "fixture harus memang salah"
+    baru, sisa = bot.perbaiki_hitung(_RR_SALAH, temuan, imbalan=_imbalan(1.62))
+    assert sisa == [] and "imbalan:risiko 1,62" in baru
+    assert "BIAS: AKUMULASI" in baru and "Target: $130" in baru   # sisanya utuh
+
+
+def test_kode_membetulkan_persen_tanpa_model(monkeypatch):
+    monkeypatch.setattr(bot, "run_claude", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("model tidak boleh dipanggil")))
+    salah = "SOL bergerak dari $214 ke $232, naik 12% sepekan."
+    temuan = bot.audit_hitung(salah)
+    baru, sisa = bot.perbaiki_hitung(salah, temuan)
+    assert sisa == [] and "naik 8,4%" in baru
+
+
+def test_kode_tidak_menukar_kalau_ARAHNYA_yang_salah(monkeypatch):
+    """Arah yang keliru bukan salah ketik angka — kesimpulannya ikut salah, jadi itu
+    pekerjaan model, bukan penukaran mekanis."""
+    dipanggil = []
+
+    def palsu(*a, **k):
+        dipanggil.append(1)
+        return None, "gagal"
+
+    monkeypatch.setattr(bot, "run_claude", palsu)
+    salah = "SOL bergerak dari $232 ke $214, naik 8% sepekan."
+    temuan = bot.audit_hitung(salah)
+    assert temuan
+    baru, sisa = bot.perbaiki_hitung(salah, temuan)
+    assert dipanggil and baru == salah and sisa
+
+
+def test_perbaikan_kode_tetap_diverifikasi_ulang(monkeypatch):
+    """Hasil penukaran dihitung ULANG dengan pemeriksa yang sama; kalau masih ada yang
+    salah, sisanya diteruskan (ke model), bukan diam-diam dianggap beres."""
+    monkeypatch.setattr(bot, "run_claude", lambda *a, **k: (None, "gagal"))
+    salah = ("SOL dari $214 ke $232, naik 12% sepekan; ETH dari $100 ke $150, naik 20%, "
+             "dan BTC dari $200 ke $100, naik 50%.")
+    temuan = bot.audit_hitung(salah)
+    assert len(temuan) == 3
+    baru, sisa = bot.perbaiki_hitung(salah, temuan)
+    # dua yang mekanis dibetulkan kode, yang arahnya salah tetap dilaporkan
+    assert "naik 8,4%" in baru and "naik 50,0%" in baru
+    assert len(sisa) == 1 and "200" in sisa[0]

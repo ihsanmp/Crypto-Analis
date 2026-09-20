@@ -4091,7 +4091,7 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
             print(f"[audit] SALAH HITUNG: {hitung}", file=sys.stderr)
             # Dibetulkan DULU, bukan cuma ditempeli peringatan. Peringatan hanya dipakai
             # kalau perbaikannya sendiri tidak lolos hitung ulang.
-            body, hitung = perbaiki_hitung(body, hitung)
+            body, hitung = perbaiki_hitung(body, hitung, imbalan=imbalan)
             if not hitung:
                 imbalan = audit_imbalan(body)      # levelnya mungkin ikut berubah
         catatan = peringatan_audit(jejak, asal, kesegaran, imbalan, outlook, keyakinan,
@@ -4655,12 +4655,14 @@ def audit_hitung(body, imbalan=None):
     daripada diam.
     """
     temuan = []
-    for a, sa, b_, sb, pct in _RE_DARI_KE.findall(body or ""):
+    for m in _RE_DARI_KE.finditer(body or ""):
+        a, sa, b_, sb, pct = m.groups()
         awal, akhir, klaim = _angka_id(a), _angka_id(b_), _angka_id(pct)
         if None in (awal, akhir, klaim) or not awal:
             continue
-        awal *= _SKALA.get(sa.lower(), 1.0)
-        akhir *= _SKALA.get(sb.lower(), 1.0)
+        # finditer memberi None untuk grup opsional yang tidak cocok (findall memberi "").
+        awal *= _SKALA.get((sa or "").lower(), 1.0)
+        akhir *= _SKALA.get((sb or "").lower(), 1.0)
         # Skala timpang ("dari 16,9 ke 18,4 miliar") bikin rasio mustahil. Kalau ragu,
         # DIAM — menuduh salah hitung padahal benar lebih merugikan daripada lewat.
         if bool(sa) != bool(sb) and not 0.01 <= akhir / awal <= 100:
@@ -4669,6 +4671,12 @@ def audit_hitung(body, imbalan=None):
         if abs(abs(benar) - abs(klaim)) > TOLERANSI_PERSEN:
             temuan.append(f"dari {awal:g} ke {akhir:g} ditulis {klaim:g}%, "
                           f"sebenarnya {benar:+.1f}%")
+        elif not _arah_cocok(m.group(0), klaim, benar):
+            # Besarnya cocok, ARAHNYA tidak: "dari 232 ke 214, naik 8%". Dulu lolos total
+            # karena yang dibandingkan cuma |angka| — padahal ini kesalahan yang lebih
+            # besar daripada meleset satu-dua persen: kesimpulannya ikut terbalik.
+            temuan.append(f"dari {awal:g} ke {akhir:g} arahnya SALAH: ditulis "
+                          f"{'naik' if benar < 0 else 'turun'}, sebenarnya {benar:+.1f}%")
     if imbalan and imbalan.get("rasio_imbalan_risiko"):
         nyata = imbalan["rasio_imbalan_risiko"]
         m = _RE_RR_DITULIS.search(body or "")
@@ -4702,7 +4710,81 @@ def _panggilan_selamat(asli, baru):
         return True
 
 
-def perbaiki_hitung(body, temuan, model=None):
+_KATA_TURUN = ("turun", "drop", "fell", "anjlok", "koreksi", "merosot", "-")
+_KATA_NAIK = ("naik", "rose", "gain", "melonjak", "menguat", "reli", "+")
+
+
+def _arah_cocok(potongan, klaim, benar):
+    """Apakah ARAH yang ditulis sama dengan arah yang sebenarnya.
+
+    Arah yang keliru bukan salah ketik: kalimat "dari $232 ke $214, naik 8%" salah bukan
+    pada angkanya saja — kesimpulannya ikut. Menukar 8 jadi 7,8 di situ malah memperhalus
+    kesalahan yang lebih besar, jadi kasus seperti itu diserahkan ke model.
+    """
+    low = potongan.lower()
+    if klaim < 0 or any(k in low for k in _KATA_TURUN):
+        arah = -1
+    elif klaim > 0 or any(k in low for k in _KATA_NAIK):
+        arah = 1
+    else:
+        return False
+    return arah == (1 if benar >= 0 else -1)
+
+
+def _tulis_id(x, desimal=1):
+    return f"{x:.{desimal}f}".replace(".", ",")
+
+
+def perbaiki_hitung_kode(body, imbalan=None):
+    """Tukar angka yang salah LANGSUNG, tanpa memanggil model. Return (body_baru, catatan).
+
+    Run 35488414351 ("analisa btc"): rasio imbalan:risiko ditulis 3,3 padahal levelnya
+    sendiri memberi 1,62. Perbaikan lewat model kehabisan waktu di batas 90 detik, jadi
+    angka salah itu tetap berdiri di badan jawaban — user hanya diberi peringatan di atasnya.
+    Menukar satu bilangan adalah pekerjaan mekanis: kode sudah tahu angka benarnya, jadi
+    tidak ada alasan menyerahkannya ke model yang bisa gagal, lambat, dan berbiaya.
+
+    Yang TIDAK ditukar di sini: klaim yang arahnya salah (lihat _arah_cocok). Itu mengubah
+    kesimpulan, bukan sekadar angka.
+    """
+    if not body:
+        return body, []
+    catatan, tukar = [], []          # (awal, akhir, teks_pengganti)
+    for m in _RE_DARI_KE.finditer(body):
+        a, sa, b_, sb, pct = m.groups()
+        awal, akhir, klaim = _angka_id(a), _angka_id(b_), _angka_id(pct)
+        if None in (awal, akhir, klaim) or not awal:
+            continue
+        awal *= _SKALA.get((sa or "").lower(), 1.0)
+        akhir *= _SKALA.get((sb or "").lower(), 1.0)
+        if bool(sa) != bool(sb) and not 0.01 <= akhir / awal <= 100:
+            continue
+        benar = (akhir - awal) / awal * 100
+        if abs(abs(benar) - abs(klaim)) <= TOLERANSI_PERSEN:
+            continue
+        if not _arah_cocok(m.group(0), klaim, benar):
+            continue                 # arah salah: biar model yang menulis ulang
+        i = m.start(5)
+        tanda = "+" if pct.strip().startswith("+") else ("-" if pct.strip().startswith("-") else "")
+        tukar.append((i, m.end(5), tanda + _tulis_id(abs(benar))))
+        catatan.append(f"{klaim:g}% -> {_tulis_id(abs(benar))}%")
+    if imbalan and imbalan.get("rasio_imbalan_risiko"):
+        nyata = imbalan["rasio_imbalan_risiko"]
+        m = _RE_RR_DITULIS.search(body)
+        if m:
+            ditulis = _angka_id(m.group(1))
+            if ditulis and abs(ditulis - nyata) > max(0.3, nyata * 0.25):
+                tukar.append((m.start(1), m.end(1), _tulis_id(nyata, 2)))
+                catatan.append(f"imbalan:risiko {ditulis:g} -> {_tulis_id(nyata, 2)}")
+    # Dari belakang, supaya posisi karakter yang lebih awal tetap sah.
+    for a, z, teks in sorted(tukar, key=lambda t: -t[0]):
+        body = body[:a] + teks + body[z:]
+    if catatan:
+        print(f"[audit] angka DITUKAR kode: {'; '.join(catatan)}", file=sys.stderr)
+    return body, catatan
+
+
+def perbaiki_hitung(body, temuan, model=None, imbalan=None):
     """Minta model MEMBETULKAN angkanya, bukan sekadar diberi peringatan.
 
     Menempelkan "⚠️ salah hitung" di bawah jawaban tidak memperbaiki apa pun: user tetap
@@ -4718,6 +4800,12 @@ def perbaiki_hitung(body, temuan, model=None):
     """
     if not body or not temuan:
         return body, temuan
+    # Yang bisa ditukar kode, ditukar kode dulu. Model hanya untuk sisanya.
+    body, ditukar = perbaiki_hitung_kode(body, imbalan)
+    if ditukar:
+        temuan = audit_hitung(body, imbalan)
+        if not temuan:
+            return body, []
     perintah = (
         "Di bawah ini jawaban yang KAMU tulis, lalu daftar kesalahan aritmetika yang "
         "dihitung ULANG oleh kode dari angka di jawaban itu sendiri." + NL * 2
