@@ -1,5 +1,5 @@
 {
- "ditarik_utc": "2026-09-13 09:59",
+ "ditarik_utc": "2026-09-20 09:35",
  "data": {
   "us-btc-spot/metrik": {
    "code": 0,
@@ -7,33 +7,33 @@
    "traceId": null,
    "data": {
     "totalNetAssets": {
-     "value": "97576805199.5176100000000000",
-     "lastUpdateDate": "2026-09-11",
+     "value": "102531745269.3159300000000000",
+     "lastUpdateDate": "2026-09-18",
      "status": "1"
     },
     "totalNetAssetsPercentage": {
-     "value": "0.06282281",
-     "lastUpdateDate": "2026-09-11",
+     "value": "0.06293358",
+     "lastUpdateDate": "2026-09-18",
      "status": "1"
     },
     "dailyNetInflow": {
-     "value": "-13289298.1100000003000000",
-     "lastUpdateDate": "2026-09-11",
+     "value": "433027402.3499999999000000",
+     "lastUpdateDate": "2026-09-18",
      "status": "1"
     },
     "cumNetInflow": {
-     "value": "55176135367.8229983356500000",
-     "lastUpdateDate": "2026-09-11",
+     "value": "55182349025.4479983355500000",
+     "lastUpdateDate": "2026-09-18",
      "status": "1"
     },
     "dailyTotalValueTraded": {
-     "value": "2599158582.0000000000000000",
-     "lastUpdateDate": "2026-09-11",
+     "value": "4665477604.0000000000000000",
+     "lastUpdateDate": "2026-09-18",
      "status": "1"
     },
     "totalTokenHoldings": {
-     "value": "1261711.89346179",
-     "lastUpdateDate": "2026-09-11",
+     "value": "1264139.33236398",
+     "lastUpdateDate": "2026-09-18",
      "status": "1"
     },
     "list": [
@@ -43,37 +43,37 @@
       "institute": "BlackRock ",
       "fee": {
        "value": "0.00250000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.03901643",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.03917075",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "60600568320.0000100000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "63817198000.0000100000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
-       "value": "-19233280.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "108442000.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
-       "value": "64003942343.6599987745000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "64124599103.6599987745000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "2105508245.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "3864046766.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "0.0013268667642751808",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.001523394994559224",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -83,37 +83,37 @@
       "institute": "Fidelity",
       "fee": {
        "value": "0.00000000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00874170",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00880028",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "13577662742.6176000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "14337466012.7539200000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
-       "value": "0.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "310719217.6000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
-       "value": "10281950198.4249998597000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "10361884985.0999998597000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "197476071.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "358952843.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "0.0012637511851389949",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.0005947491803932614",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -123,37 +123,37 @@
       "institute": "Ark & 21Shares",
       "fee": {
        "value": "0.00210000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00162145",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00153223",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "2518450851.4600000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "2496318644.4700000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
-       "value": "0.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "1882796.0899999999000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
-       "value": "1222482750.4949999813000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "1080624396.8149999812000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "50758623.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "45906995.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "0.0009136364676984865",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.0012236641090539457",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -163,37 +163,37 @@
       "institute": "Invesco",
       "fee": {
        "value": "0.00250000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00025377",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00025425",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "394162057.1700000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "414226543.9500000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
        "value": "0.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
        "value": "143465924.4050000081000000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "2346335.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "12139502.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "0.0003291741496671552",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.0002982441898145005",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -203,37 +203,37 @@
       "institute": "WisdomTree",
       "fee": {
        "value": "0.00250000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00010450",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00010472",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "162302811.9800000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "170611969.4200000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
        "value": "0.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
        "value": "82669513.2100000098000000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "191782.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "1438540.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "0.0005002010686667724",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.0006455149095014878",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -243,37 +243,37 @@
       "institute": "Valkyrie",
       "fee": {
        "value": "0.00250000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00028360",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00028421",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "440492734.5000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "463039591.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
        "value": "0.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
        "value": "299315125.4999999282000000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "1448178.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "3784019.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "0.0013420289455421397",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.0009705838630977848",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -283,37 +283,37 @@
       "institute": "Bitwise",
       "fee": {
        "value": "0.00200000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00189837",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00190032",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "2948561232.1200000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "3096015725.9000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
-       "value": "0.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "9688811.6600000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
-       "value": "2118271682.9999999891500000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "2115595783.1599999891500000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "52007284.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "69025144.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "0.0010771007450696146",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.0013611473174204303",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -323,37 +323,37 @@
       "institute": "Franklin",
       "fee": {
        "value": "0.00190000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00027279",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00027626",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "423705852.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "450090268.8000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
        "value": "0.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
-       "value": "315666399.2500000064000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "320235684.1500000064000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "6185705.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "7123239.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "0.0013314614309360984",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.0007592077049589641",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -363,37 +363,37 @@
       "institute": "VanEck",
       "fee": {
        "value": "0.00250000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00073407",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00073202",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "1140169933.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "1192606395.7500000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
-       "value": "2183188.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "2294577.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
-       "value": "1016235484.0999999683000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "1010958318.5999999683000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "23924121.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "17038216.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "0.0012880246685120778",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.000620157876593419",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -403,37 +403,37 @@
       "institute": "Grayscale",
       "fee": {
        "value": "0.01500000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00637526",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00634322",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "9902090843.1900000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "10334413662.2100000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
        "value": "0.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
-       "value": "-27782410576.0000001920000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "-27844764409.0000001920000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "87104622.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "178750549.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "0.00030291923771463836",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.0007631994468000336",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -443,37 +443,37 @@
       "institute": "Grayscale",
       "fee": {
        "value": "0.00150000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00312805",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00313318",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "4858504318.6200000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "5104590595.4120000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
        "value": "0.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
        "value": "2945918453.8879999990000000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "60961898.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "88948334.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "-0.0002781071151510828",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.0005656218915175426",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -483,37 +483,37 @@
       "institute": "Morgan Stanley",
       "fee": {
        "value": "0.00140000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00039282",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00040214",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "610133502.8600000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "655167859.6500000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
-       "value": "3760793.8899999997000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
-       "value": "528628067.8900000032000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "541846145.9600000032000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "11245718.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "18323457.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "0.0017033930035448286",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.0009612323173733284",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      }
@@ -526,6 +526,41 @@
    "msg": null,
    "traceId": null,
    "data": [
+    {
+     "date": "2026-09-18",
+     "totalNetInflow": 433027402.35,
+     "totalValueTraded": 4666577652,
+     "totalNetAssets": 102531745269.31593,
+     "cumNetInflow": 55160933041.123
+    },
+    {
+     "date": "2026-09-17",
+     "totalNetInflow": 159453723.25,
+     "totalValueTraded": 1660401942.7,
+     "totalNetAssets": 96247076017.18536,
+     "cumNetInflow": 54727905638.772995
+    },
+    {
+     "date": "2026-09-16",
+     "totalNetInflow": -295980763.08,
+     "totalValueTraded": 2805896130.4,
+     "totalNetAssets": 95185081971.85114,
+     "cumNetInflow": 54568451915.522995
+    },
+    {
+     "date": "2026-09-15",
+     "totalNetInflow": -450329418.71,
+     "totalValueTraded": 4346558494.4,
+     "totalNetAssets": 95716988283.246,
+     "cumNetInflow": 54864432678.603
+    },
+    {
+     "date": "2026-09-14",
+     "totalNetInflow": 160042713.815,
+     "totalValueTraded": 2691001751.5,
+     "totalNetAssets": 100091702141.07127,
+     "cumNetInflow": 55314762097.312996
+    },
     {
      "date": "2026-09-11",
      "totalNetInflow": -13289298.11,
@@ -2590,41 +2625,6 @@
      "totalValueTraded": 6598485410.1,
      "totalNetAssets": 150599951494.06604,
      "cumNetInflow": 52364805466.397995
-    },
-    {
-     "date": "2025-07-10",
-     "totalNetInflow": 1178827866.4,
-     "totalValueTraded": 6310487661.5,
-     "totalNetAssets": 143861659016.91168,
-     "cumNetInflow": 51335106153.348
-    },
-    {
-     "date": "2025-07-09",
-     "totalNetInflow": 218040421.155,
-     "totalValueTraded": 4350832556.16,
-     "totalNetAssets": 139389264079.38605,
-     "cumNetInflow": 50156278286.948
-    },
-    {
-     "date": "2025-07-08",
-     "totalNetInflow": 80078975.7,
-     "totalValueTraded": 2280132775,
-     "totalNetAssets": 136749218778.97072,
-     "cumNetInflow": 49938237865.793
-    },
-    {
-     "date": "2025-07-07",
-     "totalNetInflow": 216638681.38,
-     "totalValueTraded": 2887121755.54,
-     "totalNetAssets": 135709418097.66852,
-     "cumNetInflow": 49858158890.092995
-    },
-    {
-     "date": "2025-07-03",
-     "totalNetInflow": 601937786.79,
-     "totalValueTraded": 2508626462,
-     "totalNetAssets": 137596736310.74103,
-     "cumNetInflow": 49641520208.713
     }
    ],
    "tid": ""
@@ -2635,33 +2635,33 @@
    "traceId": null,
    "data": {
     "totalNetAssets": {
-     "value": "16305230035.3060023120000000",
-     "lastUpdateDate": "2026-09-11",
+     "value": "16719407123.8280006980000000",
+     "lastUpdateDate": "2026-09-18",
      "status": "1"
     },
     "totalNetAssetsPercentage": {
-     "value": "0.05279023",
-     "lastUpdateDate": "2026-09-11",
+     "value": "0.05204313",
+     "lastUpdateDate": "2026-09-18",
      "status": "1"
     },
     "dailyNetInflow": {
-     "value": "216413007.3600001525000000",
-     "lastUpdateDate": "2026-09-11",
+     "value": "143804276.3300000000000000",
+     "lastUpdateDate": "2026-09-18",
      "status": "1"
     },
     "cumNetInflow": {
-     "value": "13390026409.2609997752800000",
-     "lastUpdateDate": "2026-09-11",
+     "value": "13250029412.4859997662800000",
+     "lastUpdateDate": "2026-09-18",
      "status": "1"
     },
     "dailyTotalValueTraded": {
-     "value": "2564737880.0000000000000000",
-     "lastUpdateDate": "2026-09-11",
+     "value": "1879822957.0000000000000000",
+     "lastUpdateDate": "2026-09-18",
      "status": "1"
     },
     "totalTokenHoldings": {
-     "value": "6442746.71997923",
-     "lastUpdateDate": "2026-09-11",
+     "value": "6352631.34040872",
+     "lastUpdateDate": "2026-09-18",
      "status": "1"
     },
     "list": [
@@ -2671,37 +2671,37 @@
       "institute": "Grayscale",
       "fee": {
        "value": "0.02500000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00606737",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00595062",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "1874017662.3000002000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "1911698532.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
        "value": "0.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
-       "value": "-5401285737.0000000653000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "-5432680311.0000000653000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "142357263.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "101176789.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "0.0005978106410293726",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.001321253303133263",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -2711,37 +2711,37 @@
       "institute": "Bitwise",
       "fee": {
        "value": "0.00200000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00101648",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00089839",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "313958410.7000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "288617666.7400000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
-       "value": "29087056.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "1317029.7700000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
-       "value": "426840810.5299999959500000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "393758724.2999999959500000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "38725055.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "19147241.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "-0.0010676914157280448",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.002407105801412568",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -2751,37 +2751,37 @@
       "institute": "BlackRock",
       "fee": {
        "value": "0.00250000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.02948966",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.02910546",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "9108423810.2400020000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "9350439246.7200010000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
-       "value": "148815413.4400000300000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "114320194.5600000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
-       "value": "13013341483.0199999987000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "12957295859.3799999987000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "1887138829.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "1517796354.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "-0.0008991907283445455",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.0036651918028365316",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -2791,37 +2791,37 @@
       "institute": "VanEck",
       "fee": {
        "value": "0.00200000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00043298",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00039489",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "133733196.0000000100000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "126861240.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
-       "value": "3714811.0000000005000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "1922140.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
-       "value": "172575632.2499999984000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "162261858.7499999984000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "8899503.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "3197529.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "-0.0007567006773697704",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.004349318988211115",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -2831,37 +2831,37 @@
       "institute": "21Shares",
       "fee": {
        "value": "0.00210000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00009365",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00008541",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "28924606.6800000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "27439016.4399999980000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
        "value": "0.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
-       "value": "24904128.4599999983300000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "22991312.7499999953300000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "38088336.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "19280078.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "-0.0012794186074650549",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.0039062464295822608",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -2871,37 +2871,37 @@
       "institute": "Invesco",
       "fee": {
        "value": "0.00250000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00009223",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00007450",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "28485790.0800000020000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "23934279.4790000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
        "value": "0.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
-       "value": "28626771.8700000008000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "23196641.1400000008000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "2496419.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "2255896.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "0.0006589222186670352",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.0005728403485900646",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -2911,37 +2911,37 @@
       "institute": "Fidelity",
       "fee": {
        "value": "0.00250000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00448254",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00436856",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "1384515998.1000001000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "1403446669.2000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
-       "value": "11395193.4000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "26244912.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
-       "value": "2272787245.8249998703400000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "2246954079.4999998703400000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "170688818.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "71782737.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "-0.0012893989144581175",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.0013369829550200496",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -2951,37 +2951,37 @@
       "institute": "Franklin",
       "fee": {
        "value": "0.00190000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00017461",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00017374",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "53930245.6000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "55814813.6000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
        "value": "0.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
        "value": "67645568.3500000012000000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "3539997.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "3000741.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "-0.0010800173326117601",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.003819530806423721",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -2991,37 +2991,37 @@
       "institute": "Grayscale",
       "fee": {
        "value": "0.00150000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00732296",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00736703",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "2261830890.9560000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "2366736412.6889997000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
-       "value": "5085444.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
-       "value": "1916259243.7759999911000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "1932491601.7759999911000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "209136128.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "107503994.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "0.001387489469945935",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.0008307133403022693",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -3031,37 +3031,37 @@
       "institute": "BlackRock",
       "fee": {
        "value": "0.00250000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00346466",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00346940",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "1070124516.2400000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "1114581196.7200000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
-       "value": "18315089.5200001220000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
-       "value": "830674014.3999999856000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "837680774.7599999796000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "62884939.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "34227773.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "-0.0007802047587261995",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.003034326516500041",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      },
@@ -3071,37 +3071,37 @@
       "institute": "Morgan Stanley",
       "fee": {
        "value": "0.00140000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssetsPercentage": {
-       "value": "0.00015309",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.00015513",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "netAssets": {
-       "value": "47284908.4100000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "49838050.2400000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyNetInflow": {
        "value": "0.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "cumNetInflow": {
-       "value": "37657247.7800000001600000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "38433302.7800000001600000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "dailyValueTraded": {
-       "value": "782593.0000000000000000",
-       "lastUpdateDate": "2026-09-11",
+       "value": "453825.0000000000000000",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       },
       "discountPremiumRate": {
-       "value": "-0.0008165425565640483",
-       "lastUpdateDate": "2026-09-11",
+       "value": "0.0027095666734493484",
+       "lastUpdateDate": "2026-09-18",
        "status": "1"
       }
      }
@@ -3114,6 +3114,41 @@
    "msg": null,
    "traceId": null,
    "data": [
+    {
+     "date": "2026-09-18",
+     "totalNetInflow": 143804276.33,
+     "totalValueTraded": 1879973162,
+     "totalNetAssets": 16719407123.828001,
+     "cumNetInflow": 13250029412.486
+    },
+    {
+     "date": "2026-09-17",
+     "totalNetInflow": -39244462.9,
+     "totalValueTraded": 680469648,
+     "totalNetAssets": 15416166777.47,
+     "cumNetInflow": 13106225136.156
+    },
+    {
+     "date": "2026-09-16",
+     "totalNetInflow": -224108510.665,
+     "totalValueTraded": 1202590376.1,
+     "totalNetAssets": 15155030643.352001,
+     "cumNetInflow": 13145469599.056
+    },
+    {
+     "date": "2026-09-15",
+     "totalNetInflow": -141466894.49999988,
+     "totalValueTraded": 1985237273.6,
+     "totalNetAssets": 15420091814.93,
+     "cumNetInflow": 13369578109.721
+    },
+    {
+     "date": "2026-09-14",
+     "totalNetInflow": 121018594.95999987,
+     "totalValueTraded": 1073487968.4,
+     "totalNetAssets": 16422080416.292,
+     "cumNetInflow": 13511045004.220999
+    },
     {
      "date": "2026-09-11",
      "totalNetInflow": 216413007.36000016,
@@ -5178,41 +5213,6 @@
      "totalValueTraded": 1404226109,
      "totalNetAssets": 13533683934.900002,
      "cumNetInflow": 5305583776.511
-    },
-    {
-     "date": "2025-07-10",
-     "totalNetInflow": 383099180.5150007,
-     "totalValueTraded": 1230584066.3,
-     "totalNetAssets": 12503469056.956001,
-     "cumNetInflow": 5100762893.931001
-    },
-    {
-     "date": "2025-07-09",
-     "totalNetInflow": 211323971.17,
-     "totalValueTraded": 1260262506,
-     "totalNetAssets": 11842264880.571001,
-     "cumNetInflow": 4717663713.416
-    },
-    {
-     "date": "2025-07-08",
-     "totalNetInflow": 46630831.98,
-     "totalValueTraded": 652480159.8,
-     "totalNetAssets": 11034169091.846,
-     "cumNetInflow": 4506339742.246
-    },
-    {
-     "date": "2025-07-07",
-     "totalNetInflow": 62112307.660000004,
-     "totalValueTraded": 397220643.3,
-     "totalNetAssets": 10712413552.204,
-     "cumNetInflow": 4459708910.266
-    },
-    {
-     "date": "2025-07-03",
-     "totalNetInflow": 148574523.52,
-     "totalValueTraded": 481438194,
-     "totalNetAssets": 10825602136.828,
-     "cumNetInflow": 4397596602.606
     }
    ],
    "tid": ""
