@@ -214,5 +214,22 @@
    "ema13=78.181",
    "rsi=64,18"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1789878538.16111,
+  "waktu_utc": "2026-09-20 04:28",
+  "pesan": "analisa sui",
+  "balasan": "🕒 Data per 20 Sep 2026 11:25 WIB · sumber harga Kraken (native) · candle tertutup saja\n\n📊 PASAR\nBTC $80.323 (24j −0,99% · 7h +4,1% · 30h +8,1%) · Dominasi BTC 58,92% (dari 58,72% pada 13 Sep → 58,76% pada 20 Sep, +0,05 pp) · Mcap total $2,729 triliun\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+6 lainnya)",
+  "angka_kunci": [
+   "harga=0,825",
+   "invalid=19,0",
+   "invalid=0,668",
+   "invalid=13",
+   "ema21=0,8415",
+   "ema21=0,7565",
+   "ema200=0,9427",
+   "ema21=0,7976"
+  ]
  }
 ]
