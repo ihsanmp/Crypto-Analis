@@ -150,6 +150,12 @@ def _pemegang_terbesar(r):
     return besar
 
 
+def _persen(x, desimal=1):
+    """Persen bergaya Indonesia. Keluaran produksi 20 Sep sempat mencampur "+62,3%" dengan
+    "100.0%" dalam satu kartu."""
+    return f"{x * 100:.{desimal}f}".replace(".", ",") + "%"
+
+
 def temuan(r, pool):
     """Daftar temuan yang tiap barisnya menyebut angkanya. berat=True artinya menentukan."""
     out = []
@@ -187,38 +193,47 @@ def temuan(r, pool):
         pajak = _angka(r.get(f"{arah}_tax"))
         kata = "beli" if arah == "buy" else "jual"
         if pajak is not None and pajak >= PAJAK_TINGGI:
-            catat(f"Pajak {kata} {pajak * 100:.0f}% — memakan hasil sebelum harga bergerak",
+            catat(f"Pajak {kata} {_persen(pajak, 0)} — memakan hasil sebelum harga bergerak",
                   pajak >= 0.20)
 
     bebas = _lp_bebas(r)
     if bebas is None:
         catat("Status kunci likuiditas tidak diketahui — belum bisa dipastikan aman")
     elif bebas >= LP_BEBAS_BERAT:
-        catat(f"{bebas * 100:.0f}% likuiditas TIDAK terkunci — bisa ditarik kapan saja "
+        catat(f"{_persen(bebas, 0)} likuiditas TIDAK terkunci — bisa ditarik kapan saja "
               f"(ini mekanisme rug pull paling lazim)", True)
     elif bebas >= LP_BEBAS_RINGAN:
-        catat(f"{bebas * 100:.0f}% likuiditas tidak terkunci")
+        catat(f"{_persen(bebas, 0)} likuiditas tidak terkunci")
 
     besar = _pemegang_terbesar(r)
     if besar >= KONSENTRASI_BERAT:
-        catat(f"Satu dompet memegang {besar * 100:.1f}% suplai (di luar burn/kontrak) — "
+        catat(f"Satu dompet memegang {_persen(besar)} suplai (di luar burn/kontrak) — "
               f"penjualannya sendirian bisa menjatuhkan harga", True)
     elif besar >= KONSENTRASI_RINGAN:
-        catat(f"Konsentrasi: dompet terbesar {besar * 100:.1f}% suplai")
+        catat(f"Konsentrasi: dompet terbesar {_persen(besar)} suplai")
 
     pembuat = _angka(r.get("creator_percent"))
     if pembuat and pembuat >= KONSENTRASI_BERAT:
         # Terlihat nyata di pemindaian 20 Sep: satu token baru dengan pembuat memegang
         # 100% suplai. Itu bukan "catatan ringan" — seluruh pasar ada di satu dompet.
-        catat(f"Pembuat kontrak masih memegang {pembuat * 100:.1f}% suplai — seluruh "
+        catat(f"Pembuat kontrak masih memegang {_persen(pembuat)} suplai — seluruh "
               f"suplai ada di satu tangan", pembuat >= 0.5)
     elif pembuat and pembuat >= KONSENTRASI_RINGAN:
-        catat(f"Pembuat kontrak masih memegang {pembuat * 100:.1f}% suplai")
+        catat(f"Pembuat kontrak masih memegang {_persen(pembuat)} suplai")
 
     likuid = (pool or {}).get("likuiditas_usd")
     if likuid is not None and likuid < LIKUIDITAS_TIPIS:
-        catat(f"Likuiditas cuma ${likuid:,.0f} — keluar dari posisi saja sudah "
+        catat(f"Likuiditas cuma {_uang(likuid)} — keluar dari posisi saja sudah "
               f"menggerakkan harganya sendiri", True)
+
+    fdv = (pool or {}).get("fdv_usd")
+    # Ambang 0,9: selisih beberapa persen cuma beda waktu pengambilan & pembulatan.
+    if fdv and likuid and fdv < likuid * 0.9:
+        # Nilai SELURUH token tidak mungkin di bawah isi kolamnya sendiri. Biasanya berarti
+        # suplai atau harga acuannya keliru di sumber data.
+        catat(f"Angka pasar tidak konsisten: FDV {_uang(fdv)} lebih kecil daripada "
+              f"likuiditasnya sendiri {_uang(likuid)} — salah satu angka itu tidak bisa "
+              f"dipercaya")
 
     umur = (pool or {}).get("umur_jam")
     if umur is not None and umur < 24:

@@ -191,3 +191,41 @@ def test_persen_memakai_koma():
          "harga_usd": 0.0002296}
     k = tb.kartu(p, _aman(), [])
     assert "+38,2%" in k and "+38.2%" not in k
+
+
+def test_persen_di_temuan_juga_memakai_koma():
+    """Keluaran produksi 20 Sep: "+62,3%" di kepala kartu tapi "100.0%" di temuan —
+    dua gaya angka dalam satu kartu membuat pembaca ragu mana yang benar."""
+    t = tb.temuan(_aman(creator_percent="1"), {"likuiditas_usd": 50000.0, "umur_jam": 1.0})
+    pesan = " ".join(x["pesan"] for x in t)
+    assert "100,0%" in pesan and "100.0%" not in pesan
+
+
+def test_fdv_lebih_kecil_dari_likuiditas_ditandai():
+    """Keluaran produksi 20 Sep, token LAST: FDV $9,32 rb dengan likuiditas $16,90 rb.
+    Nilai SELURUH token tidak mungkin lebih kecil daripada isi kolamnya sendiri — salah
+    satu angka itu salah, dan menampilkannya diam-diam membuatnya tampak sahih."""
+    t = tb.temuan(_aman(), {"likuiditas_usd": 16900.0, "fdv_usd": 9320.0, "umur_jam": 5.0})
+    assert any("tidak konsisten" in x["pesan"].lower() for x in t), [x["pesan"] for x in t]
+
+
+def test_fdv_wajar_tidak_ditandai():
+    t = tb.temuan(_aman(), {"likuiditas_usd": 20000.0, "fdv_usd": 230000.0, "umur_jam": 5.0})
+    assert not any("tidak konsisten" in x["pesan"].lower() for x in t)
+
+
+def test_likuiditas_tipis_memakai_format_yang_sama(monkeypatch):
+    """Produksi sempat menulis "$6,052" (gaya Inggris) di temuan, sementara kepala kartu
+    menulis "$6.05 rb" — angka yang sama tampil dua rupa."""
+    t = tb.temuan(_aman(), {"likuiditas_usd": 6052.0, "fdv_usd": 50000.0, "umur_jam": 5.0})
+    pesan = " ".join(x["pesan"] for x in t)
+    assert "$6.05 rb" in pesan and "$6,052" not in pesan
+
+
+@pytest.mark.parametrize("fdv,likuid,ditandai", [
+    (6040.0, 6052.0, False),     # selisih 0,2%: derau pembulatan, bukan kejanggalan
+    (9320.0, 16900.0, True),     # FDV cuma 55% likuiditas: salah satu angka keliru
+])
+def test_ambang_kejanggalan_fdv(fdv, likuid, ditandai):
+    t = tb.temuan(_aman(), {"likuiditas_usd": likuid, "fdv_usd": fdv, "umur_jam": 5.0})
+    assert any("tidak konsisten" in x["pesan"].lower() for x in t) is ditandai
