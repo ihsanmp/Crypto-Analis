@@ -1,6 +1,7 @@
 # Pemeriksaan sekali jalan: apakah MORALIS_API_KEY di GitHub Secrets diterima Moralis.
 #
-# Run 35289835742 (18 Sep): investors.py kena HTTP 401 dari Moralis. Uji lokal dengan kunci
+# Run 35289835742 (18 Sep): Moralis membalas HTTP 401. Sejak 20 Sep 2026 Moralis
+# hanya dipakai wallet.py untuk isi dompet BSC — holder sudah pindah ke GoPlus. Uji lokal dengan kunci
 # palsu memberi galat yang sama ("Token is invalid format"), jadi yang tersimpan kemungkinan
 # bukan kunci yang sah. Jalankan ini sesudah memperbarui secret untuk memastikannya.
 #
@@ -30,4 +31,4 @@ jobs:
       - name: Uji kunci ke Moralis
         env:
           MORALIS_API_KEY: ${{ secrets.MORALIS_API_KEY }}
-        run: python cloud/investors.py --periksa
+        run: python cloud/wallet.py --periksa

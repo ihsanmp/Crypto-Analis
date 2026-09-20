@@ -62,7 +62,7 @@ memboroskan token tanpa bisa dipakai. Yang membacanya hanya mode SCAN.
    chain terdeteksi otomatis dari CoinGecko; untuk memaksa chain pakai
    `python cloud/investors.py <TICKER> --chain bsc|base|arbitrum|polygon|optimism|avalanche|solana`.
    Ethereum via Ethplorer+label lokal; Base/Arbitrum/Optimism/Polygon via Blockscout;
-   Avalanche via Routescan — semuanya tanpa key. BSC & Solana tidak punya sumber gratis.
+   Avalanche via Routescan; BSC & Solana via GoPlus Security — semuanya tanpa key.
    **CARA MEMBACANYA:**
    - Tiap holder punya field `kategori`: BURSA / KONTRAK-PROTOKOL / TERLABELI (dari dataset
      label gratis) atau TIDAK DIKENALI. Alamat BURSA & KONTRAK **bukan** whale perorangan —
@@ -71,9 +71,12 @@ memboroskan token tanpa bisa dipakai. Yang membacanya hanya mode SCAN.
      bukan `top10_persen` mentah.
    - Alamat berlabel TIDAK DIKENALI yang porsinya besar (>2-3%): cek lewat WebSearch —
      bisa jadi whale, dana/VC, atau kontrak yang belum ada di dataset. Jangan mengarang.
-   - Kalau `error` menyebut "tidak ada sumber gratis" (BSC/Solana), sebutkan data holder chain
-     itu tidak tersedia gratis dan keluarkan F8 dari skor. Jangan menyebutnya "data investor"
-     atau menjadikannya alasan Tim & VC tak bisa dinilai — ini data HOLDER, bukan data VC.
+   - Kategori BURN/HANGUS berarti token itu DIMUSNAHKAN, bukan dipegang siapa pun. CAKE
+     memarkir 92,85% supply di 0x...dead: top10 terbaca 96% padahal konsentrasi riilnya 2,2%.
+     Pakai `top10_non_bursa_kontrak_persen` yang sudah mengeluarkannya.
+   - Kalau `error` menyebut sumbernya gagal, sebutkan data holder chain itu tidak tersedia
+     dan keluarkan F8 dari skor. Jangan menyebutnya "data investor" atau menjadikannya alasan
+     Tim & VC tak bisa dinilai — ini data HOLDER, bukan data VC.
    - Kalau `error` menyebut koin natif, kontrak yang ada hanyalah versi bridge; data holder
      koin itu tidak tersedia dari script ini.
    - Kalau `error` lain (koin L1 sendiri seperti BTC), sebutkan data holder on-chain tidak

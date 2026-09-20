@@ -4,12 +4,13 @@ Menjawab bagian "siapa yang memegang koin ini dan seberapa besar" dari sisi ANGK
 
 SUMBER per chain:
   - Ethereum  -> Ethplorer (gratis, apiKey=freekey) + pelabelan lokal eth_labels.json.
-                 Jalur ini TIDAK butuh Moralis, jadi ETH tetap jalan tanpa key baru.
   - Base, Arbitrum, Optimism, Polygon -> Blockscout `/api/v2/tokens/{addr}/holders`
                  (tanpa key; label dari nama kontrak & Open Labels Initiative).
   - Avalanche -> Routescan `/erc20/{addr}/holders` (tanpa key, tanpa label).
-  - BSC, Solana -> tidak ada sumber gratis (diuji 19 Sep 2026). Moralis tetap dicoba kalau
-                 MORALIS_API_KEY berpaket berbayar; akun uji cobanya sudah berakhir.
+  - BSC, Solana -> GoPlus Security `token_security` (tanpa key). Ditemukan 20 Sep 2026
+                 saat memeriksa bot pemindai token: GoPlus memuat daftar pemegang, porsi,
+                 penanda kontrak/terkunci, dan tag bursa. Kesimpulan sehari sebelumnya
+                 ("tidak ada sumber gratis") keliru.
 
 Alamat kontrak per chain diresolusi dari CoinGecko (`platforms`), keyless.
 
@@ -44,14 +45,11 @@ import cgkunci  # noqa: E402  kunci Demo CoinGecko, dikirim lewat header
 UA = {"User-Agent": "Mozilla/5.0 (compatible; riset-koin/1.0)"}
 TIMEOUT = 25
 ETHPLORER = "https://api.ethplorer.io"
-MORALIS_EVM = "https://deep-index.moralis.io/api/v2.2"
-MORALIS_SOL = "https://solana-gateway.moralis.io"
+GOPLUS = "https://api.gopluslabs.io/api/v1"
 CG = "https://api.coingecko.com/api/v3"
-MORALIS_KEY = os.environ.get("MORALIS_API_KEY", "").strip()
 ROUTESCAN = "https://api.routescan.io/v2/network/mainnet/evm"
-# Pengganti Moralis (19 Sep 2026): akun Moralis habis masa uji coba — dashboard "Free Trial
-# Plan usage 0 of 0 CU", Data API terkunci. Keduanya diuji tanpa key sebelum dipakai.
-# Token dengan jutaan holder (USDC) membuat Blockscout timeout; token altcoin biasa < 3 dtk.
+# Semua sumber di bawah ini TANPA KEY. Token dengan jutaan holder (USDC) membuat Blockscout
+# timeout; token altcoin biasa di bawah 3 detik.
 BLOCKSCOUT = {
     "ethereum": "eth.blockscout.com",   # cadangan kalau Ethplorer gagal
     "base": "base.blockscout.com",
@@ -60,6 +58,7 @@ BLOCKSCOUT = {
     "polygon": "polygon.blockscout.com",
 }
 ROUTESCAN_CHAIN = {"avalanche": 43114}
+GOPLUS_CHAIN = {"bsc": 56}
 SUMBER_CHAIN = {
     "ethereum": "Ethplorer (gratis) + label lokal etherscan-labels, cadangan Blockscout",
     "base": "Blockscout (gratis, tanpa key)",
@@ -67,25 +66,19 @@ SUMBER_CHAIN = {
     "optimism": "Blockscout (gratis, tanpa key)",
     "polygon": "Blockscout (gratis, tanpa key)",
     "avalanche": "Routescan (gratis, tanpa key)",
-    "bsc": "Moralis (butuh paket berbayar)",
-    "solana": "Moralis Solana Gateway (butuh paket berbayar)",
+    "bsc": "GoPlus Security (gratis, tanpa key)",
+    "solana": "GoPlus Security Solana (gratis, tanpa key)",
 }
-# Diuji 19 Sep: Ankr 403, Routescan 400 (BSC tak didukung), Etherscan v2 "upgrade your api
-# plan", RPC publik Solana 429 untuk getTokenLargestAccounts, publicnode 403.
-_TANPA_SUMBER_GRATIS = ("tidak ada sumber gratis tanpa key untuk daftar holder chain ini "
-                        "(Ankr, Routescan, Etherscan v2, dan RPC publik Solana sudah diuji "
-                        "dan menolak).")
-
-# Registry chain: nama internal -> kunci platform CoinGecko, slug chain Moralis, tipe.
+# Registry chain: nama internal -> kunci platform CoinGecko, tipe.
 CHAINS = {
-    "ethereum":  {"cg": "ethereum",            "moralis": "eth",       "tipe": "evm"},
-    "bsc":       {"cg": "binance-smart-chain", "moralis": "bsc",       "tipe": "evm"},
-    "polygon":   {"cg": "polygon-pos",         "moralis": "polygon",   "tipe": "evm"},
-    "arbitrum":  {"cg": "arbitrum-one",        "moralis": "arbitrum",  "tipe": "evm"},
-    "base":      {"cg": "base",                "moralis": "base",      "tipe": "evm"},
-    "optimism":  {"cg": "optimistic-ethereum", "moralis": "optimism",  "tipe": "evm"},
-    "avalanche": {"cg": "avalanche",           "moralis": "avalanche", "tipe": "evm"},
-    "solana":    {"cg": "solana",              "moralis": "mainnet",   "tipe": "solana"},
+    "ethereum":  {"cg": "ethereum",            "tipe": "evm"},
+    "bsc":       {"cg": "binance-smart-chain", "tipe": "evm"},
+    "polygon":   {"cg": "polygon-pos",         "tipe": "evm"},
+    "arbitrum":  {"cg": "arbitrum-one",        "tipe": "evm"},
+    "base":      {"cg": "base",                "tipe": "evm"},
+    "optimism":  {"cg": "optimistic-ethereum", "tipe": "evm"},
+    "avalanche": {"cg": "avalanche",           "tipe": "evm"},
+    "solana":    {"cg": "solana",              "tipe": "solana"},
 }
 # Alias input supaya "eth", "bnb", "sol", dll tetap dikenali.
 ALIAS = {
@@ -134,8 +127,8 @@ def kategori_label(teks):
     return "TERLABELI"
 
 
-def klasifikasi_moralis(entity, label, is_contract):
-    """Beri label + kategori untuk holder dari Moralis (chain non-Ethereum)."""
+def klasifikasi_alamat(entity, label, is_contract):
+    """Beri label + kategori untuk holder di chain selain Ethereum."""
     teks = (entity or label or "").strip()
     if teks:
         kat = kategori_label(teks)
@@ -260,7 +253,7 @@ def blockscout_holders(address, chain, limit):
             pct = round(float(h.get("value")) / supply * 100, 2) if supply else None
         except (TypeError, ValueError):
             pct = None
-        nm, kat = klasifikasi_moralis(None, _nama_blockscout(alamat),
+        nm, kat = klasifikasi_alamat(None, _nama_blockscout(alamat),
                                       bool(alamat.get("is_contract")))
         daftar.append({"alamat": alamat.get("hash"), "persen_supply": pct,
                        "label": nm, "kategori": kat})
@@ -285,92 +278,76 @@ def routescan_holders(address, limit, chain_id=43114):
     return daftar, {}, None
 
 
-def _galat_moralis(err, label="Moralis"):
-    # Moralis memakai 401 juga untuk kuota gratis yang dihentikan — key-nya sah, jadi
-    # "perbarui secret" di situ menyuruh memperbaiki hal yang tidak rusak (periksa 19 Sep).
-    if str(err).startswith("HTTP 401") and ("paused" in err or "usage" in err.lower()):
-        return (f"{label} menghentikan pemakaian paket gratis akun ini (HTTP 401) — key-nya "
-                "sah; pemakaian harus dipulihkan dari dashboard moralis.com.")
-    if str(err).startswith("HTTP 401"):
-        return (f"{label} menolak API key (HTTP 401) — secret MORALIS_API_KEY tidak valid atau "
-                "kedaluwarsa; perbarui di GitHub Secrets.")
-    return f"{label} gagal: {err}"
+def _label_goplus(alamat, tag, is_contract, terkunci):
+    """Label + kategori satu pemegang versi GoPlus.
 
-
-def moralis_evm_holders(address, chain_slug, limit):
-    if not MORALIS_KEY:
-        return None, {}, "MORALIS_API_KEY belum di-set (perlu untuk chain selain Ethereum)."
-    url = (f"{MORALIS_EVM}/erc20/{address}/owners"
-           f"?chain={chain_slug}&order=DESC&limit={min(limit, 100)}")
-    data = try_json(url, headers={"X-API-Key": MORALIS_KEY, "accept": "application/json"})
-    if "__err" in data:
-        return None, {}, _galat_moralis(data["__err"])
-    daftar = []
-    for h in (data.get("result") or []):
-        pct = h.get("percentage_relative_to_total_supply")
-        nm, kat = klasifikasi_moralis(h.get("entity"),
-                                      h.get("owner_address_label") or h.get("label"),
-                                      bool(h.get("is_contract")))
-        daftar.append({"alamat": h.get("owner_address"),
-                       "persen_supply": round(float(pct), 2) if pct is not None else None,
-                       "label": nm, "kategori": kat})
-    return daftar, {}, None
-
-
-def moralis_solana_holders(address, limit):
-    if not MORALIS_KEY:
-        return None, {}, "MORALIS_API_KEY belum di-set (perlu untuk Solana)."
-    url = f"{MORALIS_SOL}/token/mainnet/{address}/top-holders?limit={min(limit, 100)}"
-    data = try_json(url, headers={"X-API-Key": MORALIS_KEY, "accept": "application/json"})
-    if "__err" in data:
-        return None, {}, _galat_moralis(data["__err"], "Moralis Solana")
-    rows = data.get("result") if isinstance(data, dict) else data
-    daftar = []
-    for h in (rows or []):
-        pct = (h.get("percentageRelativeToTotalSupply")
-               or h.get("percentage_relative_to_total_supply"))
-        addr = h.get("ownerAddress") or h.get("owner_address") or h.get("address")
-        nm, kat = klasifikasi_moralis(None,
-                                      h.get("label") or h.get("ownerAddressLabel"),
-                                      bool(h.get("isContract") or h.get("is_contract")))
-        daftar.append({"alamat": addr,
-                       "persen_supply": round(float(pct), 2) if pct is not None else None,
-                       "label": nm, "kategori": kat})
-    return daftar, {}, None
-
-
-# USDC di Base: token yang pasti ada, jadi galat apa pun datang dari kuncinya, bukan tokennya.
-_USDC_BASE = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
-
-
-def periksa_kunci(kunci=None):
-    """Diagnosis MORALIS_API_KEY tanpa pernah mencetak isinya (log Actions repo ini publik).
-
-    Return (ok, baris_laporan). Bentuk diperiksa dulu: kunci Moralis berupa JWT (tiga bagian
-    dipisah titik, diawali "eyJ"). Galat "Token is invalid format" dari Moralis hampir selalu
-    berarti yang tersimpan bukan kuncinya — terpotong, tertukar, atau ikut tanda kutip.
+    Alamat burn dibedakan: token yang DIBAKAR bukan konsentrasi di satu tangan. CAKE
+    memarkir 92,85% supply di 0x...dead — dibaca mentah, itu tampak seperti satu whale
+    yang bisa menjatuhkan pasar kapan saja, padahal token itu justru sudah lenyap.
     """
-    kunci = MORALIS_KEY if kunci is None else kunci.strip()
-    lap = []
-    if not kunci:
-        return False, ["MORALIS_API_KEY: TIDAK ADA (secret kosong/belum dibuat)."]
-    bagian = kunci.split(".")
-    lap.append(f"MORALIS_API_KEY: ada, panjang {len(kunci)} karakter, {len(bagian)} bagian bertitik.")
-    masalah = []
-    if len(bagian) != 3 or not kunci.startswith("eyJ"):
-        masalah.append("bentuknya BUKAN JWT (kunci Moralis diawali 'eyJ' dan punya 3 bagian bertitik)")
-    if any(c in kunci for c in "\"' <>"):
-        masalah.append("mengandung tanda kutip/spasi/kurung sudut — kemungkinan ikut tersalin")
-    lap.append("Bentuk: " + ("; ".join(masalah) if masalah else "wajar (JWT)."))
-    data = try_json(f"{MORALIS_EVM}/erc20/{_USDC_BASE}/owners?chain=base&limit=1",
-                    headers={"X-API-Key": kunci, "accept": "application/json"})
-    if isinstance(data, dict) and "__err" in data:
-        err = str(data["__err"])
-        # Badan galat Moralis tidak memuat kunci, tapi disaring juga untuk berjaga-jaga.
-        lap.append("Moralis: DITOLAK — " + err.replace(kunci, "***")[:160])
-        return False, lap
-    lap.append("Moralis: DITERIMA — endpoint holder ERC-20 (Base) menjawab normal.")
-    return True, lap
+    rendah = (alamat or "").lower()
+    if rendah in ("0x000000000000000000000000000000000000dead",
+                  "0x0000000000000000000000000000000000000000") or rendah.endswith("dead"):
+        return "alamat burn (token dimusnahkan)", "BURN/HANGUS"
+    if tag:
+        return tag, kategori_label(tag)
+    if terkunci:
+        return "terkunci (locker/vesting)", "KONTRAK/PROTOKOL"
+    if is_contract:
+        return "kontrak (tak bernama)", "KONTRAK/PROTOKOL"
+    return "belum dikenali", "TIDAK DIKENALI — cek lewat WebSearch"
+
+
+def _persen_goplus(nilai):
+    try:
+        return round(float(nilai) * 100, 2)   # GoPlus memberi PECAHAN (0,9285 = 92,85%)
+    except (TypeError, ValueError):
+        return None
+
+
+def goplus_holders(address, chain_id, limit):
+    """Pemegang teratas dari GoPlus Security (EVM). Dipakai untuk BSC."""
+    data = try_json(f"{GOPLUS}/token_security/{chain_id}?contract_addresses={address}")
+    if "__err" in data:
+        return None, {}, f"GoPlus gagal: {data['__err']}"
+    r = (data.get("result") or {}).get(address.lower()) or (data.get("result") or {}).get(address)
+    if not r:
+        return None, {}, f"GoPlus tidak punya data untuk {address[:12]} di chain {chain_id}."
+    token = {"nama": r.get("token_name"), "symbol": r.get("token_symbol"),
+             "jumlah_holder": _int(r.get("holder_count"))}
+    daftar = []
+    for h in (r.get("holders") or [])[:limit]:
+        nm, kat = _label_goplus(h.get("address"), (h.get("tag") or "").strip(),
+                                str(h.get("is_contract")) == "1", str(h.get("is_locked")) == "1")
+        daftar.append({"alamat": h.get("address"), "persen_supply": _persen_goplus(h.get("percent")),
+                       "label": nm, "kategori": kat})
+    return daftar, token, None
+
+
+def goplus_solana_holders(mint, limit):
+    data = try_json(f"{GOPLUS}/solana/token_security?contract_addresses={mint}")
+    if "__err" in data:
+        return None, {}, f"GoPlus Solana gagal: {data['__err']}"
+    r = (data.get("result") or {}).get(mint)
+    if not r:
+        return None, {}, f"GoPlus Solana tidak punya data untuk {mint[:12]}."
+    meta = r.get("metadata") or {}
+    token = {"nama": meta.get("name"), "symbol": meta.get("symbol"),
+             "jumlah_holder": _int(r.get("holder_count"))}
+    daftar = []
+    for h in (r.get("holders") or [])[:limit]:
+        nm, kat = _label_goplus(h.get("account"), (h.get("tag") or "").strip(),
+                                False, str(h.get("is_locked")) == "1")
+        daftar.append({"alamat": h.get("account"), "persen_supply": _persen_goplus(h.get("percent")),
+                       "label": nm, "kategori": kat})
+    return daftar, token, None
+
+
+def _int(x):
+    try:
+        return int(float(x))
+    except (TypeError, ValueError):
+        return None
 
 
 def main():
@@ -400,6 +377,7 @@ def main():
             "Alamat 'TIDAK DIKENALI' yang porsinya besar WAJIB dicek lewat WebSearch "
             "sebelum disebut whale — data label tidak mencakup semua alamat.",
             "Porsi besar di kontrak staking/treasury/bridge BUKAN tanda konsentrasi berbahaya.",
+            "Porsi di alamat burn (0x...dead) berarti token itu DIMUSNAHKAN — bukan whale.",
             # Run 35289835742: kegagalan sumber ini ditulis sebagai "data investor gagal
             # ditarik" dan dijadikan alasan Tim & VC tak bisa dinilai.
             "Ini data HOLDER on-chain, BUKAN data VC/investor. Berhasil atau gagalnya script "
@@ -474,22 +452,17 @@ def main():
         daftar, token, err = blockscout_holders(address, chain, limit)
     elif chain in ROUTESCAN_CHAIN:
         daftar, token, err = routescan_holders(address, limit, ROUTESCAN_CHAIN[chain])
+    elif tipe == "solana":
+        daftar, token, err = goplus_solana_holders(address, limit)
     else:
-        # BSC & Solana: Moralis satu-satunya jalur, dan hanya berguna dengan paket berbayar.
-        if tipe == "solana":
-            daftar, token, err = moralis_solana_holders(address, limit)
-        else:
-            daftar, token, err = moralis_evm_holders(address, CHAINS[chain]["moralis"], limit)
-        if err:
-            err = f"{chain}: {_TANPA_SUMBER_GRATIS} Moralis: {err}"
+        daftar, token, err = goplus_holders(address, GOPLUS_CHAIN[chain], limit)
 
     if token:
         hasil["token"] = token
     if err:
         hasil["error"] = err
-        if chain in ("bsc", "solana"):
-            hasil["saran"] = ("Cari distribusi holder lewat WebSearch di explorer chain itu "
-                              "(BscScan/Solscan), sebutkan keterbatasannya.")
+        hasil["saran"] = ("Cari distribusi holder lewat WebSearch di explorer chain itu, "
+                          "sebutkan keterbatasannya.")
         print(json.dumps(hasil, indent=2, ensure_ascii=False))
         return
 
@@ -498,7 +471,8 @@ def main():
     if persen:
         non_entitas = sum(d["persen_supply"] for d in daftar
                           if d["persen_supply"] is not None
-                          and d["kategori"] not in ("BURSA", "KONTRAK/PROTOKOL"))
+                          and d["kategori"] not in ("BURSA", "KONTRAK/PROTOKOL",
+                                                   "BURN/HANGUS"))
         hasil["konsentrasi"] = {
             "top10_persen": round(sum(persen[:10]), 2),
             "terbesar_persen": persen[0],

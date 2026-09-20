@@ -83,3 +83,40 @@ def test_sumber_tercatat_benar(monkeypatch, capsys, chain, harap):
     monkeypatch.setattr(sys, "argv", ["wallet.py", addr, "--chain", chain])
     wallet.main()
     assert harap in json.loads(capsys.readouterr().out)["sumber"]
+
+
+KUNCI_RAHASIA = "eyJhbGciOiJIUzI1NiJ9.eyJyYWhhc2lhIjoieWEifQ.tandatanganRahasia123"
+
+
+@pytest.mark.parametrize("jawaban,ok", [
+    ({"result": []}, True),
+    ({"__err": 'HTTP 401 {"message":"Token is invalid format"}'}, False),
+])
+def test_periksa_kunci_tidak_pernah_mencetak_isinya(monkeypatch, jawaban, ok):
+    """Log Actions repo ini publik: laporan pemeriksaan tidak boleh memuat sepotong pun kunci."""
+    monkeypatch.setattr(wallet, "try_json", lambda url, headers=None, data=None: jawaban)
+    hasil, lap = wallet.periksa_kunci(KUNCI_RAHASIA)
+    teks = "\n".join(lap)
+    assert hasil is ok
+    for potong in KUNCI_RAHASIA.split("."):
+        assert potong not in teks
+    assert "wajar (JWT)" in teks
+
+
+@pytest.mark.parametrize("kunci,harap", [
+    ("", "TIDAK ADA"),
+    ("abc123", "BUKAN JWT"),
+    ('"eyJa.eyJb.c"', "tanda kutip"),
+])
+def test_periksa_kunci_mendiagnosis_bentuk(monkeypatch, kunci, harap):
+    monkeypatch.setattr(wallet, "try_json", lambda url, headers=None, data=None: {"__err": "HTTP 401"})
+    hasil, lap = wallet.periksa_kunci(kunci) if kunci else wallet.periksa_kunci("  ")
+    assert hasil is False and harap in "\n".join(lap)
+
+
+def test_401_kuota_dihentikan_tidak_disebut_key_salah():
+    """Periksa 19 Sep: key sah (JWT), tapi Moralis membalas 401 'Free usage is paused'."""
+    pesan = wallet._galat_moralis(
+        'HTTP 401 {"message":"Your Moralis Free usage is paused. Upgrade to a paid plan'
+        ' to resume usage."}')
+    assert "key-nya sah" in pesan and "tidak valid" not in pesan

@@ -26,6 +26,7 @@ import gzip
 import json
 import os
 import re
+import sys
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
@@ -232,7 +233,63 @@ def solana_wallet(addr):
                         "menolak getTokenAccountsByOwner); cek Solscan lewat WebSearch.")}
 
 
+# USDC di Base: token yang pasti ada, jadi galat apa pun datang dari kuncinya, bukan tokennya.
+_USDC_BASE = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
+
+
+def _galat_moralis(err, label="Moralis"):
+    """Moralis memakai 401 untuk DUA hal berbeda: kunci tidak sah, dan kuota paket gratis
+    yang dihentikan. Menyuruh user memperbarui kunci yang sebenarnya sah membuang waktunya
+    (periksa 19 Sep 2026: kuncinya sah, akunnya yang habis masa uji coba)."""
+    teks = str(err)
+    if teks.startswith("HTTP 401") and ("paused" in teks or "usage" in teks.lower()):
+        return (f"{label} menghentikan pemakaian paket gratis akun ini (HTTP 401) — key-nya "
+                "sah; pemakaian harus dipulihkan dari dashboard moralis.com.")
+    if teks.startswith("HTTP 401"):
+        return (f"{label} menolak API key (HTTP 401) — secret MORALIS_API_KEY tidak valid atau "
+                "kedaluwarsa; perbarui di GitHub Secrets.")
+    return f"{label} gagal: {teks}"
+
+
+def periksa_kunci(kunci=None):
+    """Diagnosis MORALIS_API_KEY tanpa pernah mencetak isinya (log Actions repo ini publik).
+
+    Return (ok, baris_laporan). Bentuk diperiksa dulu: kunci Moralis berupa JWT (tiga bagian
+    dipisah titik, diawali "eyJ"). Galat "Token is invalid format" hampir selalu berarti yang
+    tersimpan bukan kuncinya — terpotong, tertukar, atau ikut tanda kutip.
+
+    Pindah ke sini 20 Sep 2026: investors.py tidak lagi memakai Moralis sama sekali (BSC &
+    Solana pindah ke GoPlus), jadi satu-satunya pemakai yang tersisa adalah isi dompet BSC.
+    """
+    kunci = MORALIS_KEY if kunci is None else kunci.strip()
+    lap = []
+    if not kunci:
+        return False, ["MORALIS_API_KEY: TIDAK ADA (secret kosong/belum dibuat)."]
+    bagian = kunci.split(".")
+    lap.append(f"MORALIS_API_KEY: ada, panjang {len(kunci)} karakter, "
+               f"{len(bagian)} bagian bertitik.")
+    masalah = []
+    if len(bagian) != 3 or not kunci.startswith("eyJ"):
+        masalah.append("bentuknya BUKAN JWT (kunci Moralis diawali 'eyJ' dan "
+                       "punya 3 bagian bertitik)")
+    if any(c in kunci for c in "\"' <>"):
+        masalah.append("mengandung tanda kutip/spasi/kurung sudut — kemungkinan ikut tersalin")
+    lap.append("Bentuk: " + ("; ".join(masalah) if masalah else "wajar (JWT)."))
+    data = try_json(f"{MORALIS_EVM}/erc20/{_USDC_BASE}/owners?chain=base&limit=1",
+                    headers={"X-API-Key": kunci, "accept": "application/json"})
+    if isinstance(data, dict) and "__err" in data:
+        # Badan galat Moralis tidak memuat kunci, tapi disaring juga untuk berjaga-jaga.
+        lap.append("Moralis: DITOLAK — " + str(data["__err"]).replace(kunci, "***")[:160])
+        return False, lap
+    lap.append("Moralis: DITERIMA — endpoint holder ERC-20 (Base) menjawab normal.")
+    return True, lap
+
+
 def main():
+    if "--periksa" in sys.argv[1:]:
+        ok, lap = periksa_kunci()
+        print("\n".join(lap))
+        sys.exit(0 if ok else 1)
     ap = argparse.ArgumentParser()
     ap.add_argument("address")
     ap.add_argument("--chain", default=None,
@@ -287,6 +344,8 @@ def main():
         return
 
     port = hasil.get("portofolio") or {}
+    if isinstance(port, dict) and str(port.get("error", "")).startswith("Moralis gagal: "):
+        port["error"] = _galat_moralis(str(port["error"]).replace("Moralis gagal: ", ""))
     if isinstance(port, dict) and port.get("error"):
         hasil["saran"] = "Cek isi dompet lewat WebSearch di explorer chain itu, sebutkan keterbatasannya."
 

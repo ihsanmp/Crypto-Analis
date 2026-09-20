@@ -45,7 +45,6 @@ def _jalankan(monkeypatch, capsys, argv):
 def test_koin_natif_tidak_memakai_kontrak_bridge(monkeypatch, capsys):
     # Koin natif: asset_platform_id kosong; platforms hanya berisi versi bridge/wrapped.
     monkeypatch.setattr(investors, "try_json", _palsu_cg(None, {"base": TAO_BASE, "": ""}))
-    monkeypatch.setattr(investors, "MORALIS_KEY", "kunci")
     h = _jalankan(monkeypatch, capsys, ["TAO"])
     assert "kontrak" not in h and "chain" not in h
     assert "natif" in h["error"] and "bridge" in h["error"]
@@ -55,75 +54,24 @@ def test_koin_natif_tidak_memakai_kontrak_bridge(monkeypatch, capsys):
 def test_koin_natif_tetap_bisa_dipaksa(monkeypatch, capsys):
     """User yang SENGAJA meminta chain tertentu tetap dilayani."""
     monkeypatch.setattr(investors, "try_json", _palsu_cg(None, {"base": TAO_BASE}))
-    monkeypatch.setattr(investors, "MORALIS_KEY", "kunci")
     h = _jalankan(monkeypatch, capsys, ["TAO", "--chain", "base"])
     assert h["kontrak"] == TAO_BASE
 
 
 def test_token_kontrak_tetap_berjalan(monkeypatch, capsys):
     monkeypatch.setattr(investors, "try_json", _palsu_cg("base", {"base": TAO_BASE}))
-    monkeypatch.setattr(investors, "MORALIS_KEY", "kunci")
     h = _jalankan(monkeypatch, capsys, ["XYZ"])
     assert h["kontrak"] == TAO_BASE and h["chain"] == "base"
 
 
-def test_401_moralis_menyebut_secret_yang_harus_diperbarui(monkeypatch, capsys):
-    # BSC: satu-satunya chain EVM yang masih lewat Moralis.
-    monkeypatch.setattr(investors, "try_json",
-                        _palsu_cg("binance-smart-chain", {"binance-smart-chain": TAO_BASE}))
-    monkeypatch.setattr(investors, "MORALIS_KEY", "kunci")
-    h = _jalankan(monkeypatch, capsys, ["XYZ"])
-    assert "401" in h["error"] and "MORALIS_API_KEY" in h["error"]
-    assert "menolak API key" in h["error"]
-
-
 @pytest.mark.parametrize("platform,platforms", [
     (None, {"base": TAO_BASE}),          # jalur error natif
-    ("binance-smart-chain", {"binance-smart-chain": TAO_BASE}),   # jalur error 401
 ])
 def test_setiap_keluaran_menegaskan_holder_bukan_data_vc(monkeypatch, capsys, platform, platforms):
     monkeypatch.setattr(investors, "try_json", _palsu_cg(platform, platforms))
-    monkeypatch.setattr(investors, "MORALIS_KEY", "kunci")
     h = _jalankan(monkeypatch, capsys, ["XYZ"])
     teks = " ".join(h["peringatan"])
     assert "BUKAN data VC" in teks and "Tim & VC" in teks
-
-
-KUNCI_RAHASIA = "eyJhbGciOiJIUzI1NiJ9.eyJyYWhhc2lhIjoieWEifQ.tandatanganRahasia123"
-
-
-@pytest.mark.parametrize("jawaban,ok", [
-    ({"result": []}, True),
-    ({"__err": 'HTTP 401 {"message":"Token is invalid format"}'}, False),
-])
-def test_periksa_kunci_tidak_pernah_mencetak_isinya(monkeypatch, jawaban, ok):
-    """Log Actions repo ini publik: laporan pemeriksaan tidak boleh memuat sepotong pun kunci."""
-    monkeypatch.setattr(investors, "try_json", lambda url, headers=None: jawaban)
-    hasil, lap = investors.periksa_kunci(KUNCI_RAHASIA)
-    teks = "\n".join(lap)
-    assert hasil is ok
-    for potong in KUNCI_RAHASIA.split("."):
-        assert potong not in teks
-    assert "wajar (JWT)" in teks
-
-
-@pytest.mark.parametrize("kunci,harap", [
-    ("", "TIDAK ADA"),
-    ("abc123", "BUKAN JWT"),
-    ('"eyJa.eyJb.c"', "tanda kutip"),
-])
-def test_periksa_kunci_mendiagnosis_bentuk(monkeypatch, kunci, harap):
-    monkeypatch.setattr(investors, "try_json", lambda url, headers=None: {"__err": "HTTP 401"})
-    hasil, lap = investors.periksa_kunci(kunci) if kunci else investors.periksa_kunci("  ")
-    assert hasil is False and harap in "\n".join(lap)
-
-
-def test_401_kuota_dihentikan_tidak_disebut_key_salah():
-    """Periksa 19 Sep: key sah (JWT), tapi Moralis membalas 401 'Free usage is paused'."""
-    pesan = investors._galat_moralis(
-        'HTTP 401 {"message":"Your Moralis Free usage is paused. Upgrade to a paid plan'
-        ' to resume usage."}')
-    assert "key-nya sah" in pesan and "tidak valid" not in pesan
 
 
 # ---- Pengganti Moralis (19 Sep): akun Moralis habis masa uji coba, "0 of 0" CU. ----------
@@ -181,17 +129,84 @@ def test_rute_tidak_lagi_lewat_moralis(chain, harap):
     assert harap in investors.SUMBER_CHAIN[chain]
 
 
-@pytest.mark.parametrize("chain", ["bsc", "solana"])
-def test_chain_tanpa_sumber_gratis_disebut_jujur(monkeypatch, capsys, chain):
-    monkeypatch.setattr(investors, "MORALIS_KEY", "")
-    monkeypatch.setattr(investors, "try_json", _palsu_cg("x", {investors.CHAINS[chain]["cg"]: (
-        TAO_BASE if chain == "bsc" else "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN")}))
-    h = _jalankan(monkeypatch, capsys, ["XYZ"])
-    assert "tidak ada sumber gratis" in h["error"]
-
-
 def test_kontrak_bernama_tanpa_kata_kunci_tetap_kontrak():
-    assert investors.klasifikasi_moralis(None, "Aave Matic Market AAVE", True) == (
+    assert investors.klasifikasi_alamat(None, "Aave Matic Market AAVE", True) == (
         "Aave Matic Market AAVE", "KONTRAK/PROTOKOL")
-    assert investors.klasifikasi_moralis(None, "Binance 8", False)[1] == "BURSA"
-    assert investors.klasifikasi_moralis(None, "Wintermute", False)[1] == "TERLABELI"
+    assert investors.klasifikasi_alamat(None, "Binance 8", False)[1] == "BURSA"
+    assert investors.klasifikasi_alamat(None, "Wintermute", False)[1] == "TERLABELI"
+
+
+# ---- GoPlus menutup celah BSC & Solana (20 Sep 2026) --------------------------------------
+# Kesimpulan 19 Sep "BSC & Solana tidak punya sumber gratis" TERNYATA SALAH: GoPlus Security
+# memberi daftar pemegang untuk keduanya, tanpa key. Dicek dari kartu bot pemindai token:
+# angkanya cocok (holder 7.914, pajak 1%), dan GoPlus juga menyebut LP terkunci atau tidak.
+
+CAKE = "0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82"
+MATI = "0x000000000000000000000000000000000000dead"
+
+
+def _goplus_evm(url, headers=None):
+    assert "gopluslabs.io/api/v1/token_security/56" in url
+    return {"result": {CAKE: {
+        "token_name": "PancakeSwap Token", "token_symbol": "Cake",
+        "holder_count": "1911826", "total_supply": "5375267287.75",
+        "holders": [
+            {"address": MATI, "tag": "", "is_contract": 0, "percent": "0.9285", "is_locked": 1},
+            {"address": "0xf977814e", "tag": "Binance", "is_contract": 0,
+             "percent": "0.0146", "is_locked": 0},
+            {"address": "0xabc", "tag": "", "is_contract": 1, "percent": "0.005", "is_locked": 0},
+        ]}}}
+
+
+def _goplus_sol(url, headers=None):
+    assert "gopluslabs.io/api/v1/solana/token_security" in url
+    return {"result": {"MINT": {
+        "metadata": {"name": "Jupiter", "symbol": "JUP"}, "holder_count": 828815,
+        "holders": [{"account": "EXJHiMkj", "percent": "0.2478", "tag": "", "is_locked": 0}]}}}
+
+
+def test_goplus_bsc_persen_label_dan_alamat_burn(monkeypatch):
+    monkeypatch.setattr(investors, "try_json", _goplus_evm)
+    daftar, token, err = investors.goplus_holders(CAKE, 56, 10)
+    assert err is None and token["symbol"] == "Cake" and token["jumlah_holder"] == 1911826
+    assert daftar[0]["persen_supply"] == 92.85
+    # Token yang DIBAKAR bukan konsentrasi di satu tangan — harus dibedakan, bukan
+    # dihitung sebagai whale 92% yang menakutkan.
+    assert daftar[0]["kategori"] == "BURN/HANGUS"
+    assert daftar[1] == {"alamat": "0xf977814e", "persen_supply": 1.46,
+                         "label": "Binance", "kategori": "BURSA"}
+    assert daftar[2]["kategori"] == "KONTRAK/PROTOKOL"
+
+
+def test_konsentrasi_tidak_menghitung_alamat_burn(monkeypatch, capsys):
+    monkeypatch.setattr(investors, "try_json", lambda url, headers=None: (
+        _palsu_cg("binance-smart-chain", {"binance-smart-chain": CAKE})(url)
+        if "coingecko" in url else _goplus_evm(url)))
+    h = _jalankan(monkeypatch, capsys, ["CAKE"])
+    assert h["konsentrasi"]["top10_non_bursa_kontrak_persen"] == 0.0
+
+
+def test_goplus_solana(monkeypatch):
+    monkeypatch.setattr(investors, "try_json", _goplus_sol)
+    daftar, token, err = investors.goplus_solana_holders("MINT", 10)
+    assert err is None and token["symbol"] == "JUP"
+    assert daftar[0]["alamat"] == "EXJHiMkj" and daftar[0]["persen_supply"] == 24.78
+
+
+def test_goplus_gagal_dilaporkan(monkeypatch):
+    monkeypatch.setattr(investors, "try_json", lambda url, headers=None: {"__err": "HTTP 429"})
+    daftar, _, err = investors.goplus_holders(CAKE, 56, 10)
+    assert daftar is None and "GoPlus" in err and "429" in err
+
+
+@pytest.mark.parametrize("chain", ["bsc", "solana"])
+def test_bsc_dan_solana_kini_punya_sumber(chain):
+    assert "GoPlus" in investors.SUMBER_CHAIN[chain]
+
+
+def test_moralis_tidak_lagi_dipakai_untuk_holder():
+    """Akunnya berbayar dan tidak ada jalur holder yang membutuhkannya lagi — kode mati
+    yang pesannya menyuruh user mengurus langganan hanya menyesatkan. Pemeriksa kuncinya
+    pindah ke wallet.py, satu-satunya pemakai Moralis yang tersisa (isi dompet BSC)."""
+    isi = open(os.path.join(AKAR, "cloud", "investors.py"), encoding="utf-8").read()
+    assert "moralis" not in isi.lower(), "sisa jalur Moralis di investors.py"
