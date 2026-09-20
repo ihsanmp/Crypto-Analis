@@ -8117,3 +8117,33 @@ def test_jalur_token_baru_mengirim_chain_ke_script():
     i = src.index('if kind == "tokenbaru":')
     blok = src[i:src.index("timeout = int(os.environ", i)]
     assert "chain_token_baru(text)" in blok and '"--chain"' in blok
+
+
+def test_ringkasan_token_baru_lolos_penyaring_privasi():
+    """Kartu pemindai memuat alamat kontrak, jadi penyaring privasi menolak menyimpannya
+    (benar: repo ini publik). Akibatnya giliran berikutnya kehilangan konteks — "yang
+    pertama tadi apa?" jadi tidak bisa dijawab. Yang disimpan karena itu RINGKASANNYA,
+    tanpa satu pun alamat. Terlihat di run 35492688954."""
+    sys.path.insert(0, os.path.join(AKAR, "cloud"))
+    from memori import masalah_privasi
+    kartu = ("🆕 2 token terbaru di SOLANA (likuiditas ≥ $5.00 rb)\n\n"
+             "⚠️ Pigeon — HATI-HATI\nCA: 2oYchSWCXvbi5W6vPaJD3hgpqrLrU8TdQ8hPLJhAUavz\n"
+             "Harga $0,00004196 · FDV $41.96 rb\n\n────\n\n"
+             "🛑 GNS — BAHAYA\nCA: DwpFAwADLZWv9pAdbFQWRqsrotN8qt5FfkVjrf7nMKAB\n"
+             "Harga $0,000009667")
+    assert masalah_privasi(kartu), "prasyarat: kartu aslinya memang tertahan penyaring"
+    ringkas = bot.ringkas_token_baru(kartu, "solana")
+    assert not masalah_privasi(ringkas), ringkas
+    assert "Pigeon" in ringkas and "HATI-HATI" in ringkas
+    assert "GNS" in ringkas and "BAHAYA" in ringkas
+    assert "solana" in ringkas.lower()
+    # Harus JELAS bahwa ini ringkasan, bukan yang dikirim apa adanya.
+    assert "ringkas" in ringkas.lower() or "alamat" in ringkas.lower()
+
+
+def test_jalur_token_baru_menyimpan_ringkasan_bukan_kartu():
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    i = src.index('if kind == "tokenbaru":')
+    blok = src[i:src.index("timeout = int(os.environ", i)]
+    assert "simpan_riwayat(chat_id, text, ringkas_token_baru(" in blok
+    assert "send_message(token, chat_id, isi)" in blok, "yang DIKIRIM tetap kartu penuh"

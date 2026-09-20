@@ -205,6 +205,26 @@ _RE_TOKEN_BARU = re.compile(
     r"(?:\s+(?:di\s+)?(?P<chain>" + "|".join(_CHAIN_TOKEN_BARU) + r"))?\s*$", re.I)
 
 
+_RE_BARIS_VONIS = re.compile(
+    r"^[\U0001F300-\U0001FAFF\u26A0\uFE0F\s]*(.+?)\s+[—-]\s+"
+    r"(BAHAYA|HATI-HATI|BELUM ADA TANDA BAHAYA)\s*$", re.M)
+
+
+def ringkas_token_baru(kartu, chain):
+    """Ringkasan kartu pemindai TANPA alamat, untuk disimpan di riwayat percakapan.
+
+    Kartunya sendiri tetap dikirim utuh. Yang tidak bisa disimpan hanyalah alamat: repo
+    ini publik dan penyaring privasi memblokir seluruh balasan yang memuatnya (run
+    35492688954). Tanpa ringkasan ini, giliran berikutnya kehilangan konteks sepenuhnya —
+    "yang pertama tadi apa?" tidak bisa dijawab.
+    """
+    pasangan = [f"{nama.strip()} {vonis}" for nama, vonis in _RE_BARIS_VONIS.findall(kartu or "")]
+    if not pasangan:
+        return f"(ringkasan) Pemindaian token baru di {chain.upper()} — tidak ada hasil."
+    return (f"(ringkasan; alamat kontrak tidak disimpan) Pemindaian token baru "
+            f"{chain.upper()}: " + " · ".join(pasangan))
+
+
 def chain_token_baru(text):
     """Chain yang diminta di pesan, default BSC.
 
@@ -3851,7 +3871,9 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
                    "Coba lagi sebentar lagi.")
         if send_message(token, chat_id, isi):
             print(f"[proses] kartu token baru {len(isi)} karakter TERKIRIM", file=sys.stderr)
-            simpan_riwayat(chat_id, text, isi)
+            # Yang DIKIRIM kartu penuh; yang DISIMPAN ringkasannya — alamat kontrak
+            # membuat seluruh balasan ditolak penyaring privasi (repo ini publik).
+            simpan_riwayat(chat_id, text, ringkas_token_baru(isi, chain))
         else:
             print("[proses] GAGAL KIRIM kartu token baru", file=sys.stderr)
         return
