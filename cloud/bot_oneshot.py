@@ -110,17 +110,24 @@ HELP_TEXT = (
     "     (ganti privacy dengan: AI, RWA, DePIN, gaming, meme, DeFi, L2, storage, dll)\n"
     "   • carikan koin narasi yang menarik   -> aku cari sendiri narasi yang lagi jalan\n"
     "   • narasi apa yang lagi jalan?\n\n"
-    "4) NGOBROL SANTAI:\n"
+    "4) TOKEN YANG BARU DILUNCURKAN (BSC):\n"
+    "   • ketik: token baru   (atau: token baru bsc)\n"
+    "   • aku ambil pool yang baru dibuat, lalu periksa kontraknya satu per satu:\n"
+    "     honeypot, pajak beli/jual, kepemilikan, mintable, likuiditas terkunci\n"
+    "     atau tidak, dan konsentrasi pemegangnya\n"
+    "   • aku TIDAK memberi skor keamanan — yang kutulis temuan berangka apa adanya.\n"
+    "     Tidak ada temuan BUKAN berarti aman: token baru = risiko tertinggi\n\n"
+    "5) NGOBROL SANTAI:\n"
     "   • tanya bebas, misal: bagaimana pendapatmu tentang bitcoin?\n"
     "   • atau: prospek eth jangka menengah gimana?\n\n"
-    "5) KIRIM FOTO/SCREENSHOT:\n"
+    "6) KIRIM FOTO/SCREENSHOT:\n"
     "   • kirim gambar (chart, data, pengumuman) + caption pertanyaanmu\n"
     "   • aku baca isinya, cari kaitannya dengan koin/project, dan kasih rekomendasi\n"
     "   • caption boleh pendek atau kosong — aku tetap coba pahami\n\n"
-    "6) CEK DOMPET / HOLDER (multi-chain: ETH, BSC, Base, Arbitrum, Solana, dll):\n"
+    "7) CEK DOMPET / HOLDER (multi-chain: ETH, BSC, Base, Arbitrum, Solana, dll):\n"
     "   • tempel alamat dompet + tanya, misal: dompet ini isinya apa 0x...\n"
     "   • atau: siapa holder terbesar sol / konsentrasi holder cake di bsc\n\n"
-    "7) PERKEMBANGAN AI:\n"
+    "8) PERKEMBANGAN AI:\n"
     "   • tanya: perkembangan ai terbaru apa? / rilis model ai terbaru\n"
     "   • aku tarik dari RSS resmi OpenAI, DeepMind, Hugging Face, TechCrunch, dll\n\n"
     "Analisa & screening narasi makan waktu beberapa menit. Ngobrol biasanya lebih cepat.\n"
@@ -184,11 +191,23 @@ def send_message(token, chat_id, text):
     return terkirim
 
 
+# Perintah pemindai token baru. SEMPIT dengan sengaja: yang diminta di sini adalah DAFTAR
+# token yang baru muncul, bukan pendapat. "analisa token baru apa yang bagus menurutmu"
+# tetap masuk jalur chat.
+_RE_TOKEN_BARU = re.compile(
+    r"^(?:/?tokenbaru"
+    r"|(?:scan|cek|lihat|pindai|cari)?\s*(?:token|pool|koin|coin)\s+(?:yang\s+)?baru"
+    r"(?:\s+(?:launch|listing|muncul|dibuat))?)"
+    r"(?:\s+(?:di\s+)?(?:bsc|bnb|binance))?\s*$", re.I)
+
+
 def classify(text):
-    """Tentukan jenis pesan: 'help' | 'analisa' | 'narasi' | 'chat'."""
+    """Tentukan jenis: 'help' | 'tokenbaru' | 'analisa' | 'narasi' | 'chat'."""
     low = (text or "").strip().lower().lstrip("/")
     if low in ("start", "help", "mulai", "bantuan"):
         return "help"
+    if _RE_TOKEN_BARU.match(low):
+        return "tokenbaru"
     # AI sebagai BIDANG didahulukan. Tanpa ini "analisa sektor ai" masuk jalur aset dan
     # dibaca sebagai koin bernama "SEKTOR", sedangkan "analisis sektor ai" tersedot ke
     # screening narasi lalu dijawab dengan daftar koin AI — keduanya bukan yang diminta.
@@ -3799,6 +3818,24 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
         else:
             print("[proses] GAGAL KIRIM teks bantuan — cek TELEGRAM_BOT_TOKEN",
                   file=sys.stderr)
+        return
+
+    if kind == "tokenbaru":
+        # TANPA MODEL. Pertanyaannya murni data: daftar pool baru + hasil pemeriksaan
+        # kontraknya. Kartunya disusun KODE di tokenbaru.py, jadi tidak ada angka yang bisa
+        # dikarang, tidak ada biaya model, dan jawabannya datang dalam hitungan detik.
+        keluaran, _ = _jalankan_terukur(
+            "TOKEN BARU (tokenbaru.py)",
+            ["cloud/tokenbaru.py", "--limit", "5", "--min-liq", "5000"], 0)
+        isi = (keluaran or "").strip()
+        if not isi:
+            isi = ("❌ Pemindai token baru gagal menarik data (GeckoTerminal/GoPlus). "
+                   "Coba lagi sebentar lagi.")
+        if send_message(token, chat_id, isi):
+            print(f"[proses] kartu token baru {len(isi)} karakter TERKIRIM", file=sys.stderr)
+            simpan_riwayat(chat_id, text, isi)
+        else:
+            print("[proses] GAGAL KIRIM kartu token baru", file=sys.stderr)
         return
 
     timeout = int(os.environ.get("ANALYSIS_TIMEOUT", "900"))

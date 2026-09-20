@@ -8059,3 +8059,37 @@ def test_perbaikan_kode_tetap_diverifikasi_ulang(monkeypatch):
     # dua yang mekanis dibetulkan kode, yang arahnya salah tetap dilaporkan
     assert "naik 8,4%" in baru and "naik 50,0%" in baru
     assert len(sisa) == 1 and "200" in sisa[0]
+
+
+# ---- pemindai token baru (20 Sep 2026) ----------------------------------------------------
+# Diminta user setelah melihat bot pemindai token milik temannya. Jalurnya SENGAJA tidak
+# lewat model: kartunya disusun kode dari angka GeckoTerminal + GoPlus, jadi tidak ada yang
+# bisa dikarang dan tidak ada biaya model untuk pertanyaan yang jawabannya murni data.
+
+@pytest.mark.parametrize("teks", [
+    "token baru", "token baru bsc", "scan token baru", "cek token baru di bsc",
+    "TOKEN BARU BSC", "/tokenbaru", "pool baru bsc", "token yang baru launch",
+])
+def test_perintah_token_baru_dikenali(teks):
+    assert bot.classify(teks) == "tokenbaru", teks
+
+
+@pytest.mark.parametrize("teks", [
+    "analisa token baru apa yang bagus menurutmu",   # minta PENDAPAT, bukan daftar
+    "apakah aero token baru?",                        # pertanyaan tentang satu koin
+    "analisa aero", "carikan koin narasi yang menarik", "menurutmu btc gimana",
+])
+def test_bukan_perintah_token_baru(teks):
+    assert bot.classify(teks) != "tokenbaru", teks
+
+
+def test_jalur_token_baru_tidak_memanggil_model():
+    """Pertanyaannya murni data. Memanggil model di sini hanya menambah biaya, menambah
+    latensi, dan membuka pintu karangan untuk angka yang sudah pasti."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    i = src.index('if kind == "tokenbaru":')
+    j = src.index("timeout = int(os.environ", i)
+    blok = src[i:j]
+    assert "run_claude" not in blok, "jalur token baru tidak boleh memanggil model"
+    assert "tokenbaru.py" in blok and "send_message" in blok
+    assert "simpan_riwayat" in blok, "balasannya tetap masuk riwayat percakapan"
