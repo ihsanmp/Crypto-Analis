@@ -6,10 +6,10 @@
   },
   "hasil_uji": "Diuji 16 Sep 2026: indeks 30 hari hitungan sendiri 30, terbitan blockchaincenter 33 — selisih 3 poin (1-2 koin dari 50).",
   "indeks_30h_dihitung_sendiri": {
-   "btc_30h_persen": 8.1,
-   "indeks": 64,
+   "btc_30h_persen": 3.1,
+   "indeks": 58,
    "n_altcoin": 49,
-   "n_unggul": 32,
+   "n_unggul": 29,
    "unggul_teratas": [
     "ETH",
     "BNB",
@@ -22,19 +22,18 @@
    ]
   },
   "indeks_terbitan_blockchaincenter": {
-   "bulan_30h": 53,
-   "meragukan": true,
-   "musim_90h": 41,
+   "bulan_30h": 55,
+   "musim_90h": 43,
    "tahun_365h": 35
   },
   "periksa_silang": {
-   "cocok": false,
-   "keterangan": "hitungan sendiri dan terbitan blockchaincenter BERBEDA JAUH untuk jendela 30 hari — angka 90 hari dari situs itu patut dicurigai, jangan dikutip sebagai fakta",
-   "selisih_poin": 11
+   "cocok": true,
+   "keterangan": "hitungan sendiri dan terbitan blockchaincenter untuk jendela 30 hari saling mendekati",
+   "selisih_poin": 3
   },
   "vonis_30h": "tidak keduanya",
-  "vonis_90h": null,
-  "waktu": 1789877405.4969234
+  "vonis_90h": "tidak keduanya",
+  "waktu": 1789902990.5537746
  },
  "kategori": {
   "id": [

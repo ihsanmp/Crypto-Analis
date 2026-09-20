@@ -272,5 +272,18 @@
    "rsi=54,57",
    "rsi=54"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1789903139.8364441,
+  "waktu_utc": "2026-09-20 11:18",
+  "pesan": "saya sebelumnya sudah bertanya ke cmc ai, dan ini jawabannya:\n\n\nPons (PONS) turun terutama karena pasar mulai mengurangi premi spekulatifnya: investor mempertanyakan apakah pendapatan launchpad bisa bertahan setelah subsidi biaya transaksi Robinhood Chain berakhir.\n\nPenurunan ini tampak lebih spesif",
+  "balasan": "JALUR: saya tempatkan ini sebagai perpanjangan JALUR A. Anda tidak minta screening 749 kategori — pertanyaan sudah menjurus ke satu narasi spesifik (Pons Launchpad di Robinhood Chain) dan satu koin (PONS). Jadi saya lewati pemetaan narasi luas dan la\n[...dipangkas...]\natu-koin — tidak ada diversifikasi sektor kalau tesis PONS sendiri salah.\n• Event bertanggal 29 September 2026 adalah risiko/katalis nyata, dua arah.\n• Data teknikal hanya closing price (bukan OHLC asli) — ATR/SuperTrend/Pivot tidak valid untuk PONS.",
+  "angka_kunci": [
+   "harga=0,597",
+   "ema21=0,557",
+   "ema13=0,609",
+   "rsi=54,6"
+  ]
  }
 ]
