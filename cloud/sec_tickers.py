@@ -15,6 +15,8 @@ import os
 import time
 import urllib.request
 
+import seckontak  # noqa: E402  kontak SEC dari secret, bukan ditulis di kode
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Direktori cache bisa dialihkan lewat env. Alasannya bukan kenyamanan: peta_ticker()
 # MENULIS ULANG cache begitu umurnya lewat 7 hari, dan cache itu ikut ter-commit — jadi
@@ -31,8 +33,7 @@ URL = "https://www.sec.gov/files/company_tickers.json"
 # Tapi repo ini PUBLIK, dan alamat pribadi yang ditulis di sini terbuka untuk pemanen
 # alamat. Bisa dipindah ke secret SEC_CONTACT tanpa mengubah apa pun hari ini: kalau
 # variabelnya diset, nilainya yang dipakai; kalau tidak, jatuh ke nilai lama.
-UA = {"User-Agent": "Crypto-Analis Research bot "
-                    + os.environ.get("SEC_CONTACT", "ihsanmaulanand@gmail.com")}
+UA = seckontak.header()
 
 
 def peta_ticker(paksa=False):
@@ -65,6 +66,10 @@ def peta_ticker(paksa=False):
     except Exception as e:
         kode = getattr(e, "code", "")
         pesan = f"{type(e).__name__} {kode}".strip()
+        # 403 di sini hampir selalu berarti kontaknya kosong, bukan SEC sedang gangguan.
+        alasan = seckontak.alasan_kosong()
+        if alasan and str(kode) in ("403", ""):
+            pesan = f"{pesan} — {alasan}"
         if simpan.get("peta"):
             return simpan["peta"], True, f"{pesan} (pakai cache lama)"
         return {}, False, pesan

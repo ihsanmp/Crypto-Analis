@@ -32,14 +32,15 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
 from market import tarik  # noqa: E402
 
+import seckontak  # noqa: E402  kontak SEC dari secret, bukan ditulis di kode
+
 # SEC mewajibkan User-Agent berisi identitas + kontak (kebijakan fair access).
 # Tanpa format yang benar, seluruh permintaan dibalas HTTP 403 — bukan error yang
 # menjelaskan dirinya, jadi mudah disalahartikan sebagai emiten tidak ditemukan.
 # Dipakai identitas yang sama dengan stockfund.py yang memang sudah berhasil.
 # Kontak SEC bisa dipindah ke secret SEC_CONTACT (repo ini publik); tanpa
 # variabel itu, nilainya sama seperti sebelumnya.
-UA = {"User-Agent": "Crypto-Analis Research bot "
-                    + os.environ.get("SEC_CONTACT", "ihsanmaulanand@gmail.com")}
+UA = seckontak.header()
 SEC_SUB = "https://data.sec.gov/submissions/CIK{}.json"
 
 INDEKS = {
@@ -273,6 +274,7 @@ def main():
     ap.add_argument("--untuk", help="konteks pasar + sektor untuk satu emiten, mis. NVDA")
     args = ap.parse_args()
 
+    alasan = seckontak.alasan_kosong()
     keluar = {"generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
               "sumber": "Yahoo Finance lewat market.py (tanpa API key, API tidak resmi) "
                         "+ SEC submissions untuk kode SIC"}
@@ -282,6 +284,9 @@ def main():
         keluar["sektor"] = peringkat_sektor()
     else:
         keluar["pasar"] = konteks_pasar()
+    if alasan:
+        # Bagian Yahoo Finance tetap jalan; yang gugur hanya kode SIC dari SEC.
+        keluar["catatan_sec"] = alasan
     print(json.dumps(keluar, indent=2, ensure_ascii=False))
 
 

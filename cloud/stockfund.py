@@ -29,13 +29,14 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 
+import seckontak  # noqa: E402  kontak SEC dari secret, bukan ditulis di kode
+
 # SEC mewajibkan User-Agent berisi identitas + kontak (kebijakan fair access).
 # JANGAN menambahkan Accept-Encoding: urllib tidak membuka gzip secara otomatis, sehingga
 # responsnya terbaca sebagai byte terkompresi dan gagal di-decode.
 # Kontak SEC bisa dipindah ke secret SEC_CONTACT (repo ini publik); tanpa
 # variabel itu, nilainya sama seperti sebelumnya.
-UA = {"User-Agent": "Crypto-Analis Research bot "
-                    + os.environ.get("SEC_CONTACT", "ihsanmaulanand@gmail.com")}
+UA = seckontak.header()
 SEC = "https://data.sec.gov/api/xbrl/companyconcept"
 TICKERS = "https://www.sec.gov/files/company_tickers.json"
 TIMEOUT = 25
@@ -233,6 +234,13 @@ def main():
                     help="hanya 6 kuartal & 3 tahun terakhir per metrik — hemat token")
     args = ap.parse_args()
     ticker = args.ticker.upper().replace("$", "")
+
+    # Diperiksa SEBELUM menembak SEC: 403 karena kontak kosong terbaca persis seperti
+    # "emiten tidak ditemukan", dan salah baca itu menular ke kesimpulan analisa.
+    alasan = seckontak.alasan_kosong()
+    if alasan:
+        print(json.dumps({"ticker": ticker, "error": alasan}, indent=2, ensure_ascii=False))
+        return
 
     hasil = {
         "ticker": ticker,

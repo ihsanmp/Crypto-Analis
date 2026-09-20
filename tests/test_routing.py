@@ -5299,29 +5299,15 @@ def test_rumpun_diwarisi_dari_giliran_sebelumnya():
         bot._muat_riwayat = asli
 
 
-def test_kontak_sec_bisa_dipindah_ke_secret():
-    """SEC MEWAJIBKAN kontak di User-Agent (kebijakan fair access), jadi alamat email di
-    kode itu fungsional. Tapi repo ini PUBLIK — alamat pribadi di situ terbuka untuk
-    pemanen alamat. Harus bisa dipindah ke secret TANPA mengubah perilaku hari ini."""
-    import importlib
+def test_kontak_sec_tidak_lagi_ditulis_di_kode():
+    """SEC MEWAJIBKAN kontak di User-Agent (kebijakan fair access), jadi alamatnya
+    fungsional. Tapi repo ini PUBLIK, dan sampai 20 Sep 2026 alamat pribadi pemilik repo
+    tertulis di TIGA berkas sebagai nilai cadangan. Sekarang nilainya hanya dari secret;
+    rinciannya diuji di tests/test_seckontak.py."""
     for nama in ("sec_tickers", "konteks", "stockfund"):
-        jalur = os.path.join(AKAR, "cloud", nama + ".py")
-        src = open(jalur, encoding="utf-8").read()
-        assert 'os.environ.get("SEC_CONTACT"' in src, nama
-    # Diset -> dipakai. Tidak diset -> nilai lama, supaya tidak ada yang patah.
-    lama = os.environ.pop("SEC_CONTACT", None)
-    try:
-        sys.path.insert(0, os.path.join(AKAR, "cloud"))
-        os.environ["SEC_CONTACT"] = "riset@contoh.dev"
-        m = importlib.reload(importlib.import_module("sec_tickers"))
-        assert m.UA["User-Agent"].endswith("riset@contoh.dev")
-        del os.environ["SEC_CONTACT"]
-        m = importlib.reload(importlib.import_module("sec_tickers"))
-        assert "@" in m.UA["User-Agent"], "tanpa secret harus tetap punya kontak"
-    finally:
-        os.environ.pop("SEC_CONTACT", None)
-        if lama is not None:
-            os.environ["SEC_CONTACT"] = lama
+        src = open(os.path.join(AKAR, "cloud", nama + ".py"), encoding="utf-8").read()
+        assert "seckontak.header()" in src, nama
+        assert 'os.environ.get("SEC_CONTACT"' not in src, f"{nama}: baca lewat seckontak.py"
     alur = open(os.path.join(AKAR, ".github", "workflows", "bot.yml"),
                 encoding="utf-8").read()
     assert "SEC_CONTACT: ${{ secrets.SEC_CONTACT }}" in alur
