@@ -197,5 +197,22 @@
    "harga=233",
    "invalid=3"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1789877718.9402368,
+  "waktu_utc": "2026-09-20 04:15",
+  "pesan": "analisa btc",
+  "balasan": "🕒 Data per 20 Sep 2026, 11:10 WIB · sumber harga Kraken (native) · proyeksi & derivatif diambil 04:10 UTC\n\n📊 PASAR\nBTC $80.430 · Dominasi 58,92% · Fear & Greed 71 (Greed, stabil dari kemarin) · Whale Index n/a (BTC koin natif, bukan token kontrak)\nDo\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+7 lainnya)",
+  "angka_kunci": [
+   "harga=77.402",
+   "invalid=74.400",
+   "ema50=77.402",
+   "ema100=88.571",
+   "ema21=77.504",
+   "ema21=71.723",
+   "ema13=78.181",
+   "rsi=64,18"
+  ]
  }
 ]
