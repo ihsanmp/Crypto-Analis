@@ -1,0 +1,41 @@
+# Pemeriksaan sekali jalan: apakah sumber holder gratis (Blockscout & Routescan) benar-benar
+# terbuka DARI RUNNER GITHUB, bukan cuma dari laptop.
+#
+# Kenapa perlu terpisah: IP runner Actions dipakai ramai-ramai, dan itulah yang membuat
+# CoinGecko membalas 429 di produksi padahal lokal mulus. Menguji dari laptop saja berarti
+# menguji jaringan yang salah.
+#
+# Moralis dicabut 19-20 Sep 2026 (akun habis masa uji coba). Penggantinya: Blockscout untuk
+# ethereum/base/arbitrum/optimism/polygon, Routescan untuk avalanche.
+name: Periksa sumber holder
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  periksa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Tembak tiap sumber holder & isi dompet
+        env:
+          COINGECKO_DEMO_KEY: ${{ secrets.COINGECKO_DEMO_KEY }}
+        run: |
+          gagal=0
+          for arg in "AERO" "ARB --chain arbitrum" "OP --chain optimism" \
+                     "AAVE --chain polygon" "JOE --chain avalanche" "AAVE"; do
+            echo "---- investors.py $arg"
+            python cloud/investors.py $arg --limit 3 || gagal=1
+            sleep 3
+          done
+          echo "---- wallet.py (Binance 8) di Base"
+          python cloud/wallet.py 0xF977814e90dA44bFA03b6295A0616a897441aceC --chain base || gagal=1
+          exit $gagal
