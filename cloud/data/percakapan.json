@@ -256,5 +256,21 @@
   "pesan": "token baru base",
   "balasan": "(ringkasan; alamat kontrak tidak disimpan) Pemindaian token baru BASE: 1KTO100M BAHAYA · SPACEX HATI-HATI · CYBER HATI-HATI · DSAW HATI-HATI · LAPCAT HATI-HATI",
   "angka_kunci": []
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1789902665.3051991,
+  "waktu_utc": "2026-09-20 11:11",
+  "pesan": "apakah masih ada peluang untuk kembali naik?",
+  "balasan": "🕒 Data live per 20 September 2026, 18:08 WIB · sumber CoinMarketCap + DefiLlama + CoinGecko\n\n📸 YANG SAYA LIHAT DI GAMBAR\nKartu berita/tweet: \"$PONS token has collapsed -14%\", turun -13,9% dalam 24 jam, disebut \"crypto's worst performing major asset o\n[...dipangkas...]\nta/hari selama lebih dari 3 hari.\n\nSatu pertanyaan balik: ini rencana masuk baru, atau kamu sudah pegang dari sebelumnya? Kalau sudah pegang, harga masuk kamu berapa — jawabannya bisa beda cukup jauh, terutama soal seberapa agresif menambah di $0,46.",
+  "angka_kunci": [
+   "harga=0,5752",
+   "ema13=0,6093",
+   "ema21=0,5568",
+   "ema33=0,4718",
+   "ema50=0,3673",
+   "rsi=54,57",
+   "rsi=54"
+  ]
  }
 ]
