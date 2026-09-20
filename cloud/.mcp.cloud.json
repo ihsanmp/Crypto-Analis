@@ -1,9 +1,5 @@
 {
   "mcpServers": {
-    "coinglass": {
-      "command": "mcp-coinglass",
-      "args": []
-    },
     "coinmarketcap": {
       "command": "coinmarketcap-mcp",
       "args": []

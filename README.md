@@ -298,7 +298,7 @@ untuk riset grup Telegram.
 | File | Fungsi |
 |---|---|
 | [cloud/sosovalue.py](cloud/sosovalue.py) | **Adapter tunggal SoSoValue** — semua akses lewat sini supaya kalau tier gratisnya dicabut, yang dibuang cukup satu berkas. Menarik riwayat konsensus (disimpan jadi berkas, sehingga `kejutan.py` tidak butuh kunci saat analisa) dan arus ETF. Kunci tidak pernah masuk keluaran mana pun — repo ini publik dan log Actions ikut terbaca publik |
-| [cloud/.mcp.cloud.json](cloud/.mcp.cloud.json) | Konfigurasi MCP: CoinMarketCap, CoinGlass, TradingView-data, Blockscout |
+| [cloud/.mcp.cloud.json](cloud/.mcp.cloud.json) | Konfigurasi MCP: CoinMarketCap, TradingView-data, Blockscout |
 
 ### Prompt & tes
 
@@ -397,7 +397,6 @@ Settings → Secrets and variables → Actions → **New repository secret**:
 | `FINNHUB_API_KEY` | opsional | Gratis. Tanpa ini: jadwal earnings & daftar peer tidak tersedia, analisa saham tetap jalan |
 | `MORALIS_API_KEY` | opsional | **Tidak lagi gratis** (paket uji coba berakhir, 19 Sep 2026). Hanya dipakai untuk holder/isi dompet di **BSC & Solana** — chain lain sudah pindah ke Blockscout/Routescan tanpa key |
 | `COINGECKO_DEMO_KEY` | opsional, **sangat disarankan** | Gratis, paket **Demo** di [coingecko.com/en/api/pricing](https://www.coingecko.com/en/api/pricing). Tanpa kunci, API publik dibatasi per IP dan IP GitHub Actions dipakai bersama: di run 35178956460 `naratif.py` ditolak 429 tiga kali berturut-turut. Dikirim lewat header, tidak pernah lewat URL. Uji dengan `python cloud/cgkunci.py` |
-| `COINGLASS_API_KEY` | opsional | Tanpa ini: funding/OI/likuidasi dilewati, analisa spot tetap penuh |
 
 > Pakai repo **PUBLIC** supaya menit GitHub Actions gratis tanpa batas. Rahasia tetap aman
 > karena disimpan di GitHub Secrets (bukan di kode); `.gitignore` menahan `.env`.

@@ -7989,3 +7989,20 @@ def test_simpan_ingatan_tahan_berkas_yang_belum_ada(tmp_path):
     assert p.returncode == 0, p.stderr
     staged = git("diff", "--cached", "--name-only").stdout.split()
     assert "cloud/data/percakapan.json" in staged
+
+
+def test_coinglass_tidak_kembali():
+    """Dicabut 20 Sep 2026: API-nya berbayar, jadi alatnya selalu gagal dan setiap
+    penyebutannya di prompt menyuruh model memanggil sesuatu yang pasti menolak.
+    Funding/OI/likuidasi ditarik kode lewat derivatif.py & coinalyze.py."""
+    import bot_oneshot as bot
+    assert not any("coinglass" in x for x in bot._MCP_PASAR)
+    for jalur in ((".github", "workflows", "bot.yml"),
+                  (".github", "workflows", "mcp-security-scan.yml"),
+                  ("cloud", ".mcp.cloud.json"),
+                  ("deploy", "setup-server.sh")):
+        isi = open(os.path.join(AKAR, *jalur), encoding="utf-8").read().lower()
+        assert "mcp-coinglass" not in isi and "coinglass_api_key" not in isi, jalur
+    for nama in ("analisa_sumber.md", "chat.md", "foto.md", "analisa.md"):
+        isi = open(os.path.join(AKAR, "cloud", "prompts", nama), encoding="utf-8").read()
+        assert "mcp__coinglass__" not in isi, nama

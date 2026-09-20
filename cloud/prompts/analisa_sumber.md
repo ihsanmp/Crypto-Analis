@@ -38,7 +38,7 @@ memboroskan token tanpa bisa dipakai. Yang membacanya hanya mode SCAN.
    - **Tidak ada developer_data.** Untuk metrik F7 (dev activity), cari repo GitHub proyek
      lewat `getCryptoMetadata` lalu periksa aktivitasnya via WebFetch/WebSearch. Kalau tidak
      ketemu, keluarkan F7 dari perhitungan dan renormalisasi bobot — jangan mengarang.
-2. **CoinGlass MCP** (`mcp__coinglass__*`): funding rate, open interest, long/short ratio, likuidasi → metrik F12, dipakai sebagai **sentimen & timing untuk spot** (bukan sinyal futures).
+2. **Funding, open interest & likuidasi** → metrik F12, dipakai sebagai **sentimen & timing untuk spot** (bukan sinyal futures). SUDAH ADA DI DATA BRIEF, ditarik kode lewat `derivatif.py` dan `coinalyze.py` — tidak perlu (dan tidak bisa) dipanggil lewat MCP. MCP CoinGlass dicabut 20 Sep 2026 karena API-nya berbayar.
 3. **TradingView MCP** (`mcp__tradingview__*`, versi data): `get_technical_analysis`, `get_multi_timeframe_analysis` sebagai **cross-check arah saja**. Setting default-nya (EMA 20/50/200) berbeda dari setting user — kalau berbeda arah dengan script indikator, **yang menang adalah angka dari script** (sumber #0), dan sebutkan perbedaannya.
 4. **Script fundamental (WAJIB untuk metrik keuangan protokol).**
    Jalankan lewat Bash SETELAH dapat market cap dari CoinMarketCap:

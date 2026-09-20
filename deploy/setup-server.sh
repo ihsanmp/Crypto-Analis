@@ -18,7 +18,7 @@ fi
 node --version
 
 echo ">> 3/5 Claude Code CLI + server MCP (Node)"
-sudo npm install -g @anthropic-ai/claude-code mcp-coinglass @shinzolabs/coinmarketcap-mcp
+sudo npm install -g @anthropic-ai/claude-code @shinzolabs/coinmarketcap-mcp
 
 echo ">> 4/5 Server MCP TradingView (Python)"
 pip3 install --break-system-packages -q tradingview-mcp-server || pip3 install -q tradingview-mcp-server
@@ -32,7 +32,6 @@ TELEGRAM_CHAT_ID=
 COINMARKETCAP_API_KEY=
 CLAUDE_CODE_OAUTH_TOKEN=
 # Opsional (sentimen derivatif; boleh dikosongkan)
-COINGLASS_API_KEY=
 SUBSCRIPTION_LEVEL=Basic
 ENVEOF
   chmod 600 "$REPO_DIR/.env"

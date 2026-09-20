@@ -16,7 +16,7 @@ yang dipakai sendiri itu aman; kalau aksesnya dibuka ke orang lain, statusnya be
 ALLOWED_CHAT_IDS di Worker yang menjaga batas itu — pertahankan.
 
 TANPA KUNCI: script TIDAK mati. Bagian ini dilaporkan tidak tersedia dan analisa saham tetap
-jalan dengan sumber lain — pola yang sama dengan COINGLASS_API_KEY dan MORALIS_API_KEY.
+jalan dengan sumber lain — pola yang sama dengan MORALIS_API_KEY.
 Daftar gratis di finnhub.io, lalu masukkan sendiri ke GitHub Secrets sebagai FINNHUB_API_KEY.
 JANGAN mengirimkan kuncinya lewat chat.
 

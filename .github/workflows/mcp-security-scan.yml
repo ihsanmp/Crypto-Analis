@@ -51,7 +51,6 @@ jobs:
             semgrep --config "$3" "/tmp/src_$2" --quiet 2>&1 | tail -60 > "reports/$2.txt" || true
           }
 
-          scan "https://github.com/GPSxtreme/mcp-coinglass.git"          coinglass     "$JS"
           scan "https://github.com/shinzo-labs/coinmarketcap-mcp.git"    coinmarketcap "$JS"
           scan "https://github.com/atilaahmettaner/tradingview-mcp.git"  tradingview   "$PY"
 

@@ -14,7 +14,7 @@ Catatan: tiap pesan diproses INDEPENDEN — tidak ada memori percakapan antar pe
 (GitHub Actions stateless). Pertanyaan lanjutan sebaiknya menyebut ulang koinnya.
 
 Konfigurasi lewat environment variable (di-set dari GitHub Secrets):
-  TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, COINGLASS_API_KEY,
+  TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
   COINMARKETCAP_API_KEY, CLAUDE_CODE_OAUTH_TOKEN
 """
 
@@ -60,7 +60,10 @@ MCP_CONFIG = os.path.join(BASE_DIR, ".mcp.cloud.json")
 #
 # Pemisahan ini jadi murah setelah data dikumpulkan oleh KODE: tahap yang membaca web tidak
 # lagi butuh menjalankan script.
-_MCP_PASAR = ["mcp__coinglass__*", "mcp__blockscout__*",
+# CoinGlass dicabut 20 Sep 2026: API-nya berbayar, jadi alatnya selalu gagal dan model
+# hanya membuang giliran memanggilnya. Funding/OI/likuidasi ditarik derivatif.py &
+# coinalyze.py lewat kode.
+_MCP_PASAR = ["mcp__blockscout__*",
               "mcp__coinmarketcap__*", "mcp__tradingview__*"]
 
 TOOLS_WEB = ",".join(_MCP_PASAR + ["WebSearch", "WebFetch"])   # baca web, TANPA shell
@@ -2416,7 +2419,10 @@ def _jalankan_sekali(args, batas):
 # Koin asli jaringan — bukan token kontrak, jadi daftar holder & aliran whale berbasis
 # kontrak tidak berlaku. Menjalankannya hanya menghasilkan bagian kosong.
 _KOIN_NATIF = {"BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "AVAX", "DOT", "ATOM", "LTC",
-               "TRX", "NEAR", "APT", "SUI", "TON", "ICP", "FIL", "HBAR", "XLM", "ALGO"}
+               "TRX", "NEAR", "APT", "SUI", "TON", "ICP", "FIL", "HBAR", "XLM", "ALGO",
+               # TAO ditambahkan 20 Sep 2026: kontraknya di CoinGecko cuma versi bridge di
+               # Base, dan holder token bridge bukan kepemilikan TAO (run 35289835742).
+               "TAO"}
 # Cakupan CoinMetrics Community praktis hanya dua ini; sisanya balas kosong.
 _ONCHAIN_ADA = {"BTC", "ETH"}
 # Tanpa protokol berpendapatan, fundamentals.py (DefiLlama) tidak punya apa pun.
@@ -3084,9 +3090,9 @@ def data_mentah_crypto(coin):
     # dan kesimpulannya berbalik arah.
     tugas.append(("PASAR KESELURUHAN (pasarglobal.py)",
                   ["cloud/pasarglobal.py", "--koin", cg_id or coin], 0))
-    # Funding & open interest lintas bursa. Prompt sudah lama menyuruh memakainya, tapi
-    # tidak ada yang mengambilnya — hanya ada MCP CoinGlass yang bergantung pada model mau
-    # memanggilnya. Bursa langsung (Binance/Bybit/OKX) tidak bisa dipakai: semuanya
+    # Funding & open interest lintas bursa, ditarik KODE. Dulu satu-satunya jalur adalah
+    # MCP CoinGlass yang bergantung pada model mau memanggilnya — dan sejak API-nya berbayar,
+    # jalur itu tidak pernah berhasil. Bursa langsung (Binance/Bybit/OKX) tidak bisa: semuanya
     # memblokir datacenter AS, dan runner Actions ada di sana.
     tugas.append(("DERIVATIF (derivatif.py)",
                   ["cloud/derivatif.py", coin, "--ringkas"], 0))

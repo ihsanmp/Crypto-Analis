@@ -42,7 +42,6 @@ jobs:
       # yang membingungkan. Pewarisan environment tidak punya masalah itu.
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      COINGLASS_API_KEY: ${{ secrets.COINGLASS_API_KEY }}
       COINMARKETCAP_API_KEY: ${{ secrets.COINMARKETCAP_API_KEY }}
       # Kunci Demo CoinGecko (gratis). Tanpa kunci, API publik dibatasi per IP, dan IP
       # runner dipakai bersama — run 35178956460: naratif.py ditolak 3x (429) setelah
@@ -179,7 +178,7 @@ jobs:
       # jadi paket ini tidak akan dicari sama sekali di giliran itu.
       - name: Install server MCP (Node)
         if: (github.event_name == 'repository_dispatch' || steps.check.outputs.has_work == 'true') && steps.obrolan.outputs.murni != 'ya'
-        run: npm install -g mcp-coinglass @shinzolabs/coinmarketcap-mcp
+        run: npm install -g @shinzolabs/coinmarketcap-mcp
 
       - name: Install TradingView MCP (versi data)
         if: (github.event_name == 'repository_dispatch' || steps.check.outputs.has_work == 'true') && steps.obrolan.outputs.murni != 'ya'
