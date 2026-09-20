@@ -231,5 +231,22 @@
    "ema200=0,9427",
    "ema21=0,7976"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1789881172.2300417,
+  "waktu_utc": "2026-09-20 05:12",
+  "pesan": "analisa aero",
+  "balasan": "🕒 Data per 20 Sep 2026, 12:08 WIB · sumber harga Kraken (native) · brief 13/13 sumber terisi\n\n📊 PASAR\nBTC $80.450 (+4,2% 7h · +8,0% 30h) · Dominasi 58,94% (58,72%→58,76%, +0,05 pp, 13→20 Sep = datar) · Fear & Greed 71 Greed (stabil) · Whale Index tid\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+5 lainnya)",
+  "angka_kunci": [
+   "harga=0,530",
+   "invalid=0,535",
+   "invalid=10",
+   "invalid=15.39",
+   "ema50=0,530",
+   "ema21=0,5578",
+   "rsi=68",
+   "rsi=68,13"
+  ]
  }
 ]
