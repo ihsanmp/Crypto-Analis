@@ -67,3 +67,10 @@
 {"waktu": "2026-09-17T22:30:00-04:00", "mata_uang": "JPY", "nama": "BOJ Policy Rate", "dampak": "tinggi", "konsensus": "<1.25%", "sebelumnya": "<1.00%", "aktual": null, "dicatat_utc": "2026-09-14 07:37"}
 {"waktu": "2026-09-17T22:30:00-04:00", "mata_uang": "JPY", "nama": "Monetary Policy Statement", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-09-14 07:37"}
 {"waktu": "2026-09-18T01:30:00-04:00", "mata_uang": "JPY", "nama": "BOJ Press Conference", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-09-14 07:37"}
+{"waktu": "2026-09-21T23:10:00-04:00", "mata_uang": "AUD", "nama": "RBA Gov Bullock Speaks", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-09-21 07:41"}
+{"waktu": "2026-09-23T21:30:00-04:00", "mata_uang": "AUD", "nama": "Employment Change", "dampak": "tinggi", "konsensus": "20.9K", "sebelumnya": "-15.8K", "aktual": null, "dicatat_utc": "2026-09-21 07:41"}
+{"waktu": "2026-09-23T21:30:00-04:00", "mata_uang": "AUD", "nama": "Unemployment Rate", "dampak": "tinggi", "konsensus": "4.5%", "sebelumnya": "4.5%", "aktual": null, "dicatat_utc": "2026-09-21 07:41"}
+{"waktu": "2026-09-24T03:30:00-04:00", "mata_uang": "CHF", "nama": "SNB Monetary Policy Assessment", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-09-21 07:41"}
+{"waktu": "2026-09-24T03:30:00-04:00", "mata_uang": "CHF", "nama": "SNB Policy Rate", "dampak": "tinggi", "konsensus": "0.00%", "sebelumnya": "0.00%", "aktual": null, "dicatat_utc": "2026-09-21 07:41"}
+{"waktu": "2026-09-24T04:00:00-04:00", "mata_uang": "CHF", "nama": "SNB Press Conference", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-09-21 07:41"}
+{"waktu": "2026-09-25T05:15:00-04:00", "mata_uang": "GBP", "nama": "BOE Gov Bailey Speaks", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-09-21 07:41"}
