@@ -185,3 +185,36 @@ def test_setiap_permintaan_membawa_timestamp_dan_client_id():
     assert q1["timestamp"].isdigit() and abs(int(q1["timestamp"]) - int(time.time())) < 5
     assert len(q1["client_id"]) >= 32
     assert q1["client_id"] != q2["client_id"], "client_id harus baru tiap permintaan"
+
+
+def test_429_dicoba_ulang_sekali(monkeypatch):
+    """Batas laju GMGN bergantung "plan weight" yang tidak tertulis di halaman akun. Daripada
+    menebak, kode bertahan sendiri: satu kali coba ulang setelah jeda pendek. Dokumen GMGN
+    memperingatkan permintaan beruntun saat cooldown justru MEMPERPANJANG blokir, jadi
+    percobaannya tepat satu, bukan berulang."""
+    panggilan = []
+
+    def palsu(req, timeout=0):
+        panggilan.append(1)
+        raise gmgn.urllib.error.HTTPError("u", 429, "Too Many", {}, None)
+
+    tidur = []
+    monkeypatch.setattr(gmgn.urllib.request, "urlopen", palsu)
+    monkeypatch.setattr(gmgn.time, "sleep", lambda d: tidur.append(d))
+    d = gmgn.try_json("https://openapi.gmgn.ai/v1/token/info?chain=sol&address=A")
+    assert d["__err"] == "HTTP 429"
+    assert len(panggilan) == 2, "tepat satu kali coba ulang"
+    assert tidur and 0 < tidur[0] <= 5
+
+
+def test_galat_selain_429_tidak_diulang(monkeypatch):
+    panggilan = []
+
+    def palsu(req, timeout=0):
+        panggilan.append(1)
+        raise gmgn.urllib.error.HTTPError("u", 401, "Unauthorized", {}, None)
+
+    monkeypatch.setattr(gmgn.urllib.request, "urlopen", palsu)
+    monkeypatch.setattr(gmgn.time, "sleep", lambda d: None)
+    assert gmgn.try_json("https://openapi.gmgn.ai/v1/x")["__err"] == "HTTP 401"
+    assert len(panggilan) == 1

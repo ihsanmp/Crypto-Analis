@@ -112,17 +112,36 @@ def _url(basis, param):
     return basis + "?" + urllib.parse.urlencode(p)
 
 
+JEDA_429 = 2.0     # detik; batas GMGN dihitung per DETIK, jadi jeda pendek sudah cukup
+_HEADER_BATAS = {}  # header batas laju dari jawaban terakhir — dibaca --periksa
+
+
 def try_json(url, kunci_api=None):
+    """Satu permintaan GET. Pada 429 dicoba ULANG TEPAT SEKALI.
+
+    Batas laju GMGN = plan weight / bobot endpoint, dan "plan weight" tidak tertulis di
+    halaman akun (dicek 21 Sep 2026). Daripada menebak angkanya, kode bertahan sendiri.
+    Percobaannya tepat satu: dokumen GMGN memperingatkan permintaan beruntun selama
+    cooldown justru MEMPERPANJANG blokir 5 detik tiap kali, sampai 5 menit.
+    """
     h = {"X-APIKEY": kunci_api or kunci(), "accept": "application/json",
          "User-Agent": "Mozilla/5.0 (compatible; riset-koin/1.0)"}
-    try:
-        with urllib.request.urlopen(urllib.request.Request(url, headers=h),
-                                    timeout=TIMEOUT) as r:
-            return json.loads(r.read().decode())
-    except urllib.error.HTTPError as e:
-        return {"__err": f"HTTP {e.code}"}
-    except Exception as e:
-        return {"__err": f"{type(e).__name__}"}
+    for percobaan in (1, 2):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=h),
+                                        timeout=TIMEOUT) as r:
+                _HEADER_BATAS.clear()
+                _HEADER_BATAS.update({k: v for k, v in r.headers.items()
+                                      if "ratelimit" in k.lower().replace("-", "")})
+                return json.loads(r.read().decode())
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and percobaan == 1:
+                time.sleep(JEDA_429)
+                continue
+            return {"__err": f"HTTP {e.code}"}
+        except Exception as e:
+            return {"__err": f"{type(e).__name__}"}
+    return {"__err": "HTTP 429"}
 
 
 def _angka(x):
@@ -273,6 +292,11 @@ def main():
             sys.exit(1)
         n = len(((d.get("data") or {}).get("data") or {}).get("rank") or [])
         print(f"GMGN: DITERIMA — market/rank menjawab normal ({n} baris)")
+        # Angka batas laju tidak tertulis di halaman akun; kalau server mengirimkannya
+        # lewat header, di sinilah tempatnya terbaca.
+        print("Batas laju (dari header): "
+              + (", ".join(f"{k}={v}" for k, v in sorted(_HEADER_BATAS.items()))
+                 if _HEADER_BATAS else "tidak dikirim server"))
         sys.exit(0)
 
     if not args.chain or not args.alamat:
