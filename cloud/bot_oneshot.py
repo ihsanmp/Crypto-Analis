@@ -202,11 +202,12 @@ _RE_TOKEN_BARU = re.compile(
     r"^(?:/?tokenbaru"
     r"|(?:scan|cek|lihat|pindai|cari)?\s*(?:token|pool|koin|coin)\s+(?:yang\s+)?baru"
     r"(?:\s+(?:launch|listing|muncul|dibuat))?)"
-    # "di jaringan solana" ditulis orang sewajarnya. Tanpa kata penghubung ini, pesan itu
-    # jatuh ke jalur obrolan dan "solana" dibaca sebagai koin SOL — bot menjawab analisa SOL,
-    # bukan daftar token baru (run 35554570042).
-    r"(?:\s+(?:di\s+)?(?:jaringan|chain|network|rantai)?\s*"
-    r"(?P<chain>" + "|".join(_CHAIN_TOKEN_BARU) + r"))?\s*$", re.I)
+    # Kata penghubung dibiarkan bebas berulang: "di jaringan", "pada chain", "on", "untuk
+    # blockchain". Menambal satu kata per satu kata tidak akan selesai, dan setiap kalimat
+    # yang meleset jatuh ke jalur obrolan — di sana nama chain dibaca sebagai KOIN, sehingga
+    # "token baru di jaringan solana" dijawab dengan analisa SOL (run 35554570042).
+    r"(?:(?:\s+(?:di|pada|untuk|dari|in|on|at|the|jaringan|chain|network|rantai|blockchain))*"
+    r"\s+(?P<chain>" + "|".join(_CHAIN_TOKEN_BARU) + r"))?\s*$", re.I)
 
 
 _RE_BARIS_VONIS = re.compile(

@@ -8163,3 +8163,29 @@ def test_jalur_token_baru_menyimpan_ringkasan_bukan_kartu():
 def test_kata_penghubung_chain_ikut_dikenali(teks, chain):
     assert bot.classify(teks) == "tokenbaru", teks
     assert bot.chain_token_baru(teks) == chain, teks
+
+
+@pytest.mark.parametrize("teks,chain", [
+    ("token baru pada jaringan solana", "solana"),
+    ("token baru untuk chain base", "base"),
+    ("token baru di blockchain bsc", "bsc"),
+    ("token baru on solana", "solana"),
+    ("koin baru di jaringan base", "base"),
+    ("pool baru pada rantai bsc", "bsc"),
+])
+def test_variasi_kalimat_chain_tetap_ke_pemindai(teks, chain):
+    """Menambal satu kata per satu kata tidak akan selesai. Yang penting: kalimat yang jelas
+    meminta DAFTAR token baru di sebuah chain tidak boleh jatuh ke jalur obrolan, karena di
+    sana nama chain-nya dibaca sebagai koin (run 35554570042: "solana" -> analisa SOL)."""
+    assert bot.classify(teks) == "tokenbaru", teks
+    assert bot.chain_token_baru(teks) == chain, teks
+
+
+@pytest.mark.parametrize("teks", [
+    "menurutmu token baru di solana bagus tidak",   # minta PENDAPAT
+    "analisa token baru apa yang bagus menurutmu",
+    "apakah aero token baru?",
+    "analisa solana",
+])
+def test_toleransi_tidak_menelan_pertanyaan_pendapat(teks):
+    assert bot.classify(teks) != "tokenbaru", teks
