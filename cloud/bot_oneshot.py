@@ -202,7 +202,11 @@ _RE_TOKEN_BARU = re.compile(
     r"^(?:/?tokenbaru"
     r"|(?:scan|cek|lihat|pindai|cari)?\s*(?:token|pool|koin|coin)\s+(?:yang\s+)?baru"
     r"(?:\s+(?:launch|listing|muncul|dibuat))?)"
-    r"(?:\s+(?:di\s+)?(?P<chain>" + "|".join(_CHAIN_TOKEN_BARU) + r"))?\s*$", re.I)
+    # "di jaringan solana" ditulis orang sewajarnya. Tanpa kata penghubung ini, pesan itu
+    # jatuh ke jalur obrolan dan "solana" dibaca sebagai koin SOL — bot menjawab analisa SOL,
+    # bukan daftar token baru (run 35554570042).
+    r"(?:\s+(?:di\s+)?(?:jaringan|chain|network|rantai)?\s*"
+    r"(?P<chain>" + "|".join(_CHAIN_TOKEN_BARU) + r"))?\s*$", re.I)
 
 
 _RE_BARIS_VONIS = re.compile(

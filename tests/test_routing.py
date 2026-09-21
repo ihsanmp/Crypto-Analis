@@ -8147,3 +8147,19 @@ def test_jalur_token_baru_menyimpan_ringkasan_bukan_kartu():
     blok = src[i:src.index("timeout = int(os.environ", i)]
     assert "simpan_riwayat(chat_id, text, ringkas_token_baru(" in blok
     assert "send_message(token, chat_id, isi)" in blok, "yang DIKIRIM tetap kartu penuh"
+
+
+@pytest.mark.parametrize("teks,chain", [
+    # Ditemukan dari pemakaian NYATA (run 35554570042): "di jaringan solana" jatuh ke jalur
+    # obrolan, lalu "solana" dibaca sebagai koin SOL — bot menjawab analisa SOL, bukan daftar
+    # token baru. Kata penghubung seperti ini wajar ditulis orang dan harus ikut dikenali.
+    ("token baru di jaringan solana", "solana"),
+    ("token baru jaringan solana", "solana"),
+    ("token baru di chain base", "base"),
+    ("token baru network bsc", "bsc"),
+    ("token baru di rantai bsc", "bsc"),
+    ("cek token baru di jaringan base", "base"),
+])
+def test_kata_penghubung_chain_ikut_dikenali(teks, chain):
+    assert bot.classify(teks) == "tokenbaru", teks
+    assert bot.chain_token_baru(teks) == chain, teks
