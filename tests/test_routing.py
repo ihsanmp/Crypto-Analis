@@ -8189,3 +8189,67 @@ def test_variasi_kalimat_chain_tetap_ke_pemindai(teks, chain):
 ])
 def test_toleransi_tidak_menelan_pertanyaan_pendapat(teks):
     assert bot.classify(teks) != "tokenbaru", teks
+
+
+# ---- penyaring kategori yang kosong (21 Sep 2026) ------------------------------------------
+# nama_untuk() mengembalikan [] untuk kategori yang TIDAK ada di TELEGRAM_GRUP, dan
+# kumpulkan() memeriksanya dengan `if saring_nama:` — daftar kosong itu falsy, jadi
+# penyaringnya mati dan SELURUH grup terbaca, termasuk grup pribadi yang tidak pernah
+# didaftarkan user. Komentar di nama_untuk() melarang persis ini; perilakunya tidak ikut.
+
+class _DialogUji:
+    def __init__(self, nama):
+        self.name, self.is_group, self.is_channel, self.entity = nama, True, False, object()
+
+
+class _KlienUji:
+    def __init__(self, grup):
+        self._g = grup
+
+    def iter_dialogs(self):
+        return [_DialogUji(n) for n in self._g]
+
+    def iter_messages(self, d, limit=None, min_id=None):
+        import datetime as _dt
+        pesan = []
+        for i in range(3):
+            p = type("P", (), {})()
+            p.message = f"kabar dari {d.name} nomor {i} yang cukup panjang untuk lolos saringan"
+            p.id = i + 1
+            p.date = _dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(minutes=i + 1)
+            pesan.append(p)
+        return pesan
+
+    def disconnect(self):
+        pass
+
+
+_GRUP_UJI = ["Watcher Guru", "Grup Pribadi Keluarga", "AroFX Signals"]
+
+
+def test_kategori_kosong_tidak_membaca_grup_apa_pun():
+    jejak = {}
+    hasil = _tg.kumpulkan(jam=24, saring_nama=[], k=_KlienUji(_GRUP_UJI), jejak=jejak)
+    assert hasil == [], f"grup terbaca padahal tak ada yang diizinkan: {hasil}"
+    assert jejak.get("grup_cocok") == 0
+
+
+def test_tanpa_penyaring_memang_membaca_semua():
+    """None = sengaja tanpa penyaringan (TELEGRAM_GRUP tidak diset). Itu beda dari daftar
+    kosong, dan bedanya harus tetap ada."""
+    hasil = _tg.kumpulkan(jam=24, saring_nama=None, k=_KlienUji(_GRUP_UJI), jejak={})
+    assert sorted({h[0] for h in hasil}) == sorted(_GRUP_UJI)
+
+
+def test_penyaring_biasa_hanya_membaca_yang_cocok():
+    hasil = _tg.kumpulkan(jam=24, saring_nama=["Watcher"], k=_KlienUji(_GRUP_UJI), jejak={})
+    assert sorted({h[0] for h in hasil}) == ["Watcher Guru"]
+
+
+def test_kategori_tak_dikenal_dijelaskan_bukan_didiamkan(monkeypatch, capsys):
+    """Membaca nol grup diam-diam terbaca sebagai "tidak ada kabar baru" — padahal
+    sebabnya kategori yang diminta tidak ada di TELEGRAM_GRUP."""
+    monkeypatch.setenv("TELEGRAM_GRUP", '{"crypto": ["Watcher"], "forex": ["AroFX"]}')
+    pesan = _tg.pesan_kategori_kosong(["kerja"])
+    assert "kerja" in pesan and "crypto" in pesan and "forex" in pesan
+    assert _tg.pesan_kategori_kosong(["crypto"]) is None

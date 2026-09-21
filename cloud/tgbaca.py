@@ -328,6 +328,25 @@ def nama_untuk(kategori):
     return pilih
 
 
+def pesan_kategori_kosong(kategori):
+    """Penjelasan kalau kategori yang diminta tidak ada isinya di TELEGRAM_GRUP.
+
+    None kalau tidak ada masalah. Tanpa ini, permintaan untuk kategori yang tidak
+    terdaftar membaca NOL grup dan jawabannya terbaca sebagai "tidak ada kabar baru" —
+    user menyimpulkan grupnya sepi, padahal tidak ada yang pernah dibuka.
+    """
+    peta = daftar_pilihan()
+    if not peta or not kategori:
+        return None
+    if any(peta.get(k) for k in kategori):
+        return None
+    diminta = ", ".join(f'"{k}"' for k in kategori)
+    tersedia = ", ".join(f'"{k}"' for k in sorted(peta) if peta.get(k))
+    return (f"Kategori {diminta} tidak ada di daftar grupmu, jadi TIDAK ADA grup yang "
+            f"dibaca — bukan berarti grupnya sepi. Kategori yang tersedia: {tersedia}. "
+            f"Sebutkan salah satunya, atau sebut nama grupnya langsung.")
+
+
 _TAK_PENTING = re.compile(r"[^a-z0-9 ]+")
 
 
@@ -550,7 +569,12 @@ def kumpulkan(jam=24, saring_nama=None, k=None, batas_lama=None, jejak=None,
             if not _grup_saja(d):
                 continue
             nama = d.name or "(tanpa nama)"
-            if saring_nama:
+            # `is not None`, BUKAN kebenaran daftarnya. Daftar KOSONG artinya "tidak ada
+            # grup yang diizinkan", dan `if saring_nama:` membacanya sebagai "tanpa
+            # penyaringan" — seluruh grup ikut terbaca, termasuk grup pribadi yang tidak
+            # pernah didaftarkan user (ditemukan 21 Sep 2026). None tetap berarti sengaja
+            # tanpa penyaringan, yaitu saat TELEGRAM_GRUP memang tidak diset.
+            if saring_nama is not None:
                 kena = [x for x in saring_nama if x.lower() in nama.lower()]
                 if not kena:
                     continue
@@ -810,6 +834,10 @@ def main():
         else:
             kat = [s.strip() for s in a.kategori.split(",")] if a.kategori else None
             saring = nama_untuk(kat)
+            kosong = pesan_kategori_kosong(kat)
+            if kosong:
+                print(f"[GRUP TELEGRAM — KATEGORI TIDAK DIKENAL]{os.linesep}{kosong}")
+                return
         # SATU koneksi untuk semuanya: daftar nama, pembacaan, dan harga. Dibuka di sini
         # supaya penutupannya terjamin di `finally` — sebelumnya sempat dibuka dua kali
         # dan tidak pernah ditutup sama sekali.
