@@ -109,8 +109,14 @@ def pool_baru(chain, limit):
     """Pool yang baru dibuat di chain itu. Return list (kosong kalau gagal)."""
     data = try_json(f"{GECKO}/networks/{CHAIN.get(chain, {}).get('gecko', chain)}"
                     f"/new_pools?page=1")
-    if "__err" in data:
-        return []
+    return [] if "__err" in data else _urai_pool(data, limit)
+
+
+def _urai_pool(data, limit):
+    """Ubah jawaban GeckoTerminal jadi daftar pool. Dipisah supaya SATU jawaban bisa dipakai
+    ulang: dulu pindai() menembak endpoint yang sama dua kali (sekali memeriksa galat, sekali
+    mengambil data), dan panggilan kedua kena batas laju — hasilnya "tidak ada pool baru"
+    padahal 20 pool terbaca di panggilan pertama (21 Sep 2026)."""
     keluar = []
     for p in (data.get("data") or [])[:limit]:
         a = p.get("attributes") or {}
@@ -320,11 +326,31 @@ def temuan_solana(r, pool):
               + (f" ({_persen(rate)})" if rate is not None else ""))
     if _status(r, "metadata_mutable"):
         catat("Metadata (nama/simbol/gambar) masih bisa diubah pembuatnya")
-    # Yang TIDAK bisa diperiksa harus disebut: diam di sini mudah terbaca sebagai "aman".
-    catat("Simulasi jual-beli (honeypot) tidak tersedia untuk Solana — bagian ini "
-          "TIDAK diperiksa, bukan lolos")
+    # Catatan "honeypot tidak bisa diperiksa di Solana" TIDAK ditaruh di sini: berlaku untuk
+    # seluruh pemindaian, dan diulang di tiap kartu (5x dalam satu balasan, produksi 21 Sep)
+    # membuat catatan yang benar pun jadi derau yang dilewati mata. Lihat catatan_chain().
     out.extend(_temuan_pasar(pool))
     return out
+
+
+def catatan_chain(chain):
+    """Catatan yang berlaku untuk SELURUH pemindaian chain itu — ditulis sekali di kaki.
+
+    Yang TIDAK bisa diperiksa tetap harus disebut: diamnya kartu soal honeypot mudah
+    terbaca sebagai "sudah dicek dan aman".
+    """
+    if CHAIN.get(chain, {}).get("tipe") == "solana":
+        return ("Simulasi jual-beli (honeypot) tidak tersedia untuk Solana — bagian itu "
+                "TIDAK diperiksa di semua token di atas, bukan lolos.")
+    return None
+
+
+def _rapi_launchpad(nama):
+    """Nama launchpad dari sumber kadang berupa slug mentah ("meteora_virtual_curve")."""
+    teks = (nama or "").strip()
+    if not teks or " " in teks or any(c.isupper() for c in teks) and "_" not in teks:
+        return teks
+    return " ".join(w.capitalize() for w in teks.replace("-", "_").split("_") if w)
 
 
 def vonis(daftar):
@@ -363,7 +389,7 @@ def _symbol(r):
     return r.get("token_symbol") or (r.get("metadata") or {}).get("symbol")
 
 
-def kartu(pool, r, daftar, konteks=None):
+def kartu(pool, r, daftar, konteks=None, gmgn_data=None):
     """Satu blok teks siap kirim ke Telegram. Disusun KODE, bukan model."""
     v = vonis(daftar)
     lencana = {"BAHAYA": "🛑", "HATI-HATI": "⚠️", "BELUM ADA TANDA BAHAYA": "🔍"}[v]
@@ -380,11 +406,13 @@ def kartu(pool, r, daftar, konteks=None):
         + (f" · umur {umur:.0f} jam" if umur is not None else ""))
     if konteks:
         baris.append(f"🔎 {konteks}")
-    pemegang = _angka((r or {}).get("holder_count"))
+    # GoPlus sering membalas 0 untuk token menit-menitan; GMGN biasanya sudah punya
+    # angkanya. Produksi 21 Sep menulis "belum terindeks" di kelima kartu padahal datanya
+    # ada — kalimat itu lalu terbaca sebagai fakta, bukan sebagai ketiadaan data.
+    pemegang = _angka((r or {}).get("holder_count")) or _angka((gmgn_data or {}).get("holder"))
     if pemegang:
         baris.append(f"Pemegang {int(pemegang):,}".replace(",", "."))
-    elif r:
-        # 0 dari GoPlus berarti BELUM TERBACA, bukan "tidak ada pemegang".
+    elif r or gmgn_data:
         baris.append("Pemegang: belum terindeks")
     if daftar:
         baris.append("")
@@ -408,7 +436,7 @@ def pindai(chain="bsc", limit=5, min_liq=0.0, umur_maks=None):
     mentah = try_json(f"{GECKO}/networks/{CHAIN[chain]['gecko']}/new_pools?page=1")
     if "__err" in mentah:
         return [], f"GeckoTerminal gagal: {mentah['__err']}"
-    pools = pool_baru(chain, 30)
+    pools = _urai_pool(mentah, 30)
     hasil = []
     for p in pools:
         if len(hasil) >= limit:
@@ -427,6 +455,7 @@ def pindai(chain="bsc", limit=5, min_liq=0.0, umur_maks=None):
         # status kurva. Kegagalannya disebut, bukan didiamkan: kartu yang diam soal
         # bagian yang tak terperiksa tampak lebih bersih daripada yang benar-benar diketahui.
         konteks = None
+        data_gmgn = None
         if chain in getattr(gmgn, "CHAIN", {}):
             g = gmgn.info(chain, p["alamat_token"])
             time.sleep(JEDA)
@@ -436,6 +465,9 @@ def pindai(chain="bsc", limit=5, min_liq=0.0, umur_maks=None):
             elif g:
                 t.extend(gmgn.temuan(g))
                 konteks = gmgn.ringkas(g)
+                if konteks and g.get("launchpad"):
+                    konteks = konteks.replace(g["launchpad"], _rapi_launchpad(g["launchpad"]), 1)
+                data_gmgn = g
         if err:
             t = [{"pesan": err + " — jangan dianggap bersih", "berat": False}] + t
         hasil.append({"alamat": p["alamat_token"], "pool": p,
@@ -443,7 +475,7 @@ def pindai(chain="bsc", limit=5, min_liq=0.0, umur_maks=None):
                       "jumlah_pemegang": (r or {}).get("holder_count"),
                       "konteks": konteks,
                       "temuan": t, "vonis": vonis(t),
-                      "kartu": kartu(p, r, t, konteks)})
+                      "kartu": kartu(p, r, t, konteks, data_gmgn)})
     return hasil, None
 
 
@@ -480,9 +512,10 @@ def main():
     print(f"🆕 {len(daftar)} token terbaru di {(chain_dari(args.chain) or args.chain).upper()} "
           f"(likuiditas ≥ {_uang(args.min_liq)})\n")
     print(("\n\n" + "─" * 28 + "\n\n").join(d["kartu"] for d in daftar))
-    catat = gmgn.catatan_kunci()
-    if catat:
-        print(f"\nℹ️ {catat}")
+    kaki = [x for x in (catatan_chain(chain_dari(args.chain) or args.chain),
+                        gmgn.catatan_kunci()) if x]
+    for x in kaki:
+        print(f"\nℹ️ {x}")
 
 
 if __name__ == "__main__":

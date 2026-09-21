@@ -274,9 +274,14 @@ def test_risiko_khas_solana_punya_pesannya_sendiri(ubah, cuplikan, berat):
 
 def test_solana_menyebut_yang_TIDAK_bisa_diperiksa():
     """Di Solana tidak ada simulasi jual-beli seperti EVM. Diamnya kartu soal honeypot
-    jangan terbaca sebagai "sudah dicek dan aman"."""
+    jangan terbaca sebagai "sudah dicek dan aman".
+
+    Sejak 21 Sep catatan ini ditulis SEKALI di kaki pemindaian, bukan diulang di tiap kartu:
+    lima pengulangan dalam satu balasan membuat catatan yang benar pun dilewati mata."""
+    catat = tb.catatan_chain("solana")
+    assert "honeypot" in catat.lower() and "tidak" in catat.lower()
     t = tb.temuan_solana(_sol(), {"likuiditas_usd": 50000.0, "umur_jam": 5.0})
-    assert any("honeypot" in x["pesan"].lower() and "tidak" in x["pesan"].lower() for x in t)
+    assert not any("honeypot" in x["pesan"].lower() for x in t)
 
 
 def test_solana_tetap_memeriksa_likuiditas_dan_umur():
@@ -394,3 +399,75 @@ def test_gmgn_tidak_dipakai_untuk_chain_yang_tak_didukungnya(monkeypatch):
     monkeypatch.setattr(tb.time, "sleep", lambda *_: None)
     tb.pindai("base", 1, 0.0, None)
     assert dipanggil == [], "chain di luar dukungan GMGN tidak boleh ditembak"
+
+
+# ---- dari kartu produksi 21 Sep (run 35554977377) -----------------------------------------
+
+def test_jumlah_pemegang_diambil_dari_gmgn_kalau_goplus_kosong(monkeypatch):
+    """Kelima kartu menulis "belum terindeks" padahal GMGN mengirim holder_count. Datanya
+    ada, cuma tidak dipakai — dan "belum terindeks" lalu terbaca sebagai fakta."""
+    p = {"nama_pool": "X / SOL", "alamat_token": SOL_MINT, "likuiditas_usd": 20000.0,
+         "fdv_usd": 100000.0, "umur_jam": 2.0, "perubahan_24j_persen": 5.0,
+         "harga_usd": 0.001}
+    k = tb.kartu(p, _sol(holder_count=None), [], konteks=None, gmgn_data={"holder": 417})
+    assert "Pemegang 417" in k and "belum terindeks" not in k
+
+
+def test_belum_terindeks_hanya_kalau_KEDUA_sumber_kosong(monkeypatch):
+    p = {"nama_pool": "X / SOL", "alamat_token": SOL_MINT, "likuiditas_usd": 20000.0,
+         "fdv_usd": 100000.0, "umur_jam": 2.0, "perubahan_24j_persen": 5.0, "harga_usd": 0.001}
+    k = tb.kartu(p, _sol(holder_count=0), [], konteks=None, gmgn_data={"holder": 0})
+    assert "belum terindeks" in k
+
+
+def test_catatan_honeypot_solana_tidak_diulang_tiap_kartu(monkeypatch):
+    """Diulang lima kali dalam satu balasan, catatan yang benar pun jadi derau yang dilewati.
+    Cukup sekali di kaki, karena berlaku untuk SELURUH pemindaian Solana."""
+    monkeypatch.setattr(tb, "gmgn", _gmgn_palsu())
+    monkeypatch.setattr(tb, "try_json", lambda url: (
+        {"data": [{"attributes": {"name": f"T{i} / SOL",
+                                  "pool_created_at": "2026-09-18T05:00:00Z",
+                                  "reserve_in_usd": "50000", "fdv_usd": "100000",
+                                  "base_token_price_usd": "0.001"},
+                   "relationships": {"base_token": {"data": {"id": f"solana_{SOL_MINT}{i}"}}}}
+                  for i in range(3)]}
+        if "geckoterminal" in url else {"result": {f"{SOL_MINT}{i}": _sol() for i in range(3)}}))
+    monkeypatch.setattr(tb.time, "sleep", lambda *_: None)
+    hasil, _ = tb.pindai("solana", 3, 0.0, None)
+    gabung = "\n".join(h["kartu"] for h in hasil)
+    assert gabung.count("honeypot") <= 1, "catatan yang sama tidak boleh berulang di tiap kartu"
+    assert "honeypot" in tb.catatan_chain("solana").lower()
+    assert tb.catatan_chain("bsc") is None
+
+
+@pytest.mark.parametrize("mentah,rapi", [
+    ("meteora_virtual_curve", "Meteora Virtual Curve"),
+    ("pump", "Pump"),
+    ("Pump.fun", "Pump.fun"),
+])
+def test_nama_launchpad_dirapikan(mentah, rapi):
+    assert tb._rapi_launchpad(mentah) == rapi
+
+
+def test_endpoint_pool_baru_hanya_ditembak_sekali(monkeypatch):
+    """Dua panggilan identik beruntun membuat yang kedua kena batas laju GeckoTerminal, dan
+    hasilnya jadi "tidak ada pool baru" padahal 20 pool terbaca di panggilan pertama.
+    Terlihat 21 Sep saat memverifikasi perbaikan kartu."""
+    hit = []
+
+    def palsu(url):
+        if "geckoterminal" in url:
+            hit.append(url)
+            return {"data": [{"attributes": {
+                "name": "X / SOL", "pool_created_at": "2026-09-18T05:00:00Z",
+                "reserve_in_usd": "50000", "fdv_usd": "100000",
+                "base_token_price_usd": "0.001"},
+                "relationships": {"base_token": {"data": {"id": f"solana_{SOL_MINT}"}}}}]}
+        return {"result": {SOL_MINT: _sol()}}
+
+    monkeypatch.setattr(tb, "gmgn", _gmgn_palsu())
+    monkeypatch.setattr(tb, "try_json", palsu)
+    monkeypatch.setattr(tb.time, "sleep", lambda *_: None)
+    hasil, err = tb.pindai("solana", 1, 0.0, None)
+    assert err is None and len(hasil) == 1
+    assert len(hit) == 1, f"endpoint pool baru ditembak {len(hit)}x"
