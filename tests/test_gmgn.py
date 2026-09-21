@@ -12,6 +12,7 @@ kemampuan mengirim order tidak boleh ada di dalamnya, gratis sekalipun.
 import json
 import os
 import sys
+import time
 
 import pytest
 
@@ -165,3 +166,22 @@ def test_bentuk_kunci_didiagnosis_tanpa_mencetak(monkeypatch, nilai, cuplikan):
     assert cuplikan.lower() in lap.lower(), lap
     if nilai.strip():
         assert nilai not in lap, "kunci tidak boleh ikut tercetak"
+
+
+def test_setiap_permintaan_membawa_timestamp_dan_client_id():
+    """Endpoint baca GMGN menolak (401) tanpa keduanya — terlihat di runner 21 Sep dengan
+    kunci pribadi yang bentuknya sudah benar. Kunci demo publik rupanya dikecualikan, jadi
+    kesalahan ini tidak muncul selama masih memakai kunci demo.
+
+    Aturannya dari kode CLI resmi GMGN: timestamp dalam DETIK (server memeriksa toleransi
+    5 detik), client_id UUID (pengulangan ditolak dalam 7 detik) — jadi tidak boleh tetap.
+    """
+    import urllib.parse as up
+    u1 = gmgn._url(f"{gmgn.BASIS}/token/info", {"chain": "sol", "address": "A"})
+    u2 = gmgn._url(f"{gmgn.BASIS}/token/info", {"chain": "sol", "address": "A"})
+    q1 = dict(up.parse_qsl(up.urlparse(u1).query))
+    q2 = dict(up.parse_qsl(up.urlparse(u2).query))
+    assert q1["chain"] == "sol" and q1["address"] == "A"
+    assert q1["timestamp"].isdigit() and abs(int(q1["timestamp"]) - int(time.time())) < 5
+    assert len(q1["client_id"]) >= 32
+    assert q1["client_id"] != q2["client_id"], "client_id harus baru tiap permintaan"

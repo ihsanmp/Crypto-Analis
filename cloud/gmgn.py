@@ -29,8 +29,11 @@ import argparse
 import json
 import os
 import sys
+import time
 import urllib.error
+import urllib.parse
 import urllib.request
+import uuid
 
 BASIS = "https://openapi.gmgn.ai/v1"
 TIMEOUT = 20
@@ -92,6 +95,23 @@ def bentuk_kunci():
     return "GMGN_API_KEY: " + "; ".join(catatan)
 
 
+def _url(basis, param):
+    """URL + parameter wajib GMGN: timestamp & client_id.
+
+    Endpoint BACA pun menolak tanpa keduanya (401), kecuali dengan kunci demo publik yang
+    rupanya dikecualikan — itu sebabnya kesalahan ini baru muncul begitu kunci pribadi
+    dipasang (runner 21 Sep 2026). Aturannya dari kode CLI resmi GMGN: timestamp dalam
+    DETIK, diperiksa server dengan toleransi 5 detik; client_id UUID, pengulangan yang
+    sama ditolak dalam 7 detik — jadi harus baru setiap permintaan.
+
+    Tanda tangan (X-Signature) HANYA untuk rute transaksi, yang tidak dipakai di sini.
+    """
+    p = dict(param or {})
+    p["timestamp"] = int(time.time())
+    p["client_id"] = str(uuid.uuid4())
+    return basis + "?" + urllib.parse.urlencode(p)
+
+
 def try_json(url, kunci_api=None):
     h = {"X-APIKEY": kunci_api or kunci(), "accept": "application/json",
          "User-Agent": "Mozilla/5.0 (compatible; riset-koin/1.0)"}
@@ -129,7 +149,7 @@ def info(chain, alamat):
     c = CHAIN.get((chain or "").lower())
     if not c:
         return None
-    d = try_json(f"{BASIS}/token/info?chain={c}&address={alamat}")
+    d = try_json(_url(f"{BASIS}/token/info", {"chain": c, "address": alamat}))
     if "__err" in d:
         # Kuncinya disaring juga di sini: try_json memang hanya mengembalikan kode HTTP,
         # tapi satu perubahan di sana tidak boleh diam-diam membocorkannya ke log publik.
@@ -240,7 +260,7 @@ def main():
     args = ap.parse_args()
 
     if args.periksa:
-        d = try_json(f"{BASIS}/market/rank?chain=sol&limit=1")
+        d = try_json(_url(f"{BASIS}/market/rank", {"chain": "sol", "limit": 1}))
         catat = catatan_kunci()
         print("Kunci: " + ("demo publik (uji coba)" if catat else "GMGN_API_KEY dari secret"))
         if not catat:
