@@ -75,6 +75,7 @@ LP_BEBAS_RINGAN = 0.20
 KONSENTRASI_BERAT = 0.30     # satu dompet (bukan burn/kontrak/terkunci) memegang >30%
 KONSENTRASI_RINGAN = 0.15
 LIKUIDITAS_TIPIS = 10000.0   # di bawah ini, keluar dari posisi saja sudah menghancurkan harga
+BATAS_FDV = 0.45             # FDV/likuiditas; di bawah ini sudah di luar batas kolam seimbang
 MATI = ("0x000000000000000000000000000000000000dead",
         "0x0000000000000000000000000000000000000000")
 
@@ -271,13 +272,15 @@ def _temuan_pasar(pool):
               f"menggerakkan harganya sendiri", True)
 
     fdv = (pool or {}).get("fdv_usd")
-    # Ambang 0,9: selisih beberapa persen cuma beda waktu pengambilan & pembulatan.
-    if fdv and likuid and fdv < likuid * 0.9:
-        # Nilai SELURUH token tidak mungkin di bawah isi kolamnya sendiri. Biasanya berarti
-        # suplai atau harga acuannya keliru di sumber data.
-        catat(f"Angka pasar tidak konsisten: FDV {_uang(fdv)} lebih kecil daripada "
-              f"likuiditasnya sendiri {_uang(likuid)} — salah satu angka itu tidak bisa "
-              f"dipercaya")
+    # Likuiditas menghitung KEDUA sisi kolam (token + pasangannya), FDV hanya sisi tokennya.
+    # Di pool baru yang seimbang, likuiditas wajar mendekati 2x FDV — jadi rasio 0,5 itu
+    # NORMAL. Ambang lama (0,9) menandai 43% token Base sebagai "tidak bisa dipercaya"
+    # (diukur 21 Sep 2026); yang keliru aturannya, bukan datanya. Yang ditandai sekarang
+    # hanya yang di LUAR batas kolam seimbang, atau FDV nol padahal kolamnya berisi.
+    if likuid and (fdv == 0 or (fdv and fdv < likuid * BATAS_FDV)):
+        catat(f"Angka pasar janggal: FDV {_uang(fdv)} jauh di bawah likuiditasnya "
+              f"{_uang(likuid)} — di kolam seimbang seharusnya sekitar separuhnya, "
+              f"jadi angka suplai atau harganya patut diragukan")
 
     umur = (pool or {}).get("umur_jam")
     if umur is not None and umur < 24:
@@ -437,12 +440,18 @@ def pindai(chain="bsc", limit=5, min_liq=0.0, umur_maks=None):
     if "__err" in mentah:
         return [], f"GeckoTerminal gagal: {mentah['__err']}"
     pools = _urai_pool(mentah, 30)
-    hasil = []
+    hasil, sudah = [], set()
     for p in pools:
         if len(hasil) >= limit:
             break
         if not p.get("alamat_token"):
             continue
+        # Satu token bisa punya BEBERAPA pool baru sekaligus ("Wizard / SOL" tiga kali,
+        # 21 Sep). Tanpa ini, slot pemindaian terbuang untuk token yang sama dan kuota
+        # GMGN dipakai berulang untuk alamat yang identik.
+        if p["alamat_token"] in sudah:
+            continue
+        sudah.add(p["alamat_token"])
         if (p.get("likuiditas_usd") or 0) < min_liq:
             continue
         if umur_maks is not None and (p.get("umur_jam") is None or p["umur_jam"] > umur_maks):

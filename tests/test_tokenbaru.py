@@ -202,17 +202,19 @@ def test_persen_di_temuan_juga_memakai_koma():
     assert "100,0%" in pesan and "100.0%" not in pesan
 
 
-def test_fdv_lebih_kecil_dari_likuiditas_ditandai():
-    """Keluaran produksi 20 Sep, token LAST: FDV $9,32 rb dengan likuiditas $16,90 rb.
-    Nilai SELURUH token tidak mungkin lebih kecil daripada isi kolamnya sendiri — salah
-    satu angka itu salah, dan menampilkannya diam-diam membuatnya tampak sahih."""
+def test_fdv_jauh_di_bawah_likuiditas_ditandai():
+    """Koreksi 21 Sep: kasus asli (LAST, FDV $9,32 rb vs likuiditas $16,90 rb = 0,55x)
+    ternyata NORMAL — likuiditas menghitung kedua sisi kolam. Yang ditandai sekarang hanya
+    yang di luar batas kolam seimbang."""
     t = tb.temuan(_aman(), {"likuiditas_usd": 16900.0, "fdv_usd": 9320.0, "umur_jam": 5.0})
-    assert any("tidak konsisten" in x["pesan"].lower() for x in t), [x["pesan"] for x in t]
+    assert not any("janggal" in x["pesan"].lower() for x in t), [x["pesan"] for x in t]
+    t = tb.temuan(_aman(), {"likuiditas_usd": 16900.0, "fdv_usd": 2000.0, "umur_jam": 5.0})
+    assert any("janggal" in x["pesan"].lower() for x in t), [x["pesan"] for x in t]
 
 
 def test_fdv_wajar_tidak_ditandai():
     t = tb.temuan(_aman(), {"likuiditas_usd": 20000.0, "fdv_usd": 230000.0, "umur_jam": 5.0})
-    assert not any("tidak konsisten" in x["pesan"].lower() for x in t)
+    assert not any("janggal" in x["pesan"].lower() for x in t)
 
 
 def test_likuiditas_tipis_memakai_format_yang_sama(monkeypatch):
@@ -225,11 +227,18 @@ def test_likuiditas_tipis_memakai_format_yang_sama(monkeypatch):
 
 @pytest.mark.parametrize("fdv,likuid,ditandai", [
     (6040.0, 6052.0, False),     # selisih 0,2%: derau pembulatan, bukan kejanggalan
-    (9320.0, 16900.0, True),     # FDV cuma 55% likuiditas: salah satu angka keliru
+    # Likuiditas menghitung KEDUA sisi kolam, FDV hanya sisi tokennya. Di pool baru yang
+    # seimbang, likuiditas wajar mendekati 2x FDV — jadi rasio 0,5-0,6 itu NORMAL, bukan
+    # data rusak. Ambang lama (0,9) menandai 43% token Base sebagai "tidak bisa dipercaya"
+    # (diukur 21 Sep 2026): aturannya yang keliru, bukan datanya.
+    (9320.0, 16900.0, False),    # 0,55x — peluncuran biasa
+    (7496.0, 14947.0, False),    # 0,50x — persis batas kolam seimbang
+    (3000.0, 15000.0, True),     # 0,20x — di luar batas kolam seimbang
+    (0.0, 20498.0, True),        # FDV nol padahal kolamnya berisi: jelas data bolong
 ])
 def test_ambang_kejanggalan_fdv(fdv, likuid, ditandai):
     t = tb.temuan(_aman(), {"likuiditas_usd": likuid, "fdv_usd": fdv, "umur_jam": 5.0})
-    assert any("tidak konsisten" in x["pesan"].lower() for x in t) is ditandai
+    assert any("janggal" in x["pesan"].lower() for x in t) is ditandai
 
 
 # ---- Base & Solana (20 Sep 2026) ----------------------------------------------------------
@@ -471,3 +480,32 @@ def test_endpoint_pool_baru_hanya_ditembak_sekali(monkeypatch):
     hasil, err = tb.pindai("solana", 1, 0.0, None)
     assert err is None and len(hasil) == 1
     assert len(hit) == 1, f"endpoint pool baru ditembak {len(hit)}x"
+
+
+def test_token_yang_sama_tidak_dipindai_dua_kali(monkeypatch):
+    """Satu token bisa punya BEBERAPA pool baru sekaligus (mis. "McDonald's / SOL" dua kali,
+    "Wizard / SOL" tiga kali, 21 Sep). Tanpa penyaringan, slot pemindaian terbuang untuk
+    token yang sama dan kuota GMGN ikut dipakai berulang untuk alamat yang identik."""
+    dua_pool = {"data": [
+        {"attributes": {"name": f"X / SOL (pool {i})",
+                        "pool_created_at": "2026-09-18T05:00:00Z",
+                        "reserve_in_usd": str(50000 - i), "fdv_usd": "100000",
+                        "base_token_price_usd": "0.001"},
+         "relationships": {"base_token": {"data": {"id": f"solana_{SOL_MINT}"}}}}
+        for i in range(3)]}
+    dilihat = []
+
+    def palsu(url):
+        if "geckoterminal" in url:
+            return dua_pool
+        dilihat.append(url)
+        return {"result": {SOL_MINT: _sol()}}
+
+    monkeypatch.setattr(tb, "gmgn", _gmgn_palsu())
+    monkeypatch.setattr(tb, "try_json", palsu)
+    monkeypatch.setattr(tb.time, "sleep", lambda *_: None)
+    hasil, _ = tb.pindai("solana", 5, 0.0, None)
+    assert len(hasil) == 1, f"token sama dipindai {len(hasil)}x"
+    assert len(dilihat) == 1, "pemeriksaan keamanan tidak boleh diulang untuk alamat sama"
+    # Yang dipakai pool PERTAMA (paling baru di daftar GeckoTerminal).
+    assert hasil[0]["pool"]["likuiditas_usd"] == 50000.0
