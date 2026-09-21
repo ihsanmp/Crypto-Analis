@@ -63,6 +63,7 @@ jobs:
       # Kosong = pakai nilai bawaan di kode. Diisi = alamat pribadi tidak perlu ada
       # di repo publik ini.
       SEC_CONTACT: ${{ secrets.SEC_CONTACT }}
+      GMGN_API_KEY: ${{ secrets.GMGN_API_KEY }}
       # Opsional. Arus dana ETF spot berubah TIAP HARI, jadi tidak bisa disimpan sebagai
       # berkas seperti riwayat konsensus yang bulanan — harus ditarik saat analisa. Kosong
       # = bagian arus ETF dilaporkan tidak tersedia dan analisa crypto tetap jalan.

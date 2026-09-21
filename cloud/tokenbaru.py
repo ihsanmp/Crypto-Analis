@@ -18,6 +18,8 @@ SUMBER (dua-duanya gratis, tanpa API key — diuji 20 Sep 2026):
   - GeckoTerminal `/networks/{chain}/new_pools` -> pool baru, likuiditas, FDV, harga
   - GoPlus Security `/token_security/{chain_id}` -> pajak, honeypot, owner, mintable,
     LP terkunci/tidak, sebaran pemegang, alamat pembuat
+  - GMGN OpenAPI (cloud/gmgn.py, baca-saja) -> riwayat pembuat token, porsi dompet
+    sniper/bundler/rat trader, status bonding curve launchpad, logo duplikat
 
 BATASAN YANG HARUS DISAMPAIKAN APA ADANYA:
   1. Token baru = risiko tertinggi di pasar ini. Tidak adanya temuan BUKAN rekomendasi.
@@ -38,6 +40,8 @@ import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
+
+import gmgn  # noqa: E402  data pembuat token & sniper, HANYA baca (lihat cloud/gmgn.py)
 
 UA = {"User-Agent": "Mozilla/5.0 (compatible; riset-koin/1.0)", "accept": "application/json"}
 TIMEOUT = 25
@@ -359,7 +363,7 @@ def _symbol(r):
     return r.get("token_symbol") or (r.get("metadata") or {}).get("symbol")
 
 
-def kartu(pool, r, daftar):
+def kartu(pool, r, daftar, konteks=None):
     """Satu blok teks siap kirim ke Telegram. Disusun KODE, bukan model."""
     v = vonis(daftar)
     lencana = {"BAHAYA": "🛑", "HATI-HATI": "⚠️", "BELUM ADA TANDA BAHAYA": "🔍"}[v]
@@ -374,6 +378,8 @@ def kartu(pool, r, daftar):
         f"24 jam {ubah:+.1f}%".replace(".", ",").replace("-", "−")
         if ubah is not None else "24 jam ?"
         + (f" · umur {umur:.0f} jam" if umur is not None else ""))
+    if konteks:
+        baris.append(f"🔎 {konteks}")
     pemegang = _angka((r or {}).get("holder_count"))
     if pemegang:
         baris.append(f"Pemegang {int(pemegang):,}".replace(",", "."))
@@ -417,12 +423,27 @@ def pindai(chain="bsc", limit=5, min_liq=0.0, umur_maks=None):
         time.sleep(JEDA)
         periksa = temuan_solana if CHAIN[chain]["tipe"] == "solana" else temuan
         t = periksa(r or {}, p) if r else list(_temuan_pasar(p))
+        # Pengaya GMGN: yang TIDAK ada di GoPlus — riwayat pembuat, sniper, bundler,
+        # status kurva. Kegagalannya disebut, bukan didiamkan: kartu yang diam soal
+        # bagian yang tak terperiksa tampak lebih bersih daripada yang benar-benar diketahui.
+        konteks = None
+        if chain in getattr(gmgn, "CHAIN", {}):
+            g = gmgn.info(chain, p["alamat_token"])
+            time.sleep(JEDA)
+            if g and g.get("error"):
+                t.append({"pesan": f"{g['error']} — riwayat pembuat & sniper TIDAK diperiksa",
+                          "berat": False})
+            elif g:
+                t.extend(gmgn.temuan(g))
+                konteks = gmgn.ringkas(g)
         if err:
             t = [{"pesan": err + " — jangan dianggap bersih", "berat": False}] + t
         hasil.append({"alamat": p["alamat_token"], "pool": p,
                       "nama": _nama(r), "symbol": _symbol(r),
                       "jumlah_pemegang": (r or {}).get("holder_count"),
-                      "temuan": t, "vonis": vonis(t), "kartu": kartu(p, r, t)})
+                      "konteks": konteks,
+                      "temuan": t, "vonis": vonis(t),
+                      "kartu": kartu(p, r, t, konteks)})
     return hasil, None
 
 
@@ -459,6 +480,9 @@ def main():
     print(f"🆕 {len(daftar)} token terbaru di {(chain_dari(args.chain) or args.chain).upper()} "
           f"(likuiditas ≥ {_uang(args.min_liq)})\n")
     print(("\n\n" + "─" * 28 + "\n\n").join(d["kartu"] for d in daftar))
+    catat = gmgn.catatan_kunci()
+    if catat:
+        print(f"\nℹ️ {catat}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,33 @@
+# Pemeriksaan sekali jalan: apakah GMGN OpenAPI menerima IP runner GitHub.
+#
+# Situs gmgn.ai sendiri membalas 403 (Cloudflare) bahkan dari IP rumahan, sedangkan
+# openapi.gmgn.ai menjawab normal. IP runner Actions dipakai ramai-ramai, jadi lolos di
+# laptop TIDAK berarti lolos di produksi — pelajaran dari CoinGecko 429 (17 Sep 2026).
+#
+# CATATAN KEAMANAN: repo ini publik, jadi log Actions ikut terbaca publik. `--periksa` hanya
+# mencetak diterima/ditolak dan jenis kunci yang dipakai — tidak pernah isi kuncinya.
+name: Periksa akses GMGN
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  periksa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Uji akses GMGN OpenAPI
+        env:
+          GMGN_API_KEY: ${{ secrets.GMGN_API_KEY }}
+        run: |
+          python cloud/gmgn.py --periksa
+          echo "---- data nyata untuk satu token Solana ----"
+          python cloud/gmgn.py solana JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN

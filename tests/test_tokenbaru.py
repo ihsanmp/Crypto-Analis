@@ -132,6 +132,7 @@ def test_kartu_menyebut_dasar_tiap_temuan():
 
 
 def test_main_json(monkeypatch, capsys):
+    monkeypatch.setattr(tb, "gmgn", _gmgn_palsu())     # pengaya dimatikan; jalur utama saja
     monkeypatch.setattr(tb, "try_json", lambda url: (
         {"data": [_pool()]} if "geckoterminal" in url else {"result": {CA: _aman()}}))
     monkeypatch.setattr(tb.time, "sleep", lambda *_: None)
@@ -314,3 +315,82 @@ def test_pindai_solana_memakai_endpoint_solana(monkeypatch):
     assert err is None and hasil[0]["alamat"] == SOL_MINT
     assert any("solana/token_security" in u for u in dipanggil), dipanggil
     assert "networks/solana/new_pools" in dipanggil[0]
+
+
+# ---- GMGN sebagai pengaya (21 Sep 2026) ---------------------------------------------------
+# Data yang tidak ada di GoPlus/GeckoTerminal: riwayat pembuat token, porsi sniper/bundler/
+# rat trader, status bonding curve. Ditarik KODE lewat cloud/gmgn.py, bukan lewat skill yang
+# bergantung pada model mau memanggilnya.
+
+def _gmgn_palsu(temuan=(), ringkas=None, gagal=False):
+    class Palsu:
+        CHAIN = {"solana": "sol", "bsc": "bsc", "base": "base"}
+
+        @staticmethod
+        def info(chain, alamat):
+            return {"error": "GMGN gagal: HTTP 429"} if gagal else {"symbol": "X"}
+
+        @staticmethod
+        def temuan(d):
+            return [] if gagal else [dict(t) for t in temuan]
+
+        @staticmethod
+        def ringkas(d):
+            return None if gagal else ringkas
+
+        @staticmethod
+        def catatan_kunci():
+            return None
+    return Palsu
+
+
+def test_temuan_gmgn_masuk_ke_kartu(monkeypatch):
+    monkeypatch.setattr(tb, "gmgn", _gmgn_palsu(
+        temuan=[{"pesan": "Pembuatnya sudah menerbitkan 12 token dari dompet yang sama",
+                 "berat": True}],
+        ringkas="Pump.fun 43% kurva · smart money 3"))
+    monkeypatch.setattr(tb, "try_json", lambda url: (
+        {"data": [{"attributes": {"name": "X / SOL", "pool_created_at": "2026-09-18T05:00:00Z",
+                                  "reserve_in_usd": "50000", "fdv_usd": "100000",
+                                  "base_token_price_usd": "0.001"},
+                   "relationships": {"base_token": {"data": {"id": f"solana_{SOL_MINT}"}}}}]}
+        if "geckoterminal" in url else {"result": {SOL_MINT: _sol()}}))
+    monkeypatch.setattr(tb.time, "sleep", lambda *_: None)
+    hasil, err = tb.pindai("solana", 1, 0.0, None)
+    kartu = hasil[0]["kartu"]
+    assert "12 token" in kartu and hasil[0]["vonis"] == "BAHAYA"
+    assert "Pump.fun 43% kurva" in kartu and "smart money 3" in kartu
+
+
+def test_gmgn_gagal_disebut_bukan_didiamkan(monkeypatch):
+    """Kalau bagian dev/sniper tidak terperiksa, itu harus kelihatan — bukan hilang diam-diam
+    sehingga kartunya tampak lebih bersih daripada yang sebenarnya diketahui."""
+    monkeypatch.setattr(tb, "gmgn", _gmgn_palsu(gagal=True))
+    monkeypatch.setattr(tb, "try_json", lambda url: (
+        {"data": [{"attributes": {"name": "X / SOL", "pool_created_at": "2026-09-18T05:00:00Z",
+                                  "reserve_in_usd": "50000", "fdv_usd": "100000",
+                                  "base_token_price_usd": "0.001"},
+                   "relationships": {"base_token": {"data": {"id": f"solana_{SOL_MINT}"}}}}]}
+        if "geckoterminal" in url else {"result": {SOL_MINT: _sol()}}))
+    monkeypatch.setattr(tb.time, "sleep", lambda *_: None)
+    hasil, _ = tb.pindai("solana", 1, 0.0, None)
+    pesan = " ".join(t["pesan"] for t in hasil[0]["temuan"])
+    assert "GMGN" in pesan and "tidak diperiksa" in pesan.lower()
+
+
+def test_gmgn_tidak_dipakai_untuk_chain_yang_tak_didukungnya(monkeypatch):
+    dipanggil = []
+    palsu = _gmgn_palsu()
+    palsu.CHAIN = {"solana": "sol"}
+    palsu.info = staticmethod(lambda c, a: dipanggil.append(c))
+    monkeypatch.setattr(tb, "gmgn", palsu)
+    EVM = "0x2f063b5c4fdb206e698078b29e01105cf593f5d2"
+    monkeypatch.setattr(tb, "try_json", lambda url: (
+        {"data": [{"attributes": {"name": "X / WETH", "pool_created_at": "2026-09-18T05:00:00Z",
+                                  "reserve_in_usd": "50000", "fdv_usd": "100000",
+                                  "base_token_price_usd": "0.001"},
+                   "relationships": {"base_token": {"data": {"id": f"base_{EVM}"}}}}]}
+        if "geckoterminal" in url else {"result": {EVM: _aman()}}))
+    monkeypatch.setattr(tb.time, "sleep", lambda *_: None)
+    tb.pindai("base", 1, 0.0, None)
+    assert dipanggil == [], "chain di luar dukungan GMGN tidak boleh ditembak"
