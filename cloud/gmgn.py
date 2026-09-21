@@ -61,6 +61,33 @@ def catatan_kunci():
             "Isi secret GMGN_API_KEY untuk jalur yang bisa diandalkan.")
 
 
+def bentuk_kunci():
+    """Diagnosis BENTUK kunci tanpa pernah mencetak isinya (log Actions repo ini publik).
+
+    Dipakai saat GMGN membalas 401: memisahkan "nilainya salah tempel" dari "kuncinya sah
+    tapi endpointnya menuntut tanda tangan". Tanpa ini, satu-satunya cara memeriksa adalah
+    menempelkan kuncinya ke suatu tempat — persis yang tidak boleh dilakukan.
+    """
+    k = os.environ.get("GMGN_API_KEY", "")
+    if not k.strip():
+        return "GMGN_API_KEY: TIDAK ADA (secret kosong/belum dibuat)"
+    catatan = [f"panjang {len(k)} karakter"]
+    if "BEGIN PUBLIC KEY" in k or "BEGIN PRIVATE KEY" in k:
+        catatan.append("BERISI BLOK PEM — sepertinya kunci PUBLIK/PRIVAT yang tertempel, "
+                       "bukan kunci API")
+    if k != k.strip():
+        catatan.append("ada spasi/baris baru di awal atau akhir")
+    if any(c in k.strip() for c in "\"' "):
+        catatan.append("mengandung tanda kutip atau spasi di tengah")
+    if "\n" in k.strip() or "\r" in k.strip():
+        catatan.append("mengandung baris baru di tengah")
+    if not k.strip().startswith("gmgn_"):
+        catatan.append("tidak diawali 'gmgn_' (kunci demo GMGN diawali itu)")
+    else:
+        catatan.append("bentuknya wajar (diawali 'gmgn_')")
+    return "GMGN_API_KEY: " + "; ".join(catatan)
+
+
 def try_json(url, kunci_api=None):
     h = {"X-APIKEY": kunci_api or kunci(), "accept": "application/json",
          "User-Agent": "Mozilla/5.0 (compatible; riset-koin/1.0)"}
@@ -212,8 +239,13 @@ def main():
         d = try_json(f"{BASIS}/market/rank?chain=sol&limit=1")
         catat = catatan_kunci()
         print("Kunci: " + ("demo publik (uji coba)" if catat else "GMGN_API_KEY dari secret"))
+        if not catat:
+            print(bentuk_kunci())
         if "__err" in d:
             print(f"GMGN: DITOLAK — {d['__err']}")
+            if not catat:
+                print("Kalau bentuknya wajar, 401 biasanya berarti endpoint ini menuntut "
+                      "tanda tangan (X-Signature) dengan kunci privat, bukan kunci API saja.")
             sys.exit(1)
         n = len(((d.get("data") or {}).get("data") or {}).get("rank") or [])
         print(f"GMGN: DITERIMA — market/rank menjawab normal ({n} baris)")

@@ -144,3 +144,24 @@ def test_kunci_tidak_pernah_dicetak(monkeypatch, capsys):
     d = gmgn.info("solana", MINT)
     keluar = capsys.readouterr()
     assert "RAHASIA-123" not in (keluar.out + keluar.err + json.dumps(d or {}))
+
+
+# ---- diagnosis kunci (21 Sep 2026) --------------------------------------------------------
+# Kunci pribadi pertama ditolak 401 dari runner. Penyebab yang mungkin: nilainya salah tempel
+# (kunci publik, terpotong, ikut tanda kutip) ATAU endpoint baca menuntut tanda tangan.
+# Keduanya harus bisa dibedakan TANPA pernah mencetak kuncinya — log Actions repo ini publik.
+
+@pytest.mark.parametrize("nilai,cuplikan", [
+    ("", "TIDAK ADA"),
+    ("-----BEGIN PUBLIC KEY-----\nMCow\n-----END PUBLIC KEY-----", "kunci PUBLIK"),
+    ('"gmgn_abc"', "tanda kutip"),
+    ("gmgn_abc def", "spasi"),
+    ("gmgn_abcdefghijklmno", "wajar"),
+    ("abcdefghijklmnop", "tidak diawali"),
+])
+def test_bentuk_kunci_didiagnosis_tanpa_mencetak(monkeypatch, nilai, cuplikan):
+    monkeypatch.setenv("GMGN_API_KEY", nilai)
+    lap = gmgn.bentuk_kunci()
+    assert cuplikan.lower() in lap.lower(), lap
+    if nilai.strip():
+        assert nilai not in lap, "kunci tidak boleh ikut tercetak"
