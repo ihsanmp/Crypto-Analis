@@ -140,3 +140,73 @@ def test_nama_token_dirapikan(monkeypatch):
          "jenis": "token"}])
     h = cw.cari("binance")
     assert h[0]["label"] == "Binance (token)"
+
+
+# ---- bentuk singkat "0xda...099" (produksi 22 Sep, run 35743975623) -----------------------
+# User menempel alamat seperti yang DITAMPILKAN explorer dan dompet: awalan, titik-titik,
+# akhiran. Dibaca sebagai nama, hasilnya nihil — padahal justru bentuk inilah yang paling
+# sering diingat dan disalin orang.
+
+_LABEL_SINGKAT = {
+    "0xdac17f958d2ee523a2206206994597c13d831ec7": "Tether: USDT",
+    "0xda9d4f9b69ac6c22e444ed9af0cfc043b7a7f099": "Contoh Cocok",
+    "0xda1122334455667788990011223344556677f099": "Cocok Juga",
+    "0xbb9d4f9b69ac6c22e444ed9af0cfc043b7a7f099": "Akhiran Saja",
+    "0xda9d4f9b69ac6c22e444ed9af0cfc043b7a7abcd": "Awalan Saja",
+}
+
+
+@pytest.mark.parametrize("ditulis", ["0xda...099", "0xda…099", "0xda..099", "0xDA...099"])
+def test_bentuk_singkat_dicocokkan_awalan_dan_akhiran(monkeypatch, ditulis):
+    monkeypatch.setattr(cw, "load_labels", lambda: _LABEL_SINGKAT)
+    h = cw.cari(ditulis)
+    label = {x["label"] for x in h}
+    assert label == {"Contoh Cocok", "Cocok Juga"}, label
+    assert all(x["kecocokan"] == "awalan+akhiran" for x in h)
+
+
+def test_bentuk_singkat_tanpa_0x(monkeypatch):
+    monkeypatch.setattr(cw, "load_labels", lambda: _LABEL_SINGKAT)
+    assert {x["label"] for x in cw.cari("da...099")} == {"Contoh Cocok", "Cocok Juga"}
+
+
+def test_bentuk_singkat_diutamakan_di_atas_yang_lain(monkeypatch):
+    """Cocok di dua ujung sekaligus jauh lebih menentukan daripada cocok di satu sisi."""
+    monkeypatch.setattr(cw, "load_labels", lambda: _LABEL_SINGKAT)
+    h = cw.cari("0xda...099")
+    assert h[0]["kecocokan"] == "awalan+akhiran"
+
+
+def test_blockscout_ditanya_dengan_awalannya_saja(monkeypatch):
+    """API-nya tidak mengerti "0xda...099" — yang dikirim awalannya, akhirannya disaring
+    di sisi kita."""
+    ditanya = []
+
+    def palsu(frag, chain):
+        ditanya.append(frag)
+        return [{"alamat": "0xda9d4f9b69ac6c22e444ed9af0cfc043b7a7f099", "label": None,
+                 "sumber": "Blockscout (ethereum)", "chain": "ethereum", "jenis": "alamat"},
+                {"alamat": "0xda0000000000000000000000000000000000dead", "label": None,
+                 "sumber": "Blockscout (ethereum)", "chain": "ethereum", "jenis": "alamat"}]
+
+    monkeypatch.setattr(cw, "load_labels", lambda: {})
+    monkeypatch.setattr(cw, "_blockscout", palsu)
+    h = cw.cari("0xda...099")
+    assert ditanya == ["0xda"], ditanya
+    assert [x["alamat"] for x in h] == ["0xda9d4f9b69ac6c22e444ed9af0cfc043b7a7f099"]
+
+
+def test_setiap_jenis_kecocokan_punya_label_tampilan():
+    """Produksi 22 Sep: menambah jenis "awalan+akhiran" membuat kartu CRASH karena label
+    tampilannya belum ada — seluruh balasan hilang, bukan cuma satu baris."""
+    for kec in cw._URUTAN:
+        assert kec in cw._LABEL_KECOCOKAN, kec
+
+
+def test_kartu_tidak_pernah_crash_untuk_jenis_tak_dikenal():
+    """Jaring pengaman: jenis baru boleh tampil apa adanya, tapi TIDAK BOLEH menjatuhkan
+    seluruh jawaban."""
+    palsu = [{"alamat": "0x" + "a" * 40, "label": "X", "sumber": "uji",
+              "chain": "ethereum", "jenis": "alamat", "kecocokan": "jenis-baru"}]
+    teks = cw.kartu("x", palsu, "catatan")
+    assert "0x" + "a" * 40 in teks and "jenis-baru" in teks

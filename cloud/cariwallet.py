@@ -44,8 +44,19 @@ BLOCKSCOUT = {"ethereum": "eth.blockscout.com", "base": "base.blockscout.com",
               "polygon": "polygon.blockscout.com"}
 _RE_HEX = re.compile(r"^(0x)?[0-9a-f]+$")
 _RE_ALAMAT_PENUH = re.compile(r"^0x[0-9a-f]{40}$")
-# Urutan penting: yang paling dekat dengan yang diingat user muncul dulu.
-_URUTAN = {"persis": 0, "awalan": 1, "mengandung": 2, "nama": 3, "mirip": 4}
+# Bentuk singkat yang DITAMPILKAN explorer & dompet: "0xda...099". Inilah bentuk yang paling
+# sering diingat dan disalin orang — sampai 22 Sep 2026 ia dibaca sebagai nama dan hasilnya
+# selalu nihil (run 35743975623).
+_RE_SINGKAT = re.compile(r"^(?:0x)?([0-9a-f]+)\s*(?:\.{2,}|\u2026)\s*([0-9a-f]+)$")
+# Urutan penting: yang paling dekat dengan yang diingat user muncul dulu. Cocok di DUA
+# ujung sekaligus jauh lebih menentukan daripada cocok di satu sisi.
+_URUTAN = {"persis": 0, "awalan+akhiran": 1, "awalan": 2, "mengandung": 3,
+           "nama": 4, "mirip": 5}
+# Wajib punya baris untuk SETIAP kunci di _URUTAN — diuji, karena yang hilang bukan satu
+# baris melainkan seluruh balasan.
+_LABEL_KECOCOKAN = {"persis": "sama persis", "awalan+akhiran": "awalan & akhiran cocok",
+                    "awalan": "awalannya cocok", "mengandung": "mengandung",
+                    "nama": "dari nama", "mirip": "nama mirip"}
 
 
 def _bersih(fragmen):
@@ -59,6 +70,12 @@ def _try_json(url):
             return json.loads(r.read().decode())
     except Exception:
         return None
+
+
+def _pisah_singkat(fragmen):
+    """(awalan, akhiran) untuk bentuk "0xda...099". (None, None) kalau bukan bentuk itu."""
+    m = _RE_SINGKAT.match(fragmen or "")
+    return (m.group(1), m.group(2)) if m else (None, None)
 
 
 def _blockscout(fragmen, chain):
@@ -109,6 +126,9 @@ def _kecocokan(fragmen, alamat, label):
     l = (label or "").lower()
     if _RE_ALAMAT_PENUH.match(fragmen) and a == fragmen:
         return "persis"
+    awal, akhir = _pisah_singkat(fragmen)
+    if awal:
+        return "awalan+akhiran" if (a.startswith("0x" + awal) and a.endswith(akhir)) else None
     if _RE_HEX.match(fragmen):
         tanpa0x = fragmen[2:] if fragmen.startswith("0x") else fragmen
         if a.startswith("0x" + tanpa0x):
@@ -136,7 +156,9 @@ def cari_dengan_catatan(fragmen, chain=None, batas=BATAS_BAWAAN):
     """(hasil, catatan). Catatan menjelaskan batas pencarian — bukan basa-basi: tanpa itu
     "tidak ketemu" terbaca sebagai "alamatnya tidak ada"."""
     f = _bersih(fragmen)
-    if len(f.replace("0x", "", 1)) < MIN_FRAGMEN:
+    _a, _b = _pisah_singkat(f)
+    panjang = len(_a) + len(_b) if _a else len(f.replace("0x", "", 1))
+    if panjang < MIN_FRAGMEN:
         return [], (f"Potongannya terlalu pendek — butuh minimal {MIN_FRAGMEN} huruf/angka. "
                     f"Di bawah itu hasilnya ribuan dan tidak menolong siapa pun.")
 
@@ -163,9 +185,10 @@ def cari_dengan_catatan(fragmen, chain=None, batas=BATAS_BAWAAN):
     for alamat, label in (load_labels() or {}).items():
         tambah({"alamat": alamat, "label": label, "sumber": "label lokal (Ethereum)",
                 "chain": "ethereum", "jenis": "alamat"})
-    for calon in _blockscout(f, chain) or []:
+    awal, _akhir = _pisah_singkat(f)
+    for calon in _blockscout("0x" + awal if awal else f, chain) or []:
         tambah(calon)
-    if not _RE_HEX.match(f):
+    if not _RE_HEX.match(f) and not awal:
         for calon in _gmgn_token(f) or []:
             tambah(calon)
 
@@ -195,12 +218,13 @@ def kartu(fragmen, hasil, catatan):
     if not hasil:
         return f"🔍 Cari alamat \"{fragmen}\"\n\n{catatan}"
     baris = [f"🔍 {len(hasil)} alamat cocok dengan \"{fragmen}\"", ""]
-    label_kec = {"persis": "sama persis", "awalan": "awalannya cocok",
-                 "mengandung": "mengandung", "nama": "dari nama", "mirip": "nama mirip"}
     for h in hasil:
         nama = h.get("label") or "belum dikenali"
         baris.append(f"`{h['alamat']}`")
-        baris.append(f"   {nama} · {label_kec[h['kecocokan']]} · {h['sumber']}")
+        # .get dengan cadangan: menambah jenis kecocokan baru pernah membuat SELURUH
+        # balasan hilang karena KeyError di satu baris (produksi 22 Sep 2026).
+        kec = _LABEL_KECOCOKAN.get(h["kecocokan"], h["kecocokan"])
+        baris.append(f"   {nama} · {kec} · {h['sumber']}")
     baris.append("")
     baris.append(f"ℹ️ {catatan}")
     return "\n".join(baris)
