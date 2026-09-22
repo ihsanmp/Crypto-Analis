@@ -301,5 +301,13 @@
   "pesan": "token baru di jaringan solana",
   "balasan": "(ringkasan; alamat kontrak tidak disimpan) Pemindaian token baru SOLANA: Lobby HATI-HATI · USDF BAHAYA · LOS BAHAYA · STONK BAHAYA · +++++ HATI-HATI",
   "angka_kunci": []
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1790089111.266273,
+  "waktu_utc": "2026-09-22 14:58",
+  "pesan": "carikan wallet 0xda...099",
+  "balasan": "(ringkasan; alamat tidak disimpan) Pencarian alamat \"0xda...099\": 1 hasil.",
+  "angka_kunci": []
  }
 ]
