@@ -309,5 +309,15 @@
   "pesan": "carikan wallet 0xda...099",
   "balasan": "(ringkasan; alamat tidak disimpan) Pencarian alamat \"0xda...099\": 1 hasil.",
   "angka_kunci": []
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1790089863.0496297,
+  "waktu_utc": "2026-09-22 15:11",
+  "pesan": "saya tahu dari postingan ini yang ada di X",
+  "balasan": "Sudah saya baca gambarnya.\n\nAPA YANG TERLIHAT DI GAMBAR\n\nIni kartu PNL share dari GMGN (bukan chart harga resmi), token $LEVERA:\n• PNL: +$354,67\n• Hold: $0  ← dompetnya SUDAH KOSONG\n• Sold: $536,48\n• Bought: $165,65\n• Dompet: 0xda...09d9\n• Invite Cod\n[...dipangkas...]\nreferral). Selama tiga hal itu belum ada, tidak ada alasan menahan.\n\nKalau kamu mau, kirim link postingan X-nya — saya bisa cek akun yang posting itu rekam jejaknya bagaimana, atau kita bandingkan dengan protokol Robinhood Chain yang lebih punya isi.",
+  "angka_kunci": [
+   "harga=0,00001213"
+  ]
  }
 ]
