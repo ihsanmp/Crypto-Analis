@@ -28,6 +28,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -118,6 +119,135 @@ def _gmgn_token(fragmen):
             keluar.append({"alamat": alamat, "label": f"{nama} (token)",
                            "sumber": f"GMGN ({chain})", "chain": chain, "jenis": "token"})
     return keluar
+
+
+# ---- pencarian di dalam KUMPULAN token --------------------------------------------------
+#
+# Pola sependek "0xda...09d9" mengenai sekitar 1 dari 65 ribu alamat: tak berguna di seluruh
+# blockchain, tapi di dalam daftar trader SATU token biasanya tinggal satu. Inilah jawaban
+# untuk "yang terlihat cuma sedikit karakter" — yang dipersempit tempatnya, bukan polanya.
+#
+# Asalnya perburuan nyata 22 Sep 2026: dompet dari kartu PNL GMGN ketemu di Levera Markets
+# (Robinhood Chain), cocok sampai sen terakhir dengan angka di kartunya.
+
+CHAIN_CARI = ["robinhood", "bsc", "base", "solana", "eth"]
+MAKS_TOKEN = 25          # batas kandidat; tiap kandidat = 1 permintaan berbobot 5
+JEDA_BOBOT5 = 1.3        # paket Free GMGN: 5/5, jadi endpoint bobot 5 = 1 permintaan/detik
+
+
+def gmgn_cari(q, chain):
+    """Kandidat token dari GMGN: [(alamat, nama)]."""
+    try:
+        import gmgn
+    except Exception:
+        return []
+    d = gmgn.try_json(gmgn._url(f"{gmgn.BASIS}/market/search", {"chain": chain, "q": q}))
+    if not isinstance(d, dict) or "__err" in d:
+        return []
+    coins = (d.get("data") or {}).get("coins") or []
+    kunci = q.lower().split()[0]
+    keluar = []
+    for c in coins:
+        nama = (c.get("name") or c.get("symbol") or "").strip()
+        alamat = (c.get("address") or "").strip()
+        if alamat and kunci in (nama + " " + (c.get("symbol") or "")).lower():
+            keluar.append((alamat, nama))
+    return keluar
+
+
+def gmgn_trader(chain, alamat, limit=100):
+    """Daftar trader token (maks 100), diurutkan dari profit terbesar."""
+    try:
+        import gmgn
+    except Exception:
+        return []
+    d = gmgn.try_json(gmgn._url(f"{gmgn.BASIS}/market/token_top_traders",
+                                {"chain": chain, "address": alamat, "limit": limit,
+                                 "order_by": "profit", "direction": "desc"}))
+    if not isinstance(d, dict) or "__err" in d:
+        return []
+    isi = d.get("data") or {}
+    baris = isi.get("list") or isi.get("data") or []
+    return [b for b in baris if isinstance(b, dict)]
+
+
+def _angka(x):
+    try:
+        return round(float(x), 2)
+    except (TypeError, ValueError):
+        return None
+
+
+def cari_di_token(fragmen, token_q, chain=None, maks_token=MAKS_TOKEN):
+    """(hasil, catatan) — sisir daftar trader tiap token yang namanya cocok.
+
+    Nama token TIDAK unik: "LEVERA" cocok dengan 94 token di tiga chain (22 Sep 2026).
+    Karena itu kandidatnya disisir satu per satu, dan batasnya disebut apa adanya.
+    """
+    f = _bersih(fragmen)
+    kandidat = []
+    for c in ([chain] if chain else CHAIN_CARI):
+        for alamat, nama in gmgn_cari(token_q, c) or []:
+            kandidat.append((c, alamat, nama))
+        time.sleep(0.3)
+    if not kandidat:
+        return [], (f"Tidak ada token bernama \"{token_q}\" yang ketemu di "
+                    f"{', '.join([chain] if chain else CHAIN_CARI)}. Coba nama yang lebih "
+                    f"persis, atau sebut chain-nya.")
+
+    dipakai = kandidat[:maks_token]
+    hasil = []
+    for c, alamat, nama in dipakai:
+        for b in gmgn_trader(c, alamat) or []:
+            a = str(b.get("address") or "")
+            if not a or not _kecocokan(f, a, None):
+                continue
+            hasil.append({
+                "alamat": a.lower(), "token": nama, "kontrak": alamat, "chain": c,
+                "profit_usd": _angka(b.get("realized_profit") or b.get("profit")),
+                "beli_usd": _angka(b.get("buy_volume_cur")),
+                "jual_usd": _angka(b.get("sell_volume_cur")),
+                "saldo": _angka(b.get("balance")),
+                "sumber": f"GMGN trader ({c})", "kecocokan": _kecocokan(f, a, None)})
+        time.sleep(JEDA_BOBOT5)
+
+    catatan = f"Disisir {len(dipakai)} token bernama \"{token_q}\""
+    if len(kandidat) > len(dipakai):
+        catatan += f" dari {len(kandidat)} yang ketemu — sebutkan chain-nya untuk mempersempit"
+    catatan += "."
+    if not hasil:
+        catatan += (" Tidak ada alamat yang cocok di daftar trader mereka. Itu BUKAN berarti "
+                    "dompetnya tidak ada: daftar trader hanya memuat 100 teratas per token, "
+                    "dan tokennya bisa saja bukan salah satu dari yang disisir.")
+    return hasil, catatan
+
+
+def _uang(x):
+    """Ribuan titik, desimal koma. Format lama menghasilkan "$1.234.56" — dua titik,
+    dan desimalnya tidak terbaca lagi."""
+    utuh, _, desimal = f"{float(x):,.2f}".partition(".")
+    return "$" + utuh.replace(",", ".") + "," + desimal
+
+
+def kartu_token(fragmen, token_q, hasil, catatan):
+    """Kartu untuk hasil pencarian berkonteks. Angkanya ikut supaya user bisa MEMBANDINGKAN
+    dengan yang ia lihat sendiri — itu yang mengubah "mirip" jadi "ini dia"."""
+    if not hasil:
+        return f"🔍 Cari \"{fragmen}\" di token \"{token_q}\"\n\n{catatan}"
+    baris = [f"🔍 {len(hasil)} alamat cocok dengan \"{fragmen}\" di token \"{token_q}\"", ""]
+    for h in hasil:
+        baris.append(f"`{h['alamat']}`")
+        baris.append(f"   {h['token']} · {h['chain']} · {h['sumber']}")
+        angka = []
+        for kunci, label in (("profit_usd", "profit"), ("beli_usd", "beli"),
+                             ("jual_usd", "jual")):
+            if h.get(kunci) is not None:
+                angka.append(f"{label} {_uang(h[kunci])}")
+        if angka:
+            baris.append("   " + " · ".join(angka) + " — cocokkan dengan yang kamu lihat")
+    baris.append("")
+    baris.append(f"ℹ️ {catatan}")
+    return "\n".join(baris)
 
 
 def _kecocokan(fragmen, alamat, label):
@@ -233,10 +363,23 @@ def kartu(fragmen, hasil, catatan):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("fragmen", help="potongan alamat atau nama, minimal 3 karakter")
-    ap.add_argument("--chain", default=None, help="ethereum | base | arbitrum | optimism | polygon")
+    ap.add_argument("--chain", default=None, help="ethereum | base | arbitrum | optimism | polygon | robinhood | bsc | solana")
+    ap.add_argument("--di", default=None, dest="di",
+                    help="cari di dalam daftar trader token ini (nama/simbol)")
+    ap.add_argument("--maks-token", type=int, default=MAKS_TOKEN)
     ap.add_argument("--batas", type=int, default=BATAS_BAWAAN)
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
+
+    if a.di:
+        hasil, catatan = cari_di_token(a.fragmen, a.di, a.chain,
+                                       max(1, min(a.maks_token, 60)))
+        if a.json:
+            print(json.dumps({"fragmen": a.fragmen, "token": a.di, "hasil": hasil,
+                              "catatan": catatan}, indent=2, ensure_ascii=False))
+            return
+        print(kartu_token(a.fragmen, a.di, hasil, catatan))
+        return
 
     hasil, catatan = cari_dengan_catatan(a.fragmen, a.chain, max(1, min(a.batas, 100)))
     if a.json:

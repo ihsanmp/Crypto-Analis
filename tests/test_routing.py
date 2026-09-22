@@ -8289,3 +8289,14 @@ def test_jalur_cari_wallet_tanpa_model():
     blok = src[i:src.index("timeout = int(os.environ", i)]
     assert "run_claude" not in blok
     assert "cariwallet.py" in blok and "send_message" in blok
+
+
+@pytest.mark.parametrize("teks,frag,token", [
+    ("cari wallet 0xda...09d9 di LEVERA", "0xda...09d9", "levera"),
+    ("cari alamat 0xda...09d9 pada token levera", "0xda...09d9", "levera"),
+    ("cari dompet da...09d9 di levera markets", "da...09d9", "levera markets"),
+    ("cari wallet f977", "f977", None),
+])
+def test_konteks_token_dibaca_dari_perintah(teks, frag, token):
+    assert bot.classify(teks) == "cariwallet", teks
+    assert bot.konteks_wallet(teks) == (frag, token), teks

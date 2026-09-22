@@ -261,10 +261,26 @@ _RE_CARI_WALLET = re.compile(
     r"\s+(?P<frag>.+?)(?:\s+(?:nya|saja|dong|ya))?\s*$", re.I)
 
 
+# "di LEVERA" mempersempit TEMPAT mencari, bukan polanya — satu-satunya jalan ketika yang
+# terlihat cuma beberapa karakter (perburuan nyata 22 Sep 2026).
+_RE_DI_TOKEN = re.compile(r"^(?P<frag>.+?)\s+(?:di|pada|dalam)\s+(?:token\s+)?(?P<token>.+)$")
+
+
+def konteks_wallet(text):
+    """(fragmen, token) dari perintah. token None kalau user tidak menyebut konteks."""
+    m = _RE_CARI_WALLET.match((text or "").strip().lower().lstrip("/"))
+    if not m:
+        return None, None
+    frag = " ".join(m.group("frag").split())
+    m2 = _RE_DI_TOKEN.match(frag)
+    if m2:
+        return m2.group("frag").strip(), m2.group("token").strip()
+    return frag, None
+
+
 def fragmen_wallet(text):
     """Potongan yang dicari user. None kalau pesannya bukan perintah ini."""
-    m = _RE_CARI_WALLET.match((text or "").strip().lower().lstrip("/"))
-    return " ".join(m.group("frag").split()) if m else None
+    return konteks_wallet(text)[0]
 
 
 def classify(text):
@@ -3895,9 +3911,15 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
         # TANPA MODEL. Mencari di daftar alamat adalah pekerjaan kode; model hanya
         # menambah biaya dan membuka pintu alamat KARANGAN — dan alamat karangan bisa
         # membuat user mengirim dana ke tempat yang salah.
-        frag = fragmen_wallet(text) or ""
-        keluaran, _ = _jalankan_terukur(
-            f"CARI WALLET (cariwallet.py)", ["cloud/cariwallet.py", frag, "--batas", "20"], 0)
+        frag, token_konteks = konteks_wallet(text)
+        frag = frag or ""
+        arg = ["cloud/cariwallet.py", frag, "--batas", "20"]
+        if token_konteks:
+            # Menyisir daftar trader per token: tiap kandidat satu permintaan berbobot 5,
+            # dan paket Free GMGN hanya 1/detik. Batasnya ditahan supaya balasan tetap
+            # datang dalam waktu wajar.
+            arg += ["--di", token_konteks, "--maks-token", "18"]
+        keluaran, _ = _jalankan_terukur("CARI WALLET (cariwallet.py)", arg, 0)
         isi = (keluaran or "").strip() or (
             "❌ Pencarian alamat gagal dijalankan. Coba lagi sebentar lagi.")
         if send_message(token, chat_id, isi):

@@ -210,3 +210,93 @@ def test_kartu_tidak_pernah_crash_untuk_jenis_tak_dikenal():
               "chain": "ethereum", "jenis": "alamat", "kecocokan": "jenis-baru"}]
     teks = cw.kartu("x", palsu, "catatan")
     assert "0x" + "a" * 40 in teks and "jenis-baru" in teks
+
+
+# ---- cari di dalam KUMPULAN token (22 Sep 2026) -------------------------------------------
+# Asalnya perburuan nyata: "0xda...09d9" dari kartu PNL GMGN. Pola sependek itu mengenai
+# ~1 dari 65 ribu alamat — tak berguna di seluruh blockchain, tapi di dalam daftar trader
+# satu token biasanya tinggal satu. Dompetnya ketemu di Levera Markets (Robinhood Chain)
+# dan cocok sampai sen terakhir: profit 354,67 / beli 165,65 / jual 536,48.
+
+def _trader(alamat, profit=354.67, beli=165.65, jual=536.48):
+    return {"address": alamat, "realized_profit": profit, "buy_volume_cur": beli,
+            "sell_volume_cur": jual, "balance": 0, "tags": ["gmgn"]}
+
+
+def _gmgn_tiruan(monkeypatch, kandidat, trader):
+    class Palsu:
+        CHAIN_CARI = ["robinhood", "bsc", "base", "solana"]
+        dipanggil = []
+
+        @staticmethod
+        def cari_token(q, chain):
+            return kandidat.get(chain, [])
+
+        @staticmethod
+        def trader_token(chain, alamat, limit=100):
+            Palsu.dipanggil.append((chain, alamat))
+            return trader.get(alamat, [])
+    monkeypatch.setattr(cw, "gmgn_cari", Palsu.cari_token)
+    monkeypatch.setattr(cw, "gmgn_trader", Palsu.trader_token)
+    monkeypatch.setattr(cw.time, "sleep", lambda *_: None)
+    return Palsu
+
+
+def test_menemukan_dompet_di_daftar_trader_token(monkeypatch):
+    target = "0xdaddc6d4839197e684874b08f6fccc4670b309d9"
+    palsu = _gmgn_tiruan(
+        monkeypatch,
+        {"robinhood": [("0x492f", "Levera Markets"), ("0x1198", "Levera.fun")]},
+        {"0x492f": [_trader("0xbeef" + "0" * 35), _trader(target)],
+         "0x1198": [_trader("0xcafe" + "0" * 35)]})
+    hasil, catatan = cw.cari_di_token("0xda...09d9", "LEVERA", maks_token=5)
+    assert [h["alamat"] for h in hasil] == [target]
+    h = hasil[0]
+    assert h["token"] == "Levera Markets" and h["chain"] == "robinhood"
+    assert h["profit_usd"] == 354.67 and h["beli_usd"] == 165.65 and h["jual_usd"] == 536.48
+    assert "2 token" in catatan and "LEVERA" in catatan
+    assert len(palsu.dipanggil) == 2
+
+
+def test_berhenti_di_batas_token_dan_menyebutkannya(monkeypatch):
+    banyak = [(f"0x{i:04x}", f"Levera {i}") for i in range(40)]
+    _gmgn_tiruan(monkeypatch, {"robinhood": banyak}, {})
+    hasil, catatan = cw.cari_di_token("0xda...09d9", "LEVERA", maks_token=6)
+    assert hasil == []
+    assert "6" in catatan and "40" in catatan, catatan
+
+
+def test_tidak_ketemu_di_token_dijelaskan(monkeypatch):
+    _gmgn_tiruan(monkeypatch, {"robinhood": [("0x492f", "Levera Markets")]},
+                 {"0x492f": [_trader("0xbeef" + "0" * 35)]})
+    hasil, catatan = cw.cari_di_token("0xda...09d9", "LEVERA", maks_token=5)
+    assert hasil == []
+    assert "belum tentu" in catatan.lower() or "bukan berarti" in catatan.lower()
+
+
+def test_token_tak_ditemukan_dikatakan_apa_adanya(monkeypatch):
+    _gmgn_tiruan(monkeypatch, {}, {})
+    hasil, catatan = cw.cari_di_token("0xda...09d9", "TOKENGAIB", maks_token=5)
+    assert hasil == [] and "tidak ada token" in catatan.lower()
+
+
+def test_kartu_konteks_menyebut_angka_pembanding(monkeypatch):
+    target = "0xdaddc6d4839197e684874b08f6fccc4670b309d9"
+    _gmgn_tiruan(monkeypatch, {"robinhood": [("0x492f", "Levera Markets")]},
+                 {"0x492f": [_trader(target)]})
+    hasil, catatan = cw.cari_di_token("0xda...09d9", "LEVERA", maks_token=5)
+    kartu = cw.kartu_token("0xda...09d9", "LEVERA", hasil, catatan)
+    assert target in kartu and "Levera Markets" in kartu and "robinhood" in kartu
+    # Angka harus ikut supaya user bisa MEMBANDINGKAN dengan yang ia lihat sendiri.
+    for angka in ("354", "165", "536"):
+        assert angka in kartu, angka
+
+
+@pytest.mark.parametrize("nilai,harap", [
+    (354.67, "$354,67"),
+    (1234.5, "$1.234,50"),
+    (1234567.89, "$1.234.567,89"),
+])
+def test_uang_bergaya_indonesia(nilai, harap):
+    """Format lama menghasilkan "$1.234.56" — dua titik, dan desimalnya tak terbaca."""
+    assert cw._uang(nilai) == harap
