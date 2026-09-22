@@ -58,7 +58,7 @@ BLOCKSCOUT = {
     "polygon": "polygon.blockscout.com",
 }
 ROUTESCAN_CHAIN = {"avalanche": 43114}
-GOPLUS_CHAIN = {"bsc": 56}
+GOPLUS_CHAIN = {"bsc": 56, "robinhood": 4663}
 SUMBER_CHAIN = {
     "ethereum": "Ethplorer (gratis) + label lokal etherscan-labels, cadangan Blockscout",
     "base": "Blockscout (gratis, tanpa key)",
@@ -68,6 +68,7 @@ SUMBER_CHAIN = {
     "avalanche": "Routescan (gratis, tanpa key)",
     "bsc": "GoPlus Security (gratis, tanpa key)",
     "solana": "GoPlus Security Solana (gratis, tanpa key)",
+    "robinhood": "GoPlus Security (gratis, tanpa key; cakupan chain ini tipis)",
 }
 # Registry chain: nama internal -> kunci platform CoinGecko, tipe.
 CHAINS = {
@@ -79,6 +80,7 @@ CHAINS = {
     "optimism":  {"cg": "optimistic-ethereum", "tipe": "evm"},
     "avalanche": {"cg": "avalanche",           "tipe": "evm"},
     "solana":    {"cg": "solana",              "tipe": "solana"},
+    "robinhood": {"cg": "robinhood",           "tipe": "evm"},
 }
 # Alias input supaya "eth", "bnb", "sol", dll tetap dikenali.
 ALIAS = {
@@ -315,6 +317,12 @@ def goplus_holders(address, chain_id, limit):
         return None, {}, f"GoPlus tidak punya data untuk {address[:12]} di chain {chain_id}."
     token = {"nama": r.get("token_name"), "symbol": r.get("token_symbol"),
              "jumlah_holder": _int(r.get("holder_count"))}
+    if not r.get("holders"):
+        # Di chain bercakupan tipis (mis. Robinhood, 22 Sep 2026) GoPlus menjawab TANPA
+        # field holders. Daftar kosong yang dikembalikan diam-diam akan terbaca sebagai
+        # "tidak ada yang memegang token ini" — padahal datanya yang tidak ada.
+        return None, token, ("GoPlus tidak punya daftar pemegang untuk chain ini — "
+                             "bukan berarti tokennya tanpa pemegang")
     daftar = []
     for h in (r.get("holders") or [])[:limit]:
         nm, kat = _label_goplus(h.get("address"), (h.get("tag") or "").strip(),

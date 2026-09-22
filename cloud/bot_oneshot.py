@@ -110,9 +110,11 @@ HELP_TEXT = (
     "     (ganti privacy dengan: AI, RWA, DePIN, gaming, meme, DeFi, L2, storage, dll)\n"
     "   • carikan koin narasi yang menarik   -> aku cari sendiri narasi yang lagi jalan\n"
     "   • narasi apa yang lagi jalan?\n\n"
-    "4) TOKEN YANG BARU DILUNCURKAN (BSC / Base / Solana):\n"
+    "4) TOKEN YANG BARU DILUNCURKAN (BSC / Base / Solana / Robinhood):\n"
     "   • ketik: token baru   (default BSC)\n"
     "   • atau sebut chain-nya: token baru base · token baru solana\n"
+    "     · token baru robinhood  (datanya paling tipis di sini — kartunya\n"
+    "       menyebutkan sendiri apa yang TIDAK bisa diperiksa)\n"
     "   • aku ambil pool yang baru dibuat, lalu periksa kontraknya satu per satu:\n"
     "     EVM: honeypot, pajak beli/jual, kepemilikan, mintable, likuiditas\n"
     "     terkunci atau tidak, konsentrasi pemegang\n"
@@ -203,7 +205,8 @@ def send_message(token, chat_id, text):
 # token yang baru muncul, bukan pendapat. "analisa token baru apa yang bagus menurutmu"
 # tetap masuk jalur chat.
 _CHAIN_TOKEN_BARU = {"bsc": "bsc", "bnb": "bsc", "binance": "bsc", "bep20": "bsc",
-                     "base": "base", "solana": "solana", "sol": "solana", "spl": "solana"}
+                     "base": "base", "solana": "solana", "sol": "solana", "spl": "solana",
+                     "robinhood": "robinhood", "rhc": "robinhood"}
 _RE_TOKEN_BARU = re.compile(
     r"^(?:/?tokenbaru"
     r"|(?:scan|cek|lihat|pindai|cari)?\s*(?:token|pool|koin|coin)\s+(?:yang\s+)?baru"

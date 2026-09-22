@@ -54,6 +54,10 @@ CHAIN = {
     "bsc": {"gecko": "bsc", "goplus": 56, "tipe": "evm", "alias": ("bnb", "binance")},
     "base": {"gecko": "base", "goplus": 8453, "tipe": "evm", "alias": ()},
     "solana": {"gecko": "solana", "goplus": None, "tipe": "solana", "alias": ("sol", "sol.")},
+    # Robinhood Chain: GeckoTerminal & GoPlus mendukungnya, TAPI cakupan GoPlus di sana
+    # tipis — 8 kolom, bukan ~30 seperti BSC. Lihat catatan_chain().
+    "robinhood": {"gecko": "robinhood", "goplus": 4663, "tipe": "evm",
+                  "alias": ("rhc", "robin", "robinhood chain")},
 }
 
 
@@ -200,6 +204,8 @@ def temuan(r, pool):
     if _ya(r, "is_honeypot"):
         catat("HONEYPOT: simulasi penjualan gagal — token bisa dibeli tapi tidak bisa dijual",
               True)
+    if _ya(r, "cannot_buy"):
+        catat("Token ini TIDAK BISA DIBELI menurut simulasi (cannot_buy)", True)
     if _ya(r, "cannot_sell_all"):
         catat("Tidak bisa menjual SELURUH saldo (cannot_sell_all)", True)
     if _ya(r, "transfer_pausable"):
@@ -215,7 +221,10 @@ def temuan(r, pool):
         catat("Ada pemilik TERSEMBUNYI (hidden_owner) — pelepasan kepemilikan jadi semu", True)
     if _ya(r, "slippage_modifiable"):
         catat("Pajak/slippage bisa diubah sewaktu-waktu oleh pemilik", True)
-    if not _ya(r, "is_open_source"):
+    # `is_open_source` yang HILANG bukan berarti tertutup — di chain bercakupan tipis
+    # (Robinhood) kolomnya memang bisa tidak ada sama sekali. Menandainya sebagai temuan
+    # adalah tuduhan tanpa dasar; ketiadaan datanya sudah disebut di catatan chain.
+    if "is_open_source" in r and not _ya(r, "is_open_source"):
         catat("Kode kontrak tidak open source — perilakunya tidak bisa diperiksa siapa pun",
               True)
 
@@ -345,6 +354,14 @@ def catatan_chain(chain):
     if CHAIN.get(chain, {}).get("tipe") == "solana":
         return ("Simulasi jual-beli (honeypot) tidak tersedia untuk Solana — bagian itu "
                 "TIDAK diperiksa di semua token di atas, bukan lolos.")
+    if chain == "robinhood":
+        # Diukur 22 Sep 2026: GoPlus menjawab 8 kolom di chain ini (vs ~30 di BSC), dan
+        # sebagian token tidak dijawab sama sekali. Tanpa catatan ini kartunya SUNYI, dan
+        # sunyi terbaca sebagai "sudah dicek dan aman".
+        return ("Di Robinhood Chain, data keamanan yang tersedia jauh lebih sedikit: "
+                "honeypot, pajak beli/jual, kepemilikan kontrak, kunci likuiditas, dan "
+                "sebaran pemegang TIDAK diperiksa — bukan lolos, memang tidak ada datanya. "
+                "Yang terperiksa hanya open source, status bisa-dibeli, likuiditas, dan umur.")
     return None
 
 

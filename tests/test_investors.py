@@ -210,3 +210,18 @@ def test_moralis_tidak_lagi_dipakai_untuk_holder():
     pindah ke wallet.py, satu-satunya pemakai Moralis yang tersisa (isi dompet BSC)."""
     isi = open(os.path.join(AKAR, "cloud", "investors.py"), encoding="utf-8").read()
     assert "moralis" not in isi.lower(), "sisa jalur Moralis di investors.py"
+
+
+def test_robinhood_lewat_goplus():
+    assert investors.GOPLUS_CHAIN["robinhood"] == 4663
+    assert investors.CHAINS["robinhood"]["cg"] == "robinhood"
+    assert "GoPlus" in investors.SUMBER_CHAIN["robinhood"]
+
+
+def test_goplus_tanpa_daftar_pemegang_dilaporkan(monkeypatch):
+    """Di Robinhood, GoPlus menjawab tanpa field holders sama sekali. Daftar kosong yang
+    dikembalikan diam-diam akan terbaca sebagai "tidak ada yang memegang token ini"."""
+    monkeypatch.setattr(investors, "try_json", lambda url, headers=None: {
+        "result": {CAKE: {"token_name": "PairPad", "token_symbol": "PAIR"}}})
+    daftar, token, err = investors.goplus_holders(CAKE, 4663, 10)
+    assert daftar is None and err and "pemegang" in err.lower()

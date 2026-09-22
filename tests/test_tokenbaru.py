@@ -509,3 +509,48 @@ def test_token_yang_sama_tidak_dipindai_dua_kali(monkeypatch):
     assert len(dilihat) == 1, "pemeriksaan keamanan tidak boleh diulang untuk alamat sama"
     # Yang dipakai pool PERTAMA (paling baru di daftar GeckoTerminal).
     assert hasil[0]["pool"]["likuiditas_usd"] == 50000.0
+
+
+# ---- Robinhood Chain (22 Sep 2026) --------------------------------------------------------
+# Didukung GeckoTerminal ("robinhood") dan GoPlus (chain 4663), TAPI cakupan GoPlus di sana
+# sangat tipis: 8 kolom, bukan ~30 seperti BSC. Tidak ada honeypot, pajak, owner, kunci LP,
+# maupun daftar pemegang — dan sebagian token tidak dijawab sama sekali. Dipasang tanpa
+# catatan, kartunya jadi SUNYI, dan sunyi terbaca sebagai "aman".
+
+def test_registry_robinhood():
+    assert tb.CHAIN["robinhood"]["gecko"] == "robinhood"
+    assert tb.CHAIN["robinhood"]["goplus"] == 4663
+    assert tb.chain_dari("rhc") == "robinhood" and tb.chain_dari("robinhood") == "robinhood"
+
+
+def test_catatan_robinhood_menyebut_yang_tidak_diperiksa():
+    catat = tb.catatan_chain("robinhood")
+    assert catat and "honeypot" in catat.lower()
+    for kata in ("pajak", "likuiditas", "pemegang"):
+        assert kata in catat.lower(), kata
+    assert "tidak diperiksa" in catat.lower() or "tidak tersedia" in catat.lower()
+
+
+def test_robinhood_tetap_memeriksa_yang_memang_ada(monkeypatch):
+    """Yang TERSEDIA di sana tetap dipakai: open source, cannot_buy, plus likuiditas/umur."""
+    r = {"token_name": "PairPad", "token_symbol": "PAIR", "is_open_source": "0",
+         "cannot_buy": "1", "is_in_dex": "0"}
+    t = tb.temuan(r, {"likuiditas_usd": 4748.0, "umur_jam": 1.0})
+    pesan = " ".join(x["pesan"].lower() for x in t)
+    assert "open source" in pesan and "likuiditas cuma" in pesan
+
+
+def test_tidak_bisa_dibeli_jadi_temuan_berat():
+    t = tb.temuan({"cannot_buy": "1"}, {"likuiditas_usd": 50000.0, "umur_jam": 5.0})
+    assert any("dibeli" in x["pesan"].lower() and x["berat"] for x in t), [x["pesan"] for x in t]
+
+
+def test_open_source_hanya_ditandai_kalau_DINYATAKAN():
+    """Di chain bercakupan tipis, kolomnya bisa HILANG sama sekali. Ketiadaan data bukan
+    temuan — menandainya "tidak open source" adalah tuduhan yang tidak berdasar."""
+    ada = tb.temuan({"is_open_source": "0"}, {"likuiditas_usd": 50000.0, "umur_jam": 5.0})
+    assert any("open source" in x["pesan"].lower() for x in ada)
+    hilang = tb.temuan({"token_symbol": "X"}, {"likuiditas_usd": 50000.0, "umur_jam": 5.0})
+    assert not any("open source" in x["pesan"].lower() for x in hilang), [x["pesan"] for x in hilang]
+    terbuka = tb.temuan({"is_open_source": "1"}, {"likuiditas_usd": 50000.0, "umur_jam": 5.0})
+    assert not any("open source" in x["pesan"].lower() for x in terbuka)
