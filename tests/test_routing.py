@@ -8253,3 +8253,39 @@ def test_kategori_tak_dikenal_dijelaskan_bukan_didiamkan(monkeypatch, capsys):
     pesan = _tg.pesan_kategori_kosong(["kerja"])
     assert "kerja" in pesan and "crypto" in pesan and "forex" in pesan
     assert _tg.pesan_kategori_kosong(["crypto"]) is None
+
+
+# ---- perintah cari alamat dompet (22 Sep 2026) --------------------------------------------
+
+@pytest.mark.parametrize("teks,fragmen", [
+    ("cari wallet f977", "f977"),
+    ("cari alamat 0xf977", "0xf977"),
+    ("cari wallet address binance 8", "binance 8"),
+    ("cari dompet bitfinex", "bitfinex"),
+    ("/cariwallet f977814", "f977814"),
+    ("cari wallet yang ada f977 nya", "f977"),
+])
+def test_perintah_cari_wallet_dikenali(teks, fragmen):
+    assert bot.classify(teks) == "cariwallet", teks
+    assert bot.fragmen_wallet(teks) == fragmen, teks
+
+
+@pytest.mark.parametrize("teks", [
+    "analisa wallet 0xf977814e90da44bfa03b6295a0616a897441acec",  # minta ANALISA isi dompet
+    "cek dompet 0xf977814e90da44bfa03b6295a0616a897441acec",
+    "menurutmu wallet itu punya siapa",
+    "analisa aero",
+])
+def test_bukan_perintah_cari_wallet(teks):
+    assert bot.classify(teks) != "cariwallet", teks
+
+
+def test_jalur_cari_wallet_tanpa_model():
+    """Pencarian di daftar alamat itu pekerjaan kode. Model hanya menambah biaya dan
+    membuka pintu alamat karangan — dan alamat karangan bisa membuat user mengirim dana
+    ke tempat yang salah."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    i = src.index('if kind == "cariwallet":')
+    blok = src[i:src.index("timeout = int(os.environ", i)]
+    assert "run_claude" not in blok
+    assert "cariwallet.py" in blok and "send_message" in blok

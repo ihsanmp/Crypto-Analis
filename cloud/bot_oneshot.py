@@ -126,10 +126,16 @@ HELP_TEXT = (
     "   • kirim gambar (chart, data, pengumuman) + caption pertanyaanmu\n"
     "   • aku baca isinya, cari kaitannya dengan koin/project, dan kasih rekomendasi\n"
     "   • caption boleh pendek atau kosong — aku tetap coba pahami\n\n"
-    "7) CEK DOMPET / HOLDER (multi-chain: ETH, BSC, Base, Arbitrum, Solana, dll):\n"
+    "7) CARI ALAMAT DOMPET (dari potongan yang kamu ingat):\n"
+    "   • ketik: cari wallet f977   (potongan hex, di mana pun letaknya)\n"
+    "   • atau lewat nama: cari alamat binance\n"
+    "   • semua yang mirip kutampilkan, biar kamu yang pilih\n"
+    "   • yang kucari cuma alamat yang SUDAH DIKENAL (29 rb label + indeks\n"
+    "     explorer). Dompet pribadi tanpa label tidak akan muncul — itu normal\n\n"
+    "8) CEK DOMPET / HOLDER (multi-chain: ETH, BSC, Base, Arbitrum, Solana, dll):\n"
     "   • tempel alamat dompet + tanya, misal: dompet ini isinya apa 0x...\n"
     "   • atau: siapa holder terbesar sol / konsentrasi holder cake di bsc\n\n"
-    "8) PERKEMBANGAN AI:\n"
+    "9) PERKEMBANGAN AI:\n"
     "   • tanya: perkembangan ai terbaru apa? / rilis model ai terbaru\n"
     "   • aku tarik dari RSS resmi OpenAI, DeepMind, Hugging Face, TechCrunch, dll\n\n"
     "Analisa & screening narasi makan waktu beberapa menit. Ngobrol biasanya lebih cepat.\n"
@@ -243,13 +249,33 @@ def chain_token_baru(text):
     return _CHAIN_TOKEN_BARU.get(m.group("chain") or "bsc", "bsc")
 
 
+# Perintah CARI alamat dompet dari potongan huruf/angka. Dibedakan tegas dari "cek
+# dompet <alamat>" yang membaca ISI dompet: yang ini mencari alamatnya dulu.
+_RE_CARI_WALLET = re.compile(
+    r"^(?:/?cariwallet|(?:cari|carikan|temukan|search)\s+"
+    r"(?:wallet|dompet|alamat|address)(?:\s+(?:wallet|address))?)"
+    r"(?:\s+(?:yang\s+)?(?:ada|mengandung|mirip|dengan|berisi))?"
+    r"\s+(?P<frag>.+?)(?:\s+(?:nya|saja|dong|ya))?\s*$", re.I)
+
+
+def fragmen_wallet(text):
+    """Potongan yang dicari user. None kalau pesannya bukan perintah ini."""
+    m = _RE_CARI_WALLET.match((text or "").strip().lower().lstrip("/"))
+    return " ".join(m.group("frag").split()) if m else None
+
+
 def classify(text):
-    """Tentukan jenis: 'help' | 'tokenbaru' | 'analisa' | 'narasi' | 'chat'."""
+    """Tentukan jenis: 'help' | 'tokenbaru' | 'cariwallet' | 'analisa' | 'narasi' | 'chat'."""
     low = (text or "").strip().lower().lstrip("/")
     if low in ("start", "help", "mulai", "bantuan"):
         return "help"
     if _RE_TOKEN_BARU.match(low):
         return "tokenbaru"
+    # Alamat LENGKAP yang ditempel bukan pencarian — itu permintaan membaca isi dompetnya,
+    # dan jalur chat sudah menanganinya lewat wallet.py.
+    frag = fragmen_wallet(low)
+    if frag and not re.fullmatch(r"0x[0-9a-f]{40}", frag.replace(" ", "")):
+        return "cariwallet"
     # AI sebagai BIDANG didahulukan. Tanpa ini "analisa sektor ai" masuk jalur aset dan
     # dibaca sebagai koin bernama "SEKTOR", sedangkan "analisis sektor ai" tersedot ke
     # screening narasi lalu dijawab dengan daftar koin AI — keduanya bukan yang diminta.
@@ -3860,6 +3886,25 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
         else:
             print("[proses] GAGAL KIRIM teks bantuan — cek TELEGRAM_BOT_TOKEN",
                   file=sys.stderr)
+        return
+
+    if kind == "cariwallet":
+        # TANPA MODEL. Mencari di daftar alamat adalah pekerjaan kode; model hanya
+        # menambah biaya dan membuka pintu alamat KARANGAN — dan alamat karangan bisa
+        # membuat user mengirim dana ke tempat yang salah.
+        frag = fragmen_wallet(text) or ""
+        keluaran, _ = _jalankan_terukur(
+            f"CARI WALLET (cariwallet.py)", ["cloud/cariwallet.py", frag, "--batas", "20"], 0)
+        isi = (keluaran or "").strip() or (
+            "❌ Pencarian alamat gagal dijalankan. Coba lagi sebentar lagi.")
+        if send_message(token, chat_id, isi):
+            print(f"[proses] hasil cari wallet {len(isi)} karakter TERKIRIM", file=sys.stderr)
+            # Alamat tidak boleh masuk riwayat (repo publik) — yang disimpan ringkasannya.
+            simpan_riwayat(chat_id, text,
+                           f"(ringkasan; alamat tidak disimpan) Pencarian alamat "
+                           f"\"{frag}\": {isi.count('`') // 2} hasil.")
+        else:
+            print("[proses] GAGAL KIRIM hasil cari wallet", file=sys.stderr)
         return
 
     if kind == "tokenbaru":
