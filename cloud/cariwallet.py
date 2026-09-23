@@ -254,6 +254,39 @@ def gmgn_trader(chain, alamat, limit=100):
     return [b for b in baris if isinstance(b, dict)]
 
 
+def _kumpul(f, alamat, chain, kontrak, nama, sumber, terlihat):
+    """Cocokkan sekumpulan alamat mentah jadi baris hasil. Dipakai explorer EVM maupun
+    Solscan — kalau dua sumber punya penyaring sendiri-sendiri, keduanya akan berbeda
+    diam-diam begitu salah satu diperbaiki."""
+    keluar = []
+    for a in sorted(alamat):
+        kec = _kecocokan(f, a, None)
+        if not kec or (a.lower(), kontrak.lower()) in terlihat:
+            continue
+        terlihat.add((a.lower(), kontrak.lower()))
+        keluar.append({"alamat": _rapi_alamat(a), "token": nama, "kontrak": kontrak,
+                       "chain": chain,
+                       "profit_usd": None, "beli_usd": None, "jual_usd": None,
+                       "saldo": None, "sumber": f"{sumber} ({chain})", "kecocokan": kec})
+    return keluar
+
+
+def _dari_solscan(f, chain, kontrak, nama, terlihat):
+    """Solana: daftar trader GMGN mentok di 100 teratas, Solscan memberi setiap alamat
+    yang pernah menyentuh tokennya."""
+    try:
+        import solscan
+    except Exception:
+        return [], None, None
+    if not solscan.kunci():
+        return [], solscan.catatan_kunci(), None
+    alamat, catatan = solscan.alamat_token(kontrak, HALAMAN_EXPLORER)
+    if not alamat and catatan and "menolak" in catatan:
+        return [], catatan, None
+    return (_kumpul(f, alamat, chain, kontrak, nama, "solscan", terlihat), None,
+            (len(alamat), solscan.TANDA_POTONG in (catatan or "")))
+
+
 def _dari_explorer(f, chain, kontrak, nama, terlihat):
     """(hasil, catatan, statistik) dari explorer.
 
@@ -262,6 +295,8 @@ def _dari_explorer(f, chain, kontrak, nama, terlihat):
     explorer beruntun yang isinya sama — peringatan yang berulang-ulang justru dilewati
     mata, padahal yang diperingatkan (daftar terpotong) itu penting.
     """
+    if (chain or "").lower() == "solana":
+        return _dari_solscan(f, chain, kontrak, nama, terlihat)
     try:
         import etherscan
     except Exception:
@@ -271,16 +306,15 @@ def _dari_explorer(f, chain, kontrak, nama, terlihat):
     if not etherscan.kunci():
         return [], etherscan.catatan_kunci(), None
     alamat, catatan = etherscan.alamat_token(chain, kontrak, HALAMAN_EXPLORER)
-    keluar = []
-    for a in sorted(alamat):
-        kec = _kecocokan(f, a, None)
-        if not kec or (a, kontrak.lower()) in terlihat:
-            continue
-        terlihat.add((a, kontrak.lower()))
-        keluar.append({"alamat": a, "token": nama, "kontrak": kontrak, "chain": chain,
-                       "profit_usd": None, "beli_usd": None, "jual_usd": None,
-                       "saldo": None, "sumber": f"explorer ({chain})", "kecocokan": kec})
-    return keluar, None, (len(alamat), etherscan.TANDA_POTONG in (catatan or ""))
+    return (_kumpul(f, alamat, chain, kontrak, nama, "explorer", terlihat), None,
+            (len(alamat), etherscan.TANDA_POTONG in (catatan or "")))
+
+
+def _rapi_alamat(a):
+    """Alamat EVM boleh dikecilkan (0x… tidak peka huruf), alamat Solana TIDAK: base58 itu
+    peka besar-kecil, dan alamat yang dikecilkan bukan alamat yang sah — user tidak bisa
+    menempelkannya ke explorer mana pun."""
+    return a.lower() if a.lower().startswith("0x") else a
 
 
 def _angka(x):
@@ -379,7 +413,7 @@ def cari_di_token(fragmen, token_q, chain=None, maks_token=MAKS_TOKEN):
                 continue
             terlihat.add((a.lower(), alamat.lower()))
             hasil.append({
-                "alamat": a.lower(), "token": nama, "kontrak": alamat, "chain": c,
+                "alamat": _rapi_alamat(a), "token": nama, "kontrak": alamat, "chain": c,
                 "profit_usd": _angka(b.get("realized_profit") or b.get("profit")),
                 "beli_usd": _angka(b.get("buy_volume_cur")),
                 "jual_usd": _angka(b.get("sell_volume_cur")),

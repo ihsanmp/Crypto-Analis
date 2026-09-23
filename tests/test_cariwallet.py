@@ -612,3 +612,84 @@ def test_catatan_explorer_diringkas_bukan_diulang_tiap_token(monkeypatch, explor
     assert catatan.count("Explorer robinhood") == 1, catatan
     assert f"{cw.MAKS_TOKEN_EXPLORER} token" in catatan
     assert "terpotong di batas" in catatan
+
+
+# ---- Solana lewat Solscan (23 Sep 2026) ---------------------------------------------------
+# Solana punya dua batas sekaligus: daftar trader GMGN cuma 100 teratas, dan alamatnya
+# base58 sehingga pola hex tidak pernah bisa mencocokkannya. Keduanya harus tertutup
+# bersamaan, kalau tidak hasilnya tetap nihil dengan sebab yang berbeda.
+
+class _SolscanPalsu:
+    TANDA_POTONG = "dipotong di batas"
+    dipakai = []
+    punya_kunci = True
+    isi = set()
+
+    @staticmethod
+    def kunci():
+        return "kunci-uji" if _SolscanPalsu.punya_kunci else ""
+
+    @staticmethod
+    def catatan_kunci():
+        return "SOLSCAN_API_KEY belum dipasang, jadi bagian itu belum diperiksa."
+
+    @staticmethod
+    def alamat_token(mint, halaman=3):
+        _SolscanPalsu.dipakai.append(mint)
+        return set(_SolscanPalsu.isi), f"Solscan solana: {len(_SolscanPalsu.isi)} alamat."
+
+
+@pytest.fixture
+def solscan(monkeypatch):
+    _SolscanPalsu.dipakai = []
+    _SolscanPalsu.punya_kunci = True
+    _SolscanPalsu.isi = set()
+    monkeypatch.setitem(sys.modules, "solscan", _SolscanPalsu)
+    return _SolscanPalsu
+
+
+def test_dompet_solana_ketemu_lewat_solscan(monkeypatch, solscan):
+    target = "Hn7xK9PqR2sTuVwXyZaBcDeFgHjKmNpQrStUvWxYz12"
+    solscan.isi = {target, "So11111111111111111111111111111111111111112"}
+    _gmgn_tiruan(monkeypatch, {"solana": [("MintAaa111", "Levera Sol")]}, {})
+    hasil, catatan = cw.cari_di_token("Hn7x...Yz12", "LEVERA solana")
+    # Huruf besar-kecilnya DIPERTAHANKAN: alamat base58 yang dikecilkan bukan alamat
+    # yang sah, dan tidak bisa ditempelkan ke explorer mana pun.
+    assert [h["alamat"] for h in hasil] == [target]
+    assert hasil[0]["sumber"] == "solscan (solana)"
+    assert solscan.dipakai == ["MintAaa111"]
+    assert "Explorer solana" in catatan
+
+
+def test_kunci_solscan_hilang_dikatakan(monkeypatch, solscan):
+    solscan.punya_kunci = False
+    _gmgn_tiruan(monkeypatch, {"solana": [("MintAaa111", "Levera Sol")]}, {})
+    _hasil, catatan = cw.cari_di_token("Hn7x...Yz12", "LEVERA solana")
+    assert "SOLSCAN_API_KEY" in catatan and "belum diperiksa" in catatan
+
+
+def test_penolakan_solscan_bukan_hasil_kosong(monkeypatch, solscan):
+    monkeypatch.setattr(_SolscanPalsu, "alamat_token", staticmethod(
+        lambda mint, halaman=3: (set(), "Solscan menolak permintaan transfer: HTTP 401")))
+    _gmgn_tiruan(monkeypatch, {"solana": [("MintAaa111", "Levera Sol")]}, {})
+    _hasil, catatan = cw.cari_di_token("Hn7x...Yz12", "LEVERA solana")
+    assert "menolak" in catatan and "401" in catatan
+
+
+def test_tiruan_solscan_sepadan_dengan_modul_aslinya():
+    import solscan as asli
+    for atribut in ("TANDA_POTONG", "kunci", "catatan_kunci", "alamat_token"):
+        assert hasattr(asli, atribut), atribut
+        assert hasattr(_SolscanPalsu, atribut), atribut
+
+
+def test_alamat_solana_dari_gmgn_tidak_dikecilkan(monkeypatch):
+    """Jalur GMGN mengecilkan setiap alamat. Untuk EVM itu tidak apa-apa, untuk Solana itu
+    merusak: base58 peka besar-kecil, jadi yang tercetak bukan alamat yang sah."""
+    target = "Hn7xK9PqR2sTuVwXyZaBcDeFgHjKmNpQrStUvWxYz12"
+    _gmgn_tiruan(monkeypatch, {"solana": [("MintAaa111", "Levera Sol")]},
+                 {"MintAaa111": [_trader(target)]})
+    hasil, _catatan = cw.cari_di_token("Hn7x...Yz12", "LEVERA solana")
+    assert [h["alamat"] for h in hasil] == [target]
+    # EVM tetap dikecilkan supaya satu dompet tidak terhitung dua.
+    assert cw._rapi_alamat("0xDAdd") == "0xdadd"

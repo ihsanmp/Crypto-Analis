@@ -29,7 +29,12 @@ jobs:
       - name: Uji akses Etherscan V2
         env:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+          SOLSCAN_API_KEY: ${{ secrets.SOLSCAN_API_KEY }}
         run: |
           python cloud/etherscan.py --periksa
           echo "---- alamat nyata dari satu token Robinhood Chain ----"
           python cloud/etherscan.py robinhood 0x492f71fb6cb10f923b0740436f5cd39c7c9a177a
+          echo "---- Solscan: kunci bawaan cukup atau tidak? ----"
+          python cloud/solscan.py --periksa
+          echo "---- alamat nyata dari satu token Solana ----"
+          python cloud/solscan.py DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263 --halaman 2
