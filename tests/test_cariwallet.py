@@ -227,9 +227,11 @@ def _gmgn_tiruan(monkeypatch, kandidat, trader):
     class Palsu:
         CHAIN_CARI = ["robinhood", "bsc", "base", "solana"]
         dipanggil = []
+        dicari = []
 
         @staticmethod
         def cari_token(q, chain):
+            Palsu.dicari.append((q, chain))
             return kandidat.get(chain, [])
 
         @staticmethod
@@ -300,3 +302,134 @@ def test_kartu_konteks_menyebut_angka_pembanding(monkeypatch):
 def test_uang_bergaya_indonesia(nilai, harap):
     """Format lama menghasilkan "$1.234.56" — dua titik, dan desimalnya tak terbaca."""
     assert cw._uang(nilai) == harap
+
+
+# ---- bug yang ketemu saat pemeriksaan 23 Sep 2026 -----------------------------------------
+
+@pytest.mark.parametrize("ditulis,nama,chain", [
+    ("LEVERA robinhood", "LEVERA", "robinhood"),
+    ("levera markets bsc", "levera markets", "bsc"),
+    ("levera bnb chain", "levera", "bsc"),
+    ("levera sol", "levera", "solana"),
+    ("levera", "levera", None),
+    ("ethereum", "", "ethereum"),
+])
+def test_kata_chain_dipisahkan_dari_nama_token(ditulis, nama, chain):
+    """"di LEVERA robinhood" dulu dikirim UTUH sebagai nama token ke GMGN, jadi kata yang
+    dimaksudkan mempersempit justru membuat hasilnya nihil — padahal catatannya sendiri
+    menyuruh "sebutkan chain-nya untuk mempersempit"."""
+    assert cw.pisah_chain(ditulis) == (nama, chain)
+
+
+def test_chain_dari_perintah_membatasi_sapuan(monkeypatch):
+    palsu = _gmgn_tiruan(monkeypatch, {"robinhood": [("0x492f", "Levera Markets")]},
+                         {"0x492f": [_trader("0xdaddc6d4839197e684874b08f6fccc4670b309d9")]})
+    hasil, catatan = cw.cari_di_token("0xda...09d9", "LEVERA robinhood")
+    assert [h["alamat"] for h in hasil] == ["0xdaddc6d4839197e684874b08f6fccc4670b309d9"]
+    # Hanya SATU chain yang disisir, dan nama tokennya tidak lagi memuat kata chain-nya.
+    assert palsu.dicari == [("LEVERA", "robinhood")]
+    assert "robinhood" in catatan and "LEVERA robinhood" not in catatan
+
+
+def test_yang_disebut_cuma_nama_chain_dijelaskan(monkeypatch):
+    _gmgn_tiruan(monkeypatch, {}, {})
+    hasil, catatan = cw.cari_di_token("f977", "ethereum")
+    assert hasil == [] and "nama chain" in catatan
+
+
+@pytest.mark.parametrize("fragmen", ["a", "ab", "0x1"])
+def test_fragmen_terlalu_pendek_ditolak_juga_di_jalur_token(monkeypatch, fragmen):
+    """Jalur biasa menolak potongan < 3 karakter, jalur token dulu tidak: "a" cocok dengan
+    sekitar sepertiga isi daftar trader dan dilaporkan sebagai "hasil pencarian"."""
+    banyak = [_trader("0x%040x" % i) for i in range(200)]
+    _gmgn_tiruan(monkeypatch, {"robinhood": [("0x492f", "Levera")]}, {"0x492f": banyak})
+    hasil, catatan = cw.cari_di_token(fragmen, "LEVERA robinhood")
+    assert hasil == [] and "terlalu pendek" in catatan
+
+
+def test_token_yang_sama_tidak_disisir_dua_kali(monkeypatch):
+    palsu = _gmgn_tiruan(
+        monkeypatch,
+        {"robinhood": [("0x492F", "Levera Markets"), ("0x492f", "Levera Markets")]},
+        {"0x492F": [_trader("0xdaddc6d4839197e684874b08f6fccc4670b309d9")]})
+    hasil, _ = cw.cari_di_token("0xda...09d9", "LEVERA robinhood")
+    assert len(palsu.dipanggil) == 1
+    assert len(hasil) == 1
+
+
+def test_hasil_diurutkan_dari_yang_paling_dekat(monkeypatch):
+    """"mengandung" sempat tercetak di atas "awalan" hanya karena tokennya lebih dulu
+    disisir — yang dibaca user pertama justru calon yang paling lemah."""
+    lemah = "0xfffdad111111111111111111111111111111dead"
+    kuat = "0xdad" + "1" * 33 + "dead"
+    _gmgn_tiruan(monkeypatch, {"robinhood": [("0x492f", "Levera")]},
+                 {"0x492f": [_trader(lemah), _trader(kuat)]})
+    hasil, catatan = cw.cari_di_token("dad", "LEVERA robinhood")
+    assert [h["alamat"] for h in hasil] == [kuat, lemah]
+    # Jenis kecocokannya ikut ditulis, seperti di kartu pencarian biasa.
+    kartu = cw.kartu_token("dad", "LEVERA robinhood", hasil, catatan)
+    assert "awalannya cocok" in kartu and "mengandung" in kartu
+
+
+def test_rugi_ditulis_minus_di_depan_dolar():
+    """Di daftar trader angka minus itu biasa; "$-354,67" terbaca seperti salah cetak."""
+    assert cw._uang(-354.67) == "-$354,67"
+    assert cw._uang(-1234.5) == "-$1.234,50"
+
+
+SOLANA = "Hn7xK9PqR2sTuVwXyZaBcDeFgHjKmNpQrStUvWxYz12"
+
+
+@pytest.mark.parametrize("fragmen,kelas", [
+    ("Hn7x...Yz12", "awalan+akhiran"),
+    ("hn7x", "awalan"),
+    ("k9pqr2", "mengandung"),
+    ("Zz9x...Yz12", None),
+])
+def test_potongan_alamat_solana_bisa_dicocokkan(fragmen, kelas):
+    """Alamat Solana base58, bukan hex. Semua pola dulu hex-saja, jadi fragmen Solana tak
+    pernah bisa cocok — dan user tetap dijawab "tidak ada di daftar trader", seolah sudah
+    diperiksa."""
+    assert cw._kecocokan(cw._bersih(fragmen), SOLANA, None) == kelas
+
+
+def test_kode_chain_gmgn_bukan_nama_chain_kita(monkeypatch):
+    """GMGN memakai "sol", bukan "solana": daftar CHAIN_CARI dulu dikirim apa adanya,
+    jadi sapuan Solana selalu ditolak diam-diam."""
+    dicatat = []
+
+    class GmgnPalsu:
+        BASIS = "https://openapi.gmgn.ai/v1"
+
+        @staticmethod
+        def _url(jalur, param):
+            dicatat.append(param.get("chain"))
+            return jalur
+
+        @staticmethod
+        def try_json(url):
+            return {"data": {"coins": []}}
+
+    monkeypatch.setitem(sys.modules, "gmgn", GmgnPalsu)
+    cw.gmgn_cari("levera", "solana")
+    cw.gmgn_cari("levera", "ethereum")
+    cw.gmgn_trader("solana", "0x1")
+    assert dicatat == ["sol", "eth", "sol"]
+
+
+def test_chain_tanpa_indeks_alamat_dikatakan(monkeypatch):
+    """"--chain bsc" dulu diterima diam-diam lalu tidak menyisir apa pun — hasil kosongnya
+    terbaca seolah BSC sudah diperiksa."""
+    _hasil, catatan = cw.cari_dengan_catatan("f9778", "bsc")
+    assert "bsc" in catatan and "tidak punya indeks" in catatan
+    assert "tidak punya indeks" not in cw.cari_dengan_catatan("f9778", "ethereum")[1]
+
+
+def test_di_yang_ternyata_nama_chain_jatuh_ke_pencarian_biasa(monkeypatch, capsys):
+    """"cari wallet f977 di ethereum" menyebut CHAIN, bukan token."""
+    monkeypatch.setattr(sys, "argv", ["cariwallet.py", "f9778", "--di", "ethereum", "--json"])
+    monkeypatch.setattr(cw, "cari_di_token",
+                        lambda *a, **k: pytest.fail("tidak boleh dicari sebagai token"))
+    cw.main()
+    keluar = json.loads(capsys.readouterr().out)
+    assert keluar["hasil"] and "token" not in keluar

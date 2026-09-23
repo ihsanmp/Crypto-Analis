@@ -51,6 +51,13 @@ _RE_ALAMAT_PENUH = re.compile(r"^0x[0-9a-f]{40}$")
 _RE_SINGKAT = re.compile(r"^(?:0x)?([0-9a-f]+)\s*(?:\.{2,}|\u2026)\s*([0-9a-f]+)$")
 # Urutan penting: yang paling dekat dengan yang diingat user muncul dulu. Cocok di DUA
 # ujung sekaligus jauh lebih menentukan daripada cocok di satu sisi.
+# Alamat Solana bukan hex melainkan base58, jadi potongannya bisa memuat huruf g-z.
+# Sampai 23 Sep 2026 semua pola di sini hex-saja: fragmen Solana TIDAK PERNAH bisa cocok,
+# dan user dijawab "tidak ada di daftar trader" — seolah sudah dicari, padahal tak pernah
+# bisa dicari sama sekali.
+_RE_SINGKAT_B58 = re.compile(r"^([1-9a-hj-np-z]+)\s*(?:\.{2,}|\u2026)\s*([1-9a-hj-np-z]+)$")
+_RE_B58 = re.compile(r"^[1-9a-hj-np-z]+$")            # sudah dikecilkan oleh _bersih()
+_RE_ALAMAT_B58 = re.compile(r"^[1-9A-HJ-NP-Za-km-z]{32,44}$")
 _URUTAN = {"persis": 0, "awalan+akhiran": 1, "awalan": 2, "mengandung": 3,
            "nama": 4, "mirip": 5}
 # Wajib punya baris untuk SETIAP kunci di _URUTAN — diuji, karena yang hilang bukan satu
@@ -77,6 +84,23 @@ def _pisah_singkat(fragmen):
     """(awalan, akhiran) untuk bentuk "0xda...099". (None, None) kalau bukan bentuk itu."""
     m = _RE_SINGKAT.match(fragmen or "")
     return (m.group(1), m.group(2)) if m else (None, None)
+
+
+def _pisah_singkat_b58(fragmen):
+    """Bentuk singkat alamat Solana: "Hn7x...Yz12"."""
+    m = _RE_SINGKAT_B58.match(fragmen or "")
+    return (m.group(1), m.group(2)) if m else (None, None)
+
+
+def _panjang_fragmen(f):
+    """Berapa huruf/angka yang benar-benar dipakai mencari. Bentuk singkat dihitung dari
+    kedua ujungnya; "0x" tidak dihitung karena semua alamat EVM punya."""
+    awal, akhir = _pisah_singkat(f)
+    if not awal:
+        awal, akhir = _pisah_singkat_b58(f)
+    if awal:
+        return len(awal) + len(akhir)
+    return len(f[2:] if f.startswith("0x") else f)
 
 
 def _blockscout(fragmen, chain):
@@ -130,9 +154,32 @@ def _gmgn_token(fragmen):
 # Asalnya perburuan nyata 22 Sep 2026: dompet dari kartu PNL GMGN ketemu di Levera Markets
 # (Robinhood Chain), cocok sampai sen terakhir dengan angka di kartunya.
 
-CHAIN_CARI = ["robinhood", "bsc", "base", "solana", "eth"]
+CHAIN_CARI = ["robinhood", "bsc", "base", "solana", "ethereum"]
+# GMGN memakai KODE-nya sendiri: "sol", bukan "solana". Sampai 23 Sep 2026 daftar di atas
+# dikirim apa adanya, jadi sapuan Solana selalu ditolak diam-diam dan hasilnya nihil.
+KODE_GMGN = {"robinhood": "robinhood", "bsc": "bsc", "base": "base",
+             "solana": "sol", "ethereum": "eth"}
+# Kata chain yang ikut diketik user: "di LEVERA robinhood". Sebelum ini kata itu dikirim
+# sebagai BAGIAN NAMA TOKEN ke GMGN — jadi justru membuat pencarian nihil, padahal
+# catatannya sendiri menyuruh "sebutkan chain-nya untuk mempersempit".
+ALIAS_CHAIN = {"robinhood": "robinhood", "robinhood chain": "robinhood", "rhc": "robinhood",
+               "bsc": "bsc", "bnb": "bsc", "bep20": "bsc", "binance smart chain": "bsc",
+               "bnb chain": "bsc", "base": "base", "solana": "solana", "sol": "solana",
+               "spl": "solana", "eth": "ethereum", "ethereum": "ethereum",
+               "erc20": "ethereum"}
 MAKS_TOKEN = 25          # batas kandidat; tiap kandidat = 1 permintaan berbobot 5
 JEDA_BOBOT5 = 1.3        # paket Free GMGN: 5/5, jadi endpoint bobot 5 = 1 permintaan/detik
+
+
+def pisah_chain(token_q):
+    """("levera robinhood") -> ("levera", "robinhood"). Chain None kalau tidak disebut,
+    nama token "" kalau yang disebut user ternyata cuma nama chain."""
+    kata = (token_q or "").split()
+    rendah = [k.lower() for k in kata]
+    for n in (3, 2, 1):
+        if len(kata) >= n and " ".join(rendah[-n:]) in ALIAS_CHAIN:
+            return " ".join(kata[:-n]), ALIAS_CHAIN[" ".join(rendah[-n:])]
+    return " ".join(kata), None
 
 
 def gmgn_cari(q, chain):
@@ -141,11 +188,15 @@ def gmgn_cari(q, chain):
         import gmgn
     except Exception:
         return []
-    d = gmgn.try_json(gmgn._url(f"{gmgn.BASIS}/market/search", {"chain": chain, "q": q}))
+    d = gmgn.try_json(gmgn._url(f"{gmgn.BASIS}/market/search",
+                                {"chain": KODE_GMGN.get(chain, chain), "q": q}))
     if not isinstance(d, dict) or "__err" in d:
         return []
     coins = (d.get("data") or {}).get("coins") or []
-    kunci = q.lower().split()[0]
+    kata = (q or "").lower().split()
+    if not kata:
+        return []
+    kunci = kata[0]
     keluar = []
     for c in coins:
         nama = (c.get("name") or c.get("symbol") or "").strip()
@@ -162,7 +213,8 @@ def gmgn_trader(chain, alamat, limit=100):
     except Exception:
         return []
     d = gmgn.try_json(gmgn._url(f"{gmgn.BASIS}/market/token_top_traders",
-                                {"chain": chain, "address": alamat, "limit": limit,
+                                {"chain": KODE_GMGN.get(chain, chain),
+                                 "address": alamat, "limit": limit,
                                  "order_by": "profit", "direction": "desc"}))
     if not isinstance(d, dict) or "__err" in d:
         return []
@@ -185,35 +237,63 @@ def cari_di_token(fragmen, token_q, chain=None, maks_token=MAKS_TOKEN):
     Karena itu kandidatnya disisir satu per satu, dan batasnya disebut apa adanya.
     """
     f = _bersih(fragmen)
-    kandidat = []
-    for c in ([chain] if chain else CHAIN_CARI):
-        for alamat, nama in gmgn_cari(token_q, c) or []:
+    # Batas yang sama dengan jalur biasa. Tanpa ini "a" mengembalikan sepertiga isi daftar
+    # trader sebagai "cocok" — bukan hasil pencarian, cuma kebisingan yang menyamar.
+    if _panjang_fragmen(f) < MIN_FRAGMEN:
+        return [], (f"Potongannya terlalu pendek — butuh minimal {MIN_FRAGMEN} huruf/angka. "
+                    f"Di bawah itu hampir semua alamat ikut cocok.")
+
+    nama_token, chain_teks = pisah_chain(token_q)
+    chain = chain or chain_teks
+    if not nama_token:
+        return [], (f"\"{token_q}\" itu nama chain, bukan nama token. Sebutkan tokennya "
+                    f"juga — misalnya: cari wallet {fragmen} di LEVERA {token_q}.")
+
+    daftar_chain = [chain] if chain else CHAIN_CARI
+    kandidat, sudah = [], set()
+    for c in daftar_chain:
+        for alamat, nama in gmgn_cari(nama_token, c) or []:
+            if (c, alamat.lower()) in sudah:
+                continue
+            sudah.add((c, alamat.lower()))
             kandidat.append((c, alamat, nama))
         time.sleep(0.3)
     if not kandidat:
-        return [], (f"Tidak ada token bernama \"{token_q}\" yang ketemu di "
-                    f"{', '.join([chain] if chain else CHAIN_CARI)}. Coba nama yang lebih "
-                    f"persis, atau sebut chain-nya.")
+        return [], (f"Tidak ada token bernama \"{nama_token}\" yang ketemu di "
+                    f"{', '.join(daftar_chain)}. Coba nama yang lebih persis, atau sebut "
+                    f"chain-nya.")
 
     dipakai = kandidat[:maks_token]
-    hasil = []
-    for c, alamat, nama in dipakai:
+    hasil, terlihat = [], set()
+    for i, (c, alamat, nama) in enumerate(dipakai):
         for b in gmgn_trader(c, alamat) or []:
             a = str(b.get("address") or "")
-            if not a or not _kecocokan(f, a, None):
+            kec = _kecocokan(f, a, None) if a else None
+            if not kec or (a.lower(), alamat.lower()) in terlihat:
                 continue
+            terlihat.add((a.lower(), alamat.lower()))
             hasil.append({
                 "alamat": a.lower(), "token": nama, "kontrak": alamat, "chain": c,
                 "profit_usd": _angka(b.get("realized_profit") or b.get("profit")),
                 "beli_usd": _angka(b.get("buy_volume_cur")),
                 "jual_usd": _angka(b.get("sell_volume_cur")),
                 "saldo": _angka(b.get("balance")),
-                "sumber": f"GMGN trader ({c})", "kecocokan": _kecocokan(f, a, None)})
-        time.sleep(JEDA_BOBOT5)
+                "sumber": f"GMGN trader ({c})", "kecocokan": kec})
+        if i < len(dipakai) - 1:
+            time.sleep(JEDA_BOBOT5)
 
-    catatan = f"Disisir {len(dipakai)} token bernama \"{token_q}\""
+    # Yang paling dekat dengan yang diingat user harus di ATAS. Tanpa ini "mengandung"
+    # bisa tercetak di atas "awalan & akhiran cocok" hanya karena tokennya lebih dulu
+    # disisir — dan yang dibaca user pertama justru yang paling lemah.
+    hasil.sort(key=lambda h: (_URUTAN[h["kecocokan"]], h["alamat"]))
+
+    catatan = f"Disisir {len(dipakai)} token bernama \"{nama_token}\""
+    if chain:
+        catatan += f" di chain {chain}"
     if len(kandidat) > len(dipakai):
-        catatan += f" dari {len(kandidat)} yang ketemu — sebutkan chain-nya untuk mempersempit"
+        catatan += f" dari {len(kandidat)} yang ketemu"
+        if not chain:
+            catatan += " — sebutkan chain-nya (mis. \"di LEVERA robinhood\") untuk mempersempit"
     catatan += "."
     if not hasil:
         catatan += (" Tidak ada alamat yang cocok di daftar trader mereka. Itu BUKAN berarti "
@@ -224,20 +304,27 @@ def cari_di_token(fragmen, token_q, chain=None, maks_token=MAKS_TOKEN):
 
 def _uang(x):
     """Ribuan titik, desimal koma. Format lama menghasilkan "$1.234.56" — dua titik,
-    dan desimalnya tidak terbaca lagi."""
-    utuh, _, desimal = f"{float(x):,.2f}".partition(".")
-    return "$" + utuh.replace(",", ".") + "," + desimal
+    dan desimalnya tidak terbaca lagi. Rugi ditulis "-$354,67", bukan "$-354,67":
+    di daftar trader angka minus itu biasa, jadi tampilannya tidak boleh aneh."""
+    n = float(x)
+    utuh, _, desimal = f"{abs(n):,.2f}".partition(".")
+    return ("-" if n < 0 else "") + "$" + utuh.replace(",", ".") + "," + desimal
 
 
 def kartu_token(fragmen, token_q, hasil, catatan):
     """Kartu untuk hasil pencarian berkonteks. Angkanya ikut supaya user bisa MEMBANDINGKAN
     dengan yang ia lihat sendiri — itu yang mengubah "mirip" jadi "ini dia"."""
+    # Kata chain yang ikut diketik ("LEVERA robinhood") bukan bagian nama token, jadi
+    # judulnya pun tidak boleh menuliskannya sebagai nama token.
+    nama_token = pisah_chain(token_q)[0] or token_q
     if not hasil:
-        return f"🔍 Cari \"{fragmen}\" di token \"{token_q}\"\n\n{catatan}"
-    baris = [f"🔍 {len(hasil)} alamat cocok dengan \"{fragmen}\" di token \"{token_q}\"", ""]
+        return f"🔍 Cari \"{fragmen}\" di token \"{nama_token}\"\n\n{catatan}"
+    baris = [f"🔍 {len(hasil)} alamat cocok dengan \"{fragmen}\" di token \"{nama_token}\"",
+             ""]
     for h in hasil:
         baris.append(f"`{h['alamat']}`")
-        baris.append(f"   {h['token']} · {h['chain']} · {h['sumber']}")
+        kec = _LABEL_KECOCOKAN.get(h["kecocokan"], h["kecocokan"])
+        baris.append(f"   {h['token']} · {h['chain']} · {kec} · {h['sumber']}")
         angka = []
         for kunci, label in (("profit_usd", "profit"), ("beli_usd", "beli"),
                              ("jual_usd", "jual")):
@@ -265,6 +352,19 @@ def _kecocokan(fragmen, alamat, label):
             return "awalan"
         if tanpa0x in a:
             return "mengandung"
+    # Alamat Solana: base58, bukan hex. Perbandingan mengabaikan besar-kecil huruf karena
+    # _bersih() sudah mengecilkan fragmen — risikonya kecil untuk potongan >= 3 karakter,
+    # dan jauh lebih kecil daripada TIDAK PERNAH bisa mencocokkan alamat Solana sama sekali.
+    if _RE_ALAMAT_B58.match(alamat or "") and not _RE_HEX.match(fragmen):
+        awal_b, akhir_b = _pisah_singkat_b58(fragmen)
+        if awal_b:
+            return ("awalan+akhiran"
+                    if (a.startswith(awal_b) and a.endswith(akhir_b)) else None)
+        if _RE_B58.match(fragmen):
+            if a.startswith(fragmen):
+                return "awalan"
+            if fragmen in a:
+                return "mengandung"
     if l and fragmen in l:
         return "nama"
     # Salah ketik pada NAMA: "bitfinx" untuk "Bitfinex". Hanya untuk fragmen yang bukan
@@ -277,6 +377,18 @@ def _kecocokan(fragmen, alamat, label):
     return None
 
 
+def _catatan_chain(chain):
+    """Chain yang tidak punya indeks alamat harus DIKATAKAN. Sebelum ini "--chain bsc"
+    diterima diam-diam lalu tidak menyisir apa pun, dan hasil kosongnya terbaca seolah
+    BSC sudah diperiksa."""
+    c = (chain or "").lower()
+    if not c or c in BLOCKSCOUT:
+        return ""
+    return (f" Chain \"{chain}\" tidak punya indeks alamat di sini (hanya "
+            f"{', '.join(sorted(BLOCKSCOUT))}), jadi yang disisir cuma label lokal. "
+            f"Untuk chain itu pakai konteks token: cari wallet <potongan> di <TOKEN> {c}.")
+
+
 def cari(fragmen, chain=None, batas=BATAS_BAWAAN):
     """Daftar alamat yang cocok, terurut dari yang paling dekat."""
     return cari_dengan_catatan(fragmen, chain, batas)[0]
@@ -286,9 +398,7 @@ def cari_dengan_catatan(fragmen, chain=None, batas=BATAS_BAWAAN):
     """(hasil, catatan). Catatan menjelaskan batas pencarian — bukan basa-basi: tanpa itu
     "tidak ketemu" terbaca sebagai "alamatnya tidak ada"."""
     f = _bersih(fragmen)
-    _a, _b = _pisah_singkat(f)
-    panjang = len(_a) + len(_b) if _a else len(f.replace("0x", "", 1))
-    if panjang < MIN_FRAGMEN:
+    if _panjang_fragmen(f) < MIN_FRAGMEN:
         return [], (f"Potongannya terlalu pendek — butuh minimal {MIN_FRAGMEN} huruf/angka. "
                     f"Di bawah itu hasilnya ribuan dan tidak menolong siapa pun.")
 
@@ -333,13 +443,15 @@ def cari_dengan_catatan(fragmen, chain=None, batas=BATAS_BAWAAN):
         return [], ("Tidak ada yang cocok. Itu BUKAN berarti alamatnya tidak ada — yang "
                     "bisa dicari hanya alamat yang sudah dikenal (29 rb label bursa & "
                     "protokol, indeks Blockscout, daftar token GMGN). Dompet pribadi yang "
-                    "tidak pernah dilabeli siapa pun memang tidak akan muncul.")
+                    "tidak pernah dilabeli siapa pun memang tidak akan muncul."
+                    + _catatan_chain(chain))
     catatan = (f"{total} alamat dikenal cocok dengan \"{fragmen}\".")
     if total > batas:
         catatan += (f" Ditampilkan {batas} yang paling dekat — sebutkan lebih banyak "
                     f"huruf/angka untuk mempersempit.")
     catatan += (" Pencarian hanya menjangkau alamat yang sudah dikenal, bukan seluruh "
                 "blockchain.")
+    catatan += _catatan_chain(chain)
     return hasil[:batas], catatan
 
 
@@ -363,13 +475,21 @@ def kartu(fragmen, hasil, catatan):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("fragmen", help="potongan alamat atau nama, minimal 3 karakter")
-    ap.add_argument("--chain", default=None, help="ethereum | base | arbitrum | optimism | polygon | robinhood | bsc | solana")
+    ap.add_argument("--chain", default=None,
+                    help="indeks alamat: ethereum | base | arbitrum | optimism | polygon. "
+                         "Dengan --di juga: robinhood | bsc | solana")
     ap.add_argument("--di", default=None, dest="di",
                     help="cari di dalam daftar trader token ini (nama/simbol)")
     ap.add_argument("--maks-token", type=int, default=MAKS_TOKEN)
     ap.add_argument("--batas", type=int, default=BATAS_BAWAAN)
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
+
+    # "cari wallet f977 di ethereum" menyebut CHAIN, bukan token. Tanpa ini "ethereum"
+    # dicari sebagai nama token dan hasilnya kacau.
+    di_nama, di_chain = pisah_chain(a.di) if a.di else ("", None)
+    if a.di and not di_nama:
+        a.chain, a.di = a.chain or di_chain, None
 
     if a.di:
         hasil, catatan = cari_di_token(a.fragmen, a.di, a.chain,

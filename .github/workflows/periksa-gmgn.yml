@@ -31,3 +31,5 @@ jobs:
           python cloud/gmgn.py --periksa
           echo "---- data nyata untuk satu token Solana ----"
           python cloud/gmgn.py solana JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN
+          echo "---- kode chain yang dipakai pencarian dompet ----"
+          python cloud/periksa_chain_cari.py

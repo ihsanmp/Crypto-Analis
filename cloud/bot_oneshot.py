@@ -135,6 +135,8 @@ HELP_TEXT = (
     "   • kalau ingat tokennya: cari wallet 0xda...09d9 di LEVERA\n"
     "     (aku sisir daftar trader token itu — cara inilah yang berhasil\n"
     "      ketika yang terlihat cuma beberapa karakter)\n"
+    "   • sebut chain-nya untuk mempersempit: ... di LEVERA robinhood\n"
+    "     (robinhood · bsc · base · solana · ethereum)\n"
     "   • semua yang mirip kutampilkan, biar kamu yang pilih\n"
     "   • yang kucari cuma alamat yang SUDAH DIKENAL (29 rb label + indeks\n"
     "     explorer). Dompet pribadi tanpa label tidak akan muncul — itu normal\n\n"
