@@ -169,3 +169,12 @@ def test_hanya_endpoint_baca():
     src = open(os.path.join(AKAR, "cloud", "solscan.py"), encoding="utf-8").read()
     for terlarang in ('method="POST"', "urlopen(req, data", "private_key", "/trade"):
         assert terlarang not in src, terlarang
+
+
+def test_endpoint_publik_memakai_host_yang_benar():
+    """Host pro menjawab 404 untuk /chaininfo; host publiknya terpisah. Diuji 23 Sep 2026:
+    keduanya tetap minta token, jadi tidak ada endpoint Solscan yang benar-benar terbuka
+    — tapi setidaknya yang dicetak --periksa harus penolakan yang SEBENARNYA, bukan 404
+    karena jalurnya salah."""
+    assert sc.PUBLIK == "https://public-api.solscan.io/chaininfo"
+    assert not sc.PUBLIK.startswith(sc.BASIS)

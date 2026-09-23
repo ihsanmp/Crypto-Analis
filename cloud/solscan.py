@@ -11,8 +11,8 @@ itu "tied to your account and current plan". Tabel paket resminya (23 Sep 2026) 
 dari Lite $49/bulan, dan tidak ada baris gratis di sana. Jadi punya kunci belum tentu
 punya akses.
 
-Modul ini sengaja TIDAK memutuskan siapa yang benar. `--periksa` menembak endpoint publik
-(gratis) dan endpoint pro satu per satu lalu mencetak jawaban apa adanya — kalau kunci
+Modul ini sengaja TIDAK memutuskan siapa yang benar. `--periksa` menembak endpointnya
+satu per satu lalu mencetak jawaban apa adanya — kalau kunci
 bawaan ternyata cukup, barisnya akan berbunyi "diterima", dan itu bukti yang mengalahkan
 tabel harga mana pun. Kalau ditolak, pesan penolakannya ikut dicetak supaya sebabnya
 terbaca, bukan muncul sebagai daftar alamat yang diam-diam kosong.
@@ -34,7 +34,11 @@ import urllib.parse
 import urllib.request
 
 BASIS = "https://pro-api.solscan.io/v2.0"
-PUBLIK = f"{BASIS}/chaininfo"          # dokumennya menyebut ini "API Public"...
+# Dokumennya menyebut ini "API Public" dan memberi host TERSENDIRI. Keduanya sudah
+# diuji 23 Sep 2026: host pro menjawab 404, host publik menjawab "Token is missing"
+# — jadi tidak ada endpoint Solscan yang benar-benar terbuka, seberapa pun
+# dokumennya melabelinya begitu.
+PUBLIK = "https://public-api.solscan.io/chaininfo"
 NAMA_ENV = "SOLSCAN_API_KEY"
 TIMEOUT = 20
 # Paket termurah yang terdaftar: 1.000 permintaan/60 detik. Jeda ini menahannya jauh di
@@ -181,8 +185,6 @@ def main():
 
     if a.periksa:
         print(f"Kunci: {'ada' if kunci() else 'TIDAK ADA (' + NAMA_ENV + ')'}")
-        # ...tapi tanpa kunci ia menjawab 401 "Token is missing or invalid"
-        # (diuji 23 Sep 2026). Labelnya tidak dipercaya; hasil ujinya yang dicetak.
         d = try_json(PUBLIK)
         print("  chaininfo (dilabeli publik) -> "
               + ("DITOLAK: " + d["__err"] if "__err" in d else "diterima"))
