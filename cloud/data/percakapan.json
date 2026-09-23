@@ -319,5 +319,18 @@
   "angka_kunci": [
    "harga=0,00001213"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1790184766.6026752,
+  "waktu_utc": "2026-09-23 17:32",
+  "pesan": "apakah penurunan brc saat ini hanya karena faktor IO nya meningkat seperti pada gambar ini? atau ada hal lain? soalnya S&P 500, NASDAQ, gold juga ikut turun. Sedangkan DXY meningkat",
+  "balasan": "Yang saya lihat di gambar: screenshot channel Discord \"bitcoin-update\", dua postingan dari Xander Tyrone Xu (\"Yesterday at 9:24 AM\" dan \"9:15 PM\"), masing-masing dengan chart BTCUSDT 1 jam Binance berisi panel CVD, Funding Rate, dan Open Interest dar\n[...dipangkas...]\nmeledak, dan uang institusi masuk di persentil 96,6. Yang turun ini harga, bukan permintaannya.\n\nSatu hal yang bikin ini bisa salah: kalau yield 10Y terus naik tanpa henti, tidak ada level teknikal yang bisa menahan — makro selalu menang atas chart.",
+  "angka_kunci": [
+   "harga=79.000",
+   "ema21=79.321",
+   "ema50=75.424",
+   "rsi=72,21"
+  ]
  }
 ]
