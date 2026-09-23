@@ -3924,7 +3924,7 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
             # Menyisir daftar trader per token: tiap kandidat satu permintaan berbobot 5,
             # dan paket Free GMGN hanya 1/detik. Batasnya ditahan supaya balasan tetap
             # datang dalam waktu wajar.
-            arg += ["--di", token_konteks, "--maks-token", "18"]
+            arg += ["--di", token_konteks, "--maks-token", "24"]
         keluaran, _ = _jalankan_terukur("CARI WALLET (cariwallet.py)", arg, 0)
         isi = (keluaran or "").strip() or (
             "❌ Pencarian alamat gagal dijalankan. Coba lagi sebentar lagi.")

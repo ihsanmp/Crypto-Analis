@@ -434,3 +434,80 @@ def test_di_yang_ternyata_nama_chain_jatuh_ke_pencarian_biasa(monkeypatch, capsy
     cw.main()
     keluar = json.loads(capsys.readouterr().out)
     assert keluar["hasil"] and "token" not in keluar
+
+
+# ---- liputan pencarian: banyak koin senama, beberapa jaringan (23 Sep 2026) ---------------
+# Angka nyata dari run 35813836601: "LEVERA" cocok dengan 309 token di lima chain
+# (robinhood 61, bsc 75, base 62, solana 76, ethereum 35), sedangkan jatah penyisiran cuma
+# belasan. Jadi yang menentukan berhasil-tidaknya bukan jumlahnya, melainkan URUTAN dan
+# PEMBAGIAN jatahnya — dan bagian yang tidak sempat diperiksa harus dikatakan.
+
+def test_jatah_dibagi_merata_antar_chain(monkeypatch):
+    """Dulu jatah diambil dari pangkal daftar yang disusun chain demi chain: seluruh jatah
+    habis di chain pertama dan empat chain lain tidak pernah disentuh sama sekali."""
+    banyak = {c: [(f"0x{c}{i:03x}", f"Levera {i}") for i in range(20)]
+              for c in ("robinhood", "bsc", "base", "solana", "ethereum")}
+    palsu = _gmgn_tiruan(monkeypatch, banyak, {})
+    _hasil, catatan = cw.cari_di_token("0xda...09d9", "LEVERA", maks_token=10)
+    chain_disisir = {c for c, _a in palsu.dipanggil}
+    assert chain_disisir == set(banyak), chain_disisir
+    assert "10 dari 100 token" in catatan, catatan
+    for c in banyak:
+        assert f"{c} 2/20" in catatan, catatan
+
+
+def test_daftar_trader_yang_gagal_dibaca_tidak_dihitung_sebagai_tidak_ada(monkeypatch):
+    """Run 35813736311: batas laju GMGN membuat SELURUH penyisiran pulang kosong, lalu
+    dilaporkan "tidak ada alamat yang cocok" — kalimat yang terbaca seperti jawaban,
+    padahal tidak satu pun daftar berhasil dibaca."""
+    _gmgn_tiruan(monkeypatch, {"robinhood": [("0x492f", "Levera Markets")]}, {})
+    monkeypatch.setattr(cw, "gmgn_trader", lambda *a, **k: None)
+    hasil, catatan = cw.cari_di_token("0xda...09d9", "LEVERA robinhood")
+    assert hasil == []
+    assert "gagal dibaca" in catatan and "belum diperiksa" in catatan
+    assert "BERHASIL dibaca" in catatan
+
+
+def test_chain_yang_tidak_bisa_ditanya_dikatakan(monkeypatch):
+    _gmgn_tiruan(monkeypatch, {}, {})
+    monkeypatch.setattr(cw, "gmgn_cari", lambda q, c: None)
+    hasil, catatan = cw.cari_di_token("0xda...09d9", "LEVERA robinhood")
+    assert hasil == []
+    assert "BELUM dicari" in catatan and "tidak ketemu" in catatan
+
+
+def test_kandidat_diurutkan_dari_yang_paling_mungkin(monkeypatch):
+    """Likuiditas memisahkan token yang benar dari tiruan senamanya: di run 35813836601
+    Levera Markets punya $7.002 sedangkan dua tiruannya $0,00 dan $379."""
+    coins = [
+        {"address": "0xtiruan", "name": "Levera.fun", "symbol": "LEVERA",
+         "liquidity": "0.000000", "holder_count": 1, "mcp": "4349"},
+        {"address": "0xasli", "name": "Levera Markets", "symbol": "LEVERA",
+         "liquidity": "7002.118997", "holder_count": 40, "mcp": "5157"},
+        {"address": "0xtengah", "name": "LEVERAGE", "symbol": "LEVERA",
+         "liquidity": "379.737521", "holder_count": 3, "mcp": "4196"},
+        {"address": "0xlain", "name": "Bukan Yang Dicari", "symbol": "XYZ",
+         "liquidity": "999999", "holder_count": 9},
+    ]
+
+    class GmgnPalsu:
+        BASIS = "b"
+        _url = staticmethod(lambda jalur, param: jalur)
+        try_json = staticmethod(lambda url: {"data": {"coins": coins}})
+
+    monkeypatch.setitem(sys.modules, "gmgn", GmgnPalsu)
+    assert cw.gmgn_cari("levera", "robinhood") == [
+        ("0xasli", "Levera Markets"), ("0xtengah", "LEVERAGE"), ("0xtiruan", "Levera.fun")]
+
+
+def test_permintaan_gagal_bukan_daftar_kosong(monkeypatch):
+    """None berarti GAGAL, [] berarti benar-benar tidak ada. Selama keduanya [], batas laju
+    tidak bisa dibedakan dari jawaban."""
+    class GmgnPalsu:
+        BASIS = "b"
+        _url = staticmethod(lambda jalur, param: jalur)
+        try_json = staticmethod(lambda url: {"__err": "429 Too Many Requests"})
+
+    monkeypatch.setitem(sys.modules, "gmgn", GmgnPalsu)
+    assert cw.gmgn_cari("levera", "robinhood") is None
+    assert cw.gmgn_trader("robinhood", "0x1") is None

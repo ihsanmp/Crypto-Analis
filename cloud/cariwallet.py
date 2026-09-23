@@ -184,42 +184,66 @@ def pisah_chain(token_q):
     return " ".join(kata), None
 
 
+def _bobot(c):
+    """Seberapa mungkin token ini yang dimaksud user. Nama token TIDAK unik — "LEVERA"
+    cocok dengan 61 token di Robinhood saja, 309 di lima chain (run 35813836601) —
+    sedangkan jatah penyisiran cuma belasan. Jadi yang menentukan berhasil-tidaknya bukan
+    JUMLAHNYA melainkan URUTANNYA: yang punya likuiditas dan pemegang nyata didahulukan.
+    Di contoh nyata, Levera Markets punya likuiditas $7.002 sedangkan tiruan senamanya
+    $0,00 dan $379 — token yang benar ada di urutan pertama begitu diurutkan begini."""
+    def angka(x):
+        try:
+            return float(x)
+        except (TypeError, ValueError):
+            return 0.0
+    return (angka(c.get("liquidity")), angka(c.get("holder_count")), angka(c.get("mcp")))
+
+
 def gmgn_cari(q, chain):
-    """Kandidat token dari GMGN: [(alamat, nama)]."""
+    """Kandidat token dari GMGN: [(alamat, nama)], terurut dari yang paling mungkin.
+
+    None kalau permintaannya GAGAL — itu bukan hal yang sama dengan "tidak ada token
+    bernama itu", dan bedanya harus sampai ke user.
+    """
     try:
         import gmgn
     except Exception:
-        return []
+        return None
     d = gmgn.try_json(gmgn._url(f"{gmgn.BASIS}/market/search",
                                 {"chain": KODE_GMGN.get(chain, chain), "q": q}))
     if not isinstance(d, dict) or "__err" in d:
-        return []
+        return None
     coins = (d.get("data") or {}).get("coins") or []
     kata = (q or "").lower().split()
     if not kata:
         return []
     kunci = kata[0]
-    keluar = []
-    for c in coins:
-        nama = (c.get("name") or c.get("symbol") or "").strip()
-        alamat = (c.get("address") or "").strip()
-        if alamat and kunci in (nama + " " + (c.get("symbol") or "")).lower():
-            keluar.append((alamat, nama))
-    return keluar
+    cocok = [c for c in coins
+             if (c.get("address") or "").strip()
+             and kunci in ((c.get("name") or "") + " " + (c.get("symbol") or "")).lower()]
+    cocok.sort(key=_bobot, reverse=True)
+    return [((c.get("address") or "").strip(),
+             (c.get("name") or c.get("symbol") or "").strip()) for c in cocok]
 
 
 def gmgn_trader(chain, alamat, limit=100):
-    """Daftar trader token (maks 100), diurutkan dari profit terbesar."""
+    """Daftar trader token (maks 100), diurutkan dari profit terbesar.
+
+    None kalau permintaannya GAGAL. Run 35813736311 membuktikan kenapa ini penting: batas
+    laju GMGN membuat SELURUH penyisiran pulang dengan tangan kosong, lalu dilaporkan
+    sebagai "tidak ada alamat yang cocok di daftar trader mereka" — kalimat yang terbaca
+    seperti jawaban, padahal tidak satu pun daftar yang berhasil dibaca.
+    """
     try:
         import gmgn
     except Exception:
-        return []
+        return None
     d = gmgn.try_json(gmgn._url(f"{gmgn.BASIS}/market/token_top_traders",
                                 {"chain": KODE_GMGN.get(chain, chain),
                                  "address": alamat, "limit": limit,
                                  "order_by": "profit", "direction": "desc"}))
     if not isinstance(d, dict) or "__err" in d:
-        return []
+        return None
     isi = d.get("data") or {}
     baris = isi.get("list") or isi.get("data") or []
     return [b for b in baris if isinstance(b, dict)]
@@ -235,8 +259,19 @@ def _angka(x):
 def cari_di_token(fragmen, token_q, chain=None, maks_token=MAKS_TOKEN):
     """(hasil, catatan) — sisir daftar trader tiap token yang namanya cocok.
 
-    Nama token TIDAK unik: "LEVERA" cocok dengan 94 token di tiga chain (22 Sep 2026).
-    Karena itu kandidatnya disisir satu per satu, dan batasnya disebut apa adanya.
+    DUA HAL YANG MENENTUKAN BENTUK FUNGSI INI, keduanya dari run nyata 23 Sep 2026:
+
+    1. Token senama itu BANYAK dan chain-nya beberapa: "LEVERA" cocok dengan 309 token di
+       lima chain (robinhood 61, bsc 75, base 62, solana 76, ethereum 35), sedangkan jatah
+       penyisiran cuma belasan. Dulu jatah itu diambil dari pangkal daftar yang disusun
+       chain demi chain — akibatnya SELURUH jatah habis di chain pertama dan empat chain
+       lain tidak pernah disentuh sama sekali, tanpa satu pun tanda. Sekarang jatahnya
+       dibagi merata, dan kandidat tiap chain diurutkan dari yang paling mungkin.
+
+    2. Permintaan yang GAGAL tidak boleh terbaca sebagai "tidak ketemu". Run 35813736311
+       kena batas laju GMGN, seluruh penyisirannya pulang kosong, dan hasilnya dilaporkan
+       sebagai "tidak ada alamat yang cocok di daftar trader mereka" — kalimat yang
+       terbaca seperti jawaban padahal tidak satu pun daftar berhasil dibaca.
     """
     f = _bersih(fragmen)
     # Batas yang sama dengan jalur biasa. Tanpa ini "a" mengembalikan sepertiga isi daftar
@@ -252,23 +287,46 @@ def cari_di_token(fragmen, token_q, chain=None, maks_token=MAKS_TOKEN):
                     f"juga — misalnya: cari wallet {fragmen} di LEVERA {token_q}.")
 
     daftar_chain = [chain] if chain else CHAIN_CARI
-    kandidat, sudah = [], set()
+    per_chain, gagal_cari = {}, []
     for c in daftar_chain:
-        for alamat, nama in gmgn_cari(nama_token, c) or []:
-            if (c, alamat.lower()) in sudah:
+        daftar = gmgn_cari(nama_token, c)
+        if daftar is None:
+            gagal_cari.append(c)
+            daftar = []
+        sudah, bersih = set(), []
+        for alamat, nama in daftar:
+            if alamat.lower() in sudah:
                 continue
-            sudah.add((c, alamat.lower()))
-            kandidat.append((c, alamat, nama))
+            sudah.add(alamat.lower())
+            bersih.append((alamat, nama))
+        per_chain[c] = bersih
         time.sleep(0.3)
-    if not kandidat:
+
+    total = sum(len(v) for v in per_chain.values())
+    if not total:
+        if gagal_cari:
+            return [], (f"GMGN tidak bisa ditanya untuk chain {', '.join(gagal_cari)} — "
+                        f"jadi tokennya BELUM dicari, bukan tidak ketemu. Coba lagi "
+                        f"beberapa menit lagi.")
         return [], (f"Tidak ada token bernama \"{nama_token}\" yang ketemu di "
                     f"{', '.join(daftar_chain)}. Coba nama yang lebih persis, atau sebut "
                     f"chain-nya.")
 
+    # Jatah dibagi merata: ambil kandidat teratas tiap chain bergiliran, bukan menguras
+    # chain pertama sampai jatahnya habis.
+    kandidat = []
+    for i in range(max(len(v) for v in per_chain.values())):
+        for c in daftar_chain:
+            if i < len(per_chain[c]):
+                kandidat.append((c,) + per_chain[c][i])
     dipakai = kandidat[:maks_token]
-    hasil, terlihat = [], set()
+
+    hasil, terlihat, gagal_trader = [], set(), []
     for i, (c, alamat, nama) in enumerate(dipakai):
-        for b in gmgn_trader(c, alamat) or []:
+        baris = gmgn_trader(c, alamat)
+        if baris is None:
+            gagal_trader.append(c)
+        for b in baris or []:
             a = str(b.get("address") or "")
             kec = _kecocokan(f, a, None) if a else None
             if not kec or (a.lower(), alamat.lower()) in terlihat:
@@ -289,19 +347,39 @@ def cari_di_token(fragmen, token_q, chain=None, maks_token=MAKS_TOKEN):
     # disisir — dan yang dibaca user pertama justru yang paling lemah.
     hasil.sort(key=lambda h: (_URUTAN[h["kecocokan"]], h["alamat"]))
 
-    catatan = f"Disisir {len(dipakai)} token bernama \"{nama_token}\""
-    if chain:
-        catatan += f" di chain {chain}"
-    if len(kandidat) > len(dipakai):
-        catatan += f" dari {len(kandidat)} yang ketemu"
-        if not chain:
-            catatan += " — sebutkan chain-nya (mis. \"di LEVERA robinhood\") untuk mempersempit"
-    catatan += "."
-    if not hasil:
-        catatan += (" Tidak ada alamat yang cocok di daftar trader mereka. Itu BUKAN berarti "
-                    "dompetnya tidak ada: daftar trader hanya memuat 100 teratas per token, "
-                    "dan tokennya bisa saja bukan salah satu dari yang disisir.")
-    return hasil, catatan
+    return hasil, _catatan_token(nama_token, chain, per_chain, daftar_chain, dipakai,
+                                 total, gagal_cari, gagal_trader, bool(hasil))
+
+
+def _catatan_token(nama_token, chain, per_chain, daftar_chain, dipakai, total,
+                   gagal_cari, gagal_trader, ketemu):
+    """Liputan pencarian, dinyatakan dengan angka.
+
+    "Disisir 18 token" tidak memberi tahu apa pun kalau yang senama ada 309. Yang harus
+    sampai ke user adalah berapa dari berapa, di chain mana saja, dan bagian mana yang
+    GAGAL diperiksa — karena bagian yang gagal itulah yang paling mudah disalahartikan
+    sebagai "sudah dicari dan tidak ada"."""
+    disisir = {}
+    for c, _a, _n in dipakai:
+        disisir[c] = disisir.get(c, 0) + 1
+    rincian = ", ".join(f"{c} {disisir.get(c, 0)}/{len(per_chain[c])}"
+                        for c in daftar_chain if per_chain[c] or disisir.get(c))
+    catatan = (f"Disisir {len(dipakai)} dari {total} token bernama \"{nama_token}\""
+               + (f" ({rincian})" if rincian else "") + ".")
+    if total > len(dipakai) and not chain:
+        catatan += (" Sebutkan chain-nya (mis. \"di LEVERA robinhood\") supaya seluruh "
+                    "jatah dipakai di satu chain saja.")
+    if gagal_cari:
+        catatan += (f" Chain {', '.join(sorted(set(gagal_cari)))} TIDAK bisa ditanya sama "
+                    f"sekali — bagian itu belum dicari, bukan tidak ada.")
+    if gagal_trader:
+        catatan += (f" {len(gagal_trader)} token gagal dibaca daftar tradernya (biasanya "
+                    f"batas laju GMGN) — bagian itu pun belum diperiksa.")
+    if not ketemu:
+        catatan += (" Tidak ada alamat yang cocok di daftar trader yang BERHASIL dibaca. "
+                    "Itu bukan berarti dompetnya tidak ada: tiap daftar hanya memuat 100 "
+                    "trader teratas, dan tokennya bisa saja di luar yang disisir.")
+    return catatan
 
 
 def _uang(x):
