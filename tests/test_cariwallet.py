@@ -394,8 +394,9 @@ def test_potongan_alamat_solana_bisa_dicocokkan(fragmen, kelas):
 
 
 def test_kode_chain_gmgn_bukan_nama_chain_kita(monkeypatch):
-    """GMGN memakai "sol", bukan "solana": daftar CHAIN_CARI dulu dikirim apa adanya,
-    jadi sapuan Solana selalu ditolak diam-diam."""
+    """GMGN memakai "sol", bukan "solana". Yang dikirim mentah TIDAK ditolak — GMGN
+    menjawab 200 dengan 0 kandidat (run 35813445159: "sol" 76, "solana" 0), jadi
+    sapuan Solana mati tanpa meninggalkan jejak apa pun."""
     dicatat = []
 
     class GmgnPalsu:

@@ -156,7 +156,9 @@ def _gmgn_token(fragmen):
 
 CHAIN_CARI = ["robinhood", "bsc", "base", "solana", "ethereum"]
 # GMGN memakai KODE-nya sendiri: "sol", bukan "solana". Sampai 23 Sep 2026 daftar di atas
-# dikirim apa adanya, jadi sapuan Solana selalu ditolak diam-diam dan hasilnya nihil.
+# dikirim apa adanya — dan GMGN TIDAK menolaknya: ia menjawab 200 dengan 0 kandidat.
+# Run 35813445159: kode "sol" 76 kandidat, "solana" 0. Kegagalan yang tidak meninggalkan
+# jejak apa pun, jadi sapuan Solana bisa mati berbulan-bulan tanpa satu pun tanda.
 KODE_GMGN = {"robinhood": "robinhood", "bsc": "bsc", "base": "base",
              "solana": "sol", "ethereum": "eth"}
 # Kata chain yang ikut diketik user: "di LEVERA robinhood". Sebelum ini kata itu dikirim
