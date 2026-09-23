@@ -332,5 +332,13 @@
    "ema50=75.424",
    "rsi=72,21"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1790185080.8447094,
+  "waktu_utc": "2026-09-23 17:38",
+  "pesan": "10Y? bukannya 30Y?",
+  "balasan": "Keduanya bener, tapi beda perannya — koreksimu tepat sebagian.\n\nPer 22 September 2026: yield 10Y di 4,96%, yield 30Y di 5,30% (Forbes/TradingEconomics/FRED).\n\n• 10Y = acuan standar buat valuasi saham (discount rate) dan biasanya yang paling dipantau\n[...dipangkas...]\nng mencerminkan kekhawatiran pasar soal utang/fiskal jangka panjang.\n\nYang bisa membatalkan baca ini: kalau ternyata kenaikan 30Y cuma noise teknikal lelang obligasi (auction tail), bukan tren fiskal berkelanjutan — perlu dicek lelang 30Y berikutnya.",
+  "angka_kunci": []
  }
 ]
