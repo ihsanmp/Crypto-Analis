@@ -49,3 +49,20 @@ print(f"chain tanpa satu pun kandidat: {gagal or 'tidak ada'}")
 hasil, catatan = cw.cari_di_token("0xda...09d9", "LEVERA robinhood", maks_token=5)
 print(f"  cari di token: {len(hasil)} hasil, kelas={[h['kecocokan'] for h in hasil]}")
 print(f"  catatan: {catatan}")
+
+
+# ---- atas dasar apa kandidat token boleh diurutkan? --------------------------------------
+# Jatah penyisiran jauh lebih kecil daripada jumlah token senama, jadi yang menentukan
+# berhasil-tidaknya bukan jumlahnya melainkan URUTANNYA. Bagian ini mencetak medan apa saja
+# yang dikembalikan GMGN supaya urutannya bisa didasarkan pada bukti, bukan tebakan.
+# Nama token itu publik; alamat TIDAK dicetak.
+print("---- medan kandidat dari market/search ----")
+d = gmgn.try_json(gmgn._url(f"{gmgn.BASIS}/market/search",
+                            {"chain": "robinhood", "q": KUERI}))
+coins = ((d or {}).get("data") or {}).get("coins") or []
+print(f"  {len(coins)} kandidat; medan: {sorted(coins[0].keys()) if coins else '-'}")
+for c in coins[:3]:
+    aman = {k: v for k, v in c.items()
+            if k not in ("address", "token_address", "pool_address", "creator")
+            and not isinstance(v, (dict, list))}
+    print(f"  contoh: {aman}")
