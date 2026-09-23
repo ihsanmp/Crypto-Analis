@@ -64,6 +64,9 @@ jobs:
       # di repo publik ini.
       SEC_CONTACT: ${{ secrets.SEC_CONTACT }}
       GMGN_API_KEY: ${{ secrets.GMGN_API_KEY }}
+      # Satu kunci untuk beberapa explorer: Etherscan (1), Robinscan (4663),
+      # Arbiscan (42161). BSC & Base hanya untuk paket berbayar, jadi tidak dipakai.
+      ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
       # Opsional. Arus dana ETF spot berubah TIAP HARI, jadi tidak bisa disimpan sebagai
       # berkas seperti riwayat konsensus yang bulanan — harus ditarik saat analisa. Kosong
       # = bagian arus ETF dilaporkan tidak tersedia dan analisa crypto tetap jalan.

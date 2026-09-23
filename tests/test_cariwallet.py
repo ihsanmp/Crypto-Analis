@@ -511,3 +511,75 @@ def test_permintaan_gagal_bukan_daftar_kosong(monkeypatch):
     monkeypatch.setitem(sys.modules, "gmgn", GmgnPalsu)
     assert cw.gmgn_cari("levera", "robinhood") is None
     assert cw.gmgn_trader("robinhood", "0x1") is None
+
+
+# ---- explorer sebagai jaring yang lebih lebar (23 Sep 2026) -------------------------------
+# Daftar trader GMGN hanya 100 teratas per token. Etherscan V2 memberi SETIAP alamat yang
+# pernah menyentuh token itu — jadi dompet kecil pun terjangkau. Gratis untuk Ethereum,
+# Robinhood, dan Arbitrum; BSC & Base hanya untuk paket berbayar, dan itu dikatakan.
+
+class _ExplorerPalsu:
+    CHAIN = {"ethereum": 1, "robinhood": 4663, "arbitrum": 42161}
+    dipakai = []
+    punya_kunci = True
+    isi = set()
+
+    @staticmethod
+    def kunci():
+        return "kunci-uji" if _ExplorerPalsu.punya_kunci else ""
+
+    @staticmethod
+    def catatan_kunci():
+        return "ETHERSCAN_API_KEY belum dipasang, jadi bagian itu belum diperiksa."
+
+    @staticmethod
+    def alamat_token(chain, kontrak, halaman=3):
+        _ExplorerPalsu.dipakai.append((chain, kontrak))
+        return set(_ExplorerPalsu.isi), f"Explorer {chain}: {len(_ExplorerPalsu.isi)} alamat."
+
+
+@pytest.fixture
+def explorer(monkeypatch):
+    _ExplorerPalsu.dipakai = []
+    _ExplorerPalsu.punya_kunci = True
+    _ExplorerPalsu.isi = set()
+    monkeypatch.setitem(sys.modules, "etherscan", _ExplorerPalsu)
+    return _ExplorerPalsu
+
+
+def test_explorer_menjangkau_alamat_di_luar_100_trader(monkeypatch, explorer):
+    target = "0xdaddc6d4839197e684874b08f6fccc4670b309d9"
+    explorer.isi = {target, "0x" + "b" * 40}
+    # GMGN tidak memuat dompet ini di 100 teratasnya.
+    _gmgn_tiruan(monkeypatch, {"robinhood": [("0x492f", "Levera Markets")]},
+                 {"0x492f": [_trader("0xbeef" + "0" * 35)]})
+    hasil, catatan = cw.cari_di_token("0xda...09d9", "LEVERA robinhood")
+    assert [h["alamat"] for h in hasil] == [target]
+    assert hasil[0]["sumber"] == "explorer (robinhood)"
+    assert explorer.dipakai == [("robinhood", "0x492f")]
+    assert "Explorer robinhood" in catatan
+
+
+def test_explorer_tidak_dipakai_untuk_chain_yang_tidak_dilayani(monkeypatch, explorer):
+    explorer.isi = {"0xdaddc6d4839197e684874b08f6fccc4670b309d9"}
+    _gmgn_tiruan(monkeypatch, {"bsc": [("0x1", "Levera")]}, {})
+    _hasil, _catatan = cw.cari_di_token("0xda...09d9", "LEVERA bsc")
+    assert explorer.dipakai == [], "bsc hanya untuk paket berbayar"
+
+
+def test_kunci_explorer_hilang_dikatakan_bukan_didiamkan(monkeypatch, explorer):
+    explorer.punya_kunci = False
+    _gmgn_tiruan(monkeypatch, {"robinhood": [("0x492f", "Levera Markets")]}, {})
+    _hasil, catatan = cw.cari_di_token("0xda...09d9", "LEVERA robinhood")
+    assert "ETHERSCAN_API_KEY" in catatan and "belum diperiksa" in catatan
+
+
+def test_hasil_explorer_tanpa_angka_tidak_merusak_kartu(monkeypatch, explorer):
+    """Hasil explorer tidak punya profit/beli/jual — kartunya harus tetap utuh."""
+    target = "0xdaddc6d4839197e684874b08f6fccc4670b309d9"
+    explorer.isi = {target}
+    _gmgn_tiruan(monkeypatch, {"robinhood": [("0x492f", "Levera Markets")]}, {})
+    hasil, catatan = cw.cari_di_token("0xda...09d9", "LEVERA robinhood")
+    kartu = cw.kartu_token("0xda...09d9", "LEVERA robinhood", hasil, catatan)
+    assert target in kartu and "explorer (robinhood)" in kartu
+    assert "profit" not in kartu

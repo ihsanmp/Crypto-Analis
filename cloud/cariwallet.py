@@ -170,6 +170,11 @@ ALIAS_CHAIN = {"robinhood": "robinhood", "robinhood chain": "robinhood", "rhc": 
                "spl": "solana", "eth": "ethereum", "ethereum": "ethereum",
                "erc20": "ethereum"}
 MAKS_TOKEN = 25          # batas kandidat; tiap kandidat = 1 permintaan berbobot 5
+# Explorer (Etherscan V2) memberi SETIAP alamat yang pernah menyentuh satu token, bukan
+# cuma 100 trader teratas seperti GMGN — jadi dompet kecil pun terjangkau. Harganya:
+# beberapa permintaan per token, maka hanya kandidat teratas yang digali sedalam ini.
+MAKS_TOKEN_EXPLORER = 3
+HALAMAN_EXPLORER = 3
 JEDA_BOBOT5 = 1.3        # paket Free GMGN: 5/5, jadi endpoint bobot 5 = 1 permintaan/detik
 
 
@@ -249,6 +254,29 @@ def gmgn_trader(chain, alamat, limit=100):
     return [b for b in baris if isinstance(b, dict)]
 
 
+def _dari_explorer(f, chain, kontrak, nama, terlihat):
+    """(hasil, catatan) dari explorer. ([], None) kalau chain-nya memang tidak dilayani."""
+    try:
+        import etherscan
+    except Exception:
+        return [], None
+    if (chain or "").lower() not in etherscan.CHAIN:
+        return [], None
+    if not etherscan.kunci():
+        return [], etherscan.catatan_kunci()
+    alamat, catatan = etherscan.alamat_token(chain, kontrak, HALAMAN_EXPLORER)
+    keluar = []
+    for a in sorted(alamat):
+        kec = _kecocokan(f, a, None)
+        if not kec or (a, kontrak.lower()) in terlihat:
+            continue
+        terlihat.add((a, kontrak.lower()))
+        keluar.append({"alamat": a, "token": nama, "kontrak": kontrak, "chain": chain,
+                       "profit_usd": None, "beli_usd": None, "jual_usd": None,
+                       "saldo": None, "sumber": f"explorer ({chain})", "kecocokan": kec})
+    return keluar, catatan
+
+
 def _angka(x):
     try:
         return round(float(x), 2)
@@ -321,8 +349,15 @@ def cari_di_token(fragmen, token_q, chain=None, maks_token=MAKS_TOKEN):
                 kandidat.append((c,) + per_chain[c][i])
     dipakai = kandidat[:maks_token]
 
-    hasil, terlihat, gagal_trader = [], set(), []
+    hasil, terlihat, gagal_trader, catatan_ex = [], set(), [], []
     for i, (c, alamat, nama) in enumerate(dipakai):
+        # Explorer lebih dulu: ia menjangkau SETIAP alamat yang pernah menyentuh token
+        # ini, sedangkan GMGN hanya 100 trader teratas.
+        if i < MAKS_TOKEN_EXPLORER:
+            tambahan, cat = _dari_explorer(f, c, alamat, nama, terlihat)
+            hasil.extend(tambahan)
+            if cat and cat not in catatan_ex:
+                catatan_ex.append(cat)
         baris = gmgn_trader(c, alamat)
         if baris is None:
             gagal_trader.append(c)
@@ -347,8 +382,11 @@ def cari_di_token(fragmen, token_q, chain=None, maks_token=MAKS_TOKEN):
     # disisir — dan yang dibaca user pertama justru yang paling lemah.
     hasil.sort(key=lambda h: (_URUTAN[h["kecocokan"]], h["alamat"]))
 
-    return hasil, _catatan_token(nama_token, chain, per_chain, daftar_chain, dipakai,
-                                 total, gagal_cari, gagal_trader, bool(hasil))
+    catatan = _catatan_token(nama_token, chain, per_chain, daftar_chain, dipakai,
+                             total, gagal_cari, gagal_trader, bool(hasil))
+    if catatan_ex:
+        catatan += " " + " ".join(catatan_ex)
+    return hasil, catatan
 
 
 def _catatan_token(nama_token, chain, per_chain, daftar_chain, dipakai, total,

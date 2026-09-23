@@ -1,0 +1,35 @@
+# Pemeriksaan sekali jalan: apakah kunci Etherscan V2 hidup, dan chain mana yang
+# benar-benar terbuka untuk paket gratis.
+#
+# Diuji tanpa kunci 23 Sep 2026: chain 1/4663/42161 menjawab "Missing/Invalid API Key"
+# (gratis, perlu kunci) sedangkan 56/8453 menjawab "Free API access is not supported for
+# this chain" (berbayar). Pemeriksaan ini yang menjaga supaya perubahan kebijakan mereka
+# ketahuan sebagai PESAN, bukan sebagai hasil yang diam-diam mengosong.
+#
+# CATATAN KEAMANAN: repo ini publik, jadi log Actions ikut terbaca publik. Yang dicetak
+# hanya diterima/ditolak dan JUMLAH alamat — tidak pernah kunci, tidak pernah alamat.
+name: Periksa akses explorer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  periksa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Uji akses Etherscan V2
+        env:
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+        run: |
+          python cloud/etherscan.py --periksa
+          echo "---- alamat nyata dari satu token Robinhood Chain ----"
+          python cloud/etherscan.py robinhood 0x492f71fb6cb10f923b0740436f5cd39c7c9a177a
