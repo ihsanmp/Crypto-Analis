@@ -55,7 +55,7 @@ CHAIN_BERBAYAR = {"bsc": 56, "base": 8453}
 JEDA_MIN = 0.4
 _terakhir = [0.0]
 HALAMAN = 100            # maksimum baris per permintaan yang kita minta
-MAKS_HALAMAN = 5         # 500 transfer per token; batasnya disebut ke user, tidak disembunyikan
+MAKS_HALAMAN = 10        # 1.000 transfer per token; batasnya disebut ke user, tidak disembunyikan
 
 
 def kunci():

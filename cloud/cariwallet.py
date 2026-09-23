@@ -174,7 +174,7 @@ MAKS_TOKEN = 25          # batas kandidat; tiap kandidat = 1 permintaan berbobot
 # cuma 100 trader teratas seperti GMGN — jadi dompet kecil pun terjangkau. Harganya:
 # beberapa permintaan per token, maka hanya kandidat teratas yang digali sedalam ini.
 MAKS_TOKEN_EXPLORER = 3
-HALAMAN_EXPLORER = 3
+HALAMAN_EXPLORER = 6
 JEDA_BOBOT5 = 1.3        # paket Free GMGN: 5/5, jadi endpoint bobot 5 = 1 permintaan/detik
 
 

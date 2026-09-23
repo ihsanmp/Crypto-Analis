@@ -27,6 +27,9 @@ jobs:
       - name: Uji akses GMGN OpenAPI
         env:
           GMGN_API_KEY: ${{ secrets.GMGN_API_KEY }}
+          # Jalan penuh pencarian dompet memakai keduanya: GMGN menemukan kandidat
+          # tokennya, explorer menyisir alamatnya lebih dalam dari 100 trader teratas.
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
         run: |
           python cloud/gmgn.py --periksa
           echo "---- data nyata untuk satu token Solana ----"

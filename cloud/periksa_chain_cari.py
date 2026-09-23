@@ -82,6 +82,7 @@ print(f"  sama persis: {len(urutan) == 2 and urutan[0] == urutan[1]}")
 # Uji jalan penuh: chain yang disebut user harus benar-benar mempersempit. Yang dicetak
 # tetap tanpa alamat — cuma jumlah dan jenis kecocokannya.
 hasil, catatan = cw.cari_di_token("0xda...09d9", "LEVERA robinhood", maks_token=5)
-print(f"  cari di token: {len(hasil)} hasil, kelas={[h['kecocokan'] for h in hasil]}")
+print(f"  cari di token: {len(hasil)} hasil, kelas={[h['kecocokan'] for h in hasil]}, "
+      f"sumber={[h['sumber'] for h in hasil]}")
 print(f"  catatan: {catatan}")
 
