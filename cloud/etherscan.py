@@ -32,6 +32,7 @@ import argparse
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -46,6 +47,13 @@ CHAIN = {"ethereum": 1, "robinhood": 4663, "arbitrum": 42161}
 # Ada di V2, tapi paket gratis menolaknya. Disimpan supaya penolakannya bisa DIJELASKAN,
 # bukan muncul sebagai kekosongan tanpa sebab.
 CHAIN_BERBAYAR = {"bsc": 56, "base": 8453}
+# Batas paket gratis: 3 panggilan/detik — angkanya dari mulut mereka sendiri di run
+# 35814979407 ("Max calls per sec rate limit reached (3/sec)"), bukan dari dokumentasi.
+# Tanpa penahan ini, permintaan halaman kedua dan seterusnya hampir pasti ditolak, dan
+# penolakan itu muncul sebagai daftar alamat yang lebih pendek — bentuk kegagalan yang
+# paling mudah disalahartikan sebagai "alamatnya memang cuma segini".
+JEDA_MIN = 0.4
+_terakhir = [0.0]
 HALAMAN = 100            # maksimum baris per permintaan yang kita minta
 MAKS_HALAMAN = 5         # 500 transfer per token; batasnya disebut ke user, tidak disembunyikan
 
@@ -68,8 +76,28 @@ def _url(chain_id, param):
     return f"{BASIS}?{urllib.parse.urlencode(p)}"
 
 
-def try_json(url):
-    """{"__err": ...} kalau gagal. Kuncinya tidak pernah ikut tercetak di pesan galat."""
+def _tahan_laju():
+    """Jarak antar permintaan dijaga di sisi kita, bukan diserahkan ke keberuntungan."""
+    sisa = JEDA_MIN - (time.time() - _terakhir[0])
+    if sisa > 0:
+        time.sleep(sisa)
+    _terakhir[0] = time.time()
+
+
+def try_json(url, ulang=True):
+    """{"__err": ...} kalau gagal. Kuncinya tidak pernah ikut tercetak di pesan galat.
+
+    Sekali coba ulang untuk penolakan batas laju: itu keadaan sesaat, bukan jawaban.
+    """
+    d = _sekali(url)
+    if ulang and "__err" in d and "rate limit" in d["__err"].lower():
+        time.sleep(1.2)
+        d = _sekali(url)
+    return d
+
+
+def _sekali(url):
+    _tahan_laju()
     try:
         with urllib.request.urlopen(urllib.request.Request(url, headers=UA),
                                     timeout=TIMEOUT) as r:

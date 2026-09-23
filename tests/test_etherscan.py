@@ -155,3 +155,50 @@ def test_hanya_endpoint_baca():
     src = open(os.path.join(AKAR, "cloud", "etherscan.py"), encoding="utf-8").read()
     for terlarang in ("method=\"POST\"", "urlopen(req, data", "data=", "proxy&action=eth_send"):
         assert terlarang not in src, terlarang
+
+
+# ---- batas laju (run 35814979407) ---------------------------------------------------------
+# Paket gratis: 3 panggilan/detik — angkanya dari mulut mereka sendiri, bukan dokumentasi:
+# "Max calls per sec rate limit reached (3/sec)". Tanpa penahan, permintaan halaman kedua
+# dan seterusnya ditolak, dan penolakan itu muncul sebagai daftar alamat yang lebih pendek
+# — bentuk kegagalan yang paling mudah dibaca sebagai "alamatnya memang cuma segini".
+
+def test_jarak_antar_permintaan_dijaga(monkeypatch):
+    tidur = []
+    monkeypatch.setattr(es.time, "sleep", lambda d: tidur.append(d))
+    monkeypatch.setattr(es, "_terakhir", [es.time.time()])
+    es._tahan_laju()
+    assert tidur and 0 < tidur[0] <= es.JEDA_MIN
+
+
+def test_penolakan_batas_laju_dicoba_ulang_sekali(monkeypatch):
+    """Batas laju itu keadaan sesaat, bukan jawaban."""
+    monkeypatch.setattr(es.time, "sleep", lambda d: None)
+    balasan = [{"__err": "Max calls per sec rate limit reached (3/sec)"},
+               {"status": "1", "result": [{"from": "0x" + "a" * 40, "to": "0x" + "b" * 40}]}]
+    monkeypatch.setattr(es, "_sekali", lambda url: balasan.pop(0))
+    d = es.try_json("https://contoh")
+    assert d.get("status") == "1" and not balasan
+
+
+def test_coba_ulang_hanya_sekali(monkeypatch):
+    """Mengulang terus di tengah cooldown justru memperpanjang blokirnya."""
+    monkeypatch.setattr(es.time, "sleep", lambda d: None)
+    panggil = []
+
+    def selalu_ditolak(url):
+        panggil.append(url)
+        return {"__err": "Max calls per sec rate limit reached (3/sec)"}
+
+    monkeypatch.setattr(es, "_sekali", selalu_ditolak)
+    d = es.try_json("https://contoh")
+    assert "__err" in d and len(panggil) == 2
+
+
+def test_galat_selain_batas_laju_tidak_diulang(monkeypatch):
+    monkeypatch.setattr(es.time, "sleep", lambda d: pytest.fail("tidak perlu menunggu"))
+    panggil = []
+    monkeypatch.setattr(es, "_sekali",
+                        lambda url: panggil.append(url) or {"__err": "Missing/Invalid API Key"})
+    es.try_json("https://contoh")
+    assert len(panggil) == 1
