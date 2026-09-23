@@ -520,6 +520,7 @@ def test_permintaan_gagal_bukan_daftar_kosong(monkeypatch):
 
 class _ExplorerPalsu:
     CHAIN = {"ethereum": 1, "robinhood": 4663, "arbitrum": 42161}
+    TANDA_POTONG = "dipotong di batas"
     dipakai = []
     punya_kunci = True
     isi = set()
@@ -532,10 +533,15 @@ class _ExplorerPalsu:
     def catatan_kunci():
         return "ETHERSCAN_API_KEY belum dipasang, jadi bagian itu belum diperiksa."
 
+    potong = False
+
     @staticmethod
     def alamat_token(chain, kontrak, halaman=3):
         _ExplorerPalsu.dipakai.append((chain, kontrak))
-        return set(_ExplorerPalsu.isi), f"Explorer {chain}: {len(_ExplorerPalsu.isi)} alamat."
+        catatan = f"Explorer {chain}: {len(_ExplorerPalsu.isi)} alamat."
+        if _ExplorerPalsu.potong:
+            catatan += " " + _ExplorerPalsu.TANDA_POTONG
+        return set(_ExplorerPalsu.isi), catatan
 
 
 @pytest.fixture
@@ -543,6 +549,7 @@ def explorer(monkeypatch):
     _ExplorerPalsu.dipakai = []
     _ExplorerPalsu.punya_kunci = True
     _ExplorerPalsu.isi = set()
+    _ExplorerPalsu.potong = False
     monkeypatch.setitem(sys.modules, "etherscan", _ExplorerPalsu)
     return _ExplorerPalsu
 
@@ -583,3 +590,25 @@ def test_hasil_explorer_tanpa_angka_tidak_merusak_kartu(monkeypatch, explorer):
     kartu = cw.kartu_token("0xda...09d9", "LEVERA robinhood", hasil, catatan)
     assert target in kartu and "explorer (robinhood)" in kartu
     assert "profit" not in kartu
+
+
+def test_tiruan_explorer_sepadan_dengan_modul_aslinya():
+    """Tiruan yang ketinggalan dari aslinya membuat tes hijau untuk kode yang jatuh di
+    produksi — persis yang terjadi ketika TANDA_POTONG ditambahkan."""
+    import etherscan as asli
+    for atribut in ("CHAIN", "TANDA_POTONG", "kunci", "catatan_kunci", "alamat_token"):
+        assert hasattr(asli, atribut), atribut
+        assert hasattr(_ExplorerPalsu, atribut), atribut
+
+
+def test_catatan_explorer_diringkas_bukan_diulang_tiap_token(monkeypatch, explorer):
+    """Tiga kalimat explorer beruntun yang isinya sama membuat peringatannya dilewati
+    mata — padahal yang diperingatkan (daftar terpotong) justru yang penting."""
+    explorer.isi = {"0x" + "c" * 40}
+    explorer.potong = True
+    banyak = [(f"0x{i:04x}", f"Levera {i}") for i in range(5)]
+    _gmgn_tiruan(monkeypatch, {"robinhood": banyak}, {})
+    _hasil, catatan = cw.cari_di_token("0xda...09d9", "LEVERA robinhood")
+    assert catatan.count("Explorer robinhood") == 1, catatan
+    assert f"{cw.MAKS_TOKEN_EXPLORER} token" in catatan
+    assert "terpotong di batas" in catatan

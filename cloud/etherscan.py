@@ -55,6 +55,9 @@ CHAIN_BERBAYAR = {"bsc": 56, "base": 8453}
 JEDA_MIN = 0.4
 _terakhir = [0.0]
 HALAMAN = 100            # maksimum baris per permintaan yang kita minta
+# Dipakai juga oleh pemanggilnya untuk tahu daftarnya terpotong, jadi kalimatnya
+# satu tempat saja — bukan dicocokkan ulang dengan tangan di modul lain.
+TANDA_POTONG = "dipotong di batas"
 MAKS_HALAMAN = 10        # 1.000 transfer per token; batasnya disebut ke user, tidak disembunyikan
 
 
@@ -162,7 +165,7 @@ def alamat_token(chain, kontrak, maks_halaman=MAKS_HALAMAN):
     catatan = (f"Explorer {chain}: {len(alamat)} alamat dari {transfer} transfer terakhir "
                f"({halaman} halaman)")
     if transfer >= HALAMAN * maks_halaman:
-        catatan += " — dipotong di batas, transfer yang lebih lama belum disisir"
+        catatan += f" — {TANDA_POTONG}, transfer yang lebih lama belum disisir"
     return alamat, catatan + "."
 
 

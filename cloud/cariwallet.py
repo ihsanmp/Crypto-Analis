@@ -255,15 +255,21 @@ def gmgn_trader(chain, alamat, limit=100):
 
 
 def _dari_explorer(f, chain, kontrak, nama, terlihat):
-    """(hasil, catatan) dari explorer. ([], None) kalau chain-nya memang tidak dilayani."""
+    """(hasil, catatan, statistik) dari explorer.
+
+    statistik = (jumlah_alamat, terpotong) supaya pemanggilnya bisa MERINGKAS. Sebelum ini
+    tiap token menyumbang satu kalimat sendiri, dan kartunya berakhir dengan tiga kalimat
+    explorer beruntun yang isinya sama — peringatan yang berulang-ulang justru dilewati
+    mata, padahal yang diperingatkan (daftar terpotong) itu penting.
+    """
     try:
         import etherscan
     except Exception:
-        return [], None
+        return [], None, None
     if (chain or "").lower() not in etherscan.CHAIN:
-        return [], None
+        return [], None, None
     if not etherscan.kunci():
-        return [], etherscan.catatan_kunci()
+        return [], etherscan.catatan_kunci(), None
     alamat, catatan = etherscan.alamat_token(chain, kontrak, HALAMAN_EXPLORER)
     keluar = []
     for a in sorted(alamat):
@@ -274,7 +280,7 @@ def _dari_explorer(f, chain, kontrak, nama, terlihat):
         keluar.append({"alamat": a, "token": nama, "kontrak": kontrak, "chain": chain,
                        "profit_usd": None, "beli_usd": None, "jual_usd": None,
                        "saldo": None, "sumber": f"explorer ({chain})", "kecocokan": kec})
-    return keluar, catatan
+    return keluar, None, (len(alamat), etherscan.TANDA_POTONG in (catatan or ""))
 
 
 def _angka(x):
@@ -349,15 +355,20 @@ def cari_di_token(fragmen, token_q, chain=None, maks_token=MAKS_TOKEN):
                 kandidat.append((c,) + per_chain[c][i])
     dipakai = kandidat[:maks_token]
 
-    hasil, terlihat, gagal_trader, catatan_ex = [], set(), [], []
+    hasil, terlihat, gagal_trader, catatan_ex, liput_ex = [], set(), [], [], {}
     for i, (c, alamat, nama) in enumerate(dipakai):
         # Explorer lebih dulu: ia menjangkau SETIAP alamat yang pernah menyentuh token
         # ini, sedangkan GMGN hanya 100 trader teratas.
         if i < MAKS_TOKEN_EXPLORER:
-            tambahan, cat = _dari_explorer(f, c, alamat, nama, terlihat)
+            tambahan, cat, stat = _dari_explorer(f, c, alamat, nama, terlihat)
             hasil.extend(tambahan)
             if cat and cat not in catatan_ex:
                 catatan_ex.append(cat)
+            if stat:
+                e = liput_ex.setdefault(c, [0, 0, 0])
+                e[0] += stat[0]
+                e[1] += 1
+                e[2] += 1 if stat[1] else 0
         baris = gmgn_trader(c, alamat)
         if baris is None:
             gagal_trader.append(c)
@@ -384,6 +395,14 @@ def cari_di_token(fragmen, token_q, chain=None, maks_token=MAKS_TOKEN):
 
     catatan = _catatan_token(nama_token, chain, per_chain, daftar_chain, dipakai,
                              total, gagal_cari, gagal_trader, bool(hasil))
+    for c, (n_alamat, n_token, n_potong) in sorted(liput_ex.items()):
+        kal = (f"Explorer {c}: {n_alamat} alamat dari {n_token} token "
+               f"(jangkauannya setiap alamat yang pernah menyentuh token itu, bukan cuma "
+               f"100 trader teratas)")
+        if n_potong:
+            kal += (f"; {n_potong} di antaranya terpotong di batas — transfer yang lebih "
+                    f"lama belum disisir")
+        catatan_ex.append(kal + ".")
     if catatan_ex:
         catatan += " " + " ".join(catatan_ex)
     return hasil, catatan
