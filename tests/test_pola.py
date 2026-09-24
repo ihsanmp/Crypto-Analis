@@ -74,3 +74,22 @@ def test_parameter_a_priori():
     assert P.PARAM["harian"] == {"fraktal": 3, "jeda_min": 10, "jeda_maks": 120,
                                  "tembus_maks": 60}
     assert (P.TOLERANSI, P.KEDALAMAN_MIN) == (0.05, 0.08)
+
+
+
+def test_btc_memakai_riwayat_panjang_agar_pola_mingguan_terlihat(monkeypatch):
+    """Candle bursa saja terlalu pendek: di run 35994887380 pola mingguan (neckline $82.833)
+    hilang dari blok live. Tanpa jaringan pun riwayat repo harus terpakai."""
+    import indicators
+    monkeypatch.setattr(indicators, "fetch_base", lambda *a, **k: (None, None, None, "uji"))
+    k, sumber = P.data_btc()
+    assert len(k) > 5000 and "riwayat repo" in sumber
+    hidup = P.cari(P.mingguan(k), "mingguan")
+    assert any(round(h["neckline"]) == 82833 for h in hidup), hidup
+
+
+def test_blok_menyebut_rentang_data_dan_koma_desimal():
+    k = P._muat_btc()
+    teks = P.ringkas("BTC", k, "riwayat repo (Bitstamp)")
+    assert "Data harian 2012-01-01 s.d. 2026-09-01" in teks
+    assert "7.5%" not in teks and "% dari harga kini" in teks

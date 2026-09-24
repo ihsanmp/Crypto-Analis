@@ -244,8 +244,39 @@ def _usd(x):
     return "$" + f"{x:,.0f}".replace(",", ".") if x >= 100 else f"${x:,.4f}"
 
 
-def ringkas(simbol, harian):
-    b = [f"POLA DOUBLE BOTTOM/TOP {simbol} (dideteksi kode, pola.py)"]
+def _persen(x):
+    return f"{x:+.1f}%".replace(".", ",")
+
+
+def _tgl(ms):
+    return dt.datetime.fromtimestamp(ms / 1000, dt.timezone.utc).date()
+
+
+def data_btc():
+    """Riwayat repo 2012–2026 disambung candle harian terbaru — data yang SAMA dengan yang
+    diuji. Candle bursa saja terlalu pendek untuk skala mingguan: di run 35994887380 pola
+    mingguan (neckline $82.833, sama dengan klaim Astronacci 83.000) hilang dari blok
+    live karena itu."""
+    k = _muat_btc()
+    sumber = "riwayat repo (Bitstamp)"
+    try:
+        from indicators import fetch_base, resolve_cg_id
+        baru, src, _q, _e = fetch_base("BTC", resolve_cg_id("BTC"), "1d")
+    except Exception:
+        baru, src = None, None
+    if baru:
+        akhir = k[-1][0]
+        tambah = [c for c in baru if c[0] > akhir + 3600 * 1000]
+        if tambah:
+            k += tambah
+            sumber += f" + {src}"
+    return k, sumber
+
+
+def ringkas(simbol, harian, sumber=None):
+    b = [f"POLA DOUBLE BOTTOM/TOP {simbol} (dideteksi kode, pola.py)",
+         f"  Data harian {_tgl(harian[0][0])} s.d. {_tgl(harian[-1][0])}"
+         + (f" ({sumber})" if sumber else "")]
     ada = False
     for skala, k in (("mingguan", mingguan(harian)), ("harian", harian)):
         for h in cari(k, skala):
@@ -255,7 +286,7 @@ def ringkas(simbol, harian):
             b.append(f"    lembah/puncak {_usd(h['lembah_puncak'][0])} & "
                      f"{_usd(h['lembah_puncak'][1])} · neckline {_usd(h['neckline'])} · "
                      f"target ukur {_usd(h['target_ukur'])} "
-                     f"({100 * (h['target_ukur'] / harga - 1):+.1f}% dari harga kini) · "
+                     f"({_persen(100 * (h['target_ukur'] / harga - 1))} dari harga kini) · "
                      f"invalid {_usd(h['invalid'])}")
     if not ada:
         b.append("  Tidak ada double bottom/top yang masih hidup di skala harian maupun "
@@ -280,14 +311,17 @@ def main():
                           "mingguan": uji_pola(mingguan(k), "mingguan")},
                          indent=2, ensure_ascii=False))
         return
-    from indicators import fetch_base, resolve_cg_id
     s = a.simbol.upper()
-    harian, _sumber, _kual, err = fetch_base(s, resolve_cg_id(s), "1d")
-    if not harian:
-        print(f"POLA DOUBLE BOTTOM/TOP {s}: candle harian tidak tersedia ({err}) — "
-              "jangan menamai pola apa pun.")
-        return
-    print(ringkas(s, harian))
+    if s == "BTC":
+        harian, sumber = data_btc()
+    else:
+        from indicators import fetch_base, resolve_cg_id
+        harian, sumber, _kual, err = fetch_base(s, resolve_cg_id(s), "1d")
+        if not harian:
+            print(f"POLA DOUBLE BOTTOM/TOP {s}: candle harian tidak tersedia ({err}) — "
+                  "jangan menamai pola apa pun.")
+            return
+    print(ringkas(s, harian, sumber))
 
 
 if __name__ == "__main__":
