@@ -398,6 +398,28 @@ dihitung dari harga penutupan, sehingga jangkauan sebenarnya cenderung DIREMEHKA
 **Tanggal horizon** = `generated_utc` + `horizon_hari`. Tulis tanggalnya, bukan cuma
 "60 hari" — pembaca perlu tahu kapan pandangan ini kedaluwarsa.
 
+## Regresi log BTC — konteks siklus, BUKAN target
+
+Khusus BTC, brief memuat blok `REGRESI LOG BTC (logregresi.py)`: chart regresi
+logaritmik BitcoinTalk 2014 (log10 P = 2,9065·ln(hari) − 19,493) beserta UJIANNYA
+terhadap 12 tahun sesudah chart itu dibuat. Acuan lengkap: `cloud/data/regresi_log_btc.md`.
+
+**Yang BOLEH:** satu kalimat konteks siklus jangka panjang di bagian fundamental atau
+outlook — "di fit ulang 2012–kini harga berada di persentil N sejarah simpangannya
+(in-sample)". Salin angkanya dari blok; jangan menghitung nilai garis sendiri.
+
+**Yang DILARANG:**
+- Menyebut garis mana pun sebagai "nilai wajar", "harga seharusnya", atau target. Garis
+  2014 SUDAH GAGAL di luar sampelnya (angkanya di blok A), dan garis fit ulang bergeser
+  puluhan persen hanya karena batas datanya digeser (blok B, kepekaan).
+- Mengutip R² sebagai bukti daya ramal — residunya nyaris random walk (blok C).
+- Mengutip "tiap 10x makin lama 1,41×" sebagai temuan — itu bawaan rumus.
+- Membiarkan regresi ini mengalahkan PROYEKSI. Target, rentang, dan peluang OUTLOOK
+  tetap dari `proyeksi.py`; regresi hanya latar belakang.
+
+**Kalau bloknya tidak ada atau gagal:** jangan menyebut regresi log sama sekali — lebih
+baik tidak ada daripada angka garis yang dihitung di kepala.
+
 **KEYAKINAN DIBATASI MUTU BUKTI.** Blok `[KELENGKAPAN DATA]` di brief menyebut berapa
 sumber yang benar-benar tiba. SKOR wajib mencerminkannya: skor tinggi di atas data tipis
 menyatakan keyakinan yang tidak kamu miliki. Sumber yang gagal disebut sebagai HILANG —

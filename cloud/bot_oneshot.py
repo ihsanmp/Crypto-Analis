@@ -3197,6 +3197,15 @@ def data_mentah_crypto(coin):
         lewat.append(f"etf.py ({t} tidak punya ETF spot AS)")
     tugas.append(("PROYEKSI (proyeksi.py)",
                   ["cloud/proyeksi.py", coin, "--hari", "60", "--ringkas"], 0))
+    # Regresi log BTC — chart BitcoinTalk 2014 yang dikirim user (24 Sep 2026). Yang
+    # ditanam UJIANNYA, bukan garisnya: di luar sampelnya garis itu gagal, dan tanpa blok
+    # ini model akan mengutip chart populer itu sebagai "nilai wajar". Harga acuannya
+    # diambil dari brief yang sama supaya dua angka "harga hari ini" tidak bertabrakan.
+    if t == "BTC":
+        arg_lr = ["cloud/logregresi.py", "--ringkas"]
+        if pasar_koin.get("harga_usd"):
+            arg_lr += ["--harga", f"{pasar_koin['harga_usd']}"]
+        tugas.append(("REGRESI LOG BTC (logregresi.py)", arg_lr, 0))
     # Pemisah gerakan koin dari gerakan pasar. Tanpa ini "naik 18% sepekan" terdengar seperti
     # prestasi koinnya, padahal kalau BTC naik 24% di pekan yang sama koin itu TERTINGGAL —
     # dan kesimpulannya berbalik arah.

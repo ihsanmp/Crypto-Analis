@@ -8300,3 +8300,59 @@ def test_jalur_cari_wallet_tanpa_model():
 def test_konteks_token_dibaca_dari_perintah(teks, frag, token):
     assert bot.classify(teks) == "cariwallet", teks
     assert bot.konteks_wallet(teks) == (frag, token), teks
+
+
+# ------------------------- regresi log BTC: chart 2014 ditanam BERSAMA ujiannya (24 Sep 2026)
+
+def test_blok_regresi_log_menyala_dan_tidak_bocor():
+    for pesan in ("btc sekarang di bawah garis regresi log, berarti murah?",
+                  "gimana menurutmu rainbow chart bitcoin",
+                  "apakah power law btc masih berlaku",
+                  "nilai wajar btc berapa sekarang"):
+        assert "gagal di luar sampelnya" in bot.build_chat_prompt(pesan), pesan
+    for pesan in ("btc gimana menurutmu", "analisa sol", "halo"):
+        assert "gagal di luar sampelnya" not in bot.build_chat_prompt(pesan), pesan
+
+
+def test_blok_regresi_log_membawa_angka_ujiannya():
+    """Tanpa angka, model menjawab dari ingatan — dan chart populer ini diingat orang
+    sebagai 'model yang terbukti'. Angka ujiannya yang membuatnya tidak bisa begitu."""
+    p = bot.build_chat_prompt("regresi log btc gimana")
+    for angka in ("53 dari 4.340", "1.244 hari", "meleset 10 hari", "0,998", "58%"):
+        assert angka in p, angka
+    # Ramalan jitu harus selalu disebut bersama yang meleset.
+    assert "Sebut\nkeduanya bersama" in p or "keduanya bersama" in p
+    # Jebakan bacaan chart-nya sendiri.
+    assert "KELIPATAN × 100" in p
+
+
+def test_regresi_log_masuk_brief_btc_saja():
+    """Dijalankan KODE di brief BTC — model di tahap sintesis tidak punya shell. Harga
+    acuannya dari brief yang sama, supaya dua 'harga hari ini' tidak bertabrakan."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    i = src.index("def data_mentah_crypto(")
+    blok = src[i:src.index("\ndef ", i + 10)]
+    j = blok.index("logregresi.py")
+    sebelum = blok[max(0, j - 400):j]
+    assert 'if t == "BTC":' in sebelum, "regresi log hanya untuk BTC"
+    assert "--harga" in blok[j:j + 300] and "pasar_koin" in blok[j:j + 300]
+
+
+def test_aturan_analisa_melarang_regresi_jadi_target():
+    a = open(os.path.join(AKAR, "cloud", "prompts", "analisa.md"), encoding="utf-8").read()
+    i = a.index("## Regresi log BTC")
+    bagian = a[i:i + 2500]
+    for wajib in ("BUKAN target", "nilai wajar", "SUDAH GAGAL", "mengalahkan PROYEKSI",
+                  "bawaan rumus", "jangan menyebut regresi log sama sekali"):
+        assert wajib in bagian, wajib
+
+
+def test_acuan_regresi_log_mencatat_koreksi_bacaannya():
+    """Koreksi yang ditemukan saat membaca chart tidak boleh hilang diam-diam: dua di
+    antaranya (hari nol dan arti persennya) mengubah seluruh angka turunannya."""
+    d = open(os.path.join(AKAR, "cloud", "data", "regresi_log_btc.md"),
+             encoding="utf-8").read()
+    assert "9 Jan 2009" in d and "6–9 hari" in d
+    assert "KELIPATAN × 100" in d and "+162%" in d
+    assert "a = 4,10" in d, "kepekaan terhadap titik AWAL data harus tercatat"
+    assert "53 dari 4.340" in d and "1.244" in d

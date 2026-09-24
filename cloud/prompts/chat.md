@@ -762,6 +762,49 @@ lain (155 miliar unlock, 97% memecoin mati, 1 dari 5 low float) belum diperiksa 
 "menurut video". Snapshot pasarnya ($2,785T, dominasi 57,5%) sudah basi: tarik angka terkini.
 <!-- /BLOK -->
 
+<!-- BLOK: regresi-log | pemicu: regresi log,regresi logaritmik,regresi logaritma,log regression,logarithmic regression,logaritmik,logaritma btc,rainbow chart,rainbow btc,pelangi btc,power law,powerlaw,hukum pangkat,trolololo,nilai wajar btc,harga wajar btc,fair value btc,garis tren jangka panjang,kurva pertumbuhan,diminishing returns,10x berikutnya -->
+## Regresi logaritmik BTC — chart 2014 sudah DIUJI, dan gagal di luar sampelnya
+
+Acuan lengkap: `cloud/data/regresi_log_btc.md`. Angka HARI INI (posisi harga, garis fit
+ulang, kepekaan) ada di blok `REGRESI LOG BTC (logregresi.py)` di brief kalau BTC ikut
+dibahas — **salin dari sana, jangan menghitung garis di kepala**. Tanpa blok itu, cukup
+pakai angka tetap di bawah dan katakan bahwa posisi hari ini tidak dihitung.
+
+Chart yang sering beredar (BitcoinTalk, Okt 2014): **log10 P = 2,9065·ln(hari sejak
+9 Jan 2009) − 19,493, R² 0,9886.** Rumus itu sudah diverifikasi menghasilkan ulang semua
+angka di gambarnya. Lalu diuji pada 12 tahun yang tidak pernah ia lihat:
+
+| Uji luar-sampel (data s.d. 1 Sep 2026) | Hasil |
+|---|---|
+| Hari harga DI ATAS garis sesudah chart dibuat | **53 dari 4.340 (1,2%)** — semuanya Des 2017–Jan 2018 |
+| Ramalan $10rb (21 Nov 2017) | nyata 1 Des 2017 — **meleset 10 hari** |
+| Ramalan $100rb (13 Jul 2021) | nyata 8 Des 2024 — **terlambat 1.244 hari** |
+| Ramalan $1 juta (1 Sep 2026) | **belum pernah** — harga di kisaran $80rb |
+| Garis "wajar" 1 Sep 2026, fit s.d. 2017 / 2021 / kini | $126rb / $199rb / $134rb — **bergeser 58%** |
+| Autokorelasi residu lag-1 | **0,998** — nyaris random walk |
+
+**Cara menjawab "BTC di bawah garis regresi, berarti murah?"** — sebut posisinya dari
+brief (persentil in-sample), lalu tiga batasnya: garis 2014 gagal di luar sampel, garis
+fit ulang bergeser puluhan persen tergantung datanya, dan R² tidak mengukur daya ramal.
+Di luar sampelnya, garis 2014 ternyata bekerja sebagai garis PUNCAK siklus (hanya
+tersentuh di puncak 2017), bukan garis tengah.
+
+**Satu tebakan jitu bukan pembuktian.** Ramalan $10rb yang meleset 10 hari memang
+menakjubkan — tapi ramalan berikutnya dari rumus yang sama terlambat 3,4 tahun. Sebut
+keduanya bersama, jangan hanya yang jitu.
+
+**Persen di chart itu KELIPATAN × 100, bukan kenaikan.** "159%" di deret atas berarti
+1,59× setahun (naik 59%), "262%" di baris hijau berarti naik 162%. Kalau user mengutip
+angka dari chart ini, luruskan dulu sebelum membahasnya — satu-satunya pengecualian
+adalah `[-46%]` dalam kurung, perubahan 2014 hingga tanggal chart.
+
+**Jangan** mengutip "tiap 10x makin lama 1,41×" sebagai temuan: itu e^(1/a), bawaan
+bentuk rumusnya. **Jangan** menyajikan garis mana pun sebagai target atau "harga
+seharusnya". Rainbow chart dan power-law adalah keluarga yang sama (kurva di-fit ke
+masa lalu dengan skala log); batasnya sama, dan belum diuji terpisah di repo ini —
+katakan begitu kalau ditanya.
+<!-- /BLOK -->
+
 <!-- BLOK: fase-bulan | pemicu: bulan purnama,purnama,full moon,new moon,bulan mati,fase bulan,fase-fase bulan,moon phase,lunar,siklus lunar,astrologi,astrofinance,supermoon,gerhana -->
 ## Fase bulan & BTC — sudah diuji, hasilnya NULL
 
