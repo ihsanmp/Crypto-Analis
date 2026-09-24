@@ -442,6 +442,13 @@ di luar sampelnya, dan metode pyAstroTrader tanpa kebocoran data 51,7% vs baseli
 51,4%. Karena itu tanggal-tanggal ini disajikan sebagai **"tanggal yang diperhatikan
 trader astro"** — banyak pelaku pasar memang memperhatikannya — bukan sebagai titik balik.
 
+**MINOR SWING (khusus BTC).** Blok `MINOR SWING BTC H1 (swing.py)` memuat status setup
+H1 menurut aturan Astronacci (EMA 50 + MACD, swing ≤ 200 pips, RR 1:1) beserta hasil uji
+baliknya: 234 transaksi, menang 47,4%, −0,143R setelah biaya — RUGI. Boleh disebut di
+📐 STRUKTUR sebagai informasi struktur H1 (levelnya disalin dari blok). **Dilarang**
+menyebutnya strategi yang menguntungkan atau mengutip win rate lain. Setup JUAL = short:
+di luar cakupan bot. Acuan: `cloud/data/minor_swing.md`.
+
 **DILARANG:**
 - Menyebut tanggal astro sebagai titik balik, sinyal masuk/keluar, atau alasan skor.
 - Menggeser target, invalidasi, atau peluang OUTLOOK karena peristiwa astro. Semua angka

@@ -238,9 +238,20 @@ def status_kini(candle):
             "setup": None}
 
 
-# Hasil backtest yang dipaku dari uji_swing.py (runner GitHub, Bitstamp H1). Diisi
-# setelah ujinya berjalan; sampai saat itu blok brief menyebutnya BELUM diuji.
-HASIL_UJI = None
+# Hasil backtest yang dipaku dari uji_swing.py — run 35993653964 (runner GitHub,
+# Bitstamp BTC/USD 1h, 24 Sep 2023 – 24 Sep 2026, 26.298 candle), SESUDAH dua bias
+# optimis dibuang. Versi berbias (run 35993312501) memberi 451 transaksi, menang 60,3%,
+# +0,099R — seluruh "keunggulan" itu berasal dari pengisian order di harga yang sudah
+# terlewati. Detail: cloud/data/minor_swing.md.
+HASIL_UJI = {
+    "periode": "BTC H1 Sep 2023 – Sep 2026",
+    "biaya": "0,1% pulang-pergi",
+    "n": 234, "menang_persen": "47,4", "ekspektansi_R": "−0,143",
+    "arti": ("Artinya RUGI: impas butuh menang ~54,6%, dan bahkan TANPA biaya "
+             "ekspektansinya −0,051R. Hanya sisi BELI tanpa biaya yang sedikit positif "
+             "(+0,039R) — tidak cukup menutup biaya. Tampilkan status setup sebagai "
+             "informasi; JANGAN menyajikannya sebagai strategi yang punya keunggulan."),
+}
 
 
 def _usd(x):
@@ -258,6 +269,10 @@ def ringkas(st):
                  f"{kata} {_usd(s['entry'])} · SL {_usd(s['sl'])} · TP {_usd(s['tp'])} "
                  f"(rentang {s['rentang'] / PIP_BTC:.0f} pips, RR 1:1, umur "
                  f"{s['umur_candle']} candle)")
+        if s["arah"] == "JUAL":
+            # Bot ini khusus spot (README): setup jual = short, bukan saran.
+            b.append("  Setup JUAL = posisi short — di luar cakupan bot (khusus spot), bukan "
+                     "saran. Bagi pemegang spot artinya: tren H1 sedang turun.")
     elif st["tren"] == "CAMPUR":
         b.append("Tidak ada setup: harga & MACD tidak searah (tren campur) — tunggu.")
     else:

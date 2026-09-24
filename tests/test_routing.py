@@ -8398,3 +8398,30 @@ def test_acuan_astro_trading_mencatat_ujiannya():
         assert angka in d, angka
     # Lisensi: alasan kodenya tidak disalin harus tercatat.
     assert "AGPL-3.0" in d and "tidak ada" in d
+
+
+
+def test_minor_swing_masuk_brief_btc_saja():
+    """Satuan pip $10 hanya berlaku untuk BTC — dijalankan untuk koin lain, levelnya
+    tidak bermakna."""
+    blok = _blok_fungsi("data_mentah_crypto")
+    j = blok.index("swing.py")
+    assert 'if t == "BTC":' in blok[max(0, j - 900):j]
+    baris = [b for b in blok.splitlines() if "MINOR SWING" in b and "tugas.append" in b]
+    assert baris and baris[0].startswith("        "), "harus di dalam cabang BTC"
+
+
+def test_aturan_minor_swing_membawa_kerugiannya():
+    a_md = open(os.path.join(AKAR, "cloud", "prompts", "analisa.md"), encoding="utf-8").read()
+    i = a_md.index("**MINOR SWING (khusus BTC).**")
+    bagian = a_md[i:i + 900]
+    for wajib in ("47,4%", "RUGI", "Dilarang", "short"):
+        assert wajib in bagian, wajib
+
+
+def test_acuan_minor_swing_mencatat_versi_berbiasnya():
+    """Koreksi yang ditemukan tidak boleh hilang diam-diam — versi berbias (60,3%) harus
+    tetap tercatat sebagai peringatan, bukan dihapus."""
+    d = open(os.path.join(AKAR, "cloud", "data", "minor_swing.md"), encoding="utf-8").read()
+    for wajib in ("60,3%", "BERBIAS", "47,4%", "−0,143R", "1 pip = $10", "35993653964"):
+        assert wajib in d, wajib

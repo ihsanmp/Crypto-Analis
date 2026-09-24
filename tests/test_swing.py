@@ -128,11 +128,22 @@ def test_biaya_dihitung_dalam_R():
     assert r == pytest.approx(1 - 0.001 * s["entry"] / s["rentang"])
 
 
-def test_tanpa_hasil_uji_tidak_menyebut_peluang():
+def test_hasil_uji_yang_dipaku_menyebut_kerugiannya():
+    """Versi berbias memberi 60,3% menang. Sesudah bias dibuang: 47,4%, −0,143R. Blok
+    brief wajib membawa angka yang benar — bukan yang menyenangkan."""
     st = {"tren": "NAIK", "harga": 84000, "ema50": 83000, "macd": 120, "setup": None}
     teks = sw.ringkas(st)
-    if sw.HASIL_UJI is None:
-        assert "BELUM dijalankan" in teks
+    for wajib in ("234 transaksi", "47,4%", "−0,143R", "RUGI", "JANGAN"):
+        assert wajib in teks, wajib
+    assert "60,3" not in teks
+
+
+def test_setup_jual_ditandai_di_luar_cakupan_spot():
+    st = {"tren": "TURUN", "harga": 83470, "ema50": 84635, "macd": -465,
+          "setup": {"arah": "JUAL", "entry": 83501, "sl": 84650, "tp": 82352,
+                    "rentang": 1149, "terisi": True, "umur_candle": 10}}
+    teks = sw.ringkas(st)
+    assert "short" in teks and "khusus spot" in teks and "bukan saran" in teks
 
 
 def test_parameter_a_priori():
