@@ -340,5 +340,16 @@
   "pesan": "10Y? bukannya 30Y?",
   "balasan": "Keduanya bener, tapi beda perannya — koreksimu tepat sebagian.\n\nPer 22 September 2026: yield 10Y di 4,96%, yield 30Y di 5,30% (Forbes/TradingEconomics/FRED).\n\n• 10Y = acuan standar buat valuasi saham (discount rate) dan biasanya yang paling dipantau\n[...dipangkas...]\nng mencerminkan kekhawatiran pasar soal utang/fiskal jangka panjang.\n\nYang bisa membatalkan baca ini: kalau ternyata kenaikan 30Y cuma noise teknikal lelang obligasi (auction tail), bukan tren fiskal berkelanjutan — perlu dicek lelang 30Y berikutnya.",
   "angka_kunci": []
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1790261725.1860144,
+  "waktu_utc": "2026-09-24 14:55",
+  "pesan": "kenapa btc terus mengalami penurunan selama 3 hari terakhir ini?",
+  "balasan": "Kombinasi dolar menguat + yield naik, ditambah pelepasan posisi long berleverage — bukan investor institusi kabur. Data per 24 Sep 2026 14:53 WIB + cek makro barusan.\n\n• Puncak $87.446 (21 Sep) → $83.837 (24 Sep) = -4,1% dalam 3 hari, mundur ke pivot\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+1 lainnya)",
+  "angka_kunci": [
+   "harga=87.446",
+   "ema21=79.781"
+  ]
  }
 ]

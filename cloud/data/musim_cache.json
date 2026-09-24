@@ -5,16 +5,36 @@
    "bitcoin_season": 25
   },
   "hasil_uji": "Diuji 16 Sep 2026: indeks 30 hari hitungan sendiri 30, terbitan blockchaincenter 33 — selisih 3 poin (1-2 koin dari 50).",
-  "indeks_30h_dihitung_sendiri": null,
-  "indeks_terbitan_blockchaincenter": {
-   "bulan_30h": 67,
-   "musim_90h": 51,
-   "tahun_365h": 33
+  "indeks_30h_dihitung_sendiri": {
+   "btc_30h_persen": 6.6,
+   "indeks": 54,
+   "n_altcoin": 49,
+   "n_unggul": 27,
+   "unggul_teratas": [
+    "ETH",
+    "BNB",
+    "SOL",
+    "ZEC",
+    "HYPE",
+    "XMR",
+    "WBT",
+    "LINK"
+   ]
   },
-  "periksa_silang": null,
-  "vonis_30h": null,
-  "vonis_90h": "tidak keduanya",
-  "waktu": 1790231261.7347724
+  "indeks_terbitan_blockchaincenter": {
+   "bulan_30h": 65,
+   "meragukan": true,
+   "musim_90h": 53,
+   "tahun_365h": 35
+  },
+  "periksa_silang": {
+   "cocok": false,
+   "keterangan": "hitungan sendiri dan terbitan blockchaincenter BERBEDA JAUH untuk jendela 30 hari — angka 90 hari dari situs itu patut dicurigai, jangan dikutip sebagai fakta",
+   "selisih_poin": 11
+  },
+  "vonis_30h": "tidak keduanya",
+  "vonis_90h": null,
+  "waktu": 1790261625.105157
  },
  "kategori": {
   "id": [
@@ -23,13 +43,16 @@
    "agora-dollar",
    "alloy-tether",
    "allunity-chf",
+   "amnis-aptos",
    "ankreth",
    "apxusd",
    "arbitrum-bridged-wrapped-eeth",
    "astherus-staked-bnb",
+   "astherus-staked-usdf",
    "astherus-usdf",
    "avant-staked-usd",
    "avant-usd",
+   "beets-staked-sonic",
    "benqi-liquid-staked-avax",
    "bfusd",
    "binance-peg-busd",
@@ -53,6 +76,7 @@
    "cap-usd",
    "cash-4",
    "chain-key-bitcoin",
+   "circle-wrapped-btc",
    "clbtc",
    "coinbase-wrapped-ada",
    "coinbase-wrapped-btc",
@@ -60,6 +84,7 @@
    "coinbase-wrapped-ltc",
    "coinbase-wrapped-staked-eth",
    "coinbase-wrapped-xrp",
+   "coinbase-wrapped-zec",
    "comtech-gold",
    "cronos-zkevm-cro",
    "crown-brlv",
@@ -73,7 +98,6 @@
    "dinero-staked-eth",
    "dola-usd",
    "drift-staked-sol",
-   "drop-staked-atom",
    "ease-staked-nxm",
    "electronic-usd",
    "endur-fi-staked-strk",
@@ -143,6 +167,7 @@
    "kinetiq-markets-lst",
    "kinka",
    "kraken-wrapped-btc",
+   "kraken-wrapped-hype",
    "labs-on-gold",
    "lido-staked-sol",
    "liquid-staked-ethereum",
@@ -156,6 +181,7 @@
    "mantle-staked-ether",
    "matic-aave-usdc",
    "matrixdock-gold",
+   "megausd",
    "merlin-chain-bridged-wrapped-btc-merlin",
    "merlin-s-seal-btc",
    "metamask-usd",
@@ -172,7 +198,6 @@
    "okx-wrapped-eth",
    "okx-wrapped-sol",
    "ondo-u-s-dollar-token",
-   "openeden-open-dollar",
    "orbit-bridge-klaytn-wrapped-btc",
    "origin-ether",
    "pathusd",
@@ -199,8 +224,6 @@
    "saturn-susdat",
    "sbtc-2",
    "sceptre-staked-flr",
-   "schuman-europ",
-   "seth2",
    "shmonad",
    "socean-staked-sol",
    "societe-generale-forge-eurcv",
@@ -266,6 +289,7 @@
    "usdgo",
    "usdh-2",
    "usdkg",
+   "usdpt-western-union",
    "usds",
    "usdsui",
    "usdtb",
@@ -282,7 +306,6 @@
    "wrapped-aave-ethereum-weth",
    "wrapped-aave-plasma-usdt0",
    "wrapped-avax",
-   "wrapped-ayeayecoin",
    "wrapped-beacon-eth",
    "wrapped-bitcoin",
    "wrapped-bitcoin-pulsechain",
@@ -322,12 +345,10 @@
    "wrapped-pros-pharos",
    "wrapped-pulse-wpls",
    "wrapped-quil",
-   "wrapped-ronin",
    "wrapped-rseth",
    "wrapped-savings-rusd",
    "wrapped-sei",
    "wrapped-solana",
-   "wrapped-solana-universal",
    "wrapped-somi",
    "wrapped-steth",
    "wrapped-stx-velar",
@@ -337,10 +358,9 @@
    "wrapped-xrp",
    "wrappedm-by-m0",
    "xdai",
-   "xram-liquid-staking-token",
    "ylds",
    "yuzu-usd"
   ],
-  "waktu": 1789527272.492231
+  "waktu": 1790261623.2136476
  }
 }
