@@ -1,0 +1,61 @@
+[
+  {
+    "id": "astronacci-btc-mingguan-20260921",
+    "sumber": "Astronacci (materi dikirim user 24 Sep 2026)",
+    "tanggal": "2026-09-21",
+    "aset": "BTC",
+    "judul": "Weekly — Double Bottom, tembus neckline 83.000",
+    "arah": "naik",
+    "target": [98000, 127000],
+    "invalid": 57500,
+    "invalid_basis": "close",
+    "catatan": "Selama bertahan di atas neckline 83.000; support utama 57.500."
+  },
+  {
+    "id": "astronacci-btc-harian-20260921",
+    "sumber": "Astronacci (materi dikirim user 24 Sep 2026)",
+    "tanggal": "2026-09-21",
+    "aset": "BTC",
+    "judul": "Daily — Irregular Flat ABC, target 91.614",
+    "arah": "naik",
+    "target": [91614],
+    "invalid": 74835,
+    "invalid_basis": "close",
+    "catatan": "Menjelang Vibrational Date 23 Sep 2026 berpotensi koreksi dulu."
+  },
+  {
+    "id": "astronacci-btc-minorswing-20260923",
+    "sumber": "Astronacci (materi dikirim user 24 Sep 2026)",
+    "tanggal": "2026-09-23",
+    "aset": "BTC",
+    "judul": "Minor Swing H1 — buy stop 87.281",
+    "arah": "naik",
+    "pemicu": 87281,
+    "target": [89140],
+    "invalid": 85460,
+    "invalid_basis": "sentuh",
+    "catatan": "Hanya berlaku bila buy stop 87.281 terisi. Teks gambar bertanggal '23 Sept 2025' — salah ketik, sumbu chart 21 Sep '26."
+  },
+  {
+    "id": "astronacci-btc-vibrational-20260923",
+    "sumber": "Astronacci (materi dikirim user 24 Sep 2026)",
+    "tanggal": "2026-09-21",
+    "aset": "BTC",
+    "judul": "Vibrational Date 23 Sep 2026 — titik balik / koreksi jangka pendek",
+    "jenis": "waktu",
+    "tanggal_klaim": "2026-09-23",
+    "jendela_hari": 7,
+    "catatan": "Klaim waktu: tidak ada level. Yang dicatat adalah gerak harga 7 hari sesudahnya, tanpa vonis benar/salah."
+  },
+  {
+    "id": "astronacci-btc-bigbull-20260920",
+    "sumber": "Astronacci (materi dikirim user 24 Sep 2026)",
+    "tanggal": "2026-09-20",
+    "aset": "BTC",
+    "judul": "Astrology Cycle — Big Bull Start Q4 2026 hingga 2027",
+    "jenis": "periode",
+    "mulai": "2026-10-01",
+    "jatuh_tempo": "2027-12-31",
+    "catatan": "Dinilai saat jatuh tempo: perubahan harga 1 Okt 2026 s.d. 31 Des 2027."
+  }
+]

@@ -8445,3 +8445,16 @@ def test_acuan_pola_mencatat_reproduksi_dan_potongan_periode():
     d = open(os.path.join(AKAR, "cloud", "data", "pola_btc.md"), encoding="utf-8").read()
     for wajib in ("$82.833", "83.000", "94,1%", "67,1%", "0,99"):
         assert wajib in d, wajib
+
+
+
+def test_panggilan_eksternal_masuk_brief_btc():
+    blok = _blok_fungsi("data_mentah_crypto")
+    j = blok.index("panggilan.py")
+    assert 'if t == "BTC":' in blok[max(0, j - 1500):j]
+
+
+def test_aturan_panggilan_terbuka_bukan_ramalan_kita():
+    a_md = open(os.path.join(AKAR, "cloud", "prompts", "analisa.md"), encoding="utf-8").read()
+    i = a_md.index("**PANGGILAN EKSTERNAL (khusus BTC).**")
+    assert "TERBUKA belum terbukti" in a_md[i:i + 800]

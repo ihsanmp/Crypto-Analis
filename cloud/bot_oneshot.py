@@ -3210,6 +3210,10 @@ def data_mentah_crypto(coin):
         # baliknya ikut di blok yang sama: strategi ini rugi di BTC H1 2023-2026
         # (minor_swing.md). Khusus BTC: satuan pip $10 hanya berlaku untuk BTC.
         tugas.append(("MINOR SWING BTC H1 (swing.py)", ["cloud/swing.py", "--ringkas"], 0))
+        # Rekam jejak panggilan Astronacci yang dikirim user — dicatat sebelum hasilnya
+        # diketahui, dinilai oleh harga yang benar-benar terjadi.
+        tugas.append(("PANGGILAN EKSTERNAL (panggilan.py)",
+                      ["cloud/panggilan.py", "--ringkas"], 0))
     # Kalender waktu astro — permintaan user 24 Sep 2026: SETIAP analisa, tanpa kata
     # kunci. Dihitung kode (astro.py) dan membawa status buktinya sendiri: pada BTC
     # 2012-2026 tidak satu pun aspek/retrograde yang lolos uji (astro_trading.md). Horizon

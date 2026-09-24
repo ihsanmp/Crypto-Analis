@@ -1,0 +1,37 @@
+# Mencetak semua blok outlook gaya Astronacci dengan data LIVE.
+#
+# Bursa (Binance/Kraken/Coinbase/Bitstamp) diblokir dari jaringan lokal pengembang,
+# jadi satu-satunya cara melihat blok-blok ini dengan candle asli adalah di runner.
+# Hanya data harga publik.
+name: Periksa blok outlook
+
+on:
+  workflow_dispatch:
+    inputs:
+      koin:
+        description: "Simbol untuk blok pola"
+        default: "BTC"
+
+permissions:
+  contents: read
+
+jobs:
+  periksa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Blok outlook
+        run: |
+          echo "==== WAKTU ASTRO ===="
+          python cloud/astro.py --ringkas --hari 60
+          echo "==== POLA ===="
+          python cloud/pola.py "${{ github.event.inputs.koin }}" --ringkas
+          echo "==== MINOR SWING ===="
+          python cloud/swing.py --ringkas
+          echo "==== PANGGILAN EKSTERNAL ===="
+          python cloud/panggilan.py --ringkas

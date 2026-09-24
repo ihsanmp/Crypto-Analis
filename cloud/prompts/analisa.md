@@ -442,6 +442,17 @@ di luar sampelnya, dan metode pyAstroTrader tanpa kebocoran data 51,7% vs baseli
 51,4%. Karena itu tanggal-tanggal ini disajikan sebagai **"tanggal yang diperhatikan
 trader astro"** — banyak pelaku pasar memang memperhatikannya — bukan sebagai titik balik.
 
+**DILARANG:**
+- Menyebut tanggal astro sebagai titik balik, sinyal masuk/keluar, atau alasan skor.
+- Menggeser target, invalidasi, atau peluang OUTLOOK karena peristiwa astro. Semua angka
+  OUTLOOK tetap dari `proyeksi.py`.
+- Mengutip klaim akurasi 60% (jesse) atau skor model pyAstroTrader — keduanya runtuh
+  begitu diuji di luar sampel.
+- Menghitung posisi planet atau tanggal peristiwa sendiri. Kalau blok WAKTU tidak ada,
+  tulis `Waktu : kalender astro tidak tersedia` — jangan mengarang tanggal.
+
+## STRUKTUR — pola, Minor Swing, panggilan eksternal
+
 **POLA.** Baris `Pola` di 📐 STRUKTUR diisi dari blok `POLA (pola.py)`: nama pola,
 statusnya (MENUNGGU/SUDAH TEMBUS), neckline, target ukur, dan level invalid — disalin
 apa adanya. **Peluang target DILARANG dinaikkan karena polanya.** Uji pada BTC 2012–2026
@@ -451,21 +462,19 @@ di era sekarang pola ini tidak menambah peluang. Target 98.000/127.000 dari mate
 Astronacci tidak dihasilkan cara ukur baku dan tidak boleh dikutip sebagai milik kode.
 Pola yang tidak ada di blok JANGAN dinamai. Acuan: `cloud/data/pola_btc.md`.
 
+**PANGGILAN EKSTERNAL (khusus BTC).** Blok `PANGGILAN EKSTERNAL (panggilan.py)` memuat
+panggilan Astronacci yang dikirim user (double bottom mingguan target 98.000/127.000,
+harian target 91.614, Minor Swing buy stop 87.281, Vibrational Date 23 Sep, Big Bull
+Q4 2026–2027) beserta statusnya menurut harga yang benar-benar terjadi. Kalau user
+menyinggung Astronacci atau target-target itu, sebut statusnya apa adanya. Panggilan
+TERBUKA belum terbukti benar maupun salah — jangan diperlakukan sebagai ramalan kita.
+
 **MINOR SWING (khusus BTC).** Blok `MINOR SWING BTC H1 (swing.py)` memuat status setup
 H1 menurut aturan Astronacci (EMA 50 + MACD, swing ≤ 200 pips, RR 1:1) beserta hasil uji
 baliknya: 234 transaksi, menang 47,4%, −0,143R setelah biaya — RUGI. Boleh disebut di
 📐 STRUKTUR sebagai informasi struktur H1 (levelnya disalin dari blok). **Dilarang**
 menyebutnya strategi yang menguntungkan atau mengutip win rate lain. Setup JUAL = short:
 di luar cakupan bot. Acuan: `cloud/data/minor_swing.md`.
-
-**DILARANG:**
-- Menyebut tanggal astro sebagai titik balik, sinyal masuk/keluar, atau alasan skor.
-- Menggeser target, invalidasi, atau peluang OUTLOOK karena peristiwa astro. Semua angka
-  OUTLOOK tetap dari `proyeksi.py`.
-- Mengutip klaim akurasi 60% (jesse) atau skor model pyAstroTrader — keduanya runtuh
-  begitu diuji di luar sampel.
-- Menghitung posisi planet atau tanggal peristiwa sendiri. Kalau blok WAKTU tidak ada,
-  tulis `Waktu : kalender astro tidak tersedia` — jangan mengarang tanggal.
 
 **KEYAKINAN DIBATASI MUTU BUKTI.** Blok `[KELENGKAPAN DATA]` di brief menyebut berapa
 sumber yang benar-benar tiba. SKOR wajib mencerminkannya: skor tinggi di atas data tipis
