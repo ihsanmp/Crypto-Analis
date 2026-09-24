@@ -3206,6 +3206,11 @@ def data_mentah_crypto(coin):
         if pasar_koin.get("harga_usd"):
             arg_lr += ["--harga", f"{pasar_koin['harga_usd']}"]
         tugas.append(("REGRESI LOG BTC (logregresi.py)", arg_lr, 0))
+    # Kalender waktu astro — permintaan user 24 Sep 2026: SETIAP analisa, tanpa kata
+    # kunci. Dihitung kode (astro.py) dan membawa status buktinya sendiri: pada BTC
+    # 2012-2026 tidak satu pun aspek/retrograde yang lolos uji (astro_trading.md). Horizon
+    # 60 hari = horizon PROYEKSI, supaya bagian WAKTU dan OUTLOOK membicarakan jendela sama.
+    tugas.append(("WAKTU ASTRO (astro.py)", ["cloud/astro.py", "--ringkas", "--hari", "60"], 0))
     # Pemisah gerakan koin dari gerakan pasar. Tanpa ini "naik 18% sepekan" terdengar seperti
     # prestasi koinnya, padahal kalau BTC naik 24% di pekan yang sama koin itu TERTINGGAL —
     # dan kesimpulannya berbalik arah.
@@ -3458,6 +3463,11 @@ def data_mentah_pasar(simbol, jenis):
         ("UJI BALIK (backtest.py)", ["cloud/backtest.py", simbol, "--ringkas", "--pasar"]
          + (["--makro"] if jenis != "saham" else [])),
     ]
+    # Kalender waktu astro — permintaan user 24 Sep 2026: SETIAP analisa, tanpa kata
+    # kunci. Dihitung kode (astro.py) dan membawa status buktinya sendiri: pada BTC
+    # 2012-2026 tidak satu pun aspek/retrograde yang lolos uji (astro_trading.md). Horizon
+    # 60 hari = horizon PROYEKSI, supaya bagian WAKTU dan OUTLOOK membicarakan jendela sama.
+    tugas.append(("WAKTU ASTRO (astro.py)", ["cloud/astro.py", "--ringkas", "--hari", "60"]))
     if jenis == "saham":
         tugas.append(("FUNDAMENTAL (stockfund.py)",
                       ["cloud/stockfund.py", simbol, "--ringkas"]))

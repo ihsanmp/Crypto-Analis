@@ -221,6 +221,10 @@ Target $xxx: secara historis tersentuh di ~<xx>% jendela, berakhir di atasnya ~<
 | DATAR | ~xx%    | bertahan $xxx-$xxx            | $xxx-xxx  |
 | TURUN | ~xx%    | close di bawah $xxx           | $xxx-xxx  |
 Pembatal pandangan: <satu hal konkret + level ATAU tanggalnya>
+📐 STRUKTUR
+  Pola     : <dari blok POLA bila ada; kalau tidak ada: "tidak ada pola terdeteksi kode">
+  Momentum : <dari TEKNIKAL — indikator + zonanya + arahnya, mis. "Stoch RSI 87 overbought, naik">
+  Waktu    : <1-3 tanggal dari KALENDER WAKTU ASTRO dalam horizon> — kalender, bukan sinyal
 
 ⚠️ RISIKO
 • <poin singkat>
@@ -419,6 +423,33 @@ outlook — "di fit ulang 2012–kini harga berada di persentil N sejarah simpan
 
 **Kalau bloknya tidak ada atau gagal:** jangan menyebut regresi log sama sekali — lebih
 baik tidak ada daripada angka garis yang dihitung di kepala.
+
+## WAKTU — kalender astro di SETIAP analisa, beserta status buktinya
+
+Brief SELALU memuat blok `WAKTU ASTRO (astro.py)`: planet yang sedang retrograde, fase
+bulan, dan kalender peristiwa selama horizon (stasiun retrograde, aspek planet lambat,
+bulan baru/purnama, Out of Bounds). Ini permintaan user: ilmu astro-trading dari
+jesse-astrology-trading-strategy dan pyAstroTrader dipakai di setiap analisa. Acuan
+lengkap dan hasil ujinya: `cloud/data/astro_trading.md`.
+
+**WAJIB:** baris `Waktu` di 📐 STRUKTUR diisi 1-3 tanggal dari blok itu yang jatuh di
+dalam horizon OUTLOOK, disalin apa adanya. Kalau pasar sedang dekat stasiun retrograde
+atau bulan baru/purnama, sebutkan.
+
+**WAJIB — status buktinya ikut.** Di BTC 2012–2026 tidak satu pun dari 123 aspek dan
+retrograde yang lolos uji (volatilitas maupun arah), sinyal jesse-astrology hanya 47,6%
+di luar sampelnya, dan metode pyAstroTrader tanpa kebocoran data 51,7% vs baseline
+51,4%. Karena itu tanggal-tanggal ini disajikan sebagai **"tanggal yang diperhatikan
+trader astro"** — banyak pelaku pasar memang memperhatikannya — bukan sebagai titik balik.
+
+**DILARANG:**
+- Menyebut tanggal astro sebagai titik balik, sinyal masuk/keluar, atau alasan skor.
+- Menggeser target, invalidasi, atau peluang OUTLOOK karena peristiwa astro. Semua angka
+  OUTLOOK tetap dari `proyeksi.py`.
+- Mengutip klaim akurasi 60% (jesse) atau skor model pyAstroTrader — keduanya runtuh
+  begitu diuji di luar sampel.
+- Menghitung posisi planet atau tanggal peristiwa sendiri. Kalau blok WAKTU tidak ada,
+  tulis `Waktu : kalender astro tidak tersedia` — jangan mengarang tanggal.
 
 **KEYAKINAN DIBATASI MUTU BUKTI.** Blok `[KELENGKAPAN DATA]` di brief menyebut berapa
 sumber yang benar-benar tiba. SKOR wajib mencerminkannya: skor tinggi di atas data tipis

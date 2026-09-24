@@ -92,3 +92,31 @@ def test_hanya_pustaka_standar():
     src = open(os.path.join(AKAR, "cloud", "astro.py"), encoding="utf-8").read()
     for terlarang in ("import swisseph", "import ephem", "import skyfield", "import numpy"):
         assert terlarang not in src
+
+
+# ---- blok WAKTU di brief (24 Sep 2026) ---------------------------------------------------
+
+def test_blok_waktu_membawa_status_buktinya_sendiri():
+    """Tanggal astro tanpa status buktinya akan terbaca sebagai sinyal. Keduanya harus ada
+    di blok yang SAMA supaya tidak pernah terpisah."""
+    teks = a.ringkas(dt.date(2026, 9, 24), 60)
+    assert "KALENDER WAKTU ASTRO" in teks
+    for wajib in ("TIDAK SATU PUN lolos uji", "47,6%", "51,7%", "BUKAN titik balik"):
+        assert wajib in teks, wajib
+
+
+def test_kalender_2026_sesuai_jadwal_terbit():
+    """Venus retrograde 3 Okt – 13/14 Nov 2026, Merkurius retrograde 24 Okt – 13 Nov 2026."""
+    teks = a.ringkas(dt.date(2026, 9, 24), 60)
+    for baris in ("2026-10-03  Venus mulai RETROGRADE", "2026-10-24  Merkurius mulai RETROGRADE",
+                  "2026-11-13  Merkurius kembali DIREK"):
+        assert baris in teks, baris
+
+
+def test_kalender_hanya_peristiwa_penting():
+    """Aspek antar planet cepat terjadi hampir tiap minggu dan menenggelamkan yang jarang."""
+    assert a._penting("Mars trine Saturnus")
+    assert a._penting("Venus mulai RETROGRADE (stasiun R)")
+    assert a._penting("Bulan purnama")
+    assert not a._penting("Matahari sextile Merkurius")
+    assert not a._penting("Venus square Merkurius")

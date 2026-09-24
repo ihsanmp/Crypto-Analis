@@ -8356,3 +8356,45 @@ def test_acuan_regresi_log_mencatat_koreksi_bacaannya():
     assert "KELIPATAN × 100" in d and "+162%" in d
     assert "a = 4,10" in d, "kepekaan terhadap titik AWAL data harus tercatat"
     assert "53 dari 4.340" in d and "1.244" in d
+
+
+# ------------------------- astro-trading di SETIAP analisa (24 Sep 2026)
+
+def _blok_fungsi(nama):
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    i = src.index(f"def {nama}(")
+    return src[i:src.index("\ndef ", i + 10)]
+
+
+def test_waktu_astro_di_setiap_analisa_crypto():
+    """Permintaan user: tanpa kata kunci, di setiap analisa — bukan hanya BTC."""
+    blok = _blok_fungsi("data_mentah_crypto")
+    baris = [b for b in blok.splitlines() if "WAKTU ASTRO" in b]
+    assert baris, "blok waktu astro hilang dari analisa crypto"
+    # Indentasi tingkat fungsi = tidak terkurung di dalam `if t == "BTC":`.
+    assert baris[0].startswith("    tugas.append") and not baris[0].startswith("        ")
+
+
+def test_waktu_astro_di_setiap_analisa_pasar_bukan_hanya_saham():
+    """Baris earnings ada di dalam `if jenis == "saham"` — dipasang di sana, emas dan forex
+    tidak akan pernah menerima kalendernya."""
+    blok = _blok_fungsi("data_mentah_pasar")
+    i = blok.index("WAKTU ASTRO")
+    assert i < blok.index('if jenis == "saham":'), "harus di daftar tugas dasar"
+
+
+def test_aturan_waktu_melarang_astro_jadi_sinyal():
+    a_md = open(os.path.join(AKAR, "cloud", "prompts", "analisa.md"), encoding="utf-8").read()
+    i = a_md.index("## WAKTU — kalender astro")
+    bagian = a_md[i:i + 3000]
+    for wajib in ("titik balik", "proyeksi.py", "60%", "47,6%", "jangan mengarang tanggal"):
+        assert wajib in bagian, wajib
+    assert "📐 STRUKTUR" in a_md and "Waktu    :" in a_md
+
+
+def test_acuan_astro_trading_mencatat_ujiannya():
+    d = open(os.path.join(AKAR, "cloud", "data", "astro_trading.md"), encoding="utf-8").read()
+    for angka in ("47,6%", "74,2%", "65,4%", "51,7%", "51,4%", "p = 0,25", "p = 0,73"):
+        assert angka in d, angka
+    # Lisensi: alasan kodenya tidak disalin harus tercatat.
+    assert "AGPL-3.0" in d and "tidak ada" in d

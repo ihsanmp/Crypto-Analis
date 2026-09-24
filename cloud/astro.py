@@ -271,14 +271,67 @@ def fitur_harian(d):
     return f
 
 
+# --- Blok brief: kalender WAKTU untuk setiap analisa -------------------------------------
+#
+# Permintaan user (24 Sep 2026): ilmu astro dipakai di SETIAP analisa, tanpa kata kunci.
+# Hasil ujinya (cloud/data/astro_trading.md) null di semua lini — jadi yang masuk brief
+# adalah KALENDER beserta status buktinya, dan status itu ikut di blok yang sama supaya
+# tidak pernah terpisah dari tanggal-tanggalnya.
+
+# Peristiwa yang ditampilkan: yang memang diperhatikan trader astro, bukan setiap aspek.
+# Aspek Matahari/Merkurius/Venus antar sesamanya terjadi hampir tiap minggu.
+_LAMBAT = {"Mars", "Jupiter", "Saturnus", "Uranus", "Neptunus"}
+MAKS_PERISTIWA = 14
+STATUS_BUKTI = (
+    "STATUS BUKTI (cloud/data/astro_trading.md, BTC 2012–2026): dari 123 aspek & "
+    "retrograde, TIDAK SATU PUN lolos uji — volatilitas maupun arah 5 hari (5 fitur "
+    "p<0,05, padahal 6,2 diharapkan karena kebetulan; lolos FDR: 0). Merkurius "
+    "retrograde: p=0,73. Sinyal jesse-astrology di luar sampel 47,6% (klaimnya 60%); "
+    "metode pyAstroTrader tanpa kebocoran data 51,7% vs baseline 51,4%. Sajikan sebagai "
+    "KALENDER yang diperhatikan trader astro, BUKAN titik balik atau sinyal.")
+
+
+def _penting(ket):
+    if "stasiun" in ket or ket.startswith(("Bulan baru", "Bulan purnama")):
+        return True
+    if "Out of Bounds" in ket:
+        return True
+    kata = ket.split()
+    return len(kata) >= 3 and kata[0] in _LAMBAT and kata[-1] in _LAMBAT
+
+
+def ringkas(mulai, hari=60):
+    """Blok DATA BRIEF: posisi yang sedang retrograde + kalender peristiwa penting."""
+    t = _t12(mulai)
+    mundur_kini = [n for n in BISA_MUNDUR if mundur(n, t)]
+    semua = [(tg, k) for tg, k in peristiwa(mulai, hari) if _penting(k)]
+    tampil = semua[:MAKS_PERISTIWA]
+    baris = [
+        f"KALENDER WAKTU ASTRO — {mulai.isoformat()} s.d. "
+        f"{(mulai + dt.timedelta(days=hari)).isoformat()} (dihitung kode, astro.py)",
+        "Sedang retrograde: " + (", ".join(mundur_kini) if mundur_kini else "tidak ada"),
+        f"Fase bulan hari ini: {fase_bulan(t):.0f}° (0 = baru, 180 = purnama)",
+        "Peristiwa:",
+    ]
+    baris += [f"  {tg}  {k}" for tg, k in tampil] or ["  (tidak ada peristiwa penting)"]
+    if len(semua) > len(tampil):
+        baris.append(f"  … dan {len(semua) - len(tampil)} peristiwa lain sesudahnya")
+    baris += ["", STATUS_BUKTI]
+    return "\n".join(baris)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--tanggal", default=None, help="YYYY-MM-DD (UTC), bawaan hari ini")
     ap.add_argument("--hari", type=int, default=30)
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--ringkas", action="store_true", help="blok brief untuk analisa")
     a = ap.parse_args()
     d = (dt.date.fromisoformat(a.tanggal) if a.tanggal
          else dt.datetime.now(dt.timezone.utc).date())
+    if a.ringkas:
+        print(ringkas(d, a.hari))
+        return
     t = _t12(d)
     p = posisi(t)
     data = {
