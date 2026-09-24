@@ -80,11 +80,11 @@ def main():
                 per_arah.setdefault(x["arah"], []).append(x)
             r["per_tahun"] = {th: swing.ringkas_uji(v) for th, v in sorted(per_tahun.items())}
             r["per_arah"] = {k: swing.ringkas_uji(v) for k, v in per_arah.items()}
-            # Biaya per transaksi dalam R: menang = RR − hasil, kalah = −1 − hasil.
+            # Biaya + selip gap per transaksi dalam R: menang = RR − hasil, kalah = −1 − hasil.
             # Impas: p·(1−f) − (1−p)·(1+f) = 0  →  p = (1+f)/2.
             f = sum((swing.RR - x["hasil_R"]) if x["hasil_R"] > 0 else (-1 - x["hasil_R"])
                     for x in tr) / len(tr)
-            r["biaya_rata_R"] = round(f, 3)
+            r["biaya_dan_selip_rata_R"] = round(f, 3)
             r["win_rate_impas_persen"] = round(100 * (1 + f) / 2, 1)
         out[label] = r
     print(json.dumps(out, indent=2, ensure_ascii=False, default=str))

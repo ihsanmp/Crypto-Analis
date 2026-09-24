@@ -139,3 +139,32 @@ def test_parameter_a_priori():
     assert (sw.EMA_PERIODE, sw.FRAKTAL, sw.RR, sw.KEDALUWARSA, sw.BIAYA_PP) == \
         (50, 3, 1.0, 48, 0.001)
     assert (sw.MACD_CEPAT, sw.MACD_LAMBAT, sw.MACD_SINYAL) == (12, 26, 9)
+
+
+
+# ---- bias optimis yang ketahuan dari status live (run 35993312501) ----------------------
+
+def test_setup_ditolak_kalau_penembusan_sudah_terjadi():
+    """Status live menampilkan SELL STOP $83.730 padahal harga sudah $83.504: penembusan
+    terjadi selama candle konfirmasi pivot. Backtest versi pertama "mengisinya" di $83.730
+    — hadiah ~0,26R per transaksi yang mustahil didapat."""
+    k = _seri()
+    s = _setup(k)
+    assert s, "prasyarat: seri dasar punya setup"
+    t = s[0]["t"]
+    # Candle konfirmasi terakhir (t) melonjak menembus resisten.
+    k2 = [list(x) for x in k]
+    k2[t][2] = s[0]["entry"] + 50
+    e, g = sw._indikator(k2)
+    assert sw.setup_di(k2, t, e, g) is None
+
+
+def test_isi_lewat_gap_memakai_harga_pembukaan():
+    k = _seri()
+    s = _setup(k)[0]
+    gap = s["entry"] + 100
+    # Candle pengisian membuka DI ATAS entry (gap), lalu mencapai TP.
+    k = _lanjut(k, s, lambda s, p: [(gap, s["tp"] + 20, gap - 5, s["tp"])])
+    r = sw.backtest(k, biaya=0.0)[0]["hasil_R"]
+    assert r == pytest.approx((s["tp"] - gap) / s["rentang"])
+    assert r < 1.0

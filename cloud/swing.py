@@ -23,6 +23,11 @@ YANG TIDAK DISEBUT DI GAMBAR, DITETAPKAN DI SINI SEKALI — sebelum melihat hasi
   - order buy/sell stop kedaluwarsa setelah 48 candle, dan batal kalau filter tren
     runtuh atau swing low/high-nya tertembus sebelum terisi;
   - candle yang menyentuh SL dan TP sekaligus dihitung KALAH (tak bisa tahu mana duluan);
+  - setup hanya sah kalau harga BELUM menembus level entry selama candle konfirmasi
+    pivot; order yang terisi lewat gap terisi di harga PEMBUKAAN, dan untung-ruginya
+    dihitung dari harga isi itu. Versi pertama tidak begitu (run 35993312501): ia
+    "mengisi" sell stop di $83.730 padahal harga sudah $83.504 — hadiah ~0,26R per
+    transaksi yang mustahil didapat di dunia nyata;
   - biaya 0,1% pulang-pergi (dan 0,2% sebagai uji kepekaan).
 Satu aturan untuk dua pemakaian: deteksi() dipakai analisa langsung DAN uji_swing.py.
 
@@ -108,6 +113,9 @@ def setup_di(candle, t, e50=None, garis=None):
                          if _pivot(candle, q, True)), None)
             if atas is None or not (0 < atas - bawah <= batas):
                 continue
+            # Resistennya sudah tertembus selama konfirmasi → pemicunya sudah lewat.
+            if max(c[2] for c in candle[p + 1:t + 1]) >= atas:
+                continue
             return {"arah": "BELI", "entry": atas, "sl": bawah,
                     "tp": atas + RR * (atas - bawah), "rentang": atas - bawah, "t": t}
         atas = candle[p][2]
@@ -116,6 +124,8 @@ def setup_di(candle, t, e50=None, garis=None):
         bawah = next((candle[q][3] for q in range(p - 1, FRAKTAL - 1, -1)
                       if _pivot(candle, q, False)), None)
         if bawah is None or not (0 < atas - bawah <= batas):
+            continue
+        if min(c[3] for c in candle[p + 1:t + 1]) <= bawah:
             continue
         return {"arah": "JUAL", "entry": bawah, "sl": atas,
                 "tp": bawah - RR * (atas - bawah), "rentang": atas - bawah, "t": t}
@@ -152,22 +162,28 @@ def backtest(candle, biaya=BIAYA_PP):
         if isi is None:
             i += 1
             continue
-        # Mengelola posisi sampai SL atau TP.
+        # Harga isi: level order, atau harga PEMBUKAAN kalau candle membuka lewat gap.
+        buka = candle[isi][1]
+        harga_isi = (max(buka, s["entry"]) if s["arah"] == "BELI"
+                     else min(buka, s["entry"]))
+        # Mengelola posisi sampai SL atau TP. Hasil dalam R TERENCANA (= rentang), dari
+        # harga isi yang sebenarnya.
         hasil, k = None, isi
+        arah = 1 if s["arah"] == "BELI" else -1
         while k < n and hasil is None:
             c = candle[k]
             if s["arah"] == "BELI":
                 sl_kena, tp_kena = c[3] <= s["sl"], c[2] >= s["tp"]
             else:
                 sl_kena, tp_kena = c[2] >= s["sl"], c[3] <= s["tp"]
-            if sl_kena:
-                hasil = -1.0            # termasuk candle yang menyentuh keduanya
+            if sl_kena:                 # termasuk candle yang menyentuh keduanya
+                hasil = arah * (s["sl"] - harga_isi) / s["rentang"]
             elif tp_kena:
-                hasil = RR
+                hasil = arah * (s["tp"] - harga_isi) / s["rentang"]
             k += 1
         if hasil is None:
             break                       # posisi masih terbuka di akhir data
-        biaya_r = biaya * s["entry"] / s["rentang"]
+        biaya_r = biaya * harga_isi / s["rentang"]
         transaksi.append({"arah": s["arah"], "t_setup": s["t"], "t_isi": isi,
                           "ts_isi": candle[isi][0], "hasil_R": hasil - biaya_r,
                           "rentang": s["rentang"]})
