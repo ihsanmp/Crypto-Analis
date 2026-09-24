@@ -3215,6 +3215,10 @@ def data_mentah_crypto(coin):
     # 2012-2026 tidak satu pun aspek/retrograde yang lolos uji (astro_trading.md). Horizon
     # 60 hari = horizon PROYEKSI, supaya bagian WAKTU dan OUTLOOK membicarakan jendela sama.
     tugas.append(("WAKTU ASTRO (astro.py)", ["cloud/astro.py", "--ringkas", "--hari", "60"], 0))
+    # Pola double bottom/top (bagian "Pattern" gaya Astronacci) — dideteksi kode, dengan
+    # hasil uji yang sudah dipotong per periode: selisihnya milik 2012-2018 saja, jadi
+    # peluang targetnya dilaporkan setara peluang dasar (pola_btc.md).
+    tugas.append(("POLA (pola.py)", ["cloud/pola.py", coin, "--ringkas"], 0))
     # Pemisah gerakan koin dari gerakan pasar. Tanpa ini "naik 18% sepekan" terdengar seperti
     # prestasi koinnya, padahal kalau BTC naik 24% di pekan yang sama koin itu TERTINGGAL —
     # dan kesimpulannya berbalik arah.

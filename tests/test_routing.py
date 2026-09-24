@@ -8425,3 +8425,23 @@ def test_acuan_minor_swing_mencatat_versi_berbiasnya():
     d = open(os.path.join(AKAR, "cloud", "data", "minor_swing.md"), encoding="utf-8").read()
     for wajib in ("60,3%", "BERBIAS", "47,4%", "−0,143R", "1 pip = $10", "35993653964"):
         assert wajib in d, wajib
+
+
+def test_pola_masuk_setiap_analisa_crypto():
+    blok = _blok_fungsi("data_mentah_crypto")
+    baris = [b for b in blok.splitlines() if "POLA (pola.py)" in b]
+    assert baris and baris[0].startswith("    tugas.append")
+
+
+def test_aturan_pola_melarang_menaikkan_peluang():
+    a_md = open(os.path.join(AKAR, "cloud", "prompts", "analisa.md"), encoding="utf-8").read()
+    i = a_md.index("**POLA.**")
+    bagian = a_md[i:i + 1200]
+    for wajib in ("DILARANG dinaikkan", "67,1% vs 67,0%", "98.000/127.000", "JANGAN dinamai"):
+        assert wajib in bagian, wajib
+
+
+def test_acuan_pola_mencatat_reproduksi_dan_potongan_periode():
+    d = open(os.path.join(AKAR, "cloud", "data", "pola_btc.md"), encoding="utf-8").read()
+    for wajib in ("$82.833", "83.000", "94,1%", "67,1%", "0,99"):
+        assert wajib in d, wajib

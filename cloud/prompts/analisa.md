@@ -442,6 +442,15 @@ di luar sampelnya, dan metode pyAstroTrader tanpa kebocoran data 51,7% vs baseli
 51,4%. Karena itu tanggal-tanggal ini disajikan sebagai **"tanggal yang diperhatikan
 trader astro"** — banyak pelaku pasar memang memperhatikannya — bukan sebagai titik balik.
 
+**POLA.** Baris `Pola` di 📐 STRUKTUR diisi dari blok `POLA (pola.py)`: nama pola,
+statusnya (MENUNGGU/SUDAH TEMBUS), neckline, target ukur, dan level invalid — disalin
+apa adanya. **Peluang target DILARANG dinaikkan karena polanya.** Uji pada BTC 2012–2026
+menemukan keunggulan double bottom hanya di 2012–2018; di 2019–2026 peluangnya sama
+persis dengan peluang dasar (67,1% vs 67,0%). Kalau pola disebut, sebutkan juga bahwa
+di era sekarang pola ini tidak menambah peluang. Target 98.000/127.000 dari materi
+Astronacci tidak dihasilkan cara ukur baku dan tidak boleh dikutip sebagai milik kode.
+Pola yang tidak ada di blok JANGAN dinamai. Acuan: `cloud/data/pola_btc.md`.
+
 **MINOR SWING (khusus BTC).** Blok `MINOR SWING BTC H1 (swing.py)` memuat status setup
 H1 menurut aturan Astronacci (EMA 50 + MACD, swing ≤ 200 pips, RR 1:1) beserta hasil uji
 baliknya: 234 transaksi, menang 47,4%, −0,143R setelah biaya — RUGI. Boleh disebut di
