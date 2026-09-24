@@ -110,7 +110,7 @@ def resolve_ticker(masukan):
 #   [ts_ms, open, high, low, close, volume]
 
 def src_binance(ticker, interval):
-    imap = {"1d": "1d", "4h": "4h"}
+    imap = {"1d": "1d", "4h": "4h", "1h": "1h"}
     url = ("https://api.binance.com/api/v3/klines?symbol="
            f"{ticker}USDT&interval={imap[interval]}&limit=1000")
     rows = http_json(url)
@@ -119,7 +119,7 @@ def src_binance(ticker, interval):
 
 
 def src_kraken(ticker, interval):
-    imap = {"1d": 1440, "4h": 240}
+    imap = {"1d": 1440, "4h": 240, "1h": 60}
     pair = ("XBT" if ticker == "BTC" else ticker) + "USD"
     url = f"https://api.kraken.com/0/public/OHLC?pair={pair}&interval={imap[interval]}"
     data = http_json(url)
@@ -132,7 +132,7 @@ def src_kraken(ticker, interval):
 
 
 def src_coinbase(ticker, interval):
-    gmap = {"1d": 86400, "4h": 14400}
+    gmap = {"1d": 86400, "4h": 14400, "1h": 3600}
     url = (f"https://api.exchange.coinbase.com/products/{ticker}-USD/candles"
            f"?granularity={gmap[interval]}")
     rows = http_json(url)
@@ -143,7 +143,7 @@ def src_coinbase(ticker, interval):
 
 
 def src_okx(ticker, interval):
-    imap = {"1d": "1Dutc", "4h": "4H"}
+    imap = {"1d": "1Dutc", "4h": "4H", "1h": "1H"}
     url = (f"https://www.okx.com/api/v5/market/candles?instId={ticker}-USDT"
            f"&bar={imap[interval]}&limit=300")
     data = http_json(url)

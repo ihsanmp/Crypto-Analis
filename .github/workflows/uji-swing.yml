@@ -1,0 +1,31 @@
+# Uji balik MINOR SWING STRATEGY (materi Astronacci) pada BTC H1.
+#
+# Bitstamp diblokir dari jaringan lokal pengembang, jadi ujinya berjalan di sini. Hanya
+# data harga publik — tidak ada kunci, tidak ada alamat.
+name: Uji minor swing
+
+on:
+  workflow_dispatch:
+    inputs:
+      tahun:
+        description: "Panjang data (tahun)"
+        default: "3"
+
+permissions:
+  contents: read
+
+jobs:
+  uji:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Uji balik & status setup saat ini
+        run: |
+          python cloud/uji_swing.py --tahun "${{ github.event.inputs.tahun }}"
+          echo "---- status setup BTC H1 saat ini ----"
+          python cloud/swing.py --ringkas
