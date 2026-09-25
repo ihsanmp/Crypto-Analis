@@ -351,5 +351,15 @@
    "harga=87.446",
    "ema21=79.781"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1790327287.0558052,
+  "waktu_utc": "2026-09-25 09:08",
+  "pesan": "pons itu project apa?",
+  "balasan": "PONS itu token launchpad di Robinhood Chain — perannya mirip Pump.fun di Solana, tempat orang bikin & judi token baru secara instan tanpa coding.\n\n• Deploy token 1 klik: supply tetap 1 miliar + liquidity pool langsung terkunci\n• Fee trading 1%: 70% k\n[...dipangkas...]\n8 juta, ranking sekitar #127 di CoinGecko — tapi angka ini dari hasil pencarian, bukan quote live barusan, jadi anggap sebagai gambaran terkini bukan harga detik ini. Kalau mau aku tarik data teknikal/harga live-nya via CoinMarketCap, tinggal bilang.",
+  "angka_kunci": [
+   "harga=0,01"
+  ]
  }
 ]
