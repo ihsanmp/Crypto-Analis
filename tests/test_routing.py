@@ -8458,3 +8458,57 @@ def test_aturan_panggilan_terbuka_bukan_ramalan_kita():
     a_md = open(os.path.join(AKAR, "cloud", "prompts", "analisa.md"), encoding="utf-8").read()
     i = a_md.index("**PANGGILAN EKSTERNAL (khusus BTC).**")
     assert "TERBUKA belum terbukti" in a_md[i:i + 800]
+
+
+# ------------------------- mode KESIMPULAN: blok posisi hanya kalau diminta (25 Sep 2026)
+# Run 36082987766: foto + "bagaimana menurutmu?" dijawab dengan zona entry & "kamu sudah
+# pegang BTC, atau mau masuk?". User tidak memintanya.
+
+@pytest.mark.parametrize("teks,posisi", [
+    ("bagaimana menurutmu?", False),            # caption persis dari run 36082987766
+    ("apakah klaim ini masuk akal?", False),    # "masuk akal" bukan "masuk" posisi
+    ("apa pendapatmu soal chart ini", False),
+    ("btc bakal turun ga?", False),
+    ("", False),
+    ("kalau saya masuk di 84k gimana?", True),
+    ("worth buy ga?", True),
+    ("layak akumulasi?", True),
+    ("sudah pegang btc, tahan atau jual?", True),
+    ("sebaiknya gimana ya", True),
+])
+def test_mode_kesimpulan_dari_kata_user(teks, posisi):
+    assert bot.minta_keputusan(teks) is posisi, teks
+
+
+def test_foto_tanpa_permintaan_posisi_dilarang_menulis_blok_posisi():
+    p = bot.build_photo_prompt("bagaimana menurutmu?", "/tmp/x.jpg")
+    ekor = p[-900:]
+    assert "MODE KESIMPULAN (ditetapkan kode): JAWABAN" in ekor
+    assert "DILARANG menulis baris" in ekor and "sudah pegang / mau masuk" in ekor
+
+
+def test_foto_dengan_permintaan_posisi_boleh_blok_posisi():
+    p = bot.build_photo_prompt("worth entry di sini?", "/tmp/x.jpg")
+    assert "MODE KESIMPULAN (ditetapkan kode): POSISI" in p[-400:]
+
+
+def test_chat_membawa_mode_kesimpulan_di_akhir():
+    assert "MODE KESIMPULAN (ditetapkan kode): JAWABAN" in bot.build_chat_prompt("menurutmu btc gimana?")[-900:]
+    assert "MODE KESIMPULAN (ditetapkan kode): POSISI" in bot.build_chat_prompt("btc layak dibeli sekarang?")[-400:]
+
+
+def test_prompt_tidak_lagi_mewajibkan_blok_posisi_tanpa_syarat():
+    foto = open(os.path.join(AKAR, "cloud", "prompts", "foto.md"), encoding="utf-8").read()
+    chat = open(os.path.join(AKAR, "cloud", "prompts", "chat.md"), encoding="utf-8").read()
+    assert "TUTUP dengan kesimpulan posisi spot yang TEGAS** (sebelum disclaimer), asalkan" not in foto
+    assert "tetap dipertahankan, jangan dihapus" not in chat
+    assert "MODE KESIMPULAN" in foto and "MODE KESIMPULAN" in chat
+
+
+def test_foto_menerima_struktur_dan_kalender_astro():
+    """Jalur foto tidak punya brief; tanpa ini jawaban foto tak pernah memuat STRUKTUR."""
+    p = bot.build_photo_prompt("bagaimana menurutmu?", "/tmp/x.jpg")
+    assert "KALENDER WAKTU ASTRO" in p and "STATUS BUKTI" in p
+    foto = open(os.path.join(AKAR, "cloud", "prompts", "foto.md"), encoding="utf-8").read()
+    for wajib in ("📐 STRUKTUR", "cloud/pola.py", "cloud/swing.py", "cloud/panggilan.py"):
+        assert wajib in foto, wajib

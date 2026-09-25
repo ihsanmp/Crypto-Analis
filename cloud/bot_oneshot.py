@@ -2133,6 +2133,41 @@ def _lepas_penanda_shell(teks):
     return teks.replace("<!-- SHELL -->" + NL, "").replace("<!-- /SHELL -->" + NL, "")
 
 
+# ---- mode KESIMPULAN: blok posisi hanya kalau DIMINTA -------------------------------------
+#
+# Run 36082987766: foto chart + "bagaimana menurutmu?" — user meminta penilaian atas klaim
+# orang lain — dijawab dengan "Belum punya: MASUK BERTAHAP DI ZONA $82.650–$83.350 ...
+# Sudah pegang: TAHAN" lalu ditutup "kamu sudah pegang BTC, atau sedang menimbang mau
+# masuk?". User tidak memintanya, dan mengeluh setiap jawaban terasa mengajak entry.
+# Penyebabnya: prompt foto & ngobrol MEWAJIBKAN blok posisi, apa pun pertanyaannya.
+# Sekarang KODE yang memutuskan, dari kata-kata user sendiri.
+_RE_MINTA_POSISI = re.compile(
+    r"\b(?:beli|buy|jual|sell|masuk(?!\s+akal)|entry|entri|akumulasi|average|avg|dca|"
+    r"cut\s?loss|take\s?profit|tp|sl|stop\s?loss|posisi|pegang|hold|hodl|tahan|worth|"
+    r"layak|serok|cicil|nyicil|nyangkut|exit|keluar\s+dari|cuan|modal|alokasi|saran|"
+    r"(?:harus|sebaiknya)\s+(?:apa|gimana|bagaimana|ngapain))\b", re.I)
+
+
+def minta_keputusan(teks):
+    """True kalau user menanyakan keputusan beli/jual/tahan — bukan sekadar pendapat."""
+    return bool(teks and _RE_MINTA_POSISI.search(teks))
+
+
+def arahan_kesimpulan(teks):
+    """Arahan bentuk ✅ KESIMPULAN, ditempel di AKHIR prompt supaya tidak terlewat."""
+    if minta_keputusan(teks):
+        return ("\n## MODE KESIMPULAN (ditetapkan kode): POSISI\n"
+                "User menanyakan keputusan beli/jual/tahan. Tutup dengan blok ✅ KESIMPULAN "
+                "posisi (Belum punya / Sudah pegang) sesuai aturan di atas.\n")
+    return ("\n## MODE KESIMPULAN (ditetapkan kode): JAWABAN\n"
+            "User TIDAK meminta keputusan beli/jual/tahan. DILARANG menulis baris "
+            "\"Belum punya\" / \"Sudah pegang\", zona entry, rencana posisi, atau pertanyaan "
+            "penutup apakah user sudah pegang / mau masuk. Tutup dengan ✅ KESIMPULAN berupa "
+            "JAWABAN atas pertanyaannya dalam 1–3 kalimat — untuk klaim di gambar atau "
+            "pesan: vonisnya (VALID / SEBAGIAN / MELESET) dan alasan intinya. Kalau user "
+            "ingin rencana posisi, ia akan memintanya.\n")
+
+
 def build_chat_prompt(text, chat_id=None, brief=None, balas=None):
     with open(CHAT_PROMPT, encoding="utf-8") as f:
         # Jenis aset ikut diberikan supaya pemilihan blok tidak jatuh ke "muat semua"
@@ -2219,7 +2254,11 @@ def build_chat_prompt(text, chat_id=None, brief=None, balas=None):
                  "JANGAN menjalankan script untuk mengambilnya lagi. Metrik yang TIDAK ADA "
                  "di sini diperlakukan tidak tersedia — jangan mengarang." + NL + NL
                  + brief + NL)
-    return f"{header_waktu()}{base}\n---\n## Pesan dari user (jawab ini)\n{text}\n"
+    # Arahan kesimpulan hanya untuk pesan soal pasar: sapaan tidak punya kesimpulan
+    # posisi, dan menempelkannya di sana membayar ~550 karakter untuk "halo".
+    arahan = arahan_kesimpulan(text) if (pesan_pasar(text) or minta_keputusan(text)) else ""
+    return (f"{header_waktu()}{base}\n---\n## Pesan dari user (jawab ini)\n{text}\n"
+            + arahan)
 
 
 def download_photo(token, file_id):
@@ -2472,12 +2511,35 @@ def build_photo_prompt(caption, image_path, chat_id=None, balas=None):
         base = konteks_percakapan(chat_id, pesan=caption, balas=balas) + base
     instruksi = (caption.strip() if caption and caption.strip()
                  else "(tidak ada caption — pakai default: identifikasi keterkaitan dengan "
-                      "koin/project, cari info terkait, beri rekomendasi tindakan)")
+                      "koin/project, cari info terkait, beri pendapat)")
     return (f"{header_waktu()}{base}\n---\n"
             f"## Gambar dari user\n"
             f"Gambar tersimpan di path: {image_path}\n"
             f"WAJIB baca dulu dengan tool Read (bisa melihat gambar), lalu kerjakan.\n\n"
-            f"## Caption / pertanyaan user\n{instruksi}\n")
+            + _kalender_astro_foto()
+            + f"## Caption / pertanyaan user\n{instruksi}\n"
+            + arahan_kesimpulan(caption or ""))
+
+
+def _kalender_astro_foto():
+    """Kalender WAKTU astro untuk jalur foto — dihitung KODE (astro.py, tanpa jaringan).
+
+    Jalur foto tidak punya brief: koinnya baru ketahuan setelah model membaca gambar.
+    Kalender astro tidak butuh nama koin, jadi yang ini disiapkan kode; pola & Minor Swing
+    dijalankan model sesudah koinnya terbaca (lihat foto.md, bagian STRUKTUR). Gagal
+    menghitung tidak boleh menggagalkan balasan foto.
+    """
+    try:
+        _pastikan_path(os.path.join(REPO_ROOT, "cloud"))
+        import datetime as _dt
+        import astro
+        hari_ini = _dt.datetime.now(_dt.timezone.utc).date()
+        return ("## KALENDER WAKTU ASTRO (disiapkan kode, pakai untuk baris Waktu)\n"
+                + astro.ringkas(hari_ini, 60) + "\n\n")
+    except Exception as e:
+        print(f"[proses] kalender astro untuk foto gagal ({type(e).__name__})",
+              file=sys.stderr)
+        return ""
 
 
 # Ciri "aset tidak ada": seluruh bursa/sumber gagal pada permintaan yang sama.

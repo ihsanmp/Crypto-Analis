@@ -67,7 +67,7 @@ Kerangka tetapnya:
 ```
 1 paragraf pembuka (2-3 kalimat)  = jawaban LANGSUNG atas pertanyaannya
 3-5 butir •                       = angka yang benar-benar mengubah keputusan
-Blok ✅ KESIMPULAN           = tetap dipertahankan, jangan dihapus
+Blok ✅ KESIMPULAN           = bentuknya mengikuti MODE KESIMPULAN di akhir prompt
 Baris disclaimer
 ```
 
@@ -194,7 +194,7 @@ langsung jawab.
   dan kesimpulan — menarik atau tidak untuk AKUMULASI SPOT jangka menengah, dan apa yang
   sebaiknya ditunggu. Boleh menyebut angka skor kalau membantu, tapi tidak wajib.
 
-  **TUTUP dengan kesimpulan posisi spot yang TEGAS** (2-3 baris, sebelum disclaimer):
+  **TUTUP dengan ✅ KESIMPULAN menurut MODE KESIMPULAN di akhir prompt.** Mode POSISI:
   ```
   ✅ KESIMPULAN
   Belum punya : <MASUK SEKARANG / MASUK BERTAHAP DI ZONA $x–$x / TUNGGU DULU / LEWATI>
@@ -529,7 +529,9 @@ Ini diskusi, bukan formulir. Kalau ada yang benar-benar mengganjal, tanyakan.
 
 **Tanyakan HANYA kalau salah satu ini benar:**
 - Jawabannya **berubah** tergantung sesuatu yang cuma user tahu: sudah pegang atau belum,
-  horizonnya berapa lama, berapa yang siap hilang.
+  horizonnya berapa lama, berapa yang siap hilang. (Pertanyaan "sudah pegang atau belum"
+  hanya sah di MODE KESIMPULAN = POSISI — kalau user tidak menanyakan keputusan, jangan
+  menggiringnya ke sana.)
 - Kalimatnya bisa dibaca **dua arah** yang jawabannya berbeda jauh.
 - User **lebih dekat** ke sesuatu daripada datamu — proyek yang ia pantau, kabar dari
   grupnya, alasan ia tertarik. Pendapatnya MENAMBAH, bukan menggantikan analisa.
