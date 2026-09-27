@@ -8572,3 +8572,96 @@ def test_skor_naratif_satu_koin_tetap_ke_jalur_ngobrol():
     ngobrol + naratif.py), bukan screening narasi umum."""
     assert bot.classify("skor naratif ONDO gimana?") == "chat"
     assert bot.classify("naratif apa yang lagi naik") == "narasi"
+
+
+# ------------------------- pemakaian token terukur (27 Sep 2026)
+
+def _stream(*ev):
+    import json as _j
+    return "\n".join(_j.dumps(e) for e in ev)
+
+
+def test_stream_json_jawaban_dan_pemakaian_tercatat(capsys):
+    """Sampai 27 Sep 2026 pemakaian token tidak pernah tercatat — 'hemat' cuma tebakan."""
+    import shutil as _sh
+    import subprocess as _sp
+    which_asli, run_asli = _sh.which, _sp.run
+    _sh.which = lambda x: "/usr/bin/claude"
+
+    class _R:
+        def __init__(self, rc, out, err=""):
+            self.returncode, self.stdout, self.stderr = rc, out, err
+
+    keluar = _stream(
+        {"type": "system", "subtype": "init"},
+        {"type": "assistant", "message": {"content": [{"type": "text", "text": "cek data dulu"}]}},
+        {"type": "result", "subtype": "success", "result": "JAWABAN AKHIR", "num_turns": 7,
+         "total_cost_usd": 0.1234, "duration_ms": 41000,
+         "usage": {"input_tokens": 1200, "cache_read_input_tokens": 90000,
+                   "cache_creation_input_tokens": 15000, "output_tokens": 2500}})
+    try:
+        _sp.run = lambda cmd, **k: _R(0, keluar)
+        out, err = bot.run_claude("x", 10, 30, model="claude-sonnet-5")
+        assert (out, err) == ("JAWABAN AKHIR", None)
+        log = capsys.readouterr().err
+        for wajib in ("[token]", "putaran=7/30", "cache_baca=90000", "keluar=2500",
+                      "model=claude-sonnet-5"):
+            assert wajib in log, wajib
+    finally:
+        _sh.which, _sp.run = which_asli, run_asli
+
+
+def test_stream_json_putaran_habis_tetap_menyelamatkan_jawaban():
+    """Mode `json` biasa akan menghilangkan teks setengah jadi; stream-json tidak."""
+    import shutil as _sh
+    import subprocess as _sp
+    which_asli, run_asli = _sh.which, _sp.run
+    _sh.which = lambda x: "/usr/bin/claude"
+
+    class _R:
+        def __init__(self, rc, out, err=""):
+            self.returncode, self.stdout, self.stderr = rc, out, err
+
+    keluar = _stream(
+        {"type": "assistant", "message": {"content": [{"type": "text",
+                                                       "text": "LIT naik 34% hari ini. " * 20}]}},
+        {"type": "result", "subtype": "error_max_turns", "num_turns": 8, "usage": {}})
+    try:
+        _sp.run = lambda cmd, **k: _R(1, keluar)
+        out, err = bot.run_claude("x", 10, 8)
+        assert err is None and out.startswith("LIT naik 34%") and "terpotong" in out
+    finally:
+        _sh.which, _sp.run = which_asli, run_asli
+
+
+def test_perintah_claude_memakai_stream_json():
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    i = src.index("def run_claude(")
+    assert '"--output-format", "stream-json", "--verbose"' in src[i:i + 1500]
+
+
+# ------------------------- hemat token tanpa mengurangi data (27 Sep 2026)
+
+def test_bagian_khusus_btc_hanya_untuk_btc():
+    """Datanya hanya ada di brief BTC; untuk koin lain bagian itu token yang dibayar sia-sia
+    di setiap sintesis Opus."""
+    btc = bot.build_synth_prompt("BTC", "BRIEF")
+    sol = bot.build_synth_prompt("SOL", "BRIEF")
+    assert "Regresi log BTC" in btc and "MINOR SWING (khusus BTC)" in btc
+    assert "Regresi log BTC" not in sol and "MINOR SWING (khusus BTC)" not in sol
+    assert "KHUSUS BTC -->" not in btc and "KHUSUS BTC -->" not in sol
+    assert len(sol) < len(btc)
+    # Aturan yang berlaku untuk SEMUA koin tetap ada.
+    for umum in ("## WAKTU — kalender astro", "**POLA.**"):
+        assert umum in sol, umum
+
+
+def test_narasi_kondisi_pasar_disiapkan_kode():
+    """Tiap panggilan alat = satu putaran yang membaca ulang seluruh konteks."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    i = src.index('elif kind == "narasi":')
+    blok = src[i:i + 3500]
+    for skrip in ("cloud/rotasi.py", "cloud/pasarglobal.py", "cloud/sentiment.py", "cloud/musim.py"):
+        assert skrip in blok, skrip
+    n = open(os.path.join(AKAR, "cloud", "prompts", "narasi.md"), encoding="utf-8").read()
+    assert "JANGAN menarik ulang" in n and "JANGAN menjalankan\n`kategori.py --daftar` lagi" in n

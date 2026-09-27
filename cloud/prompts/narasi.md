@@ -91,12 +91,16 @@ dan mentor menutup dengan: **kenali proyek yang dibeli**, jangan cuma mengejar k
 # LANGKAH KERJA
 
 **1. Kondisi pasar dulu (market filter).**
-`globalMetricsLatest` (total mcap, dominasi BTC) + `fearAndGreedLatest` + cek BTC.
+SUDAH disiapkan kode di blok DATA SCREENING: `PASAR GLOBAL` (total mcap, dominasi BTC &
+arahnya), `SENTIMEN` (Fear & Greed), `MUSIM ALTCOIN`. Pakai itu — JANGAN menarik ulang
+lewat MCP; tiap panggilan alat adalah satu putaran tambahan.
 Kalau BTC jelas bearish/rapuh, katakan terus terang bahwa altcoin narasi berisiko tinggi
 dan sarankan alokasi lebih kecil. Dominasi BTC turun = modal mengalir ke altcoin (bagus untuk narasi).
 
 **2. Petakan narasi yang bergerak.**
-Jalankan `python cloud/kategori.py --daftar --ringkas` — 749 kategori CoinGecko disaring
+Peta awalnya SUDAH ada di blok `SCREENING NARASI` (rotasi.py) — JANGAN menjalankan
+`kategori.py --daftar` lagi untuk JALUR B. Tarik data tambahan hanya bila perlu membedah
+lebih dalam. Rujukan isi daftar lengkapnya: `python cloud/kategori.py --daftar --ringkas` — 749 kategori CoinGecko disaring
 jadi yang bermarket cap di atas $100 juta, lalu diurutkan menurut pergerakan 24 jam.
 Ranking kandidat berdasarkan gabungan:
 - perubahan harga rata-rata kategori (24h / 7d / 30d) — cari yang menguat KONSISTEN, bukan cuma lonjakan 1 hari

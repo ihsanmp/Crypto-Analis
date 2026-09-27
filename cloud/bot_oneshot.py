@@ -3743,10 +3743,23 @@ def build_synth_pasar(simbol, jenis, brief):
     )
 
 
+# Bagian analisa.md yang hanya berlaku untuk BTC (regresi log, Minor Swing, panggilan
+# eksternal Astronacci). Datanya memang hanya ada di brief BTC, jadi untuk koin lain
+# bagian itu cuma token yang dibayar di setiap sintesis Opus — ~3,5 rb karakter.
+_KHUSUS_BTC_RE = re.compile(r"<!-- KHUSUS BTC -->.*?<!-- /KHUSUS BTC -->\n?", re.S)
+
+
+def _untuk_koin(teks, coin):
+    """Pertahankan bagian KHUSUS BTC hanya untuk BTC; buang penandanya di keduanya."""
+    if (coin or "").upper() == "BTC":
+        return teks.replace("<!-- KHUSUS BTC -->\n", "").replace("\n<!-- /KHUSUS BTC -->", "")
+    return _KHUSUS_BTC_RE.sub("", teks)
+
+
 def build_synth_prompt(coin, brief):
     """Instruksi TAHAP 2 untuk model pintar: analisa dari DATA BRIEF, tanpa tool lagi."""
     with open(ANALISA_PROMPT, encoding="utf-8") as f:
-        base = rakit_peran("crypto") + f.read()
+        base = rakit_peran("crypto") + _untuk_koin(f.read(), coin)
     return (
         f"{header_waktu()}{base}\n---\n"
         f"## DATA BRIEF (hasil pengumpulan tahap 1 — SEMUA data ada di sini)\n"
@@ -3757,6 +3770,52 @@ def build_synth_prompt(coin, brief):
         f"## Perintah user\nMode KOIN. Analisa mendalam koin: **{coin}** berdasarkan DATA BRIEF "
         f"di atas. Terapkan metodologi skoring & format output Telegram sepenuhnya."
     )
+
+
+def _urai_keluaran(stdout):
+    """(teks jawaban, event result | None) dari keluaran `claude -p`.
+
+    Keluaran stream-json dipakai supaya PEMAKAIAN TOKEN terlihat — sampai 27 Sep 2026 bot
+    ini tidak pernah mencatatnya, sehingga "hemat token" hanya bisa ditebak. Mode `json`
+    biasa TIDAK dipakai: di sana teks setengah jadi saat putaran habis tidak ikut keluar,
+    dan penyelamatan jawaban sebagian akan hilang. Di stream-json teks itu masih bisa
+    diambil dari pesan terakhir model. Keluaran yang bukan JSON diperlakukan sebagai teks
+    apa adanya (perilaku lama).
+    """
+    teks_terakhir, hasil, ada_json = "", None, False
+    for baris in (stdout or "").splitlines():
+        baris = baris.strip()
+        if not baris.startswith("{"):
+            continue
+        try:
+            ev = json.loads(baris)
+        except ValueError:
+            continue
+        ada_json = True
+        if ev.get("type") == "assistant":
+            isi = (ev.get("message") or {}).get("content") or []
+            teks = "".join(b.get("text", "") for b in isi
+                           if isinstance(b, dict) and b.get("type") == "text")
+            if teks.strip():
+                teks_terakhir = teks
+        elif ev.get("type") == "result":
+            hasil = ev
+    if not ada_json:
+        return (stdout or "").strip(), None
+    jawaban = (hasil or {}).get("result") or teks_terakhir
+    return (jawaban or "").strip(), hasil
+
+
+def _catat_pemakaian(hasil, model, max_turns):
+    """Satu baris per panggilan model — bahan untuk memangkas yang benar-benar boros."""
+    u = hasil.get("usage") or {}
+    print(f"[token] model={model or 'bawaan'} putaran={hasil.get('num_turns')}/{max_turns} "
+          f"masuk={u.get('input_tokens', 0)} cache_baca={u.get('cache_read_input_tokens', 0)} "
+          f"cache_tulis={u.get('cache_creation_input_tokens', 0)} "
+          f"keluar={u.get('output_tokens', 0)} "
+          f"setara_usd={float(hasil.get('total_cost_usd') or 0):.4f} "
+          f"durasi={float(hasil.get('duration_ms') or 0) / 1000:.0f}s "
+          f"akhir={hasil.get('subtype')}", file=sys.stderr)
 
 
 def run_claude(prompt, timeout, max_turns, model=None, with_tools=True, tools_override=None):
@@ -3771,7 +3830,7 @@ def run_claude(prompt, timeout, max_turns, model=None, with_tools=True, tools_ov
         tools = ""   # tahap sintesis tidak butuh tool (data sudah di brief)
     cmd = [
         claude, "-p", prompt,
-        "--output-format", "text",
+        "--output-format", "stream-json", "--verbose",
         "--allowedTools", tools,
         "--dangerously-skip-permissions",
         "--max-turns", str(max_turns),
@@ -3791,6 +3850,9 @@ def run_claude(prompt, timeout, max_turns, model=None, with_tools=True, tools_ov
         )
     except subprocess.TimeoutExpired:
         return None, f"Waktu proses melebihi batas {timeout} detik."
+    teks, hasil = _urai_keluaran(result.stdout)
+    if hasil:
+        _catat_pemakaian(hasil, model, max_turns)
     if result.returncode != 0:
         mentah = (result.stderr or result.stdout or "")
         # KEHABISAN PUTARAN BUKAN KEGAGALAN TOTAL. Claude keluar dengan exit 1 dan pesan
@@ -3798,8 +3860,10 @@ def run_claude(prompt, timeout, max_turns, model=None, with_tools=True, tools_ov
         # Membuangnya dan mengirim "Claude gagal" berarti user tidak menerima apa pun,
         # padahal seluruh pekerjaan dan tokennya sudah dibayar. Terjadi nyata pada
         # "cari penyebab kenapa lit naik hari ini".
-        sebagian = (result.stdout or "").strip()
-        if "max turns" in mentah.lower() and len(sebagian) >= 200:
+        sebagian = teks
+        habis = ("max turns" in mentah.lower()
+                 or (hasil or {}).get("subtype") == "error_max_turns")
+        if habis and len(sebagian) >= 200:
             print(f"[claude] kehabisan putaran ({max_turns}) — mengirim jawaban sebagian "
                   f"({len(sebagian)} karakter)", file=sys.stderr)
             return (sebagian + NL * 2
@@ -3812,7 +3876,7 @@ def run_claude(prompt, timeout, max_turns, model=None, with_tools=True, tools_ov
         # chat ID pun sengaja di-hash; mengirim stderr mentah membatalkan kehati-hatian itu.
         print(f"[claude] exit {result.returncode}:\n{mentah[-2000:]}", file=sys.stderr)
         return None, f"Claude gagal (exit {result.returncode}). Detailnya ada di log Actions."
-    return result.stdout.strip(), None
+    return teks, None
 
 
 JEJAK_PATH = os.path.join(BASE_DIR, "data", "diproses.json")
@@ -4193,10 +4257,22 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
         # Peta narasi cara mentor #2 disiapkan KODE lebih dulu (rotasi.py): kategori yang
         # menguat + pemimpin/kandidatnya, dan big cap yang unggul + koin ASLI ekosistemnya.
         # Gagal tidak menghentikan screening — model tetap punya kategori.py.
-        screening, err_s = _jalankan_terukur("SCREENING NARASI (rotasi.py)",
-                                             ["cloud/rotasi.py", "--ringkas"])
-        if err_s or not screening:
-            screening = f"(screening rotasi.py gagal: {err_s or 'keluaran kosong'})"
+        # Langkah 1 (kondisi pasar) juga disiapkan kode, paralel dengan screening: dulu
+        # model mengambilnya sendiri lewat 3 panggilan alat — tiap panggilan = satu putaran
+        # yang membaca ulang seluruh konteks. Datanya sama; yang berubah hanya siapa yang
+        # mengambil.
+        tugas_n = [("SCREENING NARASI (rotasi.py)", ["cloud/rotasi.py", "--ringkas"]),
+                   ("PASAR GLOBAL (pasarglobal.py)", ["cloud/pasarglobal.py"]),
+                   ("SENTIMEN (sentiment.py BTC)", ["cloud/sentiment.py", "BTC"]),
+                   ("MUSIM ALTCOIN (musim.py)", ["cloud/musim.py", "--json"])]
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=len(tugas_n)) as pool:
+            hasil_n = list(pool.map(lambda t: _jalankan_terukur(t[0], t[1]), tugas_n))
+        bagian_n = []
+        for (label, _a), (keluar_n, err_n) in zip(tugas_n, hasil_n):
+            bagian_n.append(f"[{label}]\n" + (keluar_n if keluar_n and not err_n
+                                              else f"(gagal: {err_n or 'keluaran kosong'})"))
+        screening = "\n\n".join(bagian_n)
         output, err = run_claude(build_narasi_prompt(text, screening), min(timeout, 600),
                                  max_turns=70,
                                  model=MODEL_NARASI, tools_override=TOOLS_LONGGAR)

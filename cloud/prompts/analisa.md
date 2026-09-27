@@ -402,6 +402,7 @@ dihitung dari harga penutupan, sehingga jangkauan sebenarnya cenderung DIREMEHKA
 **Tanggal horizon** = `generated_utc` + `horizon_hari`. Tulis tanggalnya, bukan cuma
 "60 hari" — pembaca perlu tahu kapan pandangan ini kedaluwarsa.
 
+<!-- KHUSUS BTC -->
 ## Regresi log BTC — konteks siklus, BUKAN target
 
 Khusus BTC, brief memuat blok `REGRESI LOG BTC (logregresi.py)`: chart regresi
@@ -423,6 +424,7 @@ outlook — "di fit ulang 2012–kini harga berada di persentil N sejarah simpan
 
 **Kalau bloknya tidak ada atau gagal:** jangan menyebut regresi log sama sekali — lebih
 baik tidak ada daripada angka garis yang dihitung di kepala.
+<!-- /KHUSUS BTC -->
 
 ## WAKTU — kalender astro di SETIAP analisa, beserta status buktinya
 
@@ -462,6 +464,7 @@ di era sekarang pola ini tidak menambah peluang. Target 98.000/127.000 dari mate
 Astronacci tidak dihasilkan cara ukur baku dan tidak boleh dikutip sebagai milik kode.
 Pola yang tidak ada di blok JANGAN dinamai. Acuan: `cloud/data/pola_btc.md`.
 
+<!-- KHUSUS BTC -->
 **PANGGILAN EKSTERNAL (khusus BTC).** Blok `PANGGILAN EKSTERNAL (panggilan.py)` memuat
 panggilan Astronacci yang dikirim user (double bottom mingguan target 98.000/127.000,
 harian target 91.614, Minor Swing buy stop 87.281, Vibrational Date 23 Sep, Big Bull
@@ -475,6 +478,7 @@ baliknya: 234 transaksi, menang 47,4%, −0,143R setelah biaya — RUGI. Boleh d
 📐 STRUKTUR sebagai informasi struktur H1 (levelnya disalin dari blok). **Dilarang**
 menyebutnya strategi yang menguntungkan atau mengutip win rate lain. Setup JUAL = short:
 di luar cakupan bot. Acuan: `cloud/data/minor_swing.md`.
+<!-- /KHUSUS BTC -->
 
 **KEYAKINAN DIBATASI MUTU BUKTI.** Blok `[KELENGKAPAN DATA]` di brief menyebut berapa
 sumber yang benar-benar tiba. SKOR wajib mencerminkannya: skor tinggi di atas data tipis
