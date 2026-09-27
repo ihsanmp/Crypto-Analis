@@ -411,6 +411,50 @@ def jenis_aset(sisa):
     return "crypto", simbol
 
 
+# ---- ungkapan screening narasi (diperluas 27 Sep 2026) -----------------------------------
+# Diukur dulu pada 22 kalimat nyata: 13 terlewat ke mode ngobrol — varian kata ("naratif",
+# "narrative", "sector") dan ungkapan mentor #2 ("kategori apa yang lagi menguat", "chain
+# apa yang lagi perform", "ekosistem solana ...", "big cap apa yang lagi perform"), plus
+# pertanyaan momentum ("koin apa yang lagi naik / bakal naik berikutnya").
+# Varian BARU saja. "narasi"/"sektor" tetap memakai aturan lama apa adanya (substring).
+# Varian baru ini sering dipakai untuk menilai SATU koin ("skor naratif ONDO gimana?" —
+# jalur ngobrol + naratif.py), jadi baru dihitung screening bila tidak menyebut koin
+# tertentu, atau bertanya "apa/mana".
+_KATA_NARASI_RE = re.compile(r"\b(?:naratif\w*|narrative\w*|sector\w*)\b")
+_GERAK_RE = re.compile(
+    r"\b(?:naik|menguat|kuat|pump\w*|jalan|perform\w*|hot|rame|ramai|trending|terbang|"
+    r"bergerak|berikutnya|selanjutnya|next|outperform\w*|memimpin|leading)\b")
+_TANYA_RE = re.compile(r"\b(?:apa|mana|which|what|siapa)\b")
+# Grup Telegram juga punya "kategori" (crypto/forex/kerja): pesan soal grup bukan screening.
+_SOAL_GRUP_RE = re.compile(r"\b(?:telegram|tele|grup|group)\b")
+
+
+def _ungkapan_screening(low):
+    if _SOAL_GRUP_RE.search(low):
+        return False
+    # "kategori apa yang lagi menguat" — cara mentor: CoinGecko → Categories.
+    if re.search(r"\b(?:kategori|category|categories)\b", low) and (
+            _GERAK_RE.search(low) or _KOIN_RE.search(low) or "coingecko" in low):
+        return True
+    # "ekosistem solana ada koin apa yang menarik", "ekosistem apa yang lagi naik".
+    if re.search(r"\b(?:ekosistem|ecosystem)\b", low) and (
+            _GERAK_RE.search(low) or _KOIN_RE.search(low) or _MINAT_RE.search(low)
+            or _TANYA_RE.search(low)):
+        return True
+    # "chain apa yang lagi perform", "big cap mana yang lagi naik" — narasi chain.
+    if re.search(r"\b(?:chain|jaringan|big ?caps?|bigcaps?|layer ?1|l1)\b", low) and \
+            _TANYA_RE.search(low) and _GERAK_RE.search(low):
+        return True
+    # "rotasi altcoin ke mana", "rotasi modal sekarang".
+    if re.search(r"\brotasi\b", low) and re.search(
+            r"\b(?:altcoin|koin|coin|token|modal|likuiditas|ke mana|kemana|sekarang)\b", low):
+        return True
+    # "koin apa yang lagi naik", "koin apa yang bakal naik berikutnya".
+    if re.match(r"^(?:koin|coin|altcoin|token)s?\s+(?:apa|mana)\b", low) and _GERAK_RE.search(low):
+        return True
+    return False
+
+
 def is_narasi(low):
     """Deteksi permintaan screening narasi/sektor.
 
@@ -419,7 +463,9 @@ def is_narasi(low):
     # "sektor"/"tema" SAJA tidak cukup. "analisis sektor ai" berarti INDUSTRI AI, bukan
     # screening koin AI — kejadian nyata yang dilaporkan user. Kata itu baru berarti
     # screening kalau konteksnya memang koin, atau narasinya khas crypto (defi, rwa, dst).
-    if "narasi" in low or "sektor" in low or "tema " in low:
+    kata_baru = bool(_KATA_NARASI_RE.search(low)) and (
+        aset_dari_pesan(low)[1] is None or bool(_TANYA_RE.search(low)))
+    if "narasi" in low or "sektor" in low or "tema " in low or kata_baru:
         if _KOIN_RE.search(low) or not _NARASI_RE.search(low):
             return True
         return not any(re.search(r"\b" + re.escape(t) + r"\b", low)
@@ -437,7 +483,7 @@ def is_narasi(low):
     # Menyebut nama narasi + kata "koin/token" -> mis. "ada koin privacy yang menarik ga"
     if _NARASI_RE.search(low) and _KOIN_RE.search(low):
         return True
-    return False
+    return _ungkapan_screening(low)
 
 
 def topik_ai(low):

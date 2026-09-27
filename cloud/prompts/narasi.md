@@ -45,6 +45,8 @@ mentor user (transkrip 27 Sep 2026). Pakai sebagai PETA AWAL:
   UTAMA CoinGecko — RENDER (ethereum), CAKE (bsc), STRK (ethereum) tidak akan muncul sebagai
   koin Solana. **JANGAN menambahkannya kembali** dari ingatan.
 - Untuk narasi yang disebut user (JALUR A): `python cloud/rotasi.py --kategori <id> --ringkas`.
+  Untuk EKOSISTEM chain (mis. "ekosistem solana" → `solana-ecosystem`, "ekosistem sui" →
+  `sui-ecosystem`) perintah yang sama otomatis hanya memuat koin ASLI chain itu.
 - Acuan lengkap (metode, reproduksi, hasil uji): `cloud/data/naratif_rotasi.md`.
 
 **Status buktinya WAJIB ikut:** rotasi pemimpin → koin berikutnya adalah HIPOTESIS mentor

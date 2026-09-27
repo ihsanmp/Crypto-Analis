@@ -147,3 +147,28 @@ def test_hasil_uji_elevator_ikut_di_blok():
     """Run 36321622251: +0,6 poin (p=0,26) di 7 hari, −0,2 di 14 hari, Solana nol."""
     for wajib in ("TIDAK terbukti", "+0,6 poin", "p=0,26", "−0,2 poin", "36321622251"):
         assert wajib in R.HIPOTESIS, wajib
+
+
+def test_ekosistem_yang_disebut_user_hanya_koin_asli(monkeypatch):
+    """'ekosistem solana ...' lewat jalur satu kategori tadinya memuat RENDER, CAKE, USDT."""
+    eko = [{"id": i, "symbol": s, "market_cap": m, "total_volume": m * 0.05,
+            "current_price": p, "price_change_percentage_7d_in_currency": u}
+           for i, s, m, p, u in (("solana", "sol", 9e10, 200.0, 14.0),
+                                 ("tether", "usdt", 8e10, 1.0, 0.0),
+                                 ("render-token", "render", 3e9, 5.0, 2.0),
+                                 ("jupiter-exchange-solana", "jup", 2e9, 1.0 * 0.6, 24.8),
+                                 ("pancakeswap-token", "cake", 2e9, 2.0, 1.0),
+                                 ("pudgy-penguins", "pengu", 2e9, 0.03, 37.2),
+                                 ("raydium", "ray", 1e9, 3.0, 35.2),
+                                 ("bonk", "bonk", 1e9, 0.00002, 4.0))]
+    atas = [{"id": "solana", "symbol": "sol"}, {"id": "bitcoin", "symbol": "btc"}]
+    monkeypatch.setattr(R, "_pasar", lambda p: (eko if p.get("category") else atas, None))
+    platform = {"tether": "ethereum", "render-token": "ethereum",
+                "pancakeswap-token": "binance-smart-chain",
+                "jupiter-exchange-solana": "solana", "pudgy-penguins": "solana",
+                "raydium": "solana", "bonk": "solana"}
+    h = R.satu_kategori("solana-ecosystem", platform=platform)["kategori"][0]
+    semua = [k["simbol"] for k in h["pemimpin"] + h["kandidat"]]
+    for asing in ("SOL", "USDT", "RENDER", "CAKE"):
+        assert asing not in semua, asing
+    assert set(semua) <= {"JUP", "PENGU", "RAY", "BONK"} and "koin asli" in h["nama"]

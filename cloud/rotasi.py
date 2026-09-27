@@ -207,16 +207,46 @@ def narasi_kategori(kecuali=()):
     return {"kategori": hasil}
 
 
-def satu_kategori(kat_id, kecuali=()):
+def _saring_asli(anggota, kat_id, kecuali, platform):
+    """Kalau kat_id adalah EKOSISTEM chain: hanya koin yang dibangun di chain itu. Tanpa ini
+    "ekosistem solana ..." (jalur satu kategori) kembali memuat RENDER, CAKE, USDT."""
+    chain = next((cid for cid, (kid, _k) in CHAIN.items() if kid == kat_id), None)
+    if chain is None:
+        return anggota, None
+    if platform is None:
+        return anggota, "peta platform gagal diambil — koin asli belum dipisahkan dari bridge"
+    kunci = CHAIN[chain][1]
+    atas, _e = _pasar({"per_page": BIGCAP_N + 15})
+    simbol_besar = {(c.get("symbol") or "").upper() for c in (atas or [])
+                    if c.get("id") != chain} - {""}
+    keluar = []
+    for x in anggota:
+        k = _koin(x)
+        if (x.get("id") == chain or x.get("id") in kecuali
+                or platform.get(x.get("id"), "") not in kunci
+                or _mirip_stabil(k) or _bridge_aset_lain(k, simbol_besar)):
+            continue
+        keluar.append(x)
+    return keluar, None
+
+
+def satu_kategori(kat_id, kecuali=(), platform=None):
     """JALUR A (user menyebut narasinya): pemimpin & kandidat untuk SATU kategori."""
-    anggota, err = _pasar({"category": kat_id, "per_page": 30})
+    anggota, err = _pasar({"category": kat_id, "per_page": 100 if kat_id.endswith(
+        "ecosystem") or kat_id == "binance-smart-chain" else 30})
     if not anggota:
         return {"kategori": [{"id": kat_id, "nama": kat_id, "mcap": 0, "tingkat": "?",
                               "ubah_24j": 0.0, "galat": err or "kategori kosong/tidak dikenal"}]}
+    anggota, catatan = _saring_asli(anggota, kat_id, kecuali, platform)
+    anggota = anggota[:30]
     mcap = sum((x.get("market_cap") or 0) for x in anggota)
-    return {"kategori": [{"id": kat_id, "nama": kat_id, "mcap": mcap, "tingkat": tingkat(mcap),
-                          "ubah_24j": 0.0,
-                          **pemimpin_dan_kandidat([_koin(x) for x in anggota], kecuali)}]}
+    hasil = {"id": kat_id, "nama": kat_id + (" (koin asli saja)" if kat_id in
+                                               {v[0] for v in CHAIN.values()} else ""),
+             "mcap": mcap, "tingkat": tingkat(mcap), "ubah_24j": 0.0,
+             **pemimpin_dan_kandidat([_koin(x) for x in anggota], kecuali)}
+    if catatan:
+        hasil["galat_saring"] = catatan
+    return {"kategori": [hasil]}
 
 
 def narasi_chain(kecuali=(), platform=None):
@@ -320,7 +350,7 @@ def main():
     except Exception:
         kecuali = set()
     if a.kategori:
-        kat = satu_kategori(a.kategori, kecuali)
+        kat = satu_kategori(a.kategori, kecuali, platform_utama())
         ch = {"galat": "tidak dijalankan — mode satu kategori"}
     else:
         kat = narasi_kategori(kecuali)

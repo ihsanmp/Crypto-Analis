@@ -8534,3 +8534,41 @@ def test_aturan_narasi_mentor2_membawa_status_buktinya():
     for wajib in ("HIPOTESIS", "TIDAK terbukti", "p=0,26", "JANGAN menambahkannya kembali",
                   "EKOSISTEMNYA", "charting", "--kategori"):
         assert wajib in bagian, wajib
+
+
+# ------------------------- pengenal screening narasi diperluas (27 Sep 2026)
+# Diukur dulu: 13 dari 22 kalimat nyata terlewat ke mode ngobrol.
+
+@pytest.mark.parametrize("teks", [
+    "narasi apa yang lagi jalan", "naratif apa yang lagi naik", "narrative apa yang lagi hot",
+    "narasinya lagi ke mana", "sektornya lagi ke mana", "sektor apa yang lagi naik",
+    "kategori apa yang lagi menguat", "kategori mana yang lagi pump", "rotasi narasi",
+    "rotasi altcoin sekarang ke mana", "chain apa yang lagi perform",
+    "ekosistem apa yang lagi naik", "ekosistem solana ada koin apa yang menarik",
+    "koin di ekosistem sui yang bagus apa", "altcoin apa yang lagi jalan",
+    "koin apa yang lagi naik", "koin apa yang bakal naik berikutnya",
+    "big cap apa yang lagi perform", "what narrative is hot right now",
+    "which sector is pumping",
+])
+def test_ungkapan_screening_narasi_dikenali(teks):
+    assert bot.classify(teks) == "narasi", teks
+
+
+@pytest.mark.parametrize("teks", [
+    "halo", "analisa btc", "analisa sol", "harga eth berapa", "analisis sektor ai",
+    "perkembangan industri ai minggu ini", "kenapa btc naik", "menurutmu btc gimana",
+    "koin apa saja yang di-hold blackrock", "token baru solana",
+    "cari wallet 0xda...09d9 di levera",
+    # Grup Telegram juga punya "kategori": itu riset grup, bukan screening narasi.
+    "carikan info dari telegram kategori crypto yang lagi naik",
+    "btc naik ga minggu ini",
+])
+def test_bukan_screening_narasi(teks):
+    assert bot.classify(teks) != "narasi", teks
+
+
+def test_skor_naratif_satu_koin_tetap_ke_jalur_ngobrol():
+    """Kata 'naratif' kini dikenali — tapi 'skor naratif ONDO' menilai SATU koin (jalur
+    ngobrol + naratif.py), bukan screening narasi umum."""
+    assert bot.classify("skor naratif ONDO gimana?") == "chat"
+    assert bot.classify("naratif apa yang lagi naik") == "narasi"
