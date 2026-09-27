@@ -1,11 +1,11 @@
 {
- "ditarik_utc": "2026-09-20 09:34",
+ "ditarik_utc": "2026-09-27 10:20",
  "sumber": "SoSoValue OpenAPI /macro/events/{acara}/history",
  "acara": {
   "NFP": {
    "nama": "Nonfarm Payrolls",
-   "jumlah": 200,
-   "rentang": "2010-01-08 s/d 2026-09-04",
+   "jumlah": 201,
+   "rentang": "2010-01-08 s/d 2026-10-02",
    "data": [
     {
      "date": "2010-01-08",
@@ -1206,6 +1206,12 @@
      "actual": "162",
      "forecast": "55",
      "previous": "-23"
+    },
+    {
+     "date": "2026-10-02",
+     "actual": "",
+     "forecast": "98",
+     "previous": "162"
     }
    ]
   },
