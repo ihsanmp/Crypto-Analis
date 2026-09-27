@@ -108,3 +108,36 @@ def test_cache_platform_tidak_di_file_yang_dicommit():
     src = open(os.path.join(AKAR, "cloud", "rotasi.py"), encoding="utf-8").read()
     assert "tempfile.gettempdir()" in src
     assert 'kategori.ambil("/coins/list"' not in src
+
+
+
+def test_stablecoin_kecil_dan_bridge_aset_besar_tidak_lolos_sebagai_asli(monkeypatch):
+    """Run 36321348811: PSTUSDC/USDM/FRAX (stablecoin di luar 100 teratas) dan BTC/ETH/NBTC
+    (bridge yang dicetak di NEAR) tampil sebagai koin asli."""
+    big = [{"id": "near", "symbol": "near", "market_cap": 9e9, "total_volume": 5e8,
+            "current_price": 3.0, "price_change_percentage_7d_in_currency": 43.0},
+           {"id": "bitcoin", "symbol": "btc", "market_cap": 1e12, "total_volume": 5e10,
+            "current_price": 84000.0, "price_change_percentage_7d_in_currency": 5.0},
+           {"id": "ethereum", "symbol": "eth", "market_cap": 4e11, "total_volume": 3e10,
+            "current_price": 3000.0, "price_change_percentage_7d_in_currency": 5.0}]
+    eko = [{"id": i, "symbol": s, "market_cap": 1e8, "total_volume": 1e7, "current_price": p,
+            "price_change_percentage_7d_in_currency": u}
+           for i, s, p, u in (("usdc-near", "usdc.e", 1.0, 0.0), ("frax-near", "frax", 0.998, -0.4),
+                              ("btc-near", "btc", 84000.0, 4.3), ("nbtc", "nbtc", 84000.0, 5.5),
+                              ("eth-near", "eth", 3000.0, 5.1), ("ref-finance", "ref", 0.2, 37.2),
+                              ("rhea", "rhea", 0.05, 436.4))]
+    monkeypatch.setattr(R, "_pasar", lambda p: (eko if p.get("category") else big, None))
+    platform = {c["id"]: "near-protocol" for c in eko}
+    ch = R.narasi_chain(platform=platform)
+    asli = sorted(k["simbol"] for k in ch["chain"][0]["asli"])
+    assert asli == ["REF", "RHEA"], asli
+
+
+def test_stablecoin_tidak_dihitung_sebagai_big_cap(monkeypatch):
+    big = [{"id": "usd1", "symbol": "usd1", "market_cap": 5e9, "total_volume": 1e9,
+            "current_price": 1.0, "price_change_percentage_7d_in_currency": 0.1},
+           {"id": "solana", "symbol": "sol", "market_cap": 9e10, "total_volume": 5e9,
+            "current_price": 200.0, "price_change_percentage_7d_in_currency": 14.0}]
+    monkeypatch.setattr(R, "_pasar", lambda p: (big, None))
+    ch = R.narasi_chain(platform={})
+    assert [k["simbol"] for k in ch["big_cap"]] == ["SOL"]

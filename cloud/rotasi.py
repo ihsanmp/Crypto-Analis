@@ -133,8 +133,26 @@ def tingkat(mcap):
     return "SEDANG" if mcap >= SEDANG_MIN else "KECIL"
 
 
+def _mirip_stabil(k):
+    """Harga ~$1 dan nyaris diam seminggu. Daftar pengecualian musim.py hanya 100 stablecoin
+    teratas, sehingga PSTUSDC, USDM, DJED, USDC.E, FRAX lolos sebagai "koin asli" di run
+    36321348811."""
+    h, u = k.get("harga"), k.get("ubah_7h")
+    return h is not None and 0.9 <= h <= 1.1 and u is not None and abs(u) <= 3.0
+
+
+def _bridge_aset_lain(k, simbol_besar):
+    """Representasi bridge dari big cap lain yang DICETAK di chain ini: platform utamanya
+    memang chain ini, tapi isinya BTC/ETH. Run 36321348811: BTC, ETH, NBTC tampil sebagai
+    koin asli NEAR. Aturan platform tidak bisa membedakan 'dibangun di chain ini' dari
+    'dijembatani ke chain ini' — simbolnya yang bisa."""
+    s = k["simbol"].split(".")[0]
+    return s in simbol_besar or (len(s) > 3 and s[0] in "WN" and s[1:] in simbol_besar)
+
+
 def _koin(c):
     return {"id": c.get("id"), "simbol": (c.get("symbol") or "").upper(),
+            "harga": c.get("current_price"),
             "mcap": c.get("market_cap") or 0, "volume": c.get("total_volume") or 0,
             "ubah_7h": c.get("price_change_percentage_7d_in_currency"),
             "ubah_30h": c.get("price_change_percentage_30d_in_currency")}
@@ -199,7 +217,9 @@ def narasi_chain(kecuali=(), platform=None):
     atas, err = _pasar({"per_page": BIGCAP_N + 15})
     if not atas:
         return {"galat": f"daftar big cap gagal: {err}"}
-    big = [_koin(c) for c in atas if c.get("id") not in kecuali][:BIGCAP_N]
+    big = [_koin(c) for c in atas if c.get("id") not in kecuali
+           and not _mirip_stabil(_koin(c))][:BIGCAP_N]
+    simbol_besar = {k["simbol"] for k in big}
     unggul = [k for k in big if (k["ubah_7h"] or 0) >= AMBANG_GERAK]
     chain = []
     for k in unggul:
@@ -214,9 +234,10 @@ def narasi_chain(kecuali=(), platform=None):
         if not anggota:
             chain.append({"koin": k, "galat": f"ekosistem {kat_id} kosong/gagal: {err}"})
             continue
-        asli = [_koin(x) for x in anggota
-                if x.get("id") != k["id"] and x.get("id") not in kecuali
-                and platform.get(x.get("id"), "") in kunci]
+        asli = [kk for kk in (_koin(x) for x in anggota
+                              if x.get("id") != k["id"] and x.get("id") not in kecuali
+                              and platform.get(x.get("id"), "") in kunci)
+                if not _mirip_stabil(kk) and not _bridge_aset_lain(kk, simbol_besar - {k["simbol"]})]
         dicoret = sum(1 for x in anggota if x.get("id") != k["id"]) - len(asli)
         chain.append({"koin": k, "ekosistem": kat_id, "dicoret_bukan_asli": dicoret,
                       "asli": asli[:12]})
@@ -272,8 +293,10 @@ def ringkas(kat, ch):
             b.append("      " + ", ".join(f"{k['simbol']} {_p(k['ubah_7h'])}"
                                           for k in c["asli"]) if c["asli"] else "      (tidak ada)")
         if ch["unggul_bukan_chain"]:
-            b.append("  unggul tapi BUKAN chain (pakai jalur kategori koinnya): "
-                     + ", ".join(k["simbol"] for k in ch["unggul_bukan_chain"]))
+            # Sebagian di antaranya memang layer 1 (XRP, XLM, DOGE, BCH, ZEC) — yang tidak
+            # ada adalah PETA EKOSISTEM token-nya di sini, bukan status chain-nya.
+            b.append("  unggul, tanpa peta ekosistem token di sini (pakai jalur kategori "
+                     "koinnya): " + ", ".join(k["simbol"] for k in ch["unggul_bukan_chain"]))
     b += ["", HIPOTESIS]
     return "\n".join(b)
 
