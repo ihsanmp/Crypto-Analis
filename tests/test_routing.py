@@ -8531,6 +8531,6 @@ def test_aturan_narasi_mentor2_membawa_status_buktinya():
     n = open(os.path.join(AKAR, "cloud", "prompts", "narasi.md"), encoding="utf-8").read()
     i = n.index("# CARA MENTOR #2")
     bagian = n[i:i + 3000]
-    for wajib in ("HIPOTESIS", "belum diuji", "JANGAN menambahkannya kembali", "EKOSISTEMNYA",
-                  "charting", "--kategori"):
+    for wajib in ("HIPOTESIS", "TIDAK terbukti", "p=0,26", "JANGAN menambahkannya kembali",
+                  "EKOSISTEMNYA", "charting", "--kategori"):
         assert wajib in bagian, wajib

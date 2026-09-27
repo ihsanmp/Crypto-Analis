@@ -45,10 +45,14 @@ mentor user (transkrip 27 Sep 2026). Pakai sebagai PETA AWAL:
   UTAMA CoinGecko — RENDER (ethereum), CAKE (bsc), STRK (ethereum) tidak akan muncul sebagai
   koin Solana. **JANGAN menambahkannya kembali** dari ingatan.
 - Untuk narasi yang disebut user (JALUR A): `python cloud/rotasi.py --kategori <id> --ringkas`.
+- Acuan lengkap (metode, reproduksi, hasil uji): `cloud/data/naratif_rotasi.md`.
 
-**Status buktinya WAJIB ikut:** rotasi pemimpin → koin berikutnya adalah HIPOTESIS mentor,
-belum diuji di repo ini. Sajikan kandidat sebagai "koin besar di narasi yang sama yang
-belum ikut bergerak — layak dipantau", bukan "akan naik berikutnya". Mentor sendiri: "taunya
+**Status buktinya WAJIB ikut:** rotasi pemimpin → koin berikutnya adalah HIPOTESIS mentor
+yang sudah DIUJI dan TIDAK terbukti (365 hari, 108 minggu peristiwa): kandidat hanya
+mengungguli rekan satu narasinya +0,6 poin di minggu berikutnya (p=0,26) dan −0,2 poin di
+dua minggu; di ekosistem Solana nol. Sajikan kandidat sebagai "koin besar di narasi yang
+sama yang belum ikut bergerak — layak dipantau", bukan "akan naik berikutnya", dan sebut
+bahwa pola susul-menyusul ini tidak terbukti di data setahun terakhir. Mentor sendiri: "taunya
 gimana kalau grass pasti naik? Gak ada yang tau ... tetap harus di-charting lagi sendiri".
 Karena itu langkah 5 (teknikal) dan langkah 3 (penggerak nyata) tetap wajib untuk finalis,
 dan mentor menutup dengan: **kenali proyek yang dibeli**, jangan cuma mengejar koinnya.

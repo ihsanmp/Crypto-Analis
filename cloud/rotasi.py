@@ -26,10 +26,12 @@ persis keputusan mentor: RENDER → ethereum, CAKE → binance-smart-chain, STRK
 USDT → ethereum (semua dicoret); JUP, RAY, PENGU, BONK → solana (lolos). Jumlah platform
 TIDAK dipakai: PENGU dan BONK asli Solana tapi di-bridge ke 6–7 chain.
 
-"KONSEP ELEVATOR" ADALAH HIPOTESIS. Mentor menyatakannya dari pengalaman; repo ini belum
-mengujinya (lihat uji_rotasi.py). Kandidat yang dikeluarkan di sini adalah DAFTAR PANTAU —
-koin besar di narasi yang sama yang belum ikut bergerak — bukan ramalan bahwa mereka akan
-naik. Mentor sendiri: "taunya gimana kalau grass pasti naik? Gak ada yang tau."
+"KONSEP ELEVATOR" DIUJI, DAN TIDAK TERBUKTI (uji_rotasi.py, run 36321622251): sesudah
+pemimpin naik >= +10%, kandidat mengungguli rekan satu narasinya hanya +0,6 poin di minggu
+berikutnya (p=0,26) dan −0,2 poin di dua minggu (p=0,83); di ekosistem Solana nol. Kandidat
+yang dikeluarkan di sini tetap berguna sebagai DAFTAR PANTAU — koin besar di narasi yang
+sama yang belum ikut bergerak — tapi bukan ramalan bahwa mereka akan naik. Mentor sendiri:
+"taunya gimana kalau grass pasti naik? Gak ada yang tau."
 
 AMBANG DITETAPKAN SEKALI, di bawah. +10% 7 hari diambil dari penilaian mentor sendiri.
 
@@ -82,8 +84,12 @@ CHAIN = {
     "the-open-network": ("ton-ecosystem", {"the-open-network"}),
     "aptos": ("aptos-ecosystem", {"aptos"}),
 }
-HIPOTESIS = ("Rotasi pemimpin → koin berikutnya ('konsep elevator') adalah HIPOTESIS mentor; "
-             "kandidat di bawah adalah DAFTAR PANTAU (koin besar di narasi yang sama yang "
+HIPOTESIS = ("Rotasi pemimpin → koin berikutnya ('konsep elevator') adalah HIPOTESIS mentor "
+             "yang TIDAK terbukti. Diuji (uji_rotasi.py, run 36321622251: harga harian 365 "
+             "hari, 7 kelompok narasi, 108 minggu peristiwa): kandidat mengungguli rekan satu "
+             "narasinya rata-rata hanya +0,6 poin di 7 hari berikutnya (p=0,26; unggul di 57% "
+             "minggu) dan −0,2 poin di 14 hari (p=0,83); di ekosistem Solana −0,03 poin. "
+             "Kandidat di bawah adalah DAFTAR PANTAU (koin besar di narasi yang sama yang "
              "belum ikut bergerak), bukan ramalan naik. Mentor sendiri: tetap charting "
              "sendiri, jangan masuk asal.")
 

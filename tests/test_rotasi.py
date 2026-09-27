@@ -141,3 +141,9 @@ def test_stablecoin_tidak_dihitung_sebagai_big_cap(monkeypatch):
     monkeypatch.setattr(R, "_pasar", lambda p: (big, None))
     ch = R.narasi_chain(platform={})
     assert [k["simbol"] for k in ch["big_cap"]] == ["SOL"]
+
+
+def test_hasil_uji_elevator_ikut_di_blok():
+    """Run 36321622251: +0,6 poin (p=0,26) di 7 hari, −0,2 di 14 hari, Solana nol."""
+    for wajib in ("TIDAK terbukti", "+0,6 poin", "p=0,26", "−0,2 poin", "36321622251"):
+        assert wajib in R.HIPOTESIS, wajib
