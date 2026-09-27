@@ -3783,6 +3783,7 @@ def _urai_keluaran(stdout):
     apa adanya (perilaku lama).
     """
     teks_terakhir, hasil, ada_json = "", None, False
+    alat, ukuran = [], {}          # [(id, label)] berurutan; id -> karakter hasil alat
     for baris in (stdout or "").splitlines():
         baris = baris.strip()
         if not baris.startswith("{"):
@@ -3798,12 +3799,32 @@ def _urai_keluaran(stdout):
                            if isinstance(b, dict) and b.get("type") == "text")
             if teks.strip():
                 teks_terakhir = teks
+            for b in isi:
+                if isinstance(b, dict) and b.get("type") == "tool_use":
+                    alat.append((b.get("id"), _label_alat(b.get("name"), b.get("input"))))
+        elif ev.get("type") == "user":
+            for b in (ev.get("message") or {}).get("content") or []:
+                if isinstance(b, dict) and b.get("type") == "tool_result":
+                    ukuran[b.get("tool_use_id")] = len(json.dumps(b.get("content"),
+                                                                  ensure_ascii=False))
         elif ev.get("type") == "result":
-            hasil = ev
+            hasil = dict(ev)
     if not ada_json:
         return (stdout or "").strip(), None
+    if hasil is not None:
+        hasil["_alat"] = [(label, ukuran.get(i, 0)) for i, label in alat]
     jawaban = (hasil or {}).get("result") or teks_terakhir
     return (jawaban or "").strip(), hasil
+
+
+def _label_alat(nama, masukan):
+    """Nama alat untuk log PUBLIK: hanya nama, plus nama skrip untuk Bash — argumennya
+    TIDAK ikut (bisa berisi potongan alamat wallet dari pesan pengguna)."""
+    nama = (nama or "?").replace("mcp__", "")
+    if nama == "Bash":
+        m = re.search(r"cloud/([\w-]+\.py)", str((masukan or {}).get("command", "")))
+        return f"Bash:{m.group(1)}" if m else "Bash"
+    return nama
 
 
 def _catat_pemakaian(hasil, model, max_turns):
@@ -3816,6 +3837,12 @@ def _catat_pemakaian(hasil, model, max_turns):
           f"setara_usd={float(hasil.get('total_cost_usd') or 0):.4f} "
           f"durasi={float(hasil.get('duration_ms') or 0) / 1000:.0f}s "
           f"akhir={hasil.get('subtype')}", file=sys.stderr)
+    alat = hasil.get("_alat") or []
+    if alat:
+        # Tiap alat = satu putaran tambahan yang membaca ulang seluruh konteks, dan hasilnya
+        # ikut terbawa di semua putaran berikutnya — ukuran hasil menunjukkan beratnya.
+        print("[token] alat: " + ", ".join(f"{label}({n:,} kar)" for label, n in alat),
+              file=sys.stderr)
 
 
 def run_claude(prompt, timeout, max_turns, model=None, with_tools=True, tools_override=None):

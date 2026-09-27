@@ -8634,6 +8634,28 @@ def test_stream_json_putaran_habis_tetap_menyelamatkan_jawaban():
         _sh.which, _sp.run = which_asli, run_asli
 
 
+def test_log_token_mencatat_alat_tanpa_argumen(capsys):
+    """Tiap alat = satu putaran tambahan; log menunjukkan alat mana & seberapa besar hasilnya.
+    Repo publik: argumen Bash (bisa berisi potongan alamat wallet) TIDAK boleh ikut."""
+    keluar = _stream(
+        {"type": "assistant", "message": {"content": [
+            {"type": "tool_use", "id": "a1", "name": "Bash",
+             "input": {"command": "python cloud/cariwallet.py 0xAbCd1234 --chain bsc"}},
+            {"type": "tool_use", "id": "a2", "name": "mcp__coinmarketcap__fearAndGreedLatest",
+             "input": {}}]}},
+        {"type": "user", "message": {"content": [
+            {"type": "tool_result", "tool_use_id": "a1", "content": "x" * 5000},
+            {"type": "tool_result", "tool_use_id": "a2", "content": "y" * 40}]}},
+        {"type": "result", "subtype": "success", "result": "OK", "num_turns": 3, "usage": {}})
+    teks, hasil = bot._urai_keluaran(keluar)
+    assert teks == "OK"
+    bot._catat_pemakaian(hasil, "m", 10)
+    log = capsys.readouterr().err
+    assert "Bash:cariwallet.py(5,002 kar)" in log
+    assert "coinmarketcap__fearAndGreedLatest" in log
+    assert "0xAbCd" not in log and "bsc" not in log
+
+
 def test_perintah_claude_memakai_stream_json():
     src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
     i = src.index("def run_claude(")
