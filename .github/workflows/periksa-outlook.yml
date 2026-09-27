@@ -26,6 +26,8 @@ jobs:
           python-version: "3.11"
 
       - name: Blok outlook
+        env:
+          COINGECKO_DEMO_KEY: ${{ secrets.COINGECKO_DEMO_KEY }}
         run: |
           echo "==== WAKTU ASTRO ===="
           python cloud/astro.py --ringkas --hari 60
@@ -35,3 +37,5 @@ jobs:
           python cloud/swing.py --ringkas
           echo "==== PANGGILAN EKSTERNAL ===="
           python cloud/panggilan.py --ringkas
+          echo "==== SCREENING NARASI (rotasi.py) ===="
+          python cloud/rotasi.py --ringkas

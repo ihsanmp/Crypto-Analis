@@ -8512,3 +8512,25 @@ def test_foto_menerima_struktur_dan_kalender_astro():
     foto = open(os.path.join(AKAR, "cloud", "prompts", "foto.md"), encoding="utf-8").read()
     for wajib in ("📐 STRUKTUR", "cloud/pola.py", "cloud/swing.py", "cloud/panggilan.py"):
         assert wajib in foto, wajib
+
+
+# ------------------------- screening narasi cara mentor #2 (27 Sep 2026)
+
+def test_mode_narasi_menerima_screening_dari_kode():
+    """Peta narasi disiapkan KODE (rotasi.py) sebelum model mulai — bukan diserahkan ke
+    kepatuhan model untuk menjalankannya."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    i = src.index('elif kind == "narasi":')
+    blok = src[i:i + 2500]
+    assert "cloud/rotasi.py" in blok and "build_narasi_prompt(text, screening)" in blok
+    p = bot.build_narasi_prompt("narasi apa yang lagi jalan", "SCREENING NARASI UJI")
+    assert "DATA SCREENING NARASI" in p and "SCREENING NARASI UJI" in p
+
+
+def test_aturan_narasi_mentor2_membawa_status_buktinya():
+    n = open(os.path.join(AKAR, "cloud", "prompts", "narasi.md"), encoding="utf-8").read()
+    i = n.index("# CARA MENTOR #2")
+    bagian = n[i:i + 3000]
+    for wajib in ("HIPOTESIS", "belum diuji", "JANGAN menambahkannya kembali", "EKOSISTEMNYA",
+                  "charting", "--kategori"):
+        assert wajib in bagian, wajib

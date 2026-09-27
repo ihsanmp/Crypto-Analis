@@ -29,6 +29,30 @@ tekanan jual.
 
 ---
 
+# CARA MENTOR #2 — narasi KATEGORI & narasi CHAIN (sudah dikerjakan kode)
+
+Blok `DATA SCREENING NARASI` di akhir prompt disiapkan `cloud/rotasi.py` mengikuti metode
+mentor user (transkrip 27 Sep 2026). Pakai sebagai PETA AWAL:
+
+- **Narasi kategori.** Kategori yang paling menguat, ditandai BESAR (≥ $5 M) / SEDANG / KECIL
+  — sebutkan tingkatnya; narasi kecil gampang digerakkan segelintir pembeli. Di tiap kategori:
+  **pemimpin** (3 market cap teratas) dan apakah sudah bergerak (≥ +10% 7 hari). Kalau sudah,
+  koin besar lain yang BELUM ikut bergerak tercantum sebagai **daftar pantau** — "konsep
+  elevator" mentor: likuiditas diduga turun dari pemimpin ke koin berikutnya.
+- **Narasi chain.** Big cap yang unggul 7 hari. Kalau itu layer 1, yang dilihat EKOSISTEMNYA,
+  bukan kategori "Layer 1" (kata mentor: konsep elevator tidak berlaku di L1). Kode sudah
+  mencoret stablecoin, aset bridge, dan token yang dibangun di chain lain lewat platform
+  UTAMA CoinGecko — RENDER (ethereum), CAKE (bsc), STRK (ethereum) tidak akan muncul sebagai
+  koin Solana. **JANGAN menambahkannya kembali** dari ingatan.
+- Untuk narasi yang disebut user (JALUR A): `python cloud/rotasi.py --kategori <id> --ringkas`.
+
+**Status buktinya WAJIB ikut:** rotasi pemimpin → koin berikutnya adalah HIPOTESIS mentor,
+belum diuji di repo ini. Sajikan kandidat sebagai "koin besar di narasi yang sama yang
+belum ikut bergerak — layak dipantau", bukan "akan naik berikutnya". Mentor sendiri: "taunya
+gimana kalau grass pasti naik? Gak ada yang tau ... tetap harus di-charting lagi sendiri".
+Karena itu langkah 5 (teknikal) dan langkah 3 (penggerak nyata) tetap wajib untuk finalis,
+dan mentor menutup dengan: **kenali proyek yang dibeli**, jangan cuma mengejar koinnya.
+
 # DUA JALUR — tentukan dulu yang mana
 
 > **Sumber peta sektor: `cloud/kategori.py` (CoinGecko, gratis tanpa kunci).**

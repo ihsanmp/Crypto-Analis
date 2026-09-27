@@ -664,9 +664,13 @@ def build_analisa_prompt(text):
     return f"{header_waktu()}{base}\n---\n{cmd}"
 
 
-def build_narasi_prompt(text):
+def build_narasi_prompt(text, screening=None):
     with open(NARASI_PROMPT, encoding="utf-8") as f:
         base = rakit_peran("crypto", ["inti", "analis"]) + f.read()
+    if screening:
+        # Dikumpulkan KODE (rotasi.py) — cara mentor #2: narasi kategori & narasi chain.
+        base += ("\n---\n## DATA SCREENING NARASI (sudah dikumpulkan kode — pakai sebagai "
+                 "peta awal, jangan tarik ulang)\n" + screening + "\n")
     return (f"{header_waktu()}{base}\n---\n## Permintaan user (jawab ini)\n{text}\n\n"
             "Tentukan dulu JALUR A (user menyebut narasi tertentu -> fokus ke situ) atau "
             "JALUR B (tidak menyebut -> cari sendiri narasi yang paling bergerak).\n")
@@ -4140,7 +4144,15 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
         # Screening memang butuh web DAN shell sekaligus (cari kandidat lalu hitung
         # indikatornya). Ini kompromi yang disadari, bukan kelalaian — jalur inilah yang
         # paling terbuka terhadap penyisipan lewat halaman web.
-        output, err = run_claude(build_narasi_prompt(text), min(timeout, 600), max_turns=70,
+        # Peta narasi cara mentor #2 disiapkan KODE lebih dulu (rotasi.py): kategori yang
+        # menguat + pemimpin/kandidatnya, dan big cap yang unggul + koin ASLI ekosistemnya.
+        # Gagal tidak menghentikan screening — model tetap punya kategori.py.
+        screening, err_s = _jalankan_terukur("SCREENING NARASI (rotasi.py)",
+                                             ["cloud/rotasi.py", "--ringkas"])
+        if err_s or not screening:
+            screening = f"(screening rotasi.py gagal: {err_s or 'keluaran kosong'})"
+        output, err = run_claude(build_narasi_prompt(text, screening), min(timeout, 600),
+                                 max_turns=70,
                                  model=MODEL_NARASI, tools_override=TOOLS_LONGGAR)
     else:  # chat
         # Bobot ditentukan dari BERAT pertanyaannya, bukan dari ada/tidaknya riwayat.
