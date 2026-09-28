@@ -74,3 +74,13 @@
 {"waktu": "2026-09-24T03:30:00-04:00", "mata_uang": "CHF", "nama": "SNB Policy Rate", "dampak": "tinggi", "konsensus": "0.00%", "sebelumnya": "0.00%", "aktual": null, "dicatat_utc": "2026-09-21 07:41"}
 {"waktu": "2026-09-24T04:00:00-04:00", "mata_uang": "CHF", "nama": "SNB Press Conference", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-09-21 07:41"}
 {"waktu": "2026-09-25T05:15:00-04:00", "mata_uang": "GBP", "nama": "BOE Gov Bailey Speaks", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-09-21 07:41"}
+{"waktu": "2026-09-29T00:30:00-04:00", "mata_uang": "AUD", "nama": "Cash Rate", "dampak": "tinggi", "konsensus": "4.60%", "sebelumnya": "4.35%", "aktual": null, "dicatat_utc": "2026-09-28 08:18"}
+{"waktu": "2026-09-29T00:30:00-04:00", "mata_uang": "AUD", "nama": "RBA Rate Statement", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-09-28 08:18"}
+{"waktu": "2026-09-29T21:30:00-04:00", "mata_uang": "AUD", "nama": "CPI m/m", "dampak": "tinggi", "konsensus": "0.5%", "sebelumnya": "1.0%", "aktual": null, "dicatat_utc": "2026-09-28 08:18"}
+{"waktu": "2026-09-29T21:30:00-04:00", "mata_uang": "AUD", "nama": "CPI y/y", "dampak": "tinggi", "konsensus": "4.1%", "sebelumnya": "3.5%", "aktual": null, "dicatat_utc": "2026-09-28 08:18"}
+{"waktu": "2026-09-29T21:30:00-04:00", "mata_uang": "AUD", "nama": "Trimmed Mean CPI m/m", "dampak": "tinggi", "konsensus": "0.3%", "sebelumnya": "0.5%", "aktual": null, "dicatat_utc": "2026-09-28 08:18"}
+{"waktu": "2026-09-30T08:30:00-04:00", "mata_uang": "USD", "nama": "Core PCE Price Index m/m", "dampak": "tinggi", "konsensus": "0.3%", "sebelumnya": "0.2%", "aktual": null, "dicatat_utc": "2026-09-28 08:18"}
+{"waktu": "2026-09-30T08:30:00-04:00", "mata_uang": "USD", "nama": "Final GDP q/q", "dampak": "tinggi", "konsensus": "1.5%", "sebelumnya": "1.5%", "aktual": null, "dicatat_utc": "2026-09-28 08:18"}
+{"waktu": "2026-10-02T08:30:00-04:00", "mata_uang": "USD", "nama": "Average Hourly Earnings m/m", "dampak": "tinggi", "konsensus": "0.3%", "sebelumnya": "0.3%", "aktual": null, "dicatat_utc": "2026-09-28 08:18"}
+{"waktu": "2026-10-02T08:30:00-04:00", "mata_uang": "USD", "nama": "Non-Farm Employment Change", "dampak": "tinggi", "konsensus": "98K", "sebelumnya": "162K", "aktual": null, "dicatat_utc": "2026-09-28 08:18"}
+{"waktu": "2026-10-02T08:30:00-04:00", "mata_uang": "USD", "nama": "Unemployment Rate", "dampak": "tinggi", "konsensus": "4.1%", "sebelumnya": "4.1%", "aktual": null, "dicatat_utc": "2026-09-28 08:18"}
