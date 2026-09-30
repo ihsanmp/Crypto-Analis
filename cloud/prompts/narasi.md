@@ -15,7 +15,8 @@ Bias hanya arah long: AKUMULASI / TAHAN / HINDARI. Data derivatif (funding/OI) c
 
 Acuan lengkap (baca kalau belum): `cat cloud/data/naratif_kalimasada.md`
 
-Untuk tiap koin yang masuk daftar akhir, jalankan `python cloud/naratif.py KOIN --json`.
+Untuk tiap koin yang masuk daftar akhir, jalankan `python cloud/naratif.py KOIN --json` —
+SEMUA koin dalam SATU perintah Bash: `for k in A B C; do python cloud/naratif.py $k --json; done`.
 Skor **tokenomics, likuiditas, revenue** di situ DIUKUR KODE — salin apa adanya. Nilai sendiri
 **katalis (20%), TAM (15%), tim & VC (15%), timing (10%)** dan sebutkan dasarnya; tanpa data,
 katakan tidak bisa dinilai. Tulis per koin dalam SATU baris:
@@ -132,12 +133,18 @@ pendanaan, chip/compute) dari RSS resmi. WAJIB dipakai kalau narasinya AI/DePIN/
 katalis sektor ini sering datang dari dunia AI, bukan dari crypto itu sendiri. Sebut
 sumber + tanggal; jangan memaksakan kaitan kalau beritanya tidak benar-benar relevan.
 
-`python cloud/indicators.py <TICKER>`
+`python cloud/indicators.py <TICKER>` — semua finalis dalam SATU perintah Bash:
+`for t in A B C; do python cloud/indicators.py $t; done`
 → EMA 13/21/33/50/100/200, RSI14, Stoch(5,3,3), BB+MidBand, ATR, SuperTrend, Pivot,
    Fibonacci, struktur, untuk weekly/daily/H4.
 Yang dicari untuk akumulasi spot: harga belum jauh dari support, idealnya di area Golden Pocket
 (0.5–0.618) atau pullback sehat ke EMA21 — BUKAN yang baru saja terbang vertikal.
 Baca juga `source` & `quality`; kalau `approx_close_only`, sebutkan keterbatasannya.
+
+**HEMAT PUTARAN:** tiap panggilan alat = satu putaran yang membaca ulang SELURUH konteks.
+Satukan pengambilan data sejenis dalam satu perintah (seperti di atas), dan panggil alat yang
+saling tidak bergantung dalam giliran yang sama. Datanya sama persis; yang hilang hanya
+putaran berulang.
 
 **6. Susun rekomendasi.** Untuk tiap koin pilihan: kenapa narasinya menarik, kenapa koin ini
 di dalam narasi itu, posisi teknikalnya, zona akumulasi + level invalidasi + target.
