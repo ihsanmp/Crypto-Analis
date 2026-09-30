@@ -3789,6 +3789,7 @@ def _urai_keluaran(stdout):
     teks_terakhir, hasil, ada_json = "", None, False
     alat, ukuran = [], {}          # [(id, label)] berurutan; id -> karakter hasil alat
     tersedia = None                # alat yang BENAR-BENAR diberikan CLI (event init)
+    dimuat = {}                    # id ToolSearch -> nama alat yang dimuatnya
     server_mcp = None              # [(nama, status)] — gagal menyala tidak pernah terlihat
     for baris in (stdout or "").splitlines():
         baris = baris.strip()
@@ -3817,12 +3818,20 @@ def _urai_keluaran(stdout):
                 if isinstance(b, dict) and b.get("type") == "tool_result":
                     ukuran[b.get("tool_use_id")] = len(json.dumps(b.get("content"),
                                                                   ensure_ascii=False))
+                    # ToolSearch: catat alat yang dimuatnya (nama alat, bukan rahasia).
+                    # Tanpa ini, "ToolSearch(54 kar)" disangka gagal menemukan MCP —
+                    # padahal servernya sehat (periksa-mcp.yml, 30 Sep 2026).
+                    muat = [c.get("tool_name") for c in b.get("content") or []
+                            if isinstance(c, dict) and c.get("type") == "tool_reference"]
+                    if muat:
+                        dimuat[b.get("tool_use_id")] = muat
         elif ev.get("type") == "result":
             hasil = dict(ev)
     if not ada_json:
         return (stdout or "").strip(), None
     if hasil is not None:
-        hasil["_alat"] = [(label, ukuran.get(i, 0)) for i, label in alat]
+        hasil["_alat"] = [(label + (f"->{'/'.join(dimuat[i])}" if i in dimuat else ""),
+                           ukuran.get(i, 0)) for i, label in alat]
         hasil["_tersedia"] = tersedia
         hasil["_mcp"] = server_mcp
     jawaban = (hasil or {}).get("result") or teks_terakhir
@@ -3852,6 +3861,8 @@ def _catat_pemakaian(hasil, model, max_turns):
     tersedia = hasil.get("_tersedia")
     if tersedia is not None:
         bawaan = sorted(t for t in tersedia if not t.startswith("mcp__"))
+        # "pending" = masih menyambung di latar (bawaan CLI); alatnya tetap bisa dimuat
+        # lewat ToolSearch, yang menunggu server siap. Bukan tanda gagal.
         mcp = ", ".join(f"{n}={st}" for n, st in hasil.get("_mcp") or []) or "-"
         print(f"[token] tersedia: {len(tersedia)} alat — bawaan: {', '.join(bawaan) or '-'}"
               f" — MCP: {mcp}", file=sys.stderr)

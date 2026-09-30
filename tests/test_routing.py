@@ -8691,6 +8691,19 @@ def test_tools_membatasi_alat_bawaan_sungguhan():
     assert sosial == "WebSearch,WebFetch" and "--mcp-config" not in cmd
 
 
+def test_log_toolsearch_menyebut_alat_yang_dimuat():
+    """"ToolSearch(54 kar)" pernah disangka gagal menemukan MCP; ternyata memuat WebSearch."""
+    keluar = _stream(
+        {"type": "assistant", "message": {"content": [
+            {"type": "tool_use", "id": "t1", "name": "ToolSearch", "input": {}}]}},
+        {"type": "user", "message": {"content": [
+            {"type": "tool_result", "tool_use_id": "t1",
+             "content": [{"type": "tool_reference", "tool_name": "WebSearch"}]}]}},
+        {"type": "result", "subtype": "success", "result": "OK", "usage": {}})
+    _, hasil = bot._urai_keluaran(keluar)
+    assert hasil["_alat"] == [("ToolSearch->WebSearch", 54)]
+
+
 def test_pencari_berita_tanpa_mcp():
     """Tahap 1 hanya diminta WebSearch; MCP di situ = server menyala + putaran ToolSearch
     yang tidak dipakai (run 36706028898)."""

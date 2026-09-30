@@ -147,8 +147,11 @@ def ringkas_stream(baris_baris):
         elif e.get("type") == "user":
             for b in (e.get("message") or {}).get("content") or []:
                 if b.get("type") == "tool_result":
-                    print("  hasil:", samarkan(json.dumps(b.get("content"))[:300]))
-        elif e.get("type") == "system":
+                    muat = [c.get("tool_name") for c in b.get("content") or []
+                            if isinstance(c, dict) and c.get("type") == "tool_reference"]
+                    print("  hasil:", f"memuat {muat}" if muat
+                          else samarkan(json.dumps(b.get("content"))[:300]))
+        elif e.get("type") == "system" and e.get("subtype") != "thinking_tokens":
             print("  system:", e.get("subtype"), samarkan(json.dumps(e)[:200]))
         elif e.get("type") == "result":
             print(f"akhir: {e.get('subtype')} · {e.get('num_turns')} putaran · "
