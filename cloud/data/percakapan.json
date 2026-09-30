@@ -391,5 +391,20 @@
   "angka_kunci": [
    "harga=84.719"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1790765624.6005566,
+  "waktu_utc": "2026-09-30 10:53",
+  "pesan": "analisa sol",
+  "balasan": "🕒 Data per 30 Sep 2026 17:49 WIB · sumber harga Kraken (native) · 14/14 sumber terisi\n\n📊 PASAR\nBTC $83.837 (24j −0,13% · 7h −2,66% · 30h +6,55%) · Dominasi BTC turun dari 58,99% (23 Sep) ke 58,72% (30 Sep), −0,27 pp · Fear & Greed 71 (Greed, kemarin\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+5 lainnya)",
+  "angka_kunci": [
+   "harga=119,69",
+   "invalid=97,30",
+   "invalid=67,40",
+   "ema21=112,22",
+   "rsi=63,46",
+   "skor=59"
+  ]
  }
 ]
