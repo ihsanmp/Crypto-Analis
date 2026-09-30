@@ -3784,6 +3784,7 @@ def _urai_keluaran(stdout):
     """
     teks_terakhir, hasil, ada_json = "", None, False
     alat, ukuran = [], {}          # [(id, label)] berurutan; id -> karakter hasil alat
+    tersedia = None                # alat yang BENAR-BENAR diberikan CLI (event init)
     for baris in (stdout or "").splitlines():
         baris = baris.strip()
         if not baris.startswith("{"):
@@ -3793,7 +3794,9 @@ def _urai_keluaran(stdout):
         except ValueError:
             continue
         ada_json = True
-        if ev.get("type") == "assistant":
+        if ev.get("type") == "system" and ev.get("subtype") == "init":
+            tersedia = ev.get("tools")
+        elif ev.get("type") == "assistant":
             isi = (ev.get("message") or {}).get("content") or []
             teks = "".join(b.get("text", "") for b in isi
                            if isinstance(b, dict) and b.get("type") == "text")
@@ -3813,6 +3816,7 @@ def _urai_keluaran(stdout):
         return (stdout or "").strip(), None
     if hasil is not None:
         hasil["_alat"] = [(label, ukuran.get(i, 0)) for i, label in alat]
+        hasil["_tersedia"] = tersedia
     jawaban = (hasil or {}).get("result") or teks_terakhir
     return (jawaban or "").strip(), hasil
 
@@ -3837,6 +3841,11 @@ def _catat_pemakaian(hasil, model, max_turns):
           f"setara_usd={float(hasil.get('total_cost_usd') or 0):.4f} "
           f"durasi={float(hasil.get('duration_ms') or 0) / 1000:.0f}s "
           f"akhir={hasil.get('subtype')}", file=sys.stderr)
+    tersedia = hasil.get("_tersedia")
+    if tersedia is not None:
+        bawaan = sorted(t for t in tersedia if not t.startswith("mcp__"))
+        print(f"[token] tersedia: {len(tersedia)} alat — bawaan: {', '.join(bawaan) or '-'}",
+              file=sys.stderr)
     alat = hasil.get("_alat") or []
     if alat:
         # Tiap alat = satu putaran tambahan yang membaca ulang seluruh konteks, dan hasilnya
@@ -3862,6 +3871,17 @@ def run_claude(prompt, timeout, max_turns, model=None, with_tools=True, tools_ov
         "--dangerously-skip-permissions",
         "--max-turns", str(max_turns),
     ]
+    # --tools = alat bawaan yang BENAR-BENAR tersedia. --allowedTools saja tidak membatasi
+    # apa pun di bawah --dangerously-skip-permissions — diuji 30 Sep 2026: dengan
+    # --allowedTools "WebSearch,WebFetch" model tetap mendapat ~33 alat (Bash, Edit, Write,
+    # Task, ...). Akibatnya (1) pemisahan Bash/WebFetch di atas tidak pernah berlaku, dan
+    # (2) definisi semua alat itu ikut dibayar di setiap putaran — termasuk sintesis Opus
+    # yang tidak memakai alat sama sekali (uji lokal: 33,9 rb -> 6,8 rb token masuk).
+    # ToolSearch ikut bila ada MCP: alat MCP bisa ditunda dan hanya dimuat lewat ToolSearch.
+    bawaan = [t for t in (tools or "").split(",") if t and not t.startswith("mcp__")]
+    if "mcp__" in (tools or ""):
+        bawaan.append("ToolSearch")
+    cmd += ["--tools", ",".join(bawaan)]
     # --mcp-config HANYA kalau ada tool MCP yang benar-benar diizinkan. Sebelumnya selalu
     # dikirim, termasuk ke tahap SINTESIS yang tools-nya kosong — keempat server MCP
     # dinyalakan, ditunggu siap, lalu tidak dipakai sama sekali. Itu biaya start yang

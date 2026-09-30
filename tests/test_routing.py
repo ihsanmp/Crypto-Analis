@@ -8656,6 +8656,41 @@ def test_log_token_mencatat_alat_tanpa_argumen(capsys):
     assert "0xAbCd" not in log and "bsc" not in log
 
 
+def _perintah_untuk(**kw):
+    import shutil as _sh
+    import subprocess as _sp
+    which_asli, run_asli = _sh.which, _sp.run
+    _sh.which = lambda x: "/usr/bin/claude"
+    tangkap = {}
+
+    class _R:
+        returncode, stdout, stderr = 0, "jawaban", ""
+
+    def _run(cmd, **k):
+        tangkap["cmd"] = cmd
+        return _R()
+    try:
+        _sp.run = _run
+        bot.run_claude("x", 10, 5, **kw)
+    finally:
+        _sh.which, _sp.run = which_asli, run_asli
+    cmd = tangkap["cmd"]
+    return cmd[cmd.index("--tools") + 1], cmd
+
+
+def test_tools_membatasi_alat_bawaan_sungguhan():
+    """--allowedTools tidak membatasi apa pun di bawah --dangerously-skip-permissions
+    (diuji 30 Sep 2026: Bash/Edit/Write/Task tetap tersedia). --tools yang membatasi."""
+    assert _perintah_untuk(with_tools=False)[0] == ""                  # sintesis: tanpa alat
+    web = _perintah_untuk(tools_override=bot.TOOLS_WEB)[0].split(",")
+    assert "Bash" not in web and {"WebSearch", "WebFetch", "ToolSearch"} <= set(web)
+    assert not any(t.startswith("mcp__") for t in web)               # MCP lewat --mcp-config
+    assert "Read" in _perintah_untuk(tools_override=bot.TOOLS_VISION)[0].split(",")
+    assert "Bash" in _perintah_untuk(tools_override=bot.TOOLS_LONGGAR)[0].split(",")
+    sosial, cmd = _perintah_untuk(tools_override=bot.TOOLS_SOSIAL)
+    assert sosial == "WebSearch,WebFetch" and "--mcp-config" not in cmd
+
+
 def test_perintah_claude_memakai_stream_json():
     src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
     i = src.index("def run_claude(")
