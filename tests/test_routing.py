@@ -8691,6 +8691,16 @@ def test_tools_membatasi_alat_bawaan_sungguhan():
     assert sosial == "WebSearch,WebFetch" and "--mcp-config" not in cmd
 
 
+def test_pencari_berita_tanpa_mcp():
+    """Tahap 1 hanya diminta WebSearch; MCP di situ = server menyala + putaran ToolSearch
+    yang tidak dipakai (run 36706028898)."""
+    src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
+    for pembuat in ("build_gather_prompt(coin)", "build_gather_pasar(simbol, jenis)"):
+        i = src.index(f"run_claude({pembuat}")
+        assert "tools_override=TOOLS_BERITA" in src[i:i + 250], pembuat
+    assert "mcp__" not in bot.TOOLS_BERITA
+
+
 def test_perintah_claude_memakai_stream_json():
     src = open(os.path.join(AKAR, "cloud", "bot_oneshot.py"), encoding="utf-8").read()
     i = src.index("def run_claude(")

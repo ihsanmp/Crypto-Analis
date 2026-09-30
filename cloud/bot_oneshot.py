@@ -73,6 +73,10 @@ TOOLS_LONGGAR = TOOLS_WEB + ",Bash"                            # cadangan & scre
 # Tanpa MCP sama sekali: dipakai untuk obrolan murni, supaya server MCP tidak perlu
 # dipasang maupun dinyalakan. run_claude() ikut membuang --mcp-config sendiri.
 TOOLS_SOSIAL = "WebSearch,WebFetch"
+# Tahap 1 (pencari berita): promptnya hanya meminta WebSearch — angkanya sudah dikumpulkan
+# kode. Run 36706028898: MCP dinyalakan tapi tidak dipakai, dan satu putaran habis untuk
+# ToolSearch. Tanpa MCP: tidak ada server yang ditunggu menyala, tidak ada putaran itu.
+TOOLS_BERITA = TOOLS_SOSIAL
 
 # Nama lama dipertahankan supaya pemanggil yang belum diubah tetap berjalan.
 ALLOWED_TOOLS = TOOLS_LONGGAR
@@ -3785,6 +3789,7 @@ def _urai_keluaran(stdout):
     teks_terakhir, hasil, ada_json = "", None, False
     alat, ukuran = [], {}          # [(id, label)] berurutan; id -> karakter hasil alat
     tersedia = None                # alat yang BENAR-BENAR diberikan CLI (event init)
+    server_mcp = None              # [(nama, status)] — gagal menyala tidak pernah terlihat
     for baris in (stdout or "").splitlines():
         baris = baris.strip()
         if not baris.startswith("{"):
@@ -3796,6 +3801,8 @@ def _urai_keluaran(stdout):
         ada_json = True
         if ev.get("type") == "system" and ev.get("subtype") == "init":
             tersedia = ev.get("tools")
+            server_mcp = [(m.get("name"), m.get("status")) for m in ev.get("mcp_servers") or []
+                          if isinstance(m, dict)]
         elif ev.get("type") == "assistant":
             isi = (ev.get("message") or {}).get("content") or []
             teks = "".join(b.get("text", "") for b in isi
@@ -3817,6 +3824,7 @@ def _urai_keluaran(stdout):
     if hasil is not None:
         hasil["_alat"] = [(label, ukuran.get(i, 0)) for i, label in alat]
         hasil["_tersedia"] = tersedia
+        hasil["_mcp"] = server_mcp
     jawaban = (hasil or {}).get("result") or teks_terakhir
     return (jawaban or "").strip(), hasil
 
@@ -3844,8 +3852,9 @@ def _catat_pemakaian(hasil, model, max_turns):
     tersedia = hasil.get("_tersedia")
     if tersedia is not None:
         bawaan = sorted(t for t in tersedia if not t.startswith("mcp__"))
-        print(f"[token] tersedia: {len(tersedia)} alat — bawaan: {', '.join(bawaan) or '-'}",
-              file=sys.stderr)
+        mcp = ", ".join(f"{n}={st}" for n, st in hasil.get("_mcp") or []) or "-"
+        print(f"[token] tersedia: {len(tersedia)} alat — bawaan: {', '.join(bawaan) or '-'}"
+              f" — MCP: {mcp}", file=sys.stderr)
     alat = hasil.get("_alat") or []
     if alat:
         # Tiap alat = satu putaran tambahan yang membaca ulang seluruh konteks, dan hasilnya
@@ -4243,7 +4252,7 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
             mentah = data_mentah_pasar(simbol, jenis)
             berita, err = run_claude(build_gather_pasar(simbol, jenis), min(timeout, 300),
                                      max_turns=20, model=MODEL_GATHER,
-                                     tools_override=TOOLS_WEB)
+                                     tools_override=TOOLS_BERITA)
             if err or not berita:
                 print(f"[proses] pencarian berita gagal ({str(err)[:120]}) — "
                       f"lanjut dengan data angka saja", file=sys.stderr)
@@ -4269,7 +4278,7 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
             if _MINTA_NARATIF.search(text or ""):
                 mentah += NL + NL + data_naratif(coin)
             berita, err = run_claude(build_gather_prompt(coin), t_gather, max_turns=20,
-                                     model=MODEL_GATHER, tools_override=TOOLS_WEB)
+                                     model=MODEL_GATHER, tools_override=TOOLS_BERITA)
             if err or not berita:
                 print(f"[proses] pencarian berita gagal ({str(err)[:120]}) — "
                       f"lanjut dengan data angka saja", file=sys.stderr)
