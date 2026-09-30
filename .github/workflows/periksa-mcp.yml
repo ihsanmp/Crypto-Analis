@@ -1,0 +1,65 @@
+# Pemeriksaan sekali jalan: kenapa server MCP bot tidak pernah tersambung?
+#
+# Log bot (run 36707105373, 30 Sep 2026) mencatat coinmarketcap, tradingview, dan
+# blockscout semuanya `pending` saat sesi Claude dimulai, dan ToolSearch tidak menemukan
+# satu pun alat MCP. Uji lokal dengan server tiruan yang lambat 8 detik tetap tersambung,
+# jadi penyebabnya ada di server/runner. Setup di sini SAMA dengan bot.yml.
+#
+# Langkah 1 menyalakan tiap server LANGSUNG (tanpa Claude) dan mengukur waktunya.
+# Langkah 2 melihatnya dari sisi CLI Claude — sekali dengan bawaan, sekali dengan
+# MCP_CONNECTION_NONBLOCKING=false — memakai Haiku, maksimal 3 putaran. Tidak ada yang
+# dikirim ke Telegram.
+#
+# CATATAN KEAMANAN: repo publik. periksa_mcp.py hanya mencetak nama server, status,
+# waktu, jumlah alat, dan stderr yang disamarkan; jawaban model tidak dicetak.
+name: Periksa server MCP
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  periksa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      COINMARKETCAP_API_KEY: ${{ secrets.COINMARKETCAP_API_KEY }}
+      SUBSCRIPTION_LEVEL: Basic
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+
+      - name: Pasang CLI & server MCP (sama dengan bot.yml)
+        run: |
+          npm install -g @anthropic-ai/claude-code @shinzolabs/coinmarketcap-mcp
+          pip install tradingview-mcp-server
+          echo "claude: $(claude --version)"
+          echo "coinmarketcap-mcp: $(command -v coinmarketcap-mcp || echo TIDAK ADA)"
+          echo "tradingview-mcp: $(command -v tradingview-mcp || echo TIDAK ADA)"
+
+      - name: 1. Nyalakan tiap server langsung
+        run: python cloud/periksa_mcp.py --batas 60 || echo "::warning::ada server yang gagal"
+
+      - name: 2. Dari sisi CLI Claude
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          TANYA="Panggil ToolSearch dengan kueri 'coinmarketcap tradingview blockscout', lalu jawab satu kata: selesai."
+          for MODE in bawaan false; do
+            echo "== MCP_CONNECTION_NONBLOCKING=$MODE"
+            if [ "$MODE" = false ]; then export MCP_CONNECTION_NONBLOCKING=false; fi
+            claude -p "$TANYA" --mcp-config cloud/.mcp.cloud.json --strict-mcp-config \
+              --tools "ToolSearch" --allowedTools "mcp__coinmarketcap__*,mcp__tradingview__*,mcp__blockscout__*" \
+              --dangerously-skip-permissions --output-format stream-json --verbose \
+              --max-turns 3 --model claude-haiku-4-5 2>/dev/null \
+              | python cloud/periksa_mcp.py --ringkas-stream
+          done
