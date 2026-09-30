@@ -423,5 +423,22 @@
    "ema21=119,28",
    "rsi=63,5"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1790767078.1180196,
+  "waktu_utc": "2026-09-30 11:17",
+  "pesan": "kategori apa yang lagi menguat",
+  "balasan": "📊 PASAR (data 30 September 2026, 11:13 UTC)\nBTC $83.692 · Dominasi BTC 58,29% (turun dari 58,99% pada 23 Sep → dana sedikit mengalir ke altcoin)\nFear & Greed 71 (Greed, stabil dari 73 kemarin) · Musim altcoin indeks 30h 70 (hitungan sendiri) vs 71 (t\n[...dipangkas...]\nenized Assets/RWA: angka 24 jam ekstrem tapi pemimpinnya diam — bisa jadi false signal dari koin kecil\n• Pola \"pemimpin lalu koin berikutnya menyusul\" (NEAR ekosistem, dst) tidak terbukti kuat secara statistik — jangan mengejar tanpa charting sendiri",
+  "angka_kunci": [
+   "harga=14,02",
+   "invalid=12,20",
+   "invalid=3,48",
+   "ema21=10,48",
+   "ema21=12,97",
+   "ema21=14,44",
+   "ema21=2,39",
+   "ema21=3,91"
+  ]
  }
 ]
