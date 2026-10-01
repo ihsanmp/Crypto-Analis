@@ -723,7 +723,8 @@ def build_narasi_prompt(text, screening=None):
                  "peta awal, jangan tarik ulang)\n" + screening + "\n")
     return (f"{header_waktu()}{base}\n---\n## Permintaan user (jawab ini)\n{text}\n\n"
             "Tentukan dulu JALUR A (user menyebut narasi tertentu -> fokus ke situ) atau "
-            "JALUR B (tidak menyebut -> cari sendiri narasi yang paling bergerak).\n")
+            "JALUR B (tidak menyebut -> cari sendiri narasi yang paling bergerak).\n"
+            + arahan_narasi(text))
 
 
 # Kosakata pasar umum. Dipakai sebagai PENGAMAN: kalau pesan jelas menyangkut pasar tapi
@@ -2220,6 +2221,34 @@ def arahan_kesimpulan(teks):
             "JAWABAN atas pertanyaannya dalam 1–3 kalimat — untuk klaim di gambar atau "
             "pesan: vonisnya (VALID / SEBAGIAN / MELESET) dan alasan intinya. Kalau user "
             "ingin rencana posisi, ia akan memintanya.\n")
+
+
+# Mode narasi memakai pemilah yang sama, ditambah "rekomendasi/rekomen": di sini kata itu
+# berarti "koin mana yang dibeli". "narasi apa yang sedang hype" (1 Okt 2026) hanya
+# menanyakan peta narasi — dulu tetap dijawab dengan Entry/Invalid/Target per koin karena
+# narasi.md MEWAJIBKAN blok itu, persis keluhan yang sudah diperbaiki di ngobrol & foto.
+_RE_MINTA_PILIHAN = re.compile(r"\b(?:rekomendasi\w*|rekomen\w*|recommend\w*)\b", re.I)
+
+
+def minta_posisi_narasi(teks):
+    return minta_keputusan(teks) or bool(teks and _RE_MINTA_PILIHAN.search(teks))
+
+
+def arahan_narasi(teks):
+    """Arahan bentuk jawaban narasi, ditempel di AKHIR prompt supaya tidak terlewat."""
+    if minta_posisi_narasi(teks):
+        return ("\n## MODE JAWABAN NARASI (ditetapkan kode): POSISI\n"
+                "User meminta koin yang layak dibeli/diakumulasi. Kerjakan langkah 1–6 dan "
+                "pakai susunan lengkap FORMAT OUTPUT, termasuk blok per koin dan RENCANA SPOT.\n")
+    return ("\n## MODE JAWABAN NARASI (ditetapkan kode): PETA\n"
+            "User HANYA menanyakan narasi — TIDAK meminta koin untuk dibeli. Kerjakan langkah "
+            "1–3; dari langkah 4 cukup sebut PEMIMPIN tiap narasi dan daftar pantau dari DATA "
+            "SCREENING (beserta status buktinya). LEWATI langkah 5–6: tanpa indicators.py, "
+            "tanpa blok per koin, tanpa skor, tanpa Entry/Invalid/Target, tanpa saran "
+            "alokasi, dan tanpa pertanyaan penutup apakah user mau masuk. Susunan: 📊 PASAR → "
+            "🔥 NARASI YANG BERGERAK (tiap narasi: performa, penggerak, status BARU MULAI / "
+            "SUDAH PUMP, pemimpin) → ✅ KESIMPULAN 1–3 kalimat yang menjawab pertanyaannya → "
+            "baris disclaimer. Kalau user ingin koin pilihan, ia akan memintanya.\n")
 
 
 def build_chat_prompt(text, chat_id=None, brief=None, balas=None):

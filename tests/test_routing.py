@@ -8745,3 +8745,28 @@ def test_narasi_kondisi_pasar_disiapkan_kode():
         assert skrip in blok, skrip
     n = open(os.path.join(AKAR, "cloud", "prompts", "narasi.md"), encoding="utf-8").read()
     assert "JANGAN menarik ulang" in n and "JANGAN menjalankan\n`kategori.py --daftar` lagi" in n
+
+
+# ------------------------- mode jawaban narasi: rencana posisi hanya kalau DIMINTA (1 Okt 2026)
+
+def test_narasi_tanpa_permintaan_beli_tidak_memberi_rencana_posisi():
+    """"narasi apa yang sedang hype" dulu tetap dijawab Entry/Invalid/Target per koin."""
+    for t in ("narasi apa yang sedang hype", "kategori apa yang lagi menguat",
+              "narasi apa yang lagi jalan"):
+        assert bot.classify(t) == "narasi", t
+        p = bot.build_narasi_prompt(t, "DATA")
+        assert "MODE JAWABAN NARASI (ditetapkan kode): PETA" in p, t
+        assert "LEWATI langkah 5–6" in p
+
+
+def test_narasi_dengan_permintaan_beli_memberi_rencana_posisi():
+    for t in ("carikan koin narasi AI yang layak dibeli", "rekomendasi koin narasi rwa",
+              "narasi apa yang bagus buat akumulasi"):
+        assert "MODE JAWABAN NARASI (ditetapkan kode): POSISI" in \
+            bot.build_narasi_prompt(t, "DATA"), t
+
+
+def test_narasi_md_tunduk_pada_mode_dari_kode():
+    src = open(os.path.join(AKAR, "cloud", "prompts", "narasi.md"), encoding="utf-8").read()
+    assert "Bentuk jawaban DITETAPKAN KODE" in src
+    assert "Susunan WAJIB untuk MODE POSISI" in src
