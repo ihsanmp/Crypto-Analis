@@ -312,5 +312,22 @@
    "ema21=82.524",
    "ema21=73.660"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1791125140.654029,
+  "waktu_utc": "2026-10-04 14:45",
+  "pesan": "kalo dalam jangka waktu seminggu?",
+  "balasan": "Untuk horizon seminggu, acuannya beda dari bulanan kemarin — bukan sebaran historis, tapi posisi harga terhadap EMA di timeframe Daily/4H/1H. Data per 4 Okt 2026, ±14:45 UTC (21:45 WIB), harga BTC $85.127.\n\n• Weekly: bias bullish, harga di atas EMA20\n[...dipangkas...]\nack ke zona EMA20 Daily $82.9rb–EMA50 4H $84.3rb, bukan kejar di harga sekarang\nSudah pegang: TAHAN — selama candle 4H close tidak tembus ke bawah EMA50 4H $84.310, trend naik minggu ini masih utuh. Kalau tembus, waspada lanjut ke EMA20 Daily $82.9rb",
+  "angka_kunci": [
+   "harga=85.127",
+   "ema200=69.001",
+   "ema20=82.923",
+   "ema50=78.845",
+   "ema200=74.857",
+   "ema20=84.790",
+   "ema50=84.310",
+   "ema20=85.033"
+  ]
  }
 ]
