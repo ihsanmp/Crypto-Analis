@@ -1,156 +1,6 @@
 [
  {
   "chat": "41df00a8496318d0",
-  "waktu": 1788350515.823758,
-  "waktu_utc": "2026-09-02 12:01",
-  "pesan": "analisa aave",
-  "balasan": "🕒 Data per 2 Sep 2026, 18:56 WIB · sumber harga Kraken (native) · 10/10 sumber terisi\n\n📊 PASAR\nBTC $76.654 (-1,8% 24j · -2,3% 7h · +22,0% 30h) · Dominasi BTC 59,02% (turun dari 59,81% pada 26 Agu ke 59,62% pada 2 Sep, -0,19 pp) · Fear & Greed 63 Gree\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+4 lainnya)",
-  "angka_kunci": [
-   "harga=126,12",
-   "invalid=104,00",
-   "ema50=131,70",
-   "ema21=115,31",
-   "ema50=104,26",
-   "rsi=64,3",
-   "skor=63"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1788376149.0892017,
-  "waktu_utc": "2026-09-02 19:09",
-  "pesan": "ada informasi baru dan menarik apa selama 7 hari terakhir",
-  "balasan": "Beberapa hal menarik dari 7 hari terakhir (data per 2 September 2026):\n\nCrypto lagi tertekan. Bitcoin turun ke sekitar $76.600 pada 2 Sep (dari $77.395 sehari sebelumnya), Ethereum ke $2.373 — pemicunya ketegangan geopolitik (ancaman serangan lanjuta\n[...dipangkas...]\nzon Nova 2, dst).\n\nCatatan: angka harga di atas baru dari satu sumber (Yahoo Finance), belum dicek silang ke sumber lain — kalau mau saya perdalam salah satu poin (misal dampak CLARITY Act ke market, atau detail Qwen3.8-Max), tinggal bilang \"detail\".",
-  "angka_kunci": [
-   "harga=76.600"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1788376479.4138603,
-  "waktu_utc": "2026-09-02 19:14",
-  "pesan": "kalo dari tele apa yang baru dan menarik dalam 7 hari terakhir?",
-  "balasan": "Sudah saya cek satu-satu ke data (bukan cuma diteruskan). Yang paling penting duluan:\n\n❌ MELESET (dasarnya) — analisa \"media ramai soal BTC sudden surge → buyers sidelined, leg up berikutnya\" · Watcher Guru · 2 Sep 2026. Faktanya BTC malah TURUN ke ~\n[...dipangkas...]\niquidation. Info fitur, bukan ajakan beli.\n\nRingkasan: 12 diperiksa — 0 cocok, 1 meleset, 1 sebagian, 8 tidak bisa diperiksa, 2 dilaporkan tanpa vonis (obrolan/peluang).\n\n🔗 Sumber: CoinGecko https://www.coingecko.com · DefiLlama https://defillama.com",
-  "angka_kunci": [
-   "harga=76.600"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1788416564.5510097,
-  "waktu_utc": "2026-09-03 06:22",
-  "pesan": "apa yang menarik di grup ondo dao?",
-  "balasan": "Cek 168 pesan dari Ondo DAO Community (6 Jul–31 Agu 2026) terhadap data pasar/fundamental ONDO yang tersedia:\n\nTEMUAN PALING BERHARGA (bukan salah, tapi menjelaskan kenapa komunitas resah)\n⚠️ SEBAGIAN — ANALISA soal fee switch (governance vote H2 202\n[...dipangkas...]\ns://defillama.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/",
-  "angka_kunci": [
-   "harga=88"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1788435568.4874744,
-  "waktu_utc": "2026-09-03 11:39",
-  "pesan": "cari penyebab kenapa lit naik hari ini",
-  "balasan": "🕒 Data per 3 September 2026, 18:39 WIB\n\nSebagian besar kenaikan LIT minggu ini itu MILIK KOIN INI SENDIRI, bukan efek pasar luas. Data isolasi pasar (pasarglobal.py, 3 Sep 11:38 WIB): LIT unggul jauh dari pasar di semua horizon — 24 jam +9,92% vs pas\n[...dipangkas...]\ns://defillama.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/",
-  "angka_kunci": [
-   "harga=2,29",
-   "ema21=0,1386"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1788435803.271476,
-  "waktu_utc": "2026-09-03 11:43",
-  "pesan": "secara teknikal apakah kenaikannya akan berkelanjutan selama beberapa hari kedepan?",
-  "balasan": "Sinyal teknikal LIT saat ini CAMPUR ADUK — bukan konfirmasi kenaikan akan lanjut mulus. Tool sendiri menandai kondisi pasar CHOPPY dengan keandalan sinyal EMA RENDAH di Daily maupun 4H, jadi cross EMA rawan sinyal palsu.\n\n• Daily (close 2 Sep, $0,142\n[...dipangkas...]\n: TUNGGU DULU — butuh volume breakout riil + close 4H tembus $0,145 (R1/atas Golden Pocket) sebagai konfirmasi lanjut naik.\nSudah pegang: TAHAN, tapi waspada — kalau close 4H balik ke bawah EMA21 $0,1406, momentum jangka pendek berbalik netral/turun.",
-  "angka_kunci": [
-   "harga=0,1406",
-   "ema21=0,1386",
-   "ema21=0,1406"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1788445654.7552447,
-  "waktu_utc": "2026-09-03 14:27",
-  "pesan": "kenapa tiba tiba btc naik drastis?",
-  "balasan": "BTC sekarang $79.262–79.481 (kategori.py & proyeksi.py, data per 3 Sep 2026 14:25 UTC / 21:25 WIB), naik +2,7% dalam 24 jam. Ini pantulan dari level $76.600 yang sempat disebut di obrolan 19 jam lalu — jadi bukan lompatan dari kondisi datar, tapi kel\n[...dipangkas...]\ns://defillama.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/",
-  "angka_kunci": [
-   "harga=79.262",
-   "ema21=77.768",
-   "rsi=56,58"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1788455593.6398342,
-  "waktu_utc": "2026-09-03 17:13",
-  "pesan": "apa dampaknya?",
-  "balasan": "🕒 Data live per 3 September 2026, 17:11 UTC (4 Sep 00:11 WIB)\n\nYang saya lihat di gambar: forward-an postingan \"Weekly take dari Bloomberg AI\" berisi kartu Bitcoin Weekly Outlook dengan 3 tema — inflow ETF $3,52 miliar di Agustus, selloff Jackson Hol\n[...dipangkas...]\n1 4 jam), jangan mengejar di $81K.\nSudah pegang: TAHAN — pembatalnya close harian di bawah $76.340 (SuperTrend 4 jam) untuk momentum jangka pendek, dan di bawah $72.305 (SuperTrend harian) kalau itu tembus berarti seluruh struktur naik Agustus batal.",
-  "angka_kunci": [
-   "harga=81.003",
-   "rsi=75,2",
-   "rsi=65,2",
-   "rsi=4"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1788459693.8559597,
-  "waktu_utc": "2026-09-03 18:21",
-  "pesan": "btc berpotensi naik sampai berapa?",
-  "balasan": "BTC sekarang $81.150–81.360 (proyeksi.py & candle 4H, data per 3 Sep 2026 18:20 UTC), lagi overextended di 4H. Potensi naiknya bertingkat tergantung skenario — bukan angka tunggal.\n\nBasis: sebaran histori 60 hari (661 jendela tumpang tindih, 13 Sep 2\n[...dipangkas...]\ns://defillama.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/",
-  "angka_kunci": [
-   "harga=81.150",
-   "invalid=5",
-   "ema21=74.389",
-   "rsi=75"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1788498083.7622488,
-  "waktu_utc": "2026-09-04 05:01",
-  "pesan": "saya melihat adanya koreksi untuk short term selama beberapa hari kedepan, bagaimana pandanganmu?",
-  "balasan": "🕒 Data per 4 September 2026, 12:01 WIB\n\nSinyal teknikal SHORT sekarang saling bertentangan — belum ada bukti kuat yang mengarah jelas ke koreksi dalam beberapa hari ke depan, tapi juga belum ada alasan kuat buat pede naik terus.\n\n• Daily: close $0,00\n[...dipangkas...]\ns://defillama.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/",
-  "angka_kunci": [
-   "harga=0,00002419",
-   "ema21=0,00002231",
-   "ema21=0,0000223",
-   "rsi=59,6"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1788502663.6842837,
-  "waktu_utc": "2026-09-04 06:17",
-  "pesan": "apakah ini berpengaruh ke US30Y?",
-  "balasan": "🕒 Data per 4 September 2026, 13:15 WIB\n\nYang saya lihat di gambar: postingan \"Andrew Jonathan\" + chart Bianco Research/Bloomberg \"Japan 10-Year Yield\", menandai 9/1/26 di level 3,00% — dibandingkan puncak 8/28/96 di 3,03%. Ada watermark promo TikTok\n[...dipangkas...]\n026 (JGB 10Y tembus 3%), Nikkei Asia (aksi jual utang global), CNN Business 1 September 2026 (obligasi global dan Timur Tengah), TradingEconomics 4 September 2026 (yield JGB terkini), Yahoo Finance 4 September 2026 (US30Y, US10Y, USD/JPY, BTC, emas).",
-  "angka_kunci": [
-   "harga=81.018"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1788519973.7969337,
-  "waktu_utc": "2026-09-04 11:06",
-  "pesan": "apa maksud dari data ini",
-  "balasan": "🕒 Data live per 4 September 2026, 18.05 WIB\n\nYang saya lihat di gambar: kartu artefak AI berjudul \"NFP August 2026 – Scenario Probabilities\". Isinya klaim bahwa pasar futures memberi peluang 54,2% The Fed MENAIKKAN bunga di rapat September, plus tabe\n[...dipangkas...]\nuar lebih tegas kalau jebol EMA-200 di $72.493.\n\nSumber: Investing.com NFP Preview 4 September 2026, FXStreet 4 September 2026, DailyCoin dan Invezz 3-4 September 2026, Forbes 31 Agustus 2026, CNBC 7 Agustus 2026, CoinMarketCap live 4 September 2026.",
-  "angka_kunci": [
-   "harga=81.102"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1788520369.7241068,
-  "waktu_utc": "2026-09-04 11:12",
-  "pesan": "berarti kalo ternyata no chance dari the fed maka tidak akan berpengaruh ke harga btc sekarang ini?",
-  "balasan": "🕒 Data per 4 September 2026, 18:12 WIB\n\nBukan begitu — justru kebalikannya. Harga BTC sekarang ini SUDAH mengandung ekspektasi peluang hike, jadi begitu peluangnya berubah (bukan menunggu keputusan FOMC beneran keluar 16 Sep), pasar langsung reprice\n[...dipangkas...]\ns://defillama.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/",
-  "angka_kunci": [
-   "harga=81.156"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
   "waktu": 1788848399.610503,
   "waktu_utc": "2026-09-08 06:19",
   "pesan": "Ini adalah framework yang menilai probabilitas perubahan regime makro (market regime shift) dalam jangka menengah–panjang (3–12 bulan). Model ini menggabungkan berbagai indikator seperti growth (GDP), inflasi, dan kondisi makro lainnya, lalu mengklasifikasikan kondisi ekonomi ke dalam 4 regime: Gold",
@@ -449,6 +299,18 @@
   "balasan": "📊 PASAR\nBTC $84.310 (1 Okt 2026) · Dominasi BTC 58,31%, turun dari 59,17% (24 Sep) ke 58,63% (1 Okt) → dana sedikit mengalir keluar BTC ke altcoin. Fear & Greed 74 Greed, naik dari 71 kemarin — sentimen sudah cukup panas, bukan fase takut yang biasan\n[...dipangkas...]\ni lonjakan tanpa dasar kuat — InfoFi bahkan narasinya sedang kolaps secara fundamental sejak awal tahun. Dengan Fear & Greed di 74 (Greed) dan altseason belum resmi terkonfirmasi, disiplin masuk tetap penting — bukan saatnya mengejar yang sudah pump.",
   "angka_kunci": [
    "harga=84.310"
+  ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1791122205.1452804,
+  "waktu_utc": "2026-10-04 13:56",
+  "pesan": "bagaimana proyeksi kamu untuk btc dalam jangka waktu menengah untuk sebulan kedepan?",
+  "balasan": "Proyeksi 30 hari kedepan (4 Okt–awal Nov 2026) pakai sebaran historis harga BTC sendiri — 691 jendela 30-hari yang tumpang tindih, dari 14 Okt 2024 sampai 4 Okt 2026. Harga acuan $85.257 (4 Okt 2026, 13:55 UTC). Ini SATU kategori sinyal (turunan harg\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+1 lainnya)",
+  "angka_kunci": [
+   "harga=85.257",
+   "ema21=82.524",
+   "ema21=73.660"
   ]
  }
 ]

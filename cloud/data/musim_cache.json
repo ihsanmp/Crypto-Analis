@@ -6,25 +6,25 @@
   },
   "hasil_uji": "Diuji 16 Sep 2026: indeks 30 hari hitungan sendiri 30, terbitan blockchaincenter 33 — selisih 3 poin (1-2 koin dari 50).",
   "indeks_30h_dihitung_sendiri": {
-   "btc_30h_persen": 6.8,
+   "btc_30h_persen": 4.8,
    "indeks": 70,
    "n_altcoin": 49,
    "n_unggul": 35,
    "unggul_teratas": [
     "ETH",
     "BNB",
-    "XRP",
     "SOL",
     "ZEC",
     "DOGE",
     "LINK",
-    "WBT"
+    "WBT",
+    "ADA"
    ]
   },
   "indeks_terbitan_blockchaincenter": {
    "bulan_30h": 76,
    "musim_90h": 55,
-   "tahun_365h": 39
+   "tahun_365h": 37
   },
   "periksa_silang": {
    "cocok": true,
@@ -33,7 +33,7 @@
   },
   "vonis_30h": "tidak keduanya",
   "vonis_90h": "tidak keduanya",
-  "waktu": 1790834196.0630288
+  "waktu": 1791122136.9180992
  },
  "kategori": {
   "id": [
@@ -42,7 +42,6 @@
    "agora-dollar",
    "alloy-tether",
    "allunity-chf",
-   "amnis-aptos",
    "ankreth",
    "apxusd",
    "arbitrum-bridged-wrapped-eeth",
@@ -51,6 +50,7 @@
    "astherus-usdf",
    "avant-staked-usd",
    "avant-usd",
+   "axis-usd",
    "beets-staked-sonic",
    "benqi-liquid-staked-avax",
    "bfusd",
@@ -124,6 +124,7 @@
    "gate-wrapped-btc",
    "gemini-dollar",
    "gho",
+   "gimo-staked-0g",
    "global-dollar",
    "gogopool-ggavax",
    "gold-fgld-finest-tokenized-gold",
@@ -180,8 +181,6 @@
    "mantle-staked-ether",
    "matic-aave-usdc",
    "matrixdock-gold",
-   "megausd",
-   "merlin-chain-bridged-wrapped-btc-merlin",
    "merlin-s-seal-btc",
    "metamask-usd",
    "metronome-synth-usd",
@@ -197,9 +196,9 @@
    "okx-wrapped-eth",
    "okx-wrapped-sol",
    "ondo-u-s-dollar-token",
+   "open-usd",
    "orbit-bridge-klaytn-wrapped-btc",
    "origin-ether",
-   "pathusd",
    "pax-gold",
    "paxos-standard",
    "paypal-usd",
@@ -223,6 +222,7 @@
    "saturn-susdat",
    "sbtc-2",
    "sceptre-staked-flr",
+   "seth2",
    "shmonad",
    "socean-staked-sol",
    "societe-generale-forge-eurcv",
@@ -255,7 +255,6 @@
    "straitsx-xusd",
    "strato-goldst-tokenized-gold",
    "streamex-gldy",
-   "stride-staked-atom",
    "stronghold-staked-sol",
    "super-oeth",
    "susdai",
@@ -305,6 +304,7 @@
    "wrapped-aave-ethereum-weth",
    "wrapped-aave-plasma-usdt0",
    "wrapped-avax",
+   "wrapped-ayeayecoin",
    "wrapped-beacon-eth",
    "wrapped-bitcoin",
    "wrapped-bitcoin-pulsechain",
@@ -324,7 +324,6 @@
    "wrapped-fogo",
    "wrapped-fon",
    "wrapped-frax",
-   "wrapped-gonka",
    "wrapped-grx",
    "wrapped-hbar",
    "wrapped-hype",
@@ -344,6 +343,7 @@
    "wrapped-pros-pharos",
    "wrapped-pulse-wpls",
    "wrapped-quil",
+   "wrapped-ronin",
    "wrapped-rseth",
    "wrapped-savings-rusd",
    "wrapped-sei",
@@ -360,6 +360,6 @@
    "ylds",
    "yuzu-usd"
   ],
-  "waktu": 1790261623.2136476
+  "waktu": 1791122134.909086
  }
 }
