@@ -329,5 +329,17 @@
    "ema50=84.310",
    "ema20=85.033"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1791160112.186152,
+  "waktu_utc": "2026-10-05 00:28",
+  "pesan": "penyebab btc tiba tiba naik pagi ini",
+  "balasan": "Per data 5 Okt 2026, 00:26 UTC (07:26 WIB): BTC $86.350, naik 1,76% dalam 24 jam dan 8,56% dalam 30 hari. Kenaikan 24 jam ini LEBIH BESAR dari sisa pasar (top 99 ex-BTC) yang cuma +0,91% — jadi bukan sekadar ikut arus pasar, BTC yang memimpin. Domina\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+1 lainnya)",
+  "angka_kunci": [
+   "harga=82.887",
+   "ema21=82.887",
+   "ema21=84.979"
+  ]
  }
 ]
