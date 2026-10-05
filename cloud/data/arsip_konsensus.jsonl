@@ -84,3 +84,7 @@
 {"waktu": "2026-10-02T08:30:00-04:00", "mata_uang": "USD", "nama": "Average Hourly Earnings m/m", "dampak": "tinggi", "konsensus": "0.3%", "sebelumnya": "0.3%", "aktual": null, "dicatat_utc": "2026-09-28 08:18"}
 {"waktu": "2026-10-02T08:30:00-04:00", "mata_uang": "USD", "nama": "Non-Farm Employment Change", "dampak": "tinggi", "konsensus": "98K", "sebelumnya": "162K", "aktual": null, "dicatat_utc": "2026-09-28 08:18"}
 {"waktu": "2026-10-02T08:30:00-04:00", "mata_uang": "USD", "nama": "Unemployment Rate", "dampak": "tinggi", "konsensus": "4.1%", "sebelumnya": "4.1%", "aktual": null, "dicatat_utc": "2026-09-28 08:18"}
+{"waktu": "2026-10-06T02:35:00-04:00", "mata_uang": "JPY", "nama": "BOJ Gov Ueda Speaks", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-10-05 08:28"}
+{"waktu": "2026-10-07T14:00:00-04:00", "mata_uang": "USD", "nama": "FOMC Meeting Minutes", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-10-05 08:28"}
+{"waktu": "2026-10-09T08:30:00-04:00", "mata_uang": "CAD", "nama": "Employment Change", "dampak": "tinggi", "konsensus": "9.0K", "sebelumnya": "-41.7K", "aktual": null, "dicatat_utc": "2026-10-05 08:28"}
+{"waktu": "2026-10-09T08:30:00-04:00", "mata_uang": "CAD", "nama": "Unemployment Rate", "dampak": "tinggi", "konsensus": "6.5%", "sebelumnya": "6.4%", "aktual": null, "dicatat_utc": "2026-10-05 08:28"}
