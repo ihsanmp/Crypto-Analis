@@ -341,5 +341,17 @@
    "ema21=82.887",
    "ema21=84.979"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1791161479.1336048,
+  "waktu_utc": "2026-10-05 00:51",
+  "pesan": "kalo ini cuma liquidation sweep gimana jadinya?",
+  "balasan": "🕒 Data per 5 Oktober 2026, 07:51 WIB\n\nPertanyaan bagus — itu skenario yang masuk akal dan bisa ngubah cara bacanya. Kalau pumpnya memang cuma liquidation sweep (short dipaksa tutup, bukan beli spot baru), begitu short yang kena habis, tenaga dorong i\n[...dipangkas...]\nnjut naik di atas EMA20 $83.394 berarti bukan cuma sweep; kalau longsor balik ke bawah situ dalam waktu singkat, itu tanda sweepnya sudah selesai\nSudah pegang: TAHAN — selama close harian tidak balik di bawah EMA20 $83.394, struktur besar belum rusak",
+  "angka_kunci": [
+   "harga=86.596",
+   "ema20=83.394",
+   "rsi=68,8"
+  ]
  }
 ]
