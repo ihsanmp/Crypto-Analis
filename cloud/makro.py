@@ -233,20 +233,25 @@ ECB_DFR = ("https://data-api.ecb.europa.eu/service/data/FM/D.U2.EUR.4F.KR.DFR.LE
 
 
 def _yahoo_terakhir(simbol):
+    """(harga terakhir, penutupan 1 hari bursa sebelumnya, penutupan ~1 bulan lalu, galat).
+
+    Sampai 5 Okt 2026 "sebelumnya" diambil dari `previousClose or chartPreviousClose`.
+    Dengan range=1mo Yahoo TIDAK mengirim previousClose, sehingga yang terpakai selalu
+    chartPreviousClose — penutupan SEBULAN lalu — lalu disajikan sebagai perubahan harian.
+    MOVE tertulis +34,6% padahal hari itu -0,8%. Kini keduanya dipisah dan diberi label.
+    """
     try:
         req = urllib.request.Request(YAHOO + simbol + "?range=1mo&interval=1d", headers=UA)
         with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
             hasil = json.loads(r.read().decode())["chart"]["result"][0]
         meta = hasil.get("meta") or {}
-        # previousClose tidak selalu ada di meta indeks; ambil dari deret penutupan.
-        sebelum = meta.get("previousClose") or meta.get("chartPreviousClose")
-        if sebelum is None:
-            tutup = [x for x in (((hasil.get("indicators") or {}).get("quote") or [{}])[0]
-                                 .get("close") or []) if x is not None]
-            sebelum = tutup[-2] if len(tutup) >= 2 else None
-        return meta.get("regularMarketPrice"), sebelum, None
+        tutup = [x for x in (((hasil.get("indicators") or {}).get("quote") or [{}])[0]
+                             .get("close") or []) if x is not None]
+        harian = meta.get("previousClose") or (tutup[-2] if len(tutup) >= 2 else None)
+        bulanan = meta.get("chartPreviousClose") or (tutup[0] if tutup else None)
+        return meta.get("regularMarketPrice"), harian, bulanan, None
     except Exception as e:
-        return None, None, type(e).__name__
+        return None, None, None, type(e).__name__
 
 
 def ecb_suku_bunga():
@@ -295,20 +300,22 @@ def rezim_pasar():
          "proksi risk-on/risk-off paling murni. Turun tajam = carry trade di-unwind, "
          "biasanya bersamaan dengan VIX naik."),
     ):
-        nilai, sebelum, err = _yahoo_terakhir(simbol)
+        nilai, harian, bulanan, err = _yahoo_terakhir(simbol)
         if err or nilai is None:
             keluar[kode] = {"gagal": err or "kosong"}
             continue
         item = {"nama": nama, "terbaru": round(nilai, 2), "arti": arti,
                 "sumber": "Yahoo Finance (tanpa API key, API tidak resmi)"}
-        if sebelum:
-            item["perubahan_persen"] = round((nilai - sebelum) / sebelum * 100, 2)
+        if harian:
+            item["perubahan_1hari_persen"] = round((nilai - harian) / harian * 100, 2)
+        if bulanan:
+            item["perubahan_1bulan_persen"] = round((nilai - bulanan) / bulanan * 100, 2)
         keluar[kode] = item
 
     # --- Rasio: inilah yang mengungkap kesehatan, bukan level tunggal ---
     def rasio(a, b):
-        na, _, ea = _yahoo_terakhir(a)
-        nb, _, eb = _yahoo_terakhir(b)
+        na, _, _, ea = _yahoo_terakhir(a)
+        nb, _, _, eb = _yahoo_terakhir(b)
         return (round(na / nb, 4) if (na and nb) else None), (ea or eb)
 
     turunan = {}

@@ -520,6 +520,13 @@ berarti sebaliknya. Kalau yang muncul `tidak_tersedia`, sebut level dominasi saa
 dan JANGAN menyebut arahnya — arah tanpa data riwayat adalah tebakan yang terdengar seperti
 pengamatan.
 
+**Lapis berikutnya: pasar LUAS.** Blok `LINTAS ASET (sebab.py)` memberi gerakan Nasdaq 100
+(QQQ), emas, Indeks Dolar, dan yield 10 tahun AS, korelasi imbal hasil HARIAN koin ini
+terhadap keempatnya (30 & 90 hari, dengan `n` hari sepadan), serta rezim risiko (VIX, MOVE,
+DXY, AUD/JPY — perubahan 1 hari dan 1 bulan dilabeli terpisah). Pakai untuk menjawab: risk-on
+pasar luas, atau cerita koin ini sendiri? Selalu sebut `n` saat mengutip koefisien, dan
+sebut korelasi sebagai keterkaitan, BUKAN sebab. Kalau bloknya gagal, katakan tidak tersedia.
+
 # FUNDING & OPEN INTEREST — struktur leverage, bukan hiasan
 
 Blok `DERIVATIF (derivatif.py)` memberi funding rata-rata tertimbang volume, open interest

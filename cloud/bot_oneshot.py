@@ -3314,6 +3314,11 @@ def data_mentah_crypto(coin):
     # Musim altcoin: konteks rotasi modal untuk SEMUA pembahasan koin, bukan cuma saat
     # kerangka naratif diminta. Hasilnya di-cache 6 jam, jadi hampir selalu nol permintaan.
     tugas.append(("MUSIM ALTCOIN (musim.py)", ["cloud/musim.py", "--json"], 0))
+    # Pasar LUAS: QQQ/emas/dolar/yield + korelasi harian + rezim risiko. Dulu hanya jalan
+    # untuk pertanyaan "kenapa naik/turun" (data_sebab), sehingga analisa biasa menulis
+    # "korelasi ke QQQ/dolar/yield TIDAK tersedia di brief" (keluhan user, 5 Okt 2026).
+    # Versi --ringkas: ~1,3 rb karakter, angka sama dengan JSON lengkap (~7 rb).
+    tugas.append(("LINTAS ASET (sebab.py)", ["cloud/sebab.py", coin, "--ringkas"], 0))
     lewat = []
     if t in _TANPA_PROTOKOL:
         lewat.append(f"fundamentals.py ({t} tidak punya protokol berpendapatan)")

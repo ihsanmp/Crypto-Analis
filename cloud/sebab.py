@@ -245,12 +245,81 @@ def rakit(simbol, jenis):
     return hasil
 
 
+def _a(x, d=2, tanda=True):
+    """Angka gaya Indonesia — HANYA angkanya yang diformat, bukan kalimat di sekitarnya."""
+    if x is None:
+        return "n/a"
+    return (f"{x:+.{d}f}" if tanda else f"{x:.{d}f}").replace(".", ",")
+
+
+def ringkas(h):
+    """Versi padat untuk brief analisa: angka yang sama, tanpa teks penjelas berulang.
+
+    JSON lengkapnya ~7 rb karakter, sebagian besar kalimat `arti` yang sama di setiap
+    analisa. Yang ini ~1,5 rb — dibayar di setiap sintesis Opus, jadi ukurannya penting.
+    """
+    s = h.get("simbol", "?")
+    baris = [f"Pertanyaan yang dijawab: apakah gerakan {s} bagian dari risk-on/risk-off "
+             "pasar luas, atau cerita aset ini sendiri?"]
+    vp = h.get("vs_pasar")
+    if vp:
+        baris.append(f"vs {h.get('pembanding_pasar', 'pasar')}: " + " · ".join(
+            f"{j} {_a(v.get('koin_persen'))}% vs {_a(v.get('pasar_persen'))}% ({v.get('arti')})"
+            for j, v in vp.items() if v))
+    pb = h.get("pembanding") or {}
+    if pb:
+        baris.append("Gerakan pembanding 7 hari / 30 hari: " + " · ".join(
+            f"{v.get('nama')} {_a(v.get('perubahan_7h_persen'))}% / "
+            f"{_a(v.get('perubahan_30h_persen'))}% (per {v.get('tanggal')})"
+            for v in pb.values()))
+    kor = (h.get("korelasi") or {}).get("pembanding") or {}
+    if kor:
+        def satu(nama, k):
+            bag = []
+            for hz in ("30h", "90h"):
+                x = (k or {}).get(hz) or {}
+                if x.get("korelasi") is not None:
+                    bag.append(f"{hz} {_a(x['korelasi'])} (n={x.get('hari_sepadan')})")
+            return f"{nama} " + (" | ".join(bag) or "n/a")
+        baris.append(f"Korelasi imbal hasil HARIAN {s}: "
+                     + " · ".join(satu(n, k) for n, k in kor.items()))
+    elif h.get("korelasi_tidak_tersedia"):
+        baris.append(f"Korelasi tidak tersedia: {h['korelasi_tidak_tersedia']}")
+    rz = h.get("rezim_makro") or {}
+    if rz:
+        bag = []
+        for kode, label in (("vix", "VIX"), ("move", "MOVE"), ("dxy", "DXY"),
+                            ("audjpy", "AUD/JPY")):
+            v = rz.get(kode) or {}
+            if "terbaru" in v:
+                bag.append(f"{label} {_a(v['terbaru'], tanda=False)} "
+                           f"(1 hari {_a(v.get('perubahan_1hari_persen'))}%, "
+                           f"1 bulan {_a(v.get('perubahan_1bulan_persen'))}%)")
+        ts = ((rz.get("turunan") or {}).get("vix_term_structure") or {})
+        if ts:
+            bag.append(f"VIX/VIX3M {_a(ts.get('nilai'), 3, False)} {ts.get('status')}")
+        if bag:
+            baris.append("Rezim risiko: " + " · ".join(bag))
+    gagal = [k for k in h if k.endswith("_tidak_tersedia")]
+    if gagal:
+        baris.append("Tidak tersedia: " + ", ".join(f"{k}={h[k]}" for k in gagal))
+    baris.append("Cara baca: korelasi dihitung dari imbal hasil HARIAN pada hari bursa yang "
+                 "sama (n = jumlah hari sepadan; n < 20 bukan temuan). Mendekati +1 searah, "
+                 "~0 tidak berhubungan, negatif berlawanan. Korelasi tinggi ke QQQ = gerakan "
+                 "ikut selera risiko saham teknologi; rendah = cerita aset sendiri. Korelasi "
+                 "BUKAN sebab — sebut sebagai keterkaitan.")
+    return "\n".join(baris)
+
+
 def main():
     p = argparse.ArgumentParser(description="Dekomposisi sebab gerakan harga")
     p.add_argument("simbol")
     p.add_argument("--jenis", default="crypto", choices=("crypto", "saham", "forex"))
+    p.add_argument("--ringkas", action="store_true",
+                   help="teks padat untuk brief analisa (angka sama, tanpa penjelas berulang)")
     a = p.parse_args()
-    print(json.dumps(rakit(a.simbol, a.jenis), ensure_ascii=False, indent=1))
+    h = rakit(a.simbol, a.jenis)
+    print(ringkas(h) if a.ringkas else json.dumps(h, ensure_ascii=False, indent=1))
 
 
 if __name__ == "__main__":
