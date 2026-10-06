@@ -361,5 +361,22 @@
   "pesan": "wld itu projectnya tentang apa?",
   "balasan": "🕒 Data per 6 Oktober 2026, 00:15 WIB\n\nWLD itu token dari Worldcoin (sekarang rebranding jadi World), proyek punya Sam Altman (bos OpenAI) lewat perusahaan Tools for Humanity.\n\nIdenya: proof of personhood - mereka bikin alat namanya Orb, perangkat sca\n[...dipangkas...]\nah mempermasalahkan atau sempat menghentikan operasinya karena isu perlindungan data.\n\nKalau mau aku bahas sisi harga/teknikal $WLD atau update terbaru proyeknya, tinggal bilang \"analisa WLD\" — ini baru penjelasan konsepnya, belum data pasar terkini.",
   "angka_kunci": []
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1791289680.3675978,
+  "waktu_utc": "2026-10-06 12:28",
+  "pesan": "carikan altcoin dengan volume tinggi yang masih ada potensi untuk naik yang cocok untuk di hold daily",
+  "balasan": "📊 PASAR\nBTC $86.236 (6 Oktober 2026, data jam 12:21 WIB) · Dominasi BTC 59,28%, naik tipis dari 58,56% ke 58,95% dalam 7 hari (+0,39pp) · Fear & Greed 73 Greed, naik dari 70\n\nImplikasi: dominasi BTC naik tipis = modal sedikit mengumpul ke BTC, bukan\n[...dipangkas...]\nini adalah bukti kontra nyata meski tidak langsung ke pasar\n• Dekat ATH = margin aman kecil, CHoCH di H4 bisa jadi awal koreksi pendek\n• Hanya 2 kategori independen (teknikal + fundamental revenue), posisi/funding belum diperiksa → keyakinan dibatasi",
+  "angka_kunci": [
+   "harga=0,2596",
+   "invalid=0,230",
+   "invalid=4,00",
+   "invalid=84,6",
+   "ema21=0,2239",
+   "ema21=0,2418",
+   "ema13=0,2487",
+   "ema21=0,2612"
+  ]
  }
 ]
