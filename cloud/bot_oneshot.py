@@ -1775,6 +1775,21 @@ _TEKNIKAL_RE = re.compile(
     r"golden cross|death cross|divergence|divergensi)", re.I)
 
 
+# Istilah STRUKTUR PASAR, kebanyakan bahasa Inggris. "kalo ini cuma liquidation sweep
+# gimana jadinya?" (run 37248977364) jatuh ke RINGAN karena kosakata pasar hanya mengenal
+# "likuidasi": 8 putaran, lalu habis untuk ToolSearch dan balasannya ditandai audit
+# "6 angka tanpa satu pun tanggal". Sengaja TANPA "long", "short", "range", "bos" polos:
+# "long weekend", "short waktu", dan "bos" (atasan) terlalu sering muncul di obrolan biasa.
+_ISTILAH_TRADING = re.compile(
+    r"\b(liquidations?|liquidity|likuiditas|sweep\w*|stop ?hunt\w*|squeeze\w*|"
+    r"short squeeze|long squeeze|breakout|breakdown|retest|pullback|fakeout|fake ?out|"
+    r"bounce|rebound|pump|dump|dumping|reversal|rejection|wick|order ?block|fvg|"
+    r"imbalance|wyckoff|distribution|distribusi|accumulation|capitulation|kapitulasi|"
+    r"open interest|funding rate|bull ?trap|bear ?trap|sideways|"
+    r"konsolidasi|consolidation|uptrend|downtrend|higher ?low|lower ?high|choch)\b",
+    re.I)
+
+
 # Niat transaksi + harga konkret. Gabungan keduanya berarti user sedang menimbang
 # keputusan nyata, dan itu tidak boleh dijawab dari angka giliran sebelumnya.
 _NIAT_TRANSAKSI = re.compile(
@@ -2161,6 +2176,7 @@ def pesan_pasar(text):
         return False
     return bool(_PASAR_UMUM.search(low)
                 or _TEKNIKAL_RE.search(low)
+                or _ISTILAH_TRADING.search(low)
                 # Meminta target/proyeksi jelas pertanyaan pasar, walau kalimatnya tidak
                 # memakai satu pun kosakata harga: "solana berpotensi naik sampai $200?"
                 or _MINTA_PROYEKSI.search(low)
@@ -3908,6 +3924,14 @@ def _catat_pemakaian(hasil, model, max_turns):
               file=sys.stderr)
 
 
+PETUNJUK_MCP = (
+    "\n\n(Catatan alat: alat MCP — mcp__coinmarketcap__*, mcp__tradingview__*, "
+    "mcp__blockscout__* — dimuat lewat ToolSearch. Kalau memang perlu, muat SEKALI dengan "
+    "kueri `select:` berisi SEMUA nama persis yang dibutuhkan, mis. "
+    "`select:mcp__coinmarketcap__cryptoQuotesLatest,mcp__coinmarketcap__fearAndGreedLatest`. "
+    "JANGAN menjelajah dengan kata kunci berulang — tiap ToolSearch memakan satu putaran.)\n")
+
+
 def run_claude(prompt, timeout, max_turns, model=None, with_tools=True, tools_override=None):
     claude = shutil.which("claude")
     if not claude:
@@ -3942,6 +3966,11 @@ def run_claude(prompt, timeout, max_turns, model=None, with_tools=True, tools_ov
     # dibayar di setiap analisa untuk nol manfaat.
     if "mcp__" in (tools or ""):
         cmd[3:3] = ["--mcp-config", MCP_CONFIG]
+        # Alat MCP tertunda (dimuat lewat ToolSearch). Run 37248977364: model mencari
+        # dengan kata kunci lima kali — lima putaran dari jatah delapan — sebelum memakai
+        # satu pun. Ditempel di sini, bukan di chat.md, supaya berlaku untuk semua mode
+        # ber-MCP tanpa membengkakkan prompt sapaan yang tidak memakai MCP.
+        cmd[2] = prompt + PETUNJUK_MCP
     if model:
         cmd += ["--model", model]
     try:

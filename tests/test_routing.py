@@ -8770,3 +8770,29 @@ def test_narasi_md_tunduk_pada_mode_dari_kode():
     src = open(os.path.join(AKAR, "cloud", "prompts", "narasi.md"), encoding="utf-8").read()
     assert "Bentuk jawaban DITETAPKAN KODE" in src
     assert "Susunan WAJIB untuk MODE POSISI" in src
+
+
+# ------------------------- istilah trading bahasa Inggris = pesan pasar (6 Okt 2026)
+
+def test_istilah_struktur_pasar_bukan_obrolan_ringan():
+    """Run 37248977364: "liquidation sweep" jatuh ke RINGAN (8 putaran) lalu habis untuk
+    ToolSearch — balasannya ditandai audit "angka tanpa tanggal"."""
+    for t in ("kalo ini cuma liquidation sweep gimana jadinya?",
+              "ini stop hunt atau breakdown beneran?", "btc lagi sideways ya?"):
+        assert bot.pesan_pasar(t), t
+        assert bot.bobot_chat(t, True)[2] >= 20, t
+
+
+def test_kata_umum_tidak_dianggap_istilah_trading():
+    for t in ("long weekend enaknya kemana", "aku lagi short waktu nih", "makasih bos"):
+        assert not bot.pesan_pasar(t), t
+
+
+def test_petunjuk_mcp_hanya_saat_mcp_diberikan():
+    """Lima ToolSearch berkata kunci menghabiskan jatah 8 putaran (run 37248977364)."""
+    _, cmd = _perintah_untuk(tools_override=bot.TOOLS_WEB)
+    assert cmd[2].endswith(bot.PETUNJUK_MCP) and "select:" in cmd[2]
+    _, cmd = _perintah_untuk(tools_override=bot.TOOLS_SOSIAL)
+    assert "ToolSearch" not in cmd[2]
+    _, cmd = _perintah_untuk(with_tools=False)
+    assert cmd[2] == "x"
