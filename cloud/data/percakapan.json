@@ -390,5 +390,17 @@
    "invalid=74.892",
    "ema21=83.205"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1791633031.0536013,
+  "waktu_utc": "2026-10-10 11:50",
+  "pesan": "hari ini full moon, kalo market reversal maka akan bullish atau bearish untuk btc?",
+  "balasan": "Koreksi dulu: menurut data astro.py, hari ini 10 Okt 2026 justru BULAN BARU (fase 358°, mendekati 0=baru), bukan purnama. Purnama berikutnya baru 26 Okt 2026. Jadi premisnya keliru dari awal.\n\nSoal \"kalau reversal saat purnama, bullish atau bearish\"\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+1 lainnya)",
+  "angka_kunci": [
+   "harga=83.146",
+   "ema21=83.146",
+   "rsi=50,2"
+  ]
  }
 ]
