@@ -287,7 +287,9 @@ STATUS_BUKTI = (
     "retrograde, TIDAK SATU PUN lolos uji — volatilitas maupun arah 5 hari (5 fitur "
     "p<0,05, padahal 6,2 diharapkan karena kebetulan; lolos FDR: 0). Merkurius "
     "retrograde: p=0,73. Sinyal jesse-astrology di luar sampel 47,6% (klaimnya 60%); "
-    "metode pyAstroTrader tanpa kebocoran data 51,7% vs baseline 51,4%. Sajikan sebagai "
+    "metode pyAstroTrader tanpa kebocoran data 51,7% vs baseline 51,4%. Bulan baru "
+    "sebagai pemicu REVERSAL diuji khusus (moon_phase_btc.md 4.10): +2,9 pp, p=0,33 — "
+    "tidak terbukti. Sajikan sebagai "
     "KALENDER yang diperhatikan trader astro, BUKAN titik balik atau sinyal.")
 
 

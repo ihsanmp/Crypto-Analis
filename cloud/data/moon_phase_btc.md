@@ -20,6 +20,10 @@ dengan skrip yang disertakan.
 - Satu-satunya pola yang lolos uji naif (volatilitas) terbukti berasal dari ~4 episode ekor gemuk
   di 2013 dan 2020, dan mati begitu di-winsorize.
 - Backtest naif kalah dari buy-and-hold bahkan setelah penyesuaian risiko.
+- **Klaim "bulan baru memicu REVERSAL"** diuji tersendiri (Bagian 4.10), karena uji
+  rata-rata return tidak bisa membantahnya — pembalikan naik→turun dan turun→naik saling
+  meniadakan. Hasil: bulan baru +2,9 pp lebih sering berbalik arah 7 hari, **p = 0,33**.
+  Tidak terbukti.
 
 **Instruksi operasional:** perlakukan fase bulan sebagai **fitur null**. Jangan gunakan sebagai
 sinyal entry, exit, sizing, maupun filter regime. Lihat Bagian 7 untuk aturan pemakaian rinci.
@@ -315,6 +319,51 @@ sebagai pola yang perlu dijelaskan.
 
 Reproduksi: `python cloud/uji_lunar.py` · perbandingan oktan: `python cloud/uji_lunar.py --oktan`
 
+### 4.10 Uji REVERSAL — bulan baru/purnama sebagai pemicu pembalikan arah (11 Okt 2026)
+
+**Kenapa perlu uji terpisah.** Semua uji di atas mengukur RATA-RATA return atau
+volatilitas. Klaim "bulan baru memicu reversal" tidak terbantah oleh itu: kalau tren naik
+berbalik turun dan tren turun berbalik naik sama seringnya, rata-ratanya tetap nol walau
+efeknya ada. Yang diuji di sini adalah PERUBAHAN TANDA arah.
+
+**Ditetapkan sebelum melihat hasil.** Satu hari event per siklus (elongasi tengah hari
+paling dekat ke 0° atau 180°, jarak < 6,1°). Reversal = tanda return N hari sebelum hari t
+≠ tanda return N hari sesudahnya. Horizon UTAMA N = 7; N = 3 dan 14 pelengkap. Statistik:
+tingkat reversal hari event − tingkat semua hari. Placebo: 2.000 geseran melingkar (event
+digeser acak, jarak antar-event & pengelompokan tren tetap). Era dipisah 2012–2018 vs
+2019–2026. Data Bitstamp harian 1 Jan 2012 – 1 Sep 2026 (5.358 hari; 181 bulan baru, 186
+purnama).
+
+| Fase | N | Semua | 2012–2018 | 2019–2026 |
+|---|---|---|---|---|
+| **Bulan baru** | **7 (utama)** | **+2,9 pp, p = 0,33** | +2,7 pp, p = 0,59 | +3,2 pp, p = 0,50 |
+| Bulan baru | 3 | −0,3 pp, p = 0,94 | −1,2 pp, p = 0,83 | +0,8 pp, p = 0,91 |
+| Bulan baru | 14 | +2,2 pp, p = 0,55 | −7,8 pp, p = 0,20 | +12,4 pp, p = 0,011 |
+| **Purnama** | **7 (utama)** | **−5,8 pp, p = 0,035** | −4,8 pp, p = 0,32 | −6,8 pp, p = 0,14 |
+| Purnama | 3 | −0,6 pp, p = 0,85 | −3,3 pp, p = 0,53 | +1,7 pp, p = 0,75 |
+| Purnama | 14 | −0,7 pp, p = 0,84 | +5,4 pp, p = 0,41 | −6,2 pp, p = 0,24 |
+
+(tingkat reversal dasar: 49,1% di N=7, 49,5% di N=3, 45,8% di N=14)
+
+**Bacaan.**
+- **Bulan baru → reversal: TIDAK TERBUKTI.** Uji utamanya +2,9 pp, p = 0,33; tidak ada era
+  atau horizon yang konsisten.
+- **Purnama N=7, p = 0,035** — arahnya justru KEBALIKAN klaim: lebih JARANG berbalik
+  (tren cenderung berlanjut). Tetap tidak dihitung temuan: dengan dua uji utama, ambang
+  Bonferroni 0,025 tidak terlampaui, dan di masing-masing era tidak signifikan.
+- **Bulan baru N=14 2019–2026, p = 0,011** adalah satu dari 18 sel; di 2012–2018 tandanya
+  terbalik (−7,8 pp). Ambang FDR q = 0,10 untuk p terkecil dari 18 uji adalah 0,0056 — tidak
+  lolos. Ini contoh persis yang dibahas Bagian 5: satu sel "menarik" dari banyak sel.
+
+**Catatan metode (jujur soal kesalahan sendiri).** Rancangan awal skrip ini memakai
+placebo "siklus palsu 29,53 hari dengan offset acak". Pada data HARIAN itu hanya
+menghasilkan ~30 himpunan hari berbeda — 2.000 undian semu — dan sempat memberi p = 0,000
+untuk sel bulan baru N=14. Diganti dengan geseran melingkar sebelum hasilnya dipakai.
+Keterbatasan yang sama berlaku untuk placebo Bagian 4.5; di sana kesimpulannya tidak
+berubah (p = 0,908 jauh dari ambang), tapi resolusi p-nya kasar.
+
+Reproduksi: `python cloud/uji_reversal_bulan.py` (stdlib saja, ~2 detik)
+
 ---
 
 ## 5. Mengapa ilusi korelasi muncul
@@ -415,6 +464,7 @@ Klaim null di dokumen ini berlaku untuk apa yang diuji. Berikut yang **tidak** t
 - **Volume dan sentimen.** Studi JAFAS 2025 mencatat asosiasi antara fase bulan dan sentimen/volume
   meski tidak dengan return. Belum direplikasi di sini.
 - **Altcoin.** Dokumen ini BTC saja.
+- ~~Reversal~~ — sudah diuji di Bagian 4.10 (11 Okt 2026): tidak terbukti.
 
 ---
 
