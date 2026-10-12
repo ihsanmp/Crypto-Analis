@@ -3574,6 +3574,24 @@ def data_proyeksi(teks, jenis, simbol):
     return "\n\n".join(bagian)
 
 
+def data_rilis(teks, ind, simbol=None, jenis="crypto"):
+    """Peta rilis CPI/PCE dari tanggal RESMI — kedua arti "CPI bulan X" + reaksi harga.
+
+    Run 38245922407: "apa yang terjadi pada harga btc pada saat cpi bulan september 2026"
+    dijawab "CPI September belum dirilis, tanya ulang setelah 14 Okt". Benar untuk DATA
+    September, tapi rilis yang TERJADI di September (data Agustus, 11 Sep) sudah ada dan
+    tidak pernah diambil: kejutan.py hanya dijalankan untuk pertanyaan PROYEKSI.
+    """
+    args = ["cloud/kejutan.py", "--indikator", ind, f"--rilis={teks}"]
+    if simbol:
+        args += ["--simbol", simbol] + (["--pasar"] if jenis != "crypto" else [])
+    keluar, err = _jalankan_terukur(f"PETA RILIS {ind} (kejutan.py --rilis)", args)
+    judul = f"### PETA RILIS {ind} (tanggal resmi BLS; kejutan.py --rilis)" + NL
+    if err or not keluar:
+        return judul + f"tidak tersedia: {err or 'keluaran kosong'}"
+    return judul + keluar
+
+
 def data_ppi_cpi():
     """Hasil uji PPI -> kejutan CPI, atau "" kalau gagal. Dipanggil BERDIRI SENDIRI.
 
@@ -4492,6 +4510,15 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
                 brief = (brief + chr(10) * 2 if brief else "") + ppi
                 print(f"[proses] chat: uji PPI->kejutan CPI {len(ppi)} karakter",
                       file=sys.stderr)
+        # PETA RILIS juga berdiri sendiri: pertanyaan "apa yang terjadi saat CPI bulan X"
+        # sering tanpa kata proyeksi, dan bisa tanpa aset.
+        for _pola, _ind in _INDIKATOR_KEJUTAN:
+            if re.search(_pola, (text or "").lower()):
+                peta = data_rilis(text, _ind, simbol_chat, jenis_chat or "crypto")
+                brief = (brief + chr(10) * 2 if brief else "") + peta
+                print(f"[proses] chat: peta rilis {_ind} {len(peta)} karakter",
+                      file=sys.stderr)
+                break
         # RISET TELEGRAM BERDIRI SENDIRI. Sebelumnya blok ini berada di dalam
         # "elif simbol_chat", sehingga "carikan info dari telegram saya" — yang tidak
         # menyebut aset apa pun — tidak pernah membacanya. Fiturnya diam-diam tidak

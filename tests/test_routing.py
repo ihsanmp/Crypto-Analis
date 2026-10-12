@@ -7486,7 +7486,8 @@ def test_ppi_cpi_terjangkau_dari_bot():
     """
     import tempfile as _tf
     asli = (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.data_ppi_cpi,
-            bot.run_claude, bot.data_mentah_pasar, bot.data_mentah_crypto)
+            bot.run_claude, bot.data_mentah_pasar, bot.data_mentah_crypto, bot.data_rilis)
+    bot.data_rilis = lambda *a: "### PETA RILIS"
     bot.JEJAK_PATH = os.path.join(_tf.mkdtemp(), "d.json")
     bot.simpan_riwayat = lambda *a: None
     bot.send_message = lambda *a: True
@@ -7506,6 +7507,38 @@ def test_ppi_cpi_terjangkau_dari_bot():
             assert bool(dipanggil) is harus and sampai is harus, (teks, dipanggil, sampai)
     finally:
         (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.data_ppi_cpi,
+         bot.run_claude, bot.data_mentah_pasar, bot.data_mentah_crypto,
+         bot.data_rilis) = asli
+
+
+def test_peta_rilis_terjangkau_dari_bot():
+    """Run 38245922407: "apa yang terjadi pada harga btc pada saat cpi bulan september
+    2026" dijawab "belum rilis, tanya ulang" — kejutan.py hanya jalan untuk pertanyaan
+    PROYEKSI. Jalur process() sungguhan, sampai ke prompt."""
+    import tempfile as _tf
+    asli = (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.data_rilis,
+            bot.run_claude, bot.data_mentah_pasar, bot.data_mentah_crypto)
+    bot.JEJAK_PATH = os.path.join(_tf.mkdtemp(), "d.json")
+    bot.simpan_riwayat = lambda *a: None
+    bot.send_message = lambda *a: True
+    bot.data_mentah_pasar = lambda *a: "### DATA"
+    bot.data_mentah_crypto = lambda *a: "### DATA"
+    dipanggil, prompt = [], {}
+    bot.data_rilis = lambda *a: (dipanggil.append(a), "### PETA RILIS CPI")[1]
+    bot.run_claude = lambda p, *a, **k: (prompt.__setitem__("p", p), ("ok", None))[1]
+    try:
+        for teks, harus in [("apa yang terjadi pada harga btc pada saat cpi bulan september 2026", True),
+                            ("cpi kemarin bikin btc turun ga?", True),
+                            ("core pce bulan lalu gimana", True),
+                            ("harga btc sekarang berapa", False)]:
+            dipanggil.clear(); prompt.clear()
+            bot.process("tok", "9", teks)
+            sampai = "### PETA RILIS CPI" in prompt.get("p", "")
+            assert bool(dipanggil) is harus and sampai is harus, (teks, dipanggil, sampai)
+            if teks.startswith("apa yang terjadi"):
+                assert dipanggil[0][1] == "CPI" and dipanggil[0][2] == "BTC", dipanggil
+    finally:
+        (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.data_rilis,
          bot.run_claude, bot.data_mentah_pasar, bot.data_mentah_crypto) = asli
 
 

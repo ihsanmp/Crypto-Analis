@@ -169,8 +169,59 @@ def _bedah_bulan(entri, seri_nowcast, seri_aktual):
             "kejutan_pp": round(a - f, 3)}
 
 
+# TANGGAL RILIS RESMI. Tanggal dari grafik Cleveland Fed (hari pertama garis "Actual"
+# terisi) ternyata SELALU lebih awal 1-4 hari dari tanggal BLS — CPI Agustus 2026 tercatat
+# 9 Sep padahal rilis 11 Sep, Juni 2026 tercatat 10 Jul padahal 14 Jul. Akibatnya seluruh
+# "reaksi harga saat rilis" mengukur hari SEBELUM rilis (ditemukan 12 Okt 2026). Untuk
+# CPI & Core CPI tanggalnya kini diambil dari arsip resmi BLS. PCE (BEA) belum punya
+# tabel resmi — tanggalnya tetap perkiraan dan ditandai demikian.
+RILIS_CPI_PATH = os.path.join(BASE_DIR, "data", "rilis_cpi_bls.json")
+_PAKAI_BLS = ("CPI", "CORE CPI")
+
+
+def _tabel_bls():
+    try:
+        with open(RILIS_CPI_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def _tanggal_resmi(data, indikator):
+    """Ganti tanggal tebakan grafik dengan tanggal resmi — juga untuk data dari cache lama."""
+    if not data:
+        return data
+    if indikator not in _PAKAI_BLS:
+        for r in data.get("riwayat") or []:
+            r["tanggal_sumber"] = ("perkiraan grafik Cleveland Fed — untuk CPI terbukti 1-4 "
+                                   "hari LEBIH AWAL dari tanggal resmi; sebut sebagai perkiraan")
+        return data
+    t = _tabel_bls()
+    rilis, jadwal = t.get("rilis") or {}, t.get("jadwal") or {}
+    for r in data.get("riwayat") or []:
+        resmi = rilis.get(r.get("bulan_target"))
+        if resmi:
+            if r.get("tanggal_rilis") != resmi:
+                r.setdefault("tanggal_grafik", r.get("tanggal_rilis"))
+            r["tanggal_rilis"] = resmi
+            r["tanggal_sumber"] = "BLS (resmi)"
+        else:
+            r["tanggal_sumber"] = "perkiraan grafik Cleveland Fed (tidak ada di tabel BLS)"
+    data["riwayat"].sort(key=lambda x: x["tanggal_rilis"])
+    for b in data.get("belum_rilis") or []:
+        if jadwal.get(b.get("bulan_target")):
+            b["jadwal_rilis_bls"] = jadwal[b["bulan_target"]] + " 08:30 ET"
+    return data
+
+
 def deret_kejutan(indikator, paksa=False):
-    """Riwayat (tanggal rilis, nowcast, aktual, kejutan) + rilis yang BELUM keluar."""
+    """Riwayat (tanggal rilis RESMI, nowcast, aktual, kejutan) + rilis yang BELUM keluar."""
+    data, dari_cache, err = _deret_kejutan_grafik(indikator, paksa)
+    return _tanggal_resmi(data, indikator), dari_cache, err
+
+
+def _deret_kejutan_grafik(indikator, paksa=False):
+    """Riwayat dari berkas Cleveland Fed apa adanya — tanggalnya TEBAKAN dari grafik."""
     nama = INDIKATOR[indikator]
     nama_aktual = f"Actual {nama}"
     kunci = f"kejutan_{indikator}"
@@ -399,6 +450,10 @@ def reaksi_harga(simbol, riwayat, pasar, rentang="15y", catatan=None, meta=None,
     for k in ("di_luar_jangkauan_harga", "tanpa_hari_perdagangan"):
         if meta.get(k):
             hasil[k] = meta[k]
+    if meta.get("kualitas") == "approx_close_only":
+        hasil["peringatan_kualitas"] = (
+            "Candle cadangan hanya berisi harga penutupan (open = close), jadi kolom "
+            "'H (hari rilis)' selalu 0 dan TIDAK bermakna. Pakai H+1 dan H+5 saja.")
 
     # Riwayat harga crypto gratis cuma ~1 tahun, jadi tumpang tindihnya dengan seri rilis
     # bisa tinggal belasan kejadian — atau nol untuk FOMC yang berakhir 2023. Angka yang
@@ -449,10 +504,11 @@ def _per_rilis(simbol, riwayat, pasar, rentang="15y"):
                "DXY": "DX-Y.NYB", "SPX": "^GSPC"}
         s = KOM.get(simbol.upper(), simbol.upper())
         candles, _, err = tarik(s, rentang, "1d")
+        kualitas = None
     else:
         from indicators import fetch_base, resolve_cg_id
         s = simbol.upper()
-        candles, _, _, err = fetch_base(s, resolve_cg_id(s), "1d")
+        candles, _, kualitas, err = fetch_base(s, resolve_cg_id(s), "1d")
     if err or not candles:
         return None, {"tidak_tersedia": err or "candle kosong"}
 
@@ -490,7 +546,7 @@ def _per_rilis(simbol, riwayat, pasar, rentang="15y"):
         if ret:
             catatan.append({"tanggal": tgl, "kejutan_pp": r["kejutan_pp"],
                             "aktual": r.get("aktual_mom_persen"), "ret": ret})
-    meta = {"simbol": s, "jendela_harga": f"{awal} s/d {akhir}",
+    meta = {"simbol": s, "jendela_harga": f"{awal} s/d {akhir}", "kualitas": kualitas,
             "di_luar_jangkauan_harga": di_luar, "tanpa_hari_perdagangan": tanpa_padanan}
     return catatan, meta
 
@@ -741,6 +797,106 @@ def main_fomc(args):
     print(json.dumps(keluar, indent=2, ensure_ascii=False))
 
 
+BULAN_ID = {"januari": 1, "jan": 1, "january": 1, "februari": 2, "feb": 2, "february": 2,
+            "maret": 3, "mar": 3, "march": 3, "april": 4, "apr": 4, "mei": 5, "may": 5,
+            "juni": 6, "jun": 6, "june": 6, "juli": 7, "jul": 7, "july": 7, "agustus": 8,
+            "agu": 8, "agt": 8, "aug": 8, "august": 8, "september": 9, "sep": 9, "sept": 9,
+            "oktober": 10, "okt": 10, "oct": 10, "october": 10, "november": 11, "nov": 11,
+            "desember": 12, "des": 12, "dec": 12, "december": 12}
+
+
+def bulan_dari_teks(teks, hari_ini=None):
+    """(tahun, bulan) yang disebut di teks, atau None. Tahun tak disebut = kemunculan
+    terakhir bulan itu yang tidak di masa depan."""
+    hari_ini = hari_ini or datetime.now(timezone.utc).date()
+    low = (teks or "").lower()
+    pola = r"\b(" + "|".join(sorted(BULAN_ID, key=len, reverse=True)) + r")\b\s*(\d{4})?"
+    m = re.search(pola, low)
+    if not m:
+        return None
+    bln = BULAN_ID[m.group(1)]
+    if m.group(2):
+        return int(m.group(2)), bln
+    thn = hari_ini.year if bln <= hari_ini.month else hari_ini.year - 1
+    return thn, bln
+
+
+def peta_rilis(ind, data, bulan=None, simbol=None, pasar=False, hari_ini=None):
+    """Jawab "CPI bulan X" dalam KEDUA arti, dari tanggal resmi.
+
+    Run 38245922407: "apa yang terjadi pada harga btc pada saat cpi bulan september 2026"
+    dijawab "CPI September belum rilis, tanya lagi setelah 14 Okt" — benar untuk arti
+    DATA September, tapi user bermaksud rilis yang TERJADI di bulan September (data
+    Agustus, 11 Sep). Kode kini menyiapkan keduanya; model tidak boleh memilih satu lalu
+    menolak menjawab.
+    """
+    hari_ini = hari_ini or datetime.now(timezone.utc).date()
+    riwayat = data.get("riwayat") or []
+    keluar = {"indikator": ind, "hari_ini": hari_ini.isoformat()}
+    jadwal = (_tabel_bls().get("jadwal") or {}) if ind in _PAKAI_BLS else {}
+
+    def _reaksi(r):
+        if not simbol:
+            return None
+        catatan, meta = _per_rilis(simbol, [r], pasar)
+        if not catatan:
+            return {"tidak_tersedia": (meta or {}).get("tidak_tersedia", "candle kosong")}
+        ret = catatan[0]["ret"]
+        # Candle "approx_close_only" (cadangan CoinGecko) punya open = close, sehingga
+        # gerak di hari rilis selalu tampak 0,00% — angka palsu, bukan "tidak bergerak".
+        hanya_tutup = meta.get("kualitas") == "approx_close_only"
+        return {"simbol": meta.get("simbol"),
+                "hari_rilis_buka_ke_tutup_persen": (
+                    "tidak tersedia (sumber candle hanya harga penutupan)" if hanya_tutup
+                    else (round(ret[0], 2) if 0 in ret else None)),
+                "sampai_H+1_persen": round(ret[1], 2) if 1 in ret else None,
+                "sampai_H+5_persen": round(ret[5], 2) if 5 in ret else None,
+                "catatan": ("candle harian UTC; rilis 08:30 ET = 12:30/13:30 UTC, jadi "
+                            "'hari rilis' mencakup jam-jam sebelum rilis juga")}
+
+    def _ringkas_rilis(r):
+        x = {k: r.get(k) for k in ("bulan_target", "tanggal_rilis", "tanggal_sumber",
+                                   "aktual_mom_persen", "nowcast_mom_persen", "kejutan_pp")}
+        x["reaksi_harga"] = _reaksi(r)
+        return x
+
+    if bulan:
+        thn, bln = bulan
+        kunci = f"{thn}-{bln}"
+        data_bulan = next((r for r in riwayat if r.get("bulan_target") == kunci), None)
+        if data_bulan:
+            arti1 = {"status": "SUDAH RILIS", **_ringkas_rilis(data_bulan)}
+        else:
+            nc = next((b for b in data.get("belum_rilis") or []
+                       if b.get("bulan_target") == kunci), {})
+            arti1 = {"status": "BELUM RILIS", "bulan_target": kunci,
+                     "jadwal_rilis": (jadwal.get(kunci, "") + " 08:30 ET").strip()
+                     if jadwal.get(kunci) else "tidak ada di tabel jadwal",
+                     "nowcast_mom_persen": nc.get("nowcast_mom_persen")}
+        awalan = f"{thn}-{bln:02d}"
+        di_bulan = [r for r in riwayat if (r.get("tanggal_rilis") or "").startswith(awalan)]
+        arti2 = ({"status": "SUDAH RILIS", **_ringkas_rilis(di_bulan[-1])} if di_bulan else
+                 {"status": "tidak ada rilis tercatat di bulan itu"})
+        keluar["arti_1_data_untuk_bulan_itu"] = arti1
+        keluar["arti_2_rilis_yang_terjadi_di_bulan_itu"] = arti2
+        keluar["wajib_dibaca"] = (
+            f"'{ind} bulan X' AMBIGU: bisa data UNTUK bulan X, atau rilis yang TERJADI di "
+            "bulan X (data bulan sebelumnya). Jawab yang SUDAH terjadi dengan angkanya, dan "
+            "sebut arti lainnya dalam satu kalimat. DILARANG menolak menjawab atau menyuruh "
+            "user bertanya ulang kalau salah satu arti sudah ada datanya.")
+    else:
+        if riwayat:
+            keluar["rilis_terakhir"] = _ringkas_rilis(riwayat[-1])
+        nxt = sorted(jadwal.items(), key=lambda kv: kv[1])
+        nxt = [kv for kv in nxt if kv[1] >= hari_ini.isoformat()][:1]
+        if nxt:
+            keluar["rilis_berikutnya"] = {"bulan_target": nxt[0][0],
+                                          "jadwal_rilis": nxt[0][1] + " 08:30 ET"}
+    keluar["sumber"] = ("tanggal: BLS resmi (CPI/Core CPI) · angka & ramalan: Cleveland Fed "
+                        "nowcast (RAMALAN MODEL, bukan konsensus ekonom)")
+    return keluar
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--indikator", default="CPI",
@@ -758,6 +914,9 @@ def main():
                     help="uji apakah tanda selisih bertahan saat data dipotong per rezim")
     ap.add_argument("--ringkas", action="store_true",
                     help="buang panduan statis (dipakai saat dikirim ke model)")
+    ap.add_argument("--rilis", nargs="?", const="", default=None,
+                    help="peta rilis: teks bulan (mis. 'september 2026') -> kedua arti "
+                         "'CPI bulan X' + reaksi harga --simbol; kosong = terakhir & berikutnya")
     args = ap.parse_args()
 
     ind = args.indikator.strip().upper()
@@ -773,6 +932,13 @@ def main():
         return
 
     data, dari_cache, err = deret_kejutan(ind)
+    if args.rilis is not None:
+        if err and not data:
+            print(json.dumps({"tidak_tersedia": err}, ensure_ascii=False))
+            return
+        print(json.dumps(peta_rilis(ind, data, bulan_dari_teks(args.rilis), args.simbol,
+                                    args.pasar), indent=1, ensure_ascii=False))
+        return
     main_nowcast(args, ind, data, dari_cache, err)
 
 
