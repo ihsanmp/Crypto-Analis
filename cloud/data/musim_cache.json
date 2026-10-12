@@ -6,25 +6,25 @@
   },
   "hasil_uji": "Diuji 16 Sep 2026: indeks 30 hari hitungan sendiri 30, terbitan blockchaincenter 33 — selisih 3 poin (1-2 koin dari 50).",
   "indeks_30h_dihitung_sendiri": {
-   "btc_30h_persen": 7.3,
+   "btc_30h_persen": 7.9,
    "indeks": 56,
    "n_altcoin": 49,
    "n_unggul": 28,
    "unggul_teratas": [
     "SOL",
+    "ZEC",
+    "HYPE",
     "LINK",
     "ADA",
     "NEAR",
     "XLM",
-    "BCH",
-    "LTC",
-    "CC"
+    "BCH"
    ]
   },
   "indeks_terbitan_blockchaincenter": {
-   "bulan_30h": 55,
-   "musim_90h": 53,
-   "tahun_365h": 49
+   "bulan_30h": 57,
+   "musim_90h": 59,
+   "tahun_365h": 41
   },
   "periksa_silang": {
    "cocok": true,
@@ -33,7 +33,7 @@
   },
   "vonis_30h": "tidak keduanya",
   "vonis_90h": "tidak keduanya",
-  "waktu": 1791661046.4916728
+  "waktu": 1791806256.485586
  },
  "kategori": {
   "id": [
@@ -42,6 +42,7 @@
    "agora-dollar",
    "alloy-tether",
    "allunity-chf",
+   "amnis-aptos",
    "ankreth",
    "apxusd",
    "arbitrum-bridged-wrapped-eeth",
@@ -167,7 +168,6 @@
    "kinetiq-markets-lst",
    "kinka",
    "kraken-wrapped-btc",
-   "kraken-wrapped-hype",
    "labs-on-gold",
    "lido-staked-sol",
    "liquid-staked-ethereum",
@@ -181,6 +181,7 @@
    "mantle-staked-ether",
    "matic-aave-usdc",
    "matrixdock-gold",
+   "megausd",
    "merlin-s-seal-btc",
    "metamask-usd",
    "metronome-synth-usd",
@@ -222,7 +223,6 @@
    "saturn-susdat",
    "sbtc-2",
    "sceptre-staked-flr",
-   "seth2",
    "shmonad",
    "socean-staked-sol",
    "societe-generale-forge-eurcv",
@@ -231,7 +231,6 @@
    "solv-protocol-solvbtc-bbn",
    "spol",
    "spring-staked-sui",
-   "stable-coin-2",
    "stader-ethx",
    "staked-aave",
    "staked-axis-usd",
@@ -299,6 +298,7 @@
    "weth",
    "wmatic",
    "wormhole-bridged-wrapped-sol-sui",
+   "wrapped-aave-arbitrum-usdcn",
    "wrapped-aave-ethereum-usdc",
    "wrapped-aave-ethereum-usdt",
    "wrapped-aave-ethereum-weth",
@@ -360,6 +360,6 @@
    "ylds",
    "yuzu-usd"
   ],
-  "waktu": 1791122134.909086
+  "waktu": 1791806253.4509597
  }
 }
