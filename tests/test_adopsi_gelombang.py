@@ -206,3 +206,24 @@ def test_berkas_ia_xlsx_juga_terbaca(tmp_path):
     with zipfile.ZipFile(p, "w") as z:
         z.writestr("IA_FOIA_April_2024.xlsx", buf.getvalue())
     assert etf_13f.baca_ia(str(p))[("crd", "123")] == "HEDGE_FUND_DANA_PRIVAT"
+
+
+def test_nama_berkas_ia_yang_tidak_seragam():
+    t = etf_13f._tanggal_ia
+    assert t("/x/ia040423.zip").isoformat() == "2023-04-04"
+    assert t("/x/ia07012026.zip").isoformat() == "2026-07-01"
+    assert t("/x/ia060126_0.zip").isoformat() == "2026-06-01"
+    assert t("/x/ia020226-exemptzip.zip").isoformat() == "2026-02-02"
+    assert t("/x/ia09012026-registered.zip").isoformat() == "2026-09-01"
+
+
+def test_era_dan_nama_resmi(tmp_path):
+    p = tmp_path / "ia100226-exempt.zip"
+    teks = ('"Organization CRD#","SEC#","Legal Name","Primary Business Name"\n'
+            '"555","802-1","PINE CAPITAL MANAGEMENT, L.P.","PINE CAPITAL"\n')
+    with zipfile.ZipFile(p, "w") as z:
+        z.writestr("ia.csv", teks)
+    peta = etf_13f.baca_ia(str(p), era=True)
+    assert peta[("crd", "555")] == "HEDGE_FUND_DANA_PRIVAT"
+    assert peta[("nama", etf_13f.norm_nama("Pine Capital Management LP"))] == \
+        "HEDGE_FUND_DANA_PRIVAT"

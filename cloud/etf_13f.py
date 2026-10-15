@@ -48,7 +48,7 @@ MULAI = "2024"          # ETF spot BTC mulai diperdagangkan 11 Jan 2024
 # ETF futures (ProShares), covered call / protection / floor, Grayscale Bitcoin CASH, dan
 # "BlackRock Institutional Trust ... BTC iShares MSCI". Sekarang DAFTAR PUTIH: keluarga
 # penerbit ETF spot + kata Bitcoin, lalu pengecualian produk turunannya.
-VERSI_COCOK = 3          # 3: + jenis pemegang (Form ADV 5.D)
+VERSI_COCOK = 4          # 3: + jenis (Form ADV 5.D); 4: + ERA, nama, berkas terdekat
 _FAMILI = re.compile(r"I ?SHARES?|ISHS|ISHA|IBIT|FIDELITY|WISE ORIGIN|G?R[AE]YSCALE|\bARK\b|"
                      r"21 ?SHARES|BITWISE|ITWISE|INVESCO|GALAXY|VAN ?ECK|ANECK|FRANKLIN|"
                      r"VALKYRIE|COINSHARES|COINSHRS|WISDOMTREE|ISDOMTREE|HASHDEX|"
@@ -193,12 +193,28 @@ def _baris_ia(z):
     raise ValueError(f"berkas IA tanpa CSV/XLSX: {nama}")
 
 
-def baca_ia(path):
-    """{("crd", n) | ("sec", "801-n"): jenis} dari satu zip berkas IA bulanan."""
-    peta = {}
+_SUFIKS = re.compile(r"\b(LLC|L L C|LP|L P|LLP|INC|INCORPORATED|CORP|CORPORATION|CO|"
+                     r"COMPANY|LTD|LIMITED|THE|PLC|NA|N A|SA|AG|GMBH)\b")
+
+
+def norm_nama(nama):
+    """Nama resmi yang dinormalkan untuk mencocokkan sampul 13F dengan Form ADV."""
+    n = re.sub(r"&", " AND ", (nama or "").upper())
+    n = re.sub(r"[^A-Z0-9 ]", " ", n)
+    n = _SUFIKS.sub(" ", n)
+    return re.sub(r"\s+", " ", n).strip() or None
+
+
+def baca_ia(path, era=False):
+    """{("crd", n) | ("sec", "801-n") | ("nama", norm): jenis} dari satu zip berkas IA.
+
+    era=True: berkas EXEMPT REPORTING ADVISER. Menurut definisinya ERA hanya menasihati
+    dana privat (atau modal ventura) — tidak mengisi Item 5.D, jadi jenisnya langsung
+    HEDGE_FUND_DANA_PRIVAT. Nama yang dipetakan ke dua jenis berbeda dibuang (ambigu)."""
+    peta, nama_ke = {}, {}
     with zipfile.ZipFile(path) as z:
         for b in _baris_ia(z):
-            j = jenis_dari_5d(b)
+            j = "HEDGE_FUND_DANA_PRIVAT" if era else jenis_dari_5d(b)
             if not j:
                 continue
             crd = _norm_crd(b.get("Organization CRD#"))
@@ -207,17 +223,31 @@ def baca_ia(path):
                 peta[("crd", crd)] = j
             if sec:
                 peta[("sec", sec)] = j
+            for k in ("Legal Name", "Primary Business Name"):
+                n = norm_nama(b.get(k))
+                if n:
+                    nama_ke.setdefault(n, set()).add(j)
+    for n, js in nama_ke.items():
+        if len(js) == 1:
+            peta[("nama", n)] = next(iter(js))
     return peta
 
 
 def _tanggal_ia(url):
-    m = re.search(r"/ia(\d{2})(\d{2})(\d{2})\.zip$", url)
+    """Nama berkas IA SEC tidak seragam: ia040423.zip (MMDDYY), ia07012026.zip
+    (MMDDYYYY), ia060126_0.zip, ia020226-exemptzip.zip, ia09012026-registered.zip."""
+    m = re.search(r"/ia(\d{6,8})[^/]*\.zip$", url, re.I)
     if not m:
         return None
+    d = m.group(1)
     try:
-        return datetime(2000 + int(m.group(3)), int(m.group(1)), int(m.group(2))).date()
+        if len(d) == 8:
+            return datetime(int(d[4:]), int(d[:2]), int(d[2:4])).date()
+        if len(d) == 6:
+            return datetime(2000 + int(d[4:]), int(d[:2]), int(d[2:4])).date()
     except ValueError:
         return None
+    return None
 
 
 class Klasifikasi:
@@ -229,19 +259,18 @@ class Klasifikasi:
         self._muat = {}
 
     def _daftar(self):
+        """{tanggal: {"terdaftar": url, "era": url}}."""
         if self._berkas is None:
             html = _get(IA_HALAMAN)
-            tautan = set(re.findall(r'href="([^"]+/ia\d{6}\.zip)"', html, re.I))
-            self._berkas = sorted((t, _tanggal_ia(t)) for t in tautan if _tanggal_ia(t))
+            self._berkas = {}
+            for t in set(re.findall(r'href="([^"]+/ia\d{6,8}[^"/]*\.zip)"', html, re.I)):
+                d = _tanggal_ia(t)
+                if d:
+                    jenis = "era" if "exempt" in t.lower() else "terdaftar"
+                    self._berkas.setdefault(d, {})[jenis] = t
         return self._berkas
 
-    def peta_untuk(self, periode):
-        from datetime import date as _d, timedelta as _td
-        batas = _d.fromisoformat(periode) + _td(days=45)
-        calon = [(t, d) for t, d in self._daftar() if d <= batas]
-        if not calon:
-            return {}, None
-        url = max(calon, key=lambda x: x[1])[0]
+    def _baca(self, url, era):
         if url not in self._muat:
             with tempfile.TemporaryDirectory() as d:
                 path = os.path.join(d, "ia.zip")
@@ -249,14 +278,31 @@ class Klasifikasi:
                     f.write((self._unduh or _get)(url if url.startswith("http") else SEC + url,
                                                   biner=True))
                 try:
-                    self._muat[url] = baca_ia(path)
+                    self._muat[url] = baca_ia(path, era)
                 except Exception as e:
                     # Lebih baik kuartal ini TIDAK TERKLASIFIKASI (terlihat) daripada
                     # seluruh pembaruan 13F jatuh.
                     print(f"berkas IA {url.rsplit('/', 1)[-1]} gagal dibaca: {e}", flush=True)
                     self._muat[url] = {}
             time.sleep(1)
-        return self._muat[url], url.rsplit("/", 1)[-1]
+        return self._muat[url]
+
+    def peta_untuk(self, periode):
+        """Berkas terakhir SEBELUM batas filing kalau ada dalam 120 hari; kalau tidak
+        (halaman SEC tidak memuat berkas Jun 2023 - Nov 2025), berkas TERDEKAT — jenis klien
+        sebuah penasihat jarang berubah, dan nama berkasnya dicatat per kuartal."""
+        from datetime import date as _d, timedelta as _td
+        batas = _d.fromisoformat(periode) + _td(days=45)
+        daftar = {d: v for d, v in self._daftar().items() if "terdaftar" in v}
+        if not daftar:
+            return {}, None
+        sebelum = [d for d in daftar if batas - _td(days=120) <= d <= batas]
+        pilih = max(sebelum) if sebelum else min(daftar, key=lambda d: abs((d - batas).days))
+        v = self._daftar()[pilih]
+        peta = dict(self._baca(v["era"], True)) if "era" in v else {}
+        peta.update(self._baca(v["terdaftar"], False))      # terdaftar menang atas ERA
+        label = v["terdaftar"].rsplit("/", 1)[-1] + ("" if sebelum else " (terdekat, SESUDAH batas)")
+        return peta, label
 
 
 def proses_zip(path, klasifikasi=None):
@@ -298,8 +344,10 @@ def proses_zip(path, klasifikasi=None):
         if klasifikasi is not None:
             peta, berkas = klasifikasi.peta_untuk(p)
             ia_dipakai[p] = berkas
+            nn = norm_nama(nama)
             jenis = (peta.get(("crd", crd)) if crd else None) or \
-                    (peta.get(("sec", sec)) if sec else None) or jenis_dari_nama(nama)
+                    (peta.get(("sec", sec)) if sec else None) or \
+                    (peta.get(("nama", nn)) if nn else None) or jenis_dari_nama(nama)
         h = hasil.setdefault(p, {"filer": 0, "nilai_usd": 0.0, "per_jenis": {}})
         h["filer"] += 1
         h["nilai_usd"] += v
