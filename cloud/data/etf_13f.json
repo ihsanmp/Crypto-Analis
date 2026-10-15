@@ -27,7 +27,7 @@
   "2026-06-30": "ia08032026_1.zip"
  },
  "catatan": "13F-HR asli saja. Jenis pemegang dari Form ADV Item 5.D (jenis klien dengan RAUM terbesar), lewat CRD/nomor berkas SEC di sampul 13F; berkas IA yang dipakai = yang terakhir terbit sebelum batas filing kuartal itu. Filer tanpa CRD dipetakan dari nama hanya untuk bank/institusi yang jelas. HEDGE_FUND_DANA_PRIVAT memuat pelaku basis trade (long ETF + short futures, netral arah) — bandingkan dengan short leveraged funds CFTC.",
- "diperbarui_utc": "2026-10-15T15:06:47+00:00",
+ "diperbarui_utc": "2026-10-15T15:17:29+00:00",
  "kuartal": [
   {
    "akhir_kuartal": "2024-03-31",
@@ -36,51 +36,39 @@
    "pemegang": 987,
    "per_jenis": {
     "BANK": {
-     "nilai_usd": 45349284,
-     "pemegang": 29
+     "nilai_usd": 410629858,
+     "pemegang": 44
     },
     "HEDGE_FUND_DANA_PRIVAT": {
-     "nilai_usd": 5076844341,
-     "pemegang": 78
+     "nilai_usd": 5022592234,
+     "pemegang": 77
     },
     "INSTITUSI": {
-     "nilai_usd": 238988252,
-     "pemegang": 26
+     "nilai_usd": 255067426,
+     "pemegang": 36
     },
     "LAINNYA": {
      "nilai_usd": 52127740,
      "pemegang": 19
     },
     "MANAJER_REKSA_DANA": {
-     "nilai_usd": 1198192264,
-     "pemegang": 15
+     "nilai_usd": 1207056700,
+     "pemegang": 18
+    },
+    "PEMBUAT_PASAR": {
+     "nilai_usd": 2307343600,
+     "pemegang": 12
     },
     "PENASIHAT_KEKAYAAN": {
-     "nilai_usd": 2003589579,
-     "pemegang": 700
+     "nilai_usd": 1646793811,
+     "pemegang": 684
     },
     "TIDAK_TERKLASIFIKASI": {
-     "nilai_usd": 2572149753,
-     "pemegang": 120
+     "nilai_usd": 285629844,
+     "pemegang": 97
     }
    },
    "tak_terklasifikasi_terbesar": [
-    [
-     "SUSQUEHANNA INTERNATIONAL GROUP, LLP",
-     1311757531
-    ],
-    [
-     "JANE STREET GROUP, LLC",
-     628390983
-    ],
-    [
-     "Marex Group plc",
-     227040747
-    ],
-    [
-     "IMC-Chicago, LLC",
-     64377504
-    ],
     [
      "Apollo Management Holdings, L.P.",
      53235000
@@ -110,20 +98,36 @@
      12312341
     ],
     [
-     "PNC Financial Services Group, Inc.",
-     11906676
-    ],
-    [
      "Jaffetilchin Investment Partners, LLC",
      11301611
     ],
     [
-     "CANTOR FITZGERALD, L. P.",
-     10379071
-    ],
-    [
      "RBF Capital, LLC",
      9475500
+    ],
+    [
+     "Dakota Wealth Management",
+     8153114
+    ],
+    [
+     "K2 PRINCIPAL FUND, L.P.",
+     8094000
+    ],
+    [
+     "Kamunting Street Capital Management, L.P.",
+     6070500
+    ],
+    [
+     "OSAIC HOLDINGS, INC.",
+     5861247
+    ],
+    [
+     "OLD MISSION CAPITAL LLC",
+     5057766
+    ],
+    [
+     "Pathstone Holdings, LLC",
+     4683336
     ]
    ]
   },
@@ -134,62 +138,46 @@
    "pemegang": 1130,
    "per_jenis": {
     "BANK": {
-     "nilai_usd": 49285991,
-     "pemegang": 38
+     "nilai_usd": 748416150,
+     "pemegang": 54
     },
     "HEDGE_FUND_DANA_PRIVAT": {
-     "nilai_usd": 4260215656,
-     "pemegang": 80
+     "nilai_usd": 4220080347,
+     "pemegang": 79
     },
     "INSTITUSI": {
-     "nilai_usd": 161214460,
-     "pemegang": 30
+     "nilai_usd": 175875503,
+     "pemegang": 42
     },
     "LAINNYA": {
      "nilai_usd": 39014421,
      "pemegang": 23
     },
     "MANAJER_REKSA_DANA": {
-     "nilai_usd": 1038998359,
-     "pemegang": 13
+     "nilai_usd": 1046394751,
+     "pemegang": 16
+    },
+    "PEMBUAT_PASAR": {
+     "nilai_usd": 2149557546,
+     "pemegang": 12
     },
     "PENASIHAT_KEKAYAAN": {
-     "nilai_usd": 1980894866,
-     "pemegang": 799
+     "nilai_usd": 1715529850,
+     "pemegang": 782
     },
     "TIDAK_TERKLASIFIKASI": {
-     "nilai_usd": 3372892809,
-     "pemegang": 147
+     "nilai_usd": 807647994,
+     "pemegang": 122
     }
    },
    "tak_terklasifikasi_terbesar": [
-    [
-     "SUSQUEHANNA INTERNATIONAL GROUP, LLP",
-     909693555
-    ],
-    [
-     "JANE STREET GROUP, LLC",
-     693972445
-    ],
-    [
-     "GOLDMAN SACHS GROUP INC",
-     418917376
-    ],
     [
      "Avenir Tech Ltd",
      383393966
     ],
     [
-     "Marex Group plc",
-     375239123
-    ],
-    [
      "Elequin Capital, LP",
      86486156
-    ],
-    [
-     "IMC-Chicago, LLC",
-     54289315
     ],
     [
      "Apollo Management Holdings, L.P.",
@@ -200,10 +188,6 @@
      34861130
     ],
     [
-     "DRW Securities, LLC",
-     33492349
-    ],
-    [
      "Tudor Investment Corp Et Al",
      29686949
     ],
@@ -212,16 +196,40 @@
      24765651
     ],
     [
-     "CANTOR FITZGERALD, L. P.",
-     22577388
+     "WELLINGTON MANAGEMENT GROUP LLP",
+     15325245
     ],
     [
-     "PNC Financial Services Group, Inc.",
-     16168454
+     "HGC Investment Management Inc.",
+     13280460
     ],
     [
-     "Jefferies Financial Group Inc.",
-     15531891
+     "SAPIENT CAPITAL LLC",
+     12798238
+    ],
+    [
+     "JBF Capital, Inc.",
+     11845840
+    ],
+    [
+     "OLD MISSION CAPITAL LLC",
+     9972384
+    ],
+    [
+     "Kamunting Street Capital Management, L.P.",
+     9835572
+    ],
+    [
+     "Jaffetilchin Investment Partners, LLC",
+     9606961
+    ],
+    [
+     "Dakota Wealth Management",
+     8664479
+    ],
+    [
+     "RBF Capital, LLC",
+     7986000
     ]
    ]
   },
@@ -232,74 +240,46 @@
    "pemegang": 1169,
    "per_jenis": {
     "BANK": {
-     "nilai_usd": 59678741,
-     "pemegang": 37
+     "nilai_usd": 1067716718,
+     "pemegang": 52
     },
     "HEDGE_FUND_DANA_PRIVAT": {
-     "nilai_usd": 5581494543,
-     "pemegang": 80
+     "nilai_usd": 5558809539,
+     "pemegang": 79
     },
     "INSTITUSI": {
-     "nilai_usd": 150749314,
-     "pemegang": 24
+     "nilai_usd": 171054738,
+     "pemegang": 35
     },
     "LAINNYA": {
      "nilai_usd": 32454955,
      "pemegang": 24
     },
     "MANAJER_REKSA_DANA": {
-     "nilai_usd": 1148518005,
-     "pemegang": 17
+     "nilai_usd": 1243909584,
+     "pemegang": 21
+    },
+    "PEMBUAT_PASAR": {
+     "nilai_usd": 2023426686,
+     "pemegang": 13
     },
     "PENASIHAT_KEKAYAAN": {
-     "nilai_usd": 2301505865,
-     "pemegang": 809
+     "nilai_usd": 2024293701,
+     "pemegang": 793
     },
     "TIDAK_TERKLASIFIKASI": {
-     "nilai_usd": 3191183182,
-     "pemegang": 178
+     "nilai_usd": 343918684,
+     "pemegang": 152
     }
    },
    "tak_terklasifikasi_terbesar": [
-    [
-     "GOLDMAN SACHS GROUP INC",
-     718847104
-    ],
-    [
-     "SUSQUEHANNA INTERNATIONAL GROUP, LLP",
-     673166749
-    ],
-    [
-     "JANE STREET GROUP, LLC",
-     566813124
-    ],
-    [
-     "Marex Group plc",
-     387452486
-    ],
-    [
-     "IMC-Chicago, LLC",
-     346487681
-    ],
-    [
-     "BlackRock, Inc.",
-     92295999
-    ],
     [
      "Apollo Management Holdings, L.P.",
      71086400
     ],
     [
-     "PNC Financial Services Group, Inc.",
-     22844222
-    ],
-    [
      "Avenir Tech Ltd",
      22215076
-    ],
-    [
-     "CANTOR FITZGERALD, L. P.",
-     18826065
     ],
     [
      "WELLINGTON MANAGEMENT GROUP LLP",
@@ -320,6 +300,38 @@
     [
      "Jaffetilchin Investment Partners, LLC",
      10026114
+    ],
+    [
+     "Dakota Wealth Management",
+     9258251
+    ],
+    [
+     "AlTi Global, Inc.",
+     9010027
+    ],
+    [
+     "K2 PRINCIPAL FUND, L.P.",
+     8671236
+    ],
+    [
+     "RBF Capital, LLC",
+     8419500
+    ],
+    [
+     "MERCER GLOBAL ADVISORS INC /ADV",
+     5635434
+    ],
+    [
+     "Kamunting Street Capital Management, L.P.",
+     5412274
+    ],
+    [
+     "BROWN ADVISORY INC",
+     5153337
+    ],
+    [
+     "Yarbrough Capital, LLC",
+     5078902
     ]
    ]
   },
@@ -330,94 +342,98 @@
    "pemegang": 1685,
    "per_jenis": {
     "BANK": {
-     "nilai_usd": 216012469,
-     "pemegang": 51
+     "nilai_usd": 2269905629,
+     "pemegang": 66
     },
     "HEDGE_FUND_DANA_PRIVAT": {
-     "nilai_usd": 13462884596,
-     "pemegang": 118
+     "nilai_usd": 13378783207,
+     "pemegang": 116
     },
     "INSTITUSI": {
-     "nilai_usd": 419700970,
-     "pemegang": 35
+     "nilai_usd": 897653507,
+     "pemegang": 54
     },
     "LAINNYA": {
      "nilai_usd": 68121944,
      "pemegang": 36
     },
     "MANAJER_REKSA_DANA": {
-     "nilai_usd": 1759394477,
-     "pemegang": 19
+     "nilai_usd": 1900562917,
+     "pemegang": 23
+    },
+    "PEMBUAT_PASAR": {
+     "nilai_usd": 3966239170,
+     "pemegang": 16
     },
     "PENASIHAT_KEKAYAAN": {
-     "nilai_usd": 4074761096,
-     "pemegang": 1206
+     "nilai_usd": 3638683866,
+     "pemegang": 1186
     },
     "TIDAK_TERKLASIFIKASI": {
-     "nilai_usd": 7381187870,
-     "pemegang": 220
+     "nilai_usd": 1262113182,
+     "pemegang": 188
     }
    },
    "tak_terklasifikasi_terbesar": [
     [
-     "JANE STREET GROUP, LLC",
-     1667786061
-    ],
-    [
-     "GOLDMAN SACHS GROUP INC",
-     1568988100
-    ],
-    [
-     "Galaxy Group Investments LLC",
-     659544700
-    ],
-    [
-     "Marex Group plc",
-     608887245
-    ],
-    [
      "Avenir Tech Ltd",
      603422471
-    ],
-    [
-     "Mubadala Investment Co PJSC",
-     436895026
-    ],
-    [
-     "DRW Securities, LLC",
-     362401384
-    ],
-    [
-     "SUSQUEHANNA INTERNATIONAL GROUP, LLP",
-     297892346
-    ],
-    [
-     "BlackRock, Inc.",
-     138200636
     ],
     [
      "Apollo Management Holdings, L.P.",
      104462400
     ],
     [
-     "IMC-Chicago, LLC",
-     99694477
-    ],
-    [
-     "CANTOR FITZGERALD, L. P.",
-     88620138
-    ],
-    [
-     "Jefferies Financial Group Inc.",
-     85714530
-    ],
-    [
      "BlueCrest Capital Management Ltd",
      62653482
     ],
     [
-     "PNC Financial Services Group, Inc.",
-     50970089
+     "WELLINGTON MANAGEMENT GROUP LLP",
+     25569783
+    ],
+    [
+     "Quadrature Capital Ltd",
+     24381690
+    ],
+    [
+     "OLD MISSION CAPITAL LLC",
+     20621572
+    ],
+    [
+     "Yarbrough Capital, LLC",
+     16509744
+    ],
+    [
+     "MERCER GLOBAL ADVISORS INC /ADV",
+     15808764
+    ],
+    [
+     "Kamunting Street Capital Management, L.P.",
+     15011399
+    ],
+    [
+     "Jaffetilchin Investment Partners, LLC",
+     14834485
+    ],
+    [
+     "K2 PRINCIPAL FUND, L.P.",
+     14323500
+    ],
+    [
+     "Jump Financial, LLC",
+     13898358
+    ],
+    [
+     "HGC Investment Management Inc.",
+     13358998
+    ],
+    [
+     "JBF Capital, Inc.",
+     13103350
+    ],
+    [
+     "RBF Capital, LLC",
+     12359100
     ]
    ]
   },
@@ -428,94 +444,98 @@
    "pemegang": 1733,
    "per_jenis": {
     "BANK": {
-     "nilai_usd": 179045662,
-     "pemegang": 64
+     "nilai_usd": 2400617295,
+     "pemegang": 79
     },
     "HEDGE_FUND_DANA_PRIVAT": {
-     "nilai_usd": 8380277866,
-     "pemegang": 101
+     "nilai_usd": 8347145595,
+     "pemegang": 99
     },
     "INSTITUSI": {
-     "nilai_usd": 85291118,
-     "pemegang": 38
+     "nilai_usd": 534538226,
+     "pemegang": 53
     },
     "LAINNYA": {
      "nilai_usd": 69295344,
      "pemegang": 41
     },
     "MANAJER_REKSA_DANA": {
-     "nilai_usd": 1544240408,
-     "pemegang": 19
+     "nilai_usd": 1825995436,
+     "pemegang": 23
+    },
+    "PEMBUAT_PASAR": {
+     "nilai_usd": 3065636185,
+     "pemegang": 17
     },
     "PENASIHAT_KEKAYAAN": {
-     "nilai_usd": 4062197227,
-     "pemegang": 1262
+     "nilai_usd": 3641737809,
+     "pemegang": 1245
     },
     "TIDAK_TERKLASIFIKASI": {
-     "nilai_usd": 6901223885,
-     "pemegang": 208
+     "nilai_usd": 1336605620,
+     "pemegang": 176
     }
    },
    "tak_terklasifikasi_terbesar": [
     [
-     "GOLDMAN SACHS GROUP INC",
-     1693434227
-    ],
-    [
-     "JANE STREET GROUP, LLC",
-     1253129372
-    ],
-    [
      "Avenir Tech Ltd",
      695451421
-    ],
-    [
-     "SUSQUEHANNA INTERNATIONAL GROUP, LLP",
-     534162032
-    ],
-    [
-     "Marex Group plc",
-     526456623
-    ],
-    [
-     "Galaxy Group Investments LLC",
-     435567211
-    ],
-    [
-     "Mubadala Investment Co PJSC",
-     408509559
-    ],
-    [
-     "BlackRock, Inc.",
-     279120190
-    ],
-    [
-     "DRW Securities, LLC",
-     115639263
     ],
     [
      "Apollo Management Holdings, L.P.",
      92064000
     ],
     [
-     "CANTOR FITZGERALD, L. P.",
-     87908831
-    ],
-    [
-     "IMC-Chicago, LLC",
-     59454747
-    ],
-    [
      "Trans-Canada Capital Inc.",
      55172510
     ],
     [
-     "PNC Financial Services Group, Inc.",
-     53866401
-    ],
-    [
      "ALLEN OPERATIONS LLC",
      31372062
+    ],
+    [
+     "HIMENSION CAPITAL (SINGAPORE) PTE. LTD.",
+     22716846
+    ],
+    [
+     "WELLINGTON MANAGEMENT GROUP LLP",
+     22557701
+    ],
+    [
+     "BlueCrest Capital Management Ltd",
+     16900282
+    ],
+    [
+     "Yarbrough Capital, LLC",
+     16858575
+    ],
+    [
+     "Alamea Verwaltungs GmbH",
+     15121921
+    ],
+    [
+     "PPSC Investment Service Corp",
+     14838770
+    ],
+    [
+     "GROUP ONE TRADING LLC",
+     13848799
+    ],
+    [
+     "AlTi Global, Inc.",
+     13575184
+    ],
+    [
+     "JANUS HENDERSON GROUP PLC",
+     12246897
+    ],
+    [
+     "JBF Capital, Inc.",
+     11562070
+    ],
+    [
+     "AVANTAX ADVISORY SERVICES, INC.",
+     11221501
     ]
    ]
   },
@@ -526,86 +546,50 @@
    "pemegang": 2001,
    "per_jenis": {
     "BANK": {
-     "nilai_usd": 161744561,
-     "pemegang": 68
+     "nilai_usd": 3413094852,
+     "pemegang": 83
     },
     "HEDGE_FUND_DANA_PRIVAT": {
-     "nilai_usd": 13335127909,
-     "pemegang": 119
+     "nilai_usd": 13263502600,
+     "pemegang": 117
     },
     "INSTITUSI": {
-     "nilai_usd": 142267614,
-     "pemegang": 45
+     "nilai_usd": 853712062,
+     "pemegang": 65
     },
     "LAINNYA": {
      "nilai_usd": 93059848,
      "pemegang": 41
     },
     "MANAJER_REKSA_DANA": {
-     "nilai_usd": 2018729771,
-     "pemegang": 23
+     "nilai_usd": 2519344271,
+     "pemegang": 27
+    },
+    "PEMBUAT_PASAR": {
+     "nilai_usd": 4529881707,
+     "pemegang": 16
     },
     "PENASIHAT_KEKAYAAN": {
-     "nilai_usd": 6186396340,
-     "pemegang": 1474
+     "nilai_usd": 5414188699,
+     "pemegang": 1453
     },
     "TIDAK_TERKLASIFIKASI": {
-     "nilai_usd": 11136526389,
-     "pemegang": 231
+     "nilai_usd": 2987068393,
+     "pemegang": 199
     }
    },
    "tak_terklasifikasi_terbesar": [
     [
-     "JANE STREET GROUP, LLC",
-     2397790754
-    ],
-    [
-     "GOLDMAN SACHS GROUP INC",
-     2001832037
-    ],
-    [
      "Avenir Tech Ltd",
      1019065268
-    ],
-    [
-     "SUSQUEHANNA INTERNATIONAL GROUP, LLP",
-     812693434
-    ],
-    [
-     "Galaxy Group Investments LLC",
-     601018636
-    ],
-    [
-     "Mubadala Investment Co PJSC",
-     534177956
-    ],
-    [
-     "BlackRock, Inc.",
-     496654719
-    ],
-    [
-     "IMC-Chicago, LLC",
-     340623398
     ],
     [
      "CLEAR STREET LLC",
      223411175
     ],
     [
-     "CANTOR FITZGERALD, L. P.",
-     219512704
-    ],
-    [
-     "JPMORGAN CHASE & CO",
-     200004211
-    ],
-    [
      "MACQUARIE GROUP LTD",
      188361043
-    ],
-    [
-     "WELLS FARGO & COMPANY/MN",
-     187392121
     ],
     [
      "Trans-Canada Capital Inc.",
@@ -614,6 +598,46 @@
     [
      "Al Warda Investments RSC Ltd",
      147579391
+    ],
+    [
+     "Pinpoint Asset Management (Singapore) Pte. Ltd.",
+     113404134
+    ],
+    [
+     "BlueCrest Capital Management Ltd",
+     106007395
+    ],
+    [
+     "WINTON GROUP Ltd",
+     95883002
+    ],
+    [
+     "Belvedere Trading LLC",
+     95817827
+    ],
+    [
+     "OLD MISSION CAPITAL LLC",
+     72905021
+    ],
+    [
+     "Apollo Management Holdings, L.P.",
+     45632250
+    ],
+    [
+     "ALLEN OPERATIONS LLC",
+     41022942
+    ],
+    [
+     "Yarbrough Capital, LLC",
+     32087078
+    ],
+    [
+     "HIMENSION CAPITAL (SINGAPORE) PTE. LTD.",
+     31526700
+    ],
+    [
+     "WELLINGTON MANAGEMENT GROUP LLP",
+     29459474
     ]
    ]
   },
@@ -624,66 +648,42 @@
    "pemegang": 2174,
    "per_jenis": {
     "BANK": {
-     "nilai_usd": 392179309,
-     "pemegang": 76
+     "nilai_usd": 5044095650,
+     "pemegang": 93
     },
     "HEDGE_FUND_DANA_PRIVAT": {
-     "nilai_usd": 13692103041,
-     "pemegang": 118
+     "nilai_usd": 13655634596,
+     "pemegang": 116
     },
     "INSTITUSI": {
-     "nilai_usd": 238247248,
-     "pemegang": 50
+     "nilai_usd": 1323007229,
+     "pemegang": 72
     },
     "LAINNYA": {
      "nilai_usd": 106402986,
      "pemegang": 47
     },
     "MANAJER_REKSA_DANA": {
-     "nilai_usd": 2344425522,
-     "pemegang": 28
+     "nilai_usd": 3046858493,
+     "pemegang": 31
+    },
+    "PEMBUAT_PASAR": {
+     "nilai_usd": 4294092156,
+     "pemegang": 19
     },
     "PENASIHAT_KEKAYAAN": {
-     "nilai_usd": 7803845274,
-     "pemegang": 1632
+     "nilai_usd": 6717734489,
+     "pemegang": 1609
     },
     "TIDAK_TERKLASIFIKASI": {
-     "nilai_usd": 13722759280,
-     "pemegang": 223
+     "nilai_usd": 4112137061,
+     "pemegang": 187
     }
    },
    "tak_terklasifikasi_terbesar": [
     [
-     "GOLDMAN SACHS GROUP INC",
-     2301646662
-    ],
-    [
-     "JANE STREET GROUP, LLC",
-     1507179311
-    ],
-    [
      "Avenir Tech Ltd",
      1195162618
-    ],
-    [
-     "Marex Group plc",
-     961177699
-    ],
-    [
-     "BlackRock, Inc.",
-     697423403
-    ],
-    [
-     "Galaxy Group Investments LLC",
-     611208842
-    ],
-    [
-     "Mubadala Investment Co PJSC",
-     567253180
-    ],
-    [
-     "WELLS FARGO & COMPANY/MN",
-     534346566
     ],
     [
      "Al Warda Investments RSC Ltd",
@@ -694,24 +694,52 @@
      488112365
     ],
     [
-     "HARVARD MANAGEMENT CO INC",
-     442884780
-    ],
-    [
-     "IMC-Chicago, LLC",
-     414443465
-    ],
-    [
-     "JPMORGAN CHASE & CO",
-     343665344
-    ],
-    [
      "MACQUARIE GROUP LTD",
      286311480
     ],
     [
-     "BARCLAYS PLC",
-     279964165
+     "Trans-Canada Capital Inc.",
+     200104425
+    ],
+    [
+     "Belvedere Trading LLC",
+     150421196
+    ],
+    [
+     "WINTON GROUP Ltd",
+     122513750
+    ],
+    [
+     "Pinpoint Asset Management (Singapore) Pte. Ltd.",
+     116192115
+    ],
+    [
+     "Walleye Trading LLC",
+     79183491
+    ],
+    [
+     "OLD MISSION CAPITAL LLC",
+     62419150
+    ],
+    [
+     "Apollo Management Holdings, L.P.",
+     48475500
+    ],
+    [
+     "Harvest Portfolios Group Inc.",
+     47476910
+    ],
+    [
+     "ALLEN OPERATIONS LLC",
+     43563000
+    ],
+    [
+     "Nearwater Capital Markets, Ltd",
+     39000000
+    ],
+    [
+     "Jump Financial, LLC",
+     37108080
     ]
    ]
   },
@@ -722,66 +750,42 @@
    "pemegang": 2204,
    "per_jenis": {
     "BANK": {
-     "nilai_usd": 173987284,
-     "pemegang": 75
+     "nilai_usd": 3345212147,
+     "pemegang": 91
     },
     "HEDGE_FUND_DANA_PRIVAT": {
-     "nilai_usd": 7990813491,
-     "pemegang": 106
+     "nilai_usd": 7985550192,
+     "pemegang": 103
     },
     "INSTITUSI": {
-     "nilai_usd": 190906370,
-     "pemegang": 51
+     "nilai_usd": 1148705104,
+     "pemegang": 74
     },
     "LAINNYA": {
      "nilai_usd": 78114588,
      "pemegang": 47
     },
     "MANAJER_REKSA_DANA": {
-     "nilai_usd": 1832166022,
-     "pemegang": 25
+     "nilai_usd": 2495444844,
+     "pemegang": 28
+    },
+    "PEMBUAT_PASAR": {
+     "nilai_usd": 3703824094,
+     "pemegang": 20
     },
     "PENASIHAT_KEKAYAAN": {
-     "nilai_usd": 7040509406,
-     "pemegang": 1660
+     "nilai_usd": 5910150119,
+     "pemegang": 1636
     },
     "TIDAK_TERKLASIFIKASI": {
-     "nilai_usd": 10814962331,
-     "pemegang": 240
+     "nilai_usd": 3454458404,
+     "pemegang": 205
     }
    },
    "tak_terklasifikasi_terbesar": [
     [
-     "JANE STREET GROUP, LLC",
-     1532163710
-    ],
-    [
-     "GOLDMAN SACHS GROUP INC",
-     1062813092
-    ],
-    [
      "Avenir Tech Ltd",
      920669669
-    ],
-    [
-     "Marex Group plc",
-     818369974
-    ],
-    [
-     "BlackRock, Inc.",
-     657162730
-    ],
-    [
-     "Mubadala Investment Co PJSC",
-     630670337
-    ],
-    [
-     "Galaxy Group Investments LLC",
-     515933182
-    ],
-    [
-     "WELLS FARGO & COMPANY/MN",
-     449840895
     ],
     [
      "Laurore Ltd",
@@ -792,24 +796,52 @@
      408059051
     ],
     [
-     "SUSQUEHANNA INTERNATIONAL GROUP, LLP",
-     341348311
-    ],
-    [
-     "HARVARD MANAGEMENT CO INC",
-     265806836
-    ],
-    [
-     "BARCLAYS PLC",
-     262653350
-    ],
-    [
      "MACQUARIE GROUP LTD",
      254513000
     ],
     [
-     "Bullish",
-     177199087
+     "WINTON GROUP Ltd",
+     119408019
+    ],
+    [
+     "Intesa Sanpaolo S.p.A.",
+     96104326
+    ],
+    [
+     "Pinpoint Asset Management (Singapore) Pte. Ltd.",
+     88752900
+    ],
+    [
+     "Copperwood Asset Management LP",
+     83335887
+    ],
+    [
+     "Walleye Trading LLC",
+     75465901
+    ],
+    [
+     "Nearwater Capital Markets, Ltd",
+     68755320
+    ],
+    [
+     "Harvest Portfolios Group Inc.",
+     42672487
+    ],
+    [
+     "Belvedere Trading LLC",
+     34877563
+    ],
+    [
+     "ALLEN OPERATIONS LLC",
+     33275430
+    ],
+    [
+     "OSAIC HOLDINGS, INC.",
+     32561850
+    ],
+    [
+     "Yarbrough Capital, LLC",
+     29830961
     ]
    ]
   },
@@ -820,94 +852,98 @@
    "pemegang": 2037,
    "per_jenis": {
     "BANK": {
-     "nilai_usd": 188916647,
-     "pemegang": 75
+     "nilai_usd": 2589175234,
+     "pemegang": 90
     },
     "HEDGE_FUND_DANA_PRIVAT": {
-     "nilai_usd": 4512545772,
-     "pemegang": 88
+     "nilai_usd": 4511369449,
+     "pemegang": 86
     },
     "INSTITUSI": {
-     "nilai_usd": 124359017,
-     "pemegang": 44
+     "nilai_usd": 1174707828,
+     "pemegang": 63
     },
     "LAINNYA": {
      "nilai_usd": 231325557,
      "pemegang": 42
     },
     "MANAJER_REKSA_DANA": {
-     "nilai_usd": 1537135845,
-     "pemegang": 25
+     "nilai_usd": 2098883826,
+     "pemegang": 28
+    },
+    "PEMBUAT_PASAR": {
+     "nilai_usd": 2177999653,
+     "pemegang": 16
     },
     "PENASIHAT_KEKAYAAN": {
-     "nilai_usd": 5690643248,
-     "pemegang": 1540
+     "nilai_usd": 4606050994,
+     "pemegang": 1521
     },
     "TIDAK_TERKLASIFIKASI": {
-     "nilai_usd": 7307269673,
-     "pemegang": 223
+     "nilai_usd": 2202683218,
+     "pemegang": 191
     }
    },
    "tak_terklasifikasi_terbesar": [
     [
-     "GOLDMAN SACHS GROUP INC",
-     716165201
-    ],
-    [
      "Avenir Tech Ltd",
      712001994
-    ],
-    [
-     "Mubadala Investment Co PJSC",
-     565616051
-    ],
-    [
-     "BlackRock, Inc.",
-     556284685
-    ],
-    [
-     "Marex Group plc",
-     539935907
-    ],
-    [
-     "Galaxy Digital Inc.",
-     452214187
-    ],
-    [
-     "JANE STREET GROUP, LLC",
-     413568311
-    ],
-    [
-     "WELLS FARGO & COMPANY/MN",
-     367269616
-    ],
-    [
-     "SUSQUEHANNA INTERNATIONAL GROUP, LLP",
-     322924224
-    ],
-    [
-     "Abu Dhabi Investment Council Co P.J.S.C",
-     315762915
     ],
     [
      "Laurore Ltd",
      263034039
     ],
     [
-     "IMC-Chicago, LLC",
-     176211254
-    ],
-    [
-     "BARCLAYS PLC",
-     172936873
-    ],
-    [
      "MACQUARIE GROUP LTD",
      159001862
     ],
     [
-     "Bullish",
-     137210450
+     "Intesa Sanpaolo S.p.A.",
+     106071823
+    ],
+    [
+     "Walleye Trading LLC",
+     69660202
+    ],
+    [
+     "Copperwood Asset Management LP",
+     54382242
+    ],
+    [
+     "Nearwater Capital Markets, Ltd",
+     53204016
+    ],
+    [
+     "Belvedere Trading LLC",
+     49203997
+    ],
+    [
+     "WINTON GROUP Ltd",
+     38279406
+    ],
+    [
+     "Harvest Portfolios Group Inc.",
+     38090702
+    ],
+    [
+     "Rising Stella Capital Pte. Ltd",
+     29803739
+    ],
+    [
+     "OSAIC HOLDINGS, INC.",
+     29151084
+    ],
+    [
+     "MEITAV INVESTMENT HOUSE LTD",
+     28777143
+    ],
+    [
+     "NORTHWESTERN MUTUAL WEALTH MANAGEMENT CO",
+     27737852
+    ],
+    [
+     "ALLEN OPERATIONS LLC",
+     25749084
     ]
    ]
   },
@@ -918,94 +954,98 @@
    "pemegang": 1929,
    "per_jenis": {
     "BANK": {
-     "nilai_usd": 345382802,
-     "pemegang": 77
+     "nilai_usd": 3326356198,
+     "pemegang": 95
     },
     "HEDGE_FUND_DANA_PRIVAT": {
-     "nilai_usd": 2559153318,
-     "pemegang": 76
+     "nilai_usd": 2558984205,
+     "pemegang": 75
     },
     "INSTITUSI": {
-     "nilai_usd": 116173174,
-     "pemegang": 41
+     "nilai_usd": 1034495842,
+     "pemegang": 61
     },
     "LAINNYA": {
      "nilai_usd": 233282891,
      "pemegang": 41
     },
     "MANAJER_REKSA_DANA": {
-     "nilai_usd": 1606030177,
-     "pemegang": 21
+     "nilai_usd": 2120408534,
+     "pemegang": 23
+    },
+    "PEMBUAT_PASAR": {
+     "nilai_usd": 2419594490,
+     "pemegang": 17
     },
     "PENASIHAT_KEKAYAAN": {
-     "nilai_usd": 4947951736,
-     "pemegang": 1460
+     "nilai_usd": 3985784445,
+     "pemegang": 1440
     },
     "TIDAK_TERKLASIFIKASI": {
-     "nilai_usd": 7538376655,
-     "pemegang": 213
+     "nilai_usd": 1667444148,
+     "pemegang": 177
     }
    },
    "tak_terklasifikasi_terbesar": [
     [
-     "JANE STREET GROUP, LLC",
-     984691305
-    ],
-    [
-     "WELLS FARGO & COMPANY/MN",
-     935693050
-    ],
-    [
-     "GOLDMAN SACHS GROUP INC",
-     579657488
-    ],
-    [
-     "BlackRock, Inc.",
-     515827549
-    ],
-    [
-     "Mubadala Investment Co PJSC",
-     490092617
-    ],
-    [
-     "Marex Group Ltd",
-     480262020
-    ],
-    [
      "Avenir Tech Ltd",
      450923334
-    ],
-    [
-     "Galaxy Digital Inc.",
-     441224139
-    ],
-    [
-     "JPMORGAN CHASE & CO",
-     362008813
-    ],
-    [
-     "Abu Dhabi Investment Council Co P.J.S.C",
-     273600922
     ],
     [
      "Laurore Ltd",
      161332628
     ],
     [
-     "SUSQUEHANNA INTERNATIONAL GROUP, LLP",
-     147319512
+     "Blue Sparrow, LLC /DE",
+     73970380
     ],
     [
-     "Bullish",
-     118728440
+     "Walleye Trading LLC",
+     71877329
     ],
     [
-     "CANTOR FITZGERALD, L. P.",
-     106479178
+     "Intesa Sanpaolo S.p.A.",
+     69323734
     ],
     [
-     "HARVARD MANAGEMENT CO INC",
-     101355133
+     "MACQUARIE GROUP LTD",
+     52662583
+    ],
+    [
+     "Copperwood Asset Management LP",
+     46654836
+    ],
+    [
+     "Quadrature Capital Ltd",
+     42133119
+    ],
+    [
+     "Harvest Portfolios Group Inc.",
+     38147577
+    ],
+    [
+     "WINTON GROUP Ltd",
+     33146793
+    ],
+    [
+     "MEITAV INVESTMENT HOUSE LTD",
+     33000552
+    ],
+    [
+     "OSAIC HOLDINGS, INC.",
+     30078679
+    ],
+    [
+     "Nearwater Capital Markets, Ltd",
+     29228620
+    ],
+    [
+     "NORTHWESTERN MUTUAL WEALTH MANAGEMENT CO",
+     27186993
+    ],
+    [
+     "Rising Stella Capital Pte. Ltd",
+     25824218
     ]
    ]
   }
@@ -1387,32 +1427,36 @@
     "nilai_usd": 25774918989.0,
     "per_jenis": {
      "BANK": {
-      "filer": 49,
-      "nilai_usd": 215657154.0
+      "filer": 64,
+      "nilai_usd": 2269550314.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 115,
-      "nilai_usd": 13214420891.0
+      "filer": 113,
+      "nilai_usd": 13130319502.0
      },
      "INSTITUSI": {
-      "filer": 34,
-      "nilai_usd": 419699909.0
+      "filer": 51,
+      "nilai_usd": 896078035.0
      },
      "LAINNYA": {
       "filer": 36,
       "nilai_usd": 68121944.0
      },
      "MANAJER_REKSA_DANA": {
-      "filer": 19,
-      "nilai_usd": 1759394477.0
+      "filer": 23,
+      "nilai_usd": 1900562917.0
+     },
+     "PEMBUAT_PASAR": {
+      "filer": 14,
+      "nilai_usd": 2697807225.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 1153,
-      "nilai_usd": 3994095583.0
+      "filer": 1135,
+      "nilai_usd": 3559592764.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 215,
-      "nilai_usd": 6103529031.0
+      "filer": 185,
+      "nilai_usd": 1252886288.0
      }
     },
     "tak_terklasifikasi": {
@@ -1433,7 +1477,6 @@
      "Aviso Financial Inc.": 8435.0,
      "Avitas Wealth Management LLC": 759888.0,
      "BANQUE PICTET & CIE SA": 530500.0,
-     "BARCLAYS PLC": 131196.0,
      "BENJAMIN EDWARDS INC": 5036165.0,
      "BESSEMER GROUP INC": 466.0,
      "BOYD WATTERSON ASSET MANAGEMENT LLC/OH": 24131.0,
@@ -1442,7 +1485,6 @@
      "Bay Colony Advisory Group, Inc d/b/a Bay Colony Advisors": 1493471.0,
      "Belvedere Trading LLC": 6736436.0,
      "Berbice Capital Management LLC": 15915.0,
-     "BlackRock, Inc.": 138200636.0,
      "Blue Investment Partners LLC": 4459544.0,
      "Blue Rock Wealth Management LLC": 258626.0,
      "Blue Trust, Inc.": 2798042.0,
@@ -1450,13 +1492,10 @@
      "Bordeaux Wealth Advisors LLC": 1248364.0,
      "Bray Capital Advisors": 4981113.0,
      "Bristlecone Advisors, LLC": 668961.0,
-     "CANTOR FITZGERALD, L. P.": 88620138.0,
      "CAPITAL ADVISORS INC/OK": 436177.0,
      "CAPITAL MANAGEMENT ASSOCIATES /NY/": 1061000.0,
      "CAROLINAS WEALTH CONSULTING LLC": 705739.0,
      "CARY STREET PARTNERS FINANCIAL LLC": 2923251.0,
-     "CIBC Private Wealth Group LLC": 2188909.0,
-     "CIBC WORLD MARKET INC.": 6749.0,
      "CITY HOLDING CO": 34122.0,
      "CLARK FINANCIAL SERVICES GROUP INC                      /BD": 507.0,
      "CLEAR STREET LLC": 19098.0,
@@ -1483,7 +1522,6 @@
      "Cypress Capital Group": 289653.0,
      "DC Investments Management, LLC": 831294.0,
      "DELTA ASSET MANAGEMENT LLC/TN": 31310.0,
-     "DRW Securities, LLC": 362401384.0,
      "Dakota Wealth Management": 9571410.0,
      "Defined Financial Planning LLC": 313048.0,
      "Delta Financial Group, Inc.": 323.0,
@@ -1497,9 +1535,6 @@
      "Equitable Holdings, Inc.": 2061754.0,
      "Exchange Capital Management, Inc.": 350794.0,
      "Executive Wealth Management, LLC": 5563485.0,
-     "FLOW TRADERS U.S. LLC": 59268.0,
-     "FMR LLC": 302386.0,
-     "FRANKLIN RESOURCES INC": 796958.0,
      "Fedenia Advisers LLC": 11046559.0,
      "Federation des caisses Desjardins du Quebec": 515851.0,
      "Fernwood Investment Management, LLC": 508431.0,
@@ -1508,7 +1543,6 @@
      "Financial Security Advisor, Inc.": 552146.0,
      "Franchise Capital Ltd": 5005268.0,
      "Future Financial Wealth Managment LLC": 55703.0,
-     "GOLDMAN SACHS GROUP INC": 1568988100.0,
      "GROUP ONE TRADING LLC": 2063613.0,
      "GUGGENHEIM CAPITAL LLC": 4521290.0,
      "Graypoint LLC": 1620765.0,
@@ -1516,23 +1550,17 @@
      "HIMENSION CAPITAL (SINGAPORE) PTE. LTD.": 11644899.0,
      "HM PAYSON & CO": 38661.0,
      "HRT FINANCIAL LP": 6269.0,
-     "HSBC HOLDINGS PLC": 5596200.0,
      "Headlands Technologies LLC": 274456.0,
      "Heritage Wealth Partners, LLC": 489917.0,
-     "IMC-Chicago, LLC": 99694477.0,
      "INVESTMENT MANAGEMENT CORP /VA/ /ADV": 288963.0,
      "IRIDIAN ASSET MANAGEMENT LLC/CT": 876101.0,
      "Indiana Trust & Investment Management Co": 180748.0,
-     "Invesco Ltd.": 1868460.0,
      "Iron Horse Wealth Management, LLC": 8158.0,
      "J. Safra Sarasin Holding AG": 5555944.0,
-     "JANE STREET GROUP, LLC": 1667786061.0,
      "JBF Capital, Inc.": 13103350.0,
      "JONES FINANCIAL COMPANIES LLLP": 33516.0,
-     "JPMORGAN CHASE & CO": 436820.0,
      "JTC Employer Solutions Trustee Ltd": 2009.0,
      "Jaffetilchin Investment Partners, LLC": 14834485.0,
-     "Jefferies Financial Group Inc.": 85714530.0,
      "Jump Financial, LLC": 13898358.0,
      "K.J. Harrison & Partners Inc": 2068623.0,
      "K2 PRINCIPAL FUND, L.P.": 14323500.0,
@@ -1557,7 +1585,6 @@
      "Mint Tower Capital Management B.V.": 11824.0,
      "Miracle Mile Advisors, LLC": 322209.0,
      "Missouri Trust & Investment Co": 16729.0,
-     "Mubadala Investment Co PJSC": 436895026.0,
      "NATIXIS": 113487.0,
      "NEUBERGER BERMAN GROUP LLC": 2332230.0,
      "NICOLET BANKSHARES INC": 809013.0,
@@ -1570,16 +1597,13 @@
      "OSAIC HOLDINGS, INC.": 3184847.0,
      "Oakworth Capital, Inc.": 378066.0,
      "PATTEN & PATTEN INC/TN": 272764.0,
-     "PEAK6 LLC": 3422680.0,
      "PEAPACK GLADSTONE FINANCIAL CORP": 1319.0,
      "PFG Investments, LLC": 1924166.0,
-     "PNC Financial Services Group, Inc.": 50970089.0,
      "Parkwood LLC": 18568.0,
      "Pathstone Holdings, LLC": 11656600.0,
      "PrairieView Partners, LLC": 3.0,
      "Priebe Wealth Holdings LLC": 413032.0,
      "Quadrature Capital Ltd": 24381690.0,
-     "RAYMOND JAMES FINANCIAL INC": 5146700.0,
      "RBF Capital, LLC": 12359100.0,
      "RE Dickinson Investment Advisors, LLC": 15279.0,
      "ROANOKE ASSET MANAGEMENT CORP/ NY": 229.0,
@@ -1589,12 +1613,8 @@
      "Rosenberg Matthew Hamilton": 403359.0,
      "SANDERS MORRIS HARRIS LLC": 529366.0,
      "SANTA MONICA PARTNERS LP": 5350.0,
-     "SCOTIA CAPITAL INC.": 6035645.0,
-     "SIMPLEX TRADING, LLC": 19697.0,
      "SPROTT INC.": 3123162.0,
      "ST GERMAIN D J CO INC": 349562.0,
-     "STIFEL FINANCIAL CORP": 2915615.0,
-     "SUSQUEHANNA INTERNATIONAL GROUP, LLP": 297892346.0,
      "SYNOVUS FINANCIAL CORP": 1897705.0,
      "Sanctuary Wealth Management, L.L.C.": 227859.0,
      "Schechter Investment Advisors, LLC": 967803.0,
@@ -1613,23 +1633,17 @@
      "TD Waterhouse Canada Inc.": 423237.0,
      "TORNO CAPITAL, LLC": 5305000.0,
      "TRUIST FINANCIAL CORP": 3533860.0,
-     "TWO SIGMA SECURITIES, LLC": 3029314.0,
      "Tolleson Wealth Management, Inc.": 1145.0,
      "Tower Research Capital LLC (TRC)": 7913.0,
-     "UBS Group AG": 14137523.0,
      "VISION FINANCIAL MARKETS LLC": 24615.0,
-     "Virtu Financial LLC": 12451.0,
      "Vise Technologies, Inc.": 1834007.0,
      "VisionPoint Advisory Group, LLC": 56127.0,
      "W.G. Shaheen & Associates DBA Whitney & Co": 801851.0,
      "WELLINGTON MANAGEMENT GROUP LLP": 25569783.0,
-     "WELLS FARGO & COMPANY/MN": 370361.0,
      "WESTWOOD HOLDINGS GROUP INC": 888110.0,
-     "WOLVERINE TRADING, LLC": 6141623.0,
      "WR Wealth Planners, LLC": 230143.0,
      "Walleye Trading LLC": 465000.0,
      "WoodTrust Financial Corp": 348.0,
-     "XTX Topco Ltd": 861401.0,
      "Yarbrough Capital, LLC": 16509744.0
     }
    }
@@ -1754,32 +1768,36 @@
     "nilai_usd": 27749701525.0,
     "per_jenis": {
      "BANK": {
-      "filer": 73,
-      "nilai_usd": 173883765.0
+      "filer": 88,
+      "nilai_usd": 3339881428.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 104,
-      "nilai_usd": 7953318816.0
+      "filer": 101,
+      "nilai_usd": 7948055517.0
      },
      "INSTITUSI": {
-      "filer": 50,
-      "nilai_usd": 189764003.0
+      "filer": 71,
+      "nilai_usd": 1147322018.0
      },
      "LAINNYA": {
       "filer": 45,
       "nilai_usd": 74735577.0
      },
      "MANAJER_REKSA_DANA": {
-      "filer": 25,
-      "nilai_usd": 1832166022.0
+      "filer": 28,
+      "nilai_usd": 2495444844.0
+     },
+     "PEMBUAT_PASAR": {
+      "filer": 18,
+      "nilai_usd": 3525450784.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 1605,
-      "nilai_usd": 6975201324.0
+      "filer": 1583,
+      "nilai_usd": 5845082756.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 223,
-      "nilai_usd": 10550632018.0
+      "filer": 191,
+      "nilai_usd": 3373728601.0
      }
     },
     "tak_terklasifikasi": {
@@ -1797,7 +1815,6 @@
      "Atlantic Union Bankshares Corp": 1059932.0,
      "Avenir Tech Ltd": 920669669.0,
      "BANQUE PICTET & CIE SA": 1171740.0,
-     "BARCLAYS PLC": 262653350.0,
      "BENJAMIN EDWARDS INC": 4483507.0,
      "BESSEMER GROUP INC": 746.0,
      "BOYD WATTERSON ASSET MANAGEMENT LLC/OH": 63495.0,
@@ -1808,18 +1825,14 @@
      "Bay Colony Advisory Group, Inc d/b/a Bay Colony Advisors": 1742422.0,
      "Belvedere Trading LLC": 34877563.0,
      "Benson Wealth Management INC": 9319759.0,
-     "BlackRock, Inc.": 657162730.0,
      "Blue Line Capital, LLC / IL": 314781.0,
      "Blue Trust, Inc.": 9241607.0,
      "CALIFORNIA FIRST LEASING CORP": 2234250.0,
      "CAMBRIDGE ASSOCIATES LLC /MA/ /ADV": 622164.0,
-     "CANTOR FITZGERALD, L. P.": 128630843.0,
      "CAPITAL ADVISORS INC/OK": 1245719.0,
      "CAPITAL FINANCIAL GROUP INC\\CO\\ /ADV": 509459.0,
      "CARY STREET PARTNERS FINANCIAL LLC": 3667197.0,
      "CHESAPEAKE CAPITAL CORP /IL/": 544263.0,
-     "CIBC Private Wealth Group LLC": 16597648.0,
-     "CIBC WORLD MARKET INC.": 20819624.0,
      "CITIZENS FINANCIAL GROUP INC/RI": 4472537.0,
      "CITY HOLDING CO": 100950.0,
      "CLARK FINANCIAL SERVICES GROUP INC                      /BD": 723472.0,
@@ -1842,7 +1855,6 @@
      "Cypress Capital Group": 778153.0,
      "DBA TRADING, LLC": 1196565.0,
      "DELTA ASSET MANAGEMENT LLC/TN": 36531.0,
-     "DRW Securities, LLC": 75799950.0,
      "DV Trading LLC": 1480967.0,
      "Daiwa Securities Group Inc.": 94086.0,
      "Dakota Wealth Management": 10516766.0,
@@ -1855,42 +1867,31 @@
      "Equitable Holdings, Inc.": 10119774.0,
      "Evergreen Quality Fund GP, Ltd.": 1902687.0,
      "FIRST HORIZON CORP": 156398.0,
-     "FLOW TRADERS U.S. LLC": 9171.0,
-     "FMR LLC": 418332.0,
      "FORT WASHINGTON INVESTMENT ADVISORS INC /OH/": 325853.0,
-     "FRANKLIN RESOURCES INC": 3840639.0,
      "Federation des caisses Desjardins du Quebec": 1231317.0,
      "Fiduciary Planning LLC": 1012115.0,
      "Financial Planning Hawaii, Inc.": 269427.0,
      "Financial Security Advisor, Inc.": 4098617.0,
      "Franchise GP Ltd": 198971.0,
      "Future Financial Wealth Managment LLC": 203040.0,
-     "GOLDMAN SACHS GROUP INC": 1062813092.0,
      "GROUP ONE TRADING LLC": 171870.0,
-     "GTS SECURITIES LLC": 569337.0,
      "GUGGENHEIM CAPITAL LLC": 7641136.0,
-     "Galaxy Group Investments LLC": 515933182.0,
      "Golden State Equity Partners": 546196.0,
      "Greenline Wealth Management LLC": 1133536.0,
-     "HARVARD MANAGEMENT CO INC": 265806836.0,
      "HGC Investment Management Inc.": 1718188.0,
      "HM PAYSON & CO": 105688.0,
      "HRT FINANCIAL LP": 25308.0,
      "Harvest Portfolios Group Inc.": 42672487.0,
      "Hilltop Holdings Inc.": 587200.0,
-     "IMC-Chicago, LLC": 84820422.0,
      "ION Fund Management Ltd": 1986000.0,
      "IRIDIAN ASSET MANAGEMENT LLC/CT": 721813.0,
      "Indiana Trust & Investment Management Co": 241695.0,
      "Intesa Sanpaolo S.p.A.": 96104326.0,
      "J. Safra Sarasin Holding AG": 7380093.0,
-     "JANE STREET GROUP, LLC": 1532163710.0,
      "JANUS HENDERSON GROUP PLC": 11321345.0,
      "JONES FINANCIAL COMPANIES LLLP": 6708.0,
-     "JPMORGAN CHASE & CO": 154719324.0,
      "JTC Employer Solutions Trustee Ltd": 2809.0,
      "Jaffetilchin Investment Partners, LLC": 9469377.0,
-     "Jefferies Financial Group Inc.": 1657367.0,
      "Jump Financial, LLC": 2678133.0,
      "K.J. Harrison & Partners Inc": 229780.0,
      "K2 PRINCIPAL FUND, L.P.": 2846037.0,
@@ -1909,14 +1910,12 @@
      "MIRAE ASSET GLOBAL ETFS HOLDINGS Ltd.": 9786015.0,
      "MIdWestOne Financial Group, Inc.": 326101.0,
      "Marathon Trading Investment Management LLC": 4513185.0,
-     "Marex Group plc": 818369974.0,
      "MassMutual Private Wealth & Trust, FSB": 248472.0,
      "Massar Capital Management, LP": 2616356.0,
      "Mechanics Financial Corp": 173775.0,
      "Mint Tower Capital Management B.V.": 12482.0,
      "Mirabaud & Cie SA": 456780.0,
      "Missouri Trust & Investment Co": 140448.0,
-     "Mubadala Investment Co PJSC": 630670337.0,
      "NATIXIS": 22094.0,
      "NCP Inc.": 20903.0,
      "NEUBERGER BERMAN GROUP LLC": 4471681.0,
@@ -1933,15 +1932,12 @@
      "ORG Partners LLC": 728908.0,
      "ORG Wealth Partners, LLC": 356275.0,
      "OSAIC HOLDINGS, INC.": 32561850.0,
-     "Optiver Holding B.V.": 704313.0,
      "Orion Porfolio Solutions, LLC": 14367342.0,
      "Orland Properties Ltd": 388511.0,
      "PATTEN & PATTEN INC/TN": 1323967.0,
      "PBCay One RSC Ltd": 22868790.0,
-     "PEAK6 LLC": 7212258.0,
      "PEAPACK GLADSTONE FINANCIAL CORP": 1696.0,
      "PFG Investments, LLC": 2410640.0,
-     "PNC Financial Services Group, Inc.": 67134447.0,
      "PPSC Investment Service Corp": 23434800.0,
      "Pacific Asset Management, LLC": 209623.0,
      "Parkwood LLC": 19562.0,
@@ -1950,7 +1946,6 @@
      "Perfromance Wealth Partners, LLC": 357927.0,
      "Pinnacle Financial Partners, Inc.": 2359854.0,
      "Pinpoint Asset Management (Singapore) Pte. Ltd.": 88752900.0,
-     "RAYMOND JAMES FINANCIAL INC": 11207138.0,
      "RBF Capital, LLC": 11415900.0,
      "REGIONS FINANCIAL CORP": 1028750.0,
      "Rakuten Group, Inc.": 5457429.0,
@@ -1958,15 +1953,11 @@
      "Regency Capital Management Inc.\\DE": 218957.0,
      "SANDERS MORRIS HARRIS LLC": 840621.0,
      "SANTA MONICA PARTNERS LP": 4942.0,
-     "SCOTIA CAPITAL INC.": 20270437.0,
      "SG Americas Securities, LLC": 497.0,
      "SIG BROKERAGE, LP": 760737.0,
      "SIH Partners, LLLP": 4527175.0,
-     "SIMPLEX TRADING, LLC": 11594981.0,
      "SPROTT INC.": 2635557.0,
      "ST GERMAIN D J CO INC": 463502.0,
-     "STIFEL FINANCIAL CORP": 3163022.0,
-     "SUSQUEHANNA INTERNATIONAL GROUP, LLP": 341348311.0,
      "Select Asset Management & Trust": 281.0,
      "Shay Capital LLC": 242063.0,
      "Signature Wealth Management Group": 2257202.0,
@@ -1984,26 +1975,21 @@
      "TOMPKINS FINANCIAL CORP": 88533.0,
      "TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH PZU SA": 489505.0,
      "TRUIST FINANCIAL CORP": 7111372.0,
-     "TWO SIGMA SECURITIES, LLC": 3427465.0,
      "Titan Wealth (CI) Ltd": 181863.0,
      "Tolleson Wealth Management, Inc.": 1933452.0,
      "Tower Research Capital LLC (TRC)": 193.0,
      "Trans-Canada Capital Inc.": 26259885.0,
      "Trustees of Dartmouth College": 10006014.0,
-     "UBS Group AG": 27313088.0,
      "Union Bancaire Privee, UBP SA": 1103073.0,
      "VISION FINANCIAL MARKETS LLC": 69940.0,
      "Vantage Investment Partners, LLC": 949904.0,
-     "Virtu Financial LLC": 26622.0,
      "Vise Technologies, Inc.": 14160168.0,
      "Vontobel Holding Ltd.": 5081678.0,
-     "WELLS FARGO & COMPANY/MN": 449840895.0,
      "WINTON GROUP Ltd": 119408019.0,
      "WIT Partners Advisory Pte. Ltd.": 525918.0,
      "WIT, LLC": 4020161.0,
      "Walleye Trading LLC": 75465901.0,
      "WoodTrust Financial Corp": 599.0,
-     "XTX Topco Ltd": 204572.0,
      "XY Planning Network, Inc.": 228738.0,
      "Yarbrough Capital, LLC": 29830961.0
     }
@@ -2290,32 +2276,36 @@
     "nilai_usd": 10496843404.0,
     "per_jenis": {
      "BANK": {
-      "filer": 38,
-      "nilai_usd": 49285991.0
+      "filer": 54,
+      "nilai_usd": 748416150.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 80,
-      "nilai_usd": 4260215656.0
+      "filer": 79,
+      "nilai_usd": 4220080347.0
      },
      "INSTITUSI": {
-      "filer": 30,
-      "nilai_usd": 161214460.0
+      "filer": 40,
+      "nilai_usd": 174575872.0
      },
      "LAINNYA": {
       "filer": 23,
       "nilai_usd": 39014421.0
      },
      "MANAJER_REKSA_DANA": {
-      "filer": 13,
-      "nilai_usd": 1038998359.0
+      "filer": 16,
+      "nilai_usd": 1046394751.0
+     },
+     "PEMBUAT_PASAR": {
+      "filer": 11,
+      "nilai_usd": 1774318423.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 775,
-      "nilai_usd": 1951419571.0
+      "filer": 760,
+      "nilai_usd": 1687354186.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 143,
-      "nilai_usd": 2996694946.0
+      "filer": 119,
+      "nilai_usd": 806689254.0
      }
     },
     "tak_terklasifikasi": {
@@ -2328,19 +2318,14 @@
      "Atlantic Edge Private Wealth Management, LLC": 8519.0,
      "Atria Wealth Solutions, Inc.": 1703892.0,
      "Avenir Tech Ltd": 383393966.0,
-     "BARCLAYS PLC": 152.0,
      "BENJAMIN EDWARDS INC": 29.0,
      "BESSEMER GROUP INC": 114.0,
      "BOYD WATTERSON ASSET MANAGEMENT LLC/OH": 9690.0,
      "BROWN ADVISORY INC": 3889511.0,
      "Banque Cantonale Vaudoise": 118.0,
      "Bay Colony Advisory Group, Inc d/b/a Bay Colony Advisors": 522683.0,
-     "BlackRock Inc.": 5673931.0,
      "Blue Investment Partners LLC": 3039978.0,
      "Blue Trust, Inc.": 2607197.0,
-     "CANTOR FITZGERALD, L. P.": 22577388.0,
-     "CIBC Private Wealth Group, LLC": 5591779.0,
-     "CIBC WORLD MARKET INC.": 942.0,
      "CITY HOLDING CO": 13856.0,
      "CLARK FINANCIAL SERVICES GROUP INC                      /BD": 313.0,
      "COWEN AND COMPANY, LLC": 7879520.0,
@@ -2354,7 +2339,6 @@
      "Commonwealth Financial Services, LLC": 366864.0,
      "Compagnie Lombard Odier SCmA": 2108538.0,
      "DC Investments Management, LLC": 1223714.0,
-     "DRW Securities, LLC": 33492349.0,
      "Dakota Wealth Management": 8664479.0,
      "Diversify Advisory Services, LLC": 399644.0,
      "Dixon Mitchell Investment Counsel Inc.": 22627.0,
@@ -2364,14 +2348,11 @@
      "Equitable Holdings, Inc.": 903004.0,
      "Evergreen Private Wealth LLC": 52.0,
      "FIRST NATIONAL CORP /MA/ /ADV": 206115.0,
-     "FLOW TRADERS U.S. LLC": 76199.0,
-     "FMR LLC": 362350.0,
      "Fairscale Capital, LLC": 196111.0,
      "Federation des caisses Desjardins du Quebec": 144480.0,
      "Financial Security Advisor, Inc.": 205347.0,
      "Forvis Mazars Wealth Advisors, LLC": 788721.0,
      "Future Financial Wealth Managment LLC": 1446307.0,
-     "GOLDMAN SACHS GROUP INC": 418917376.0,
      "GUGGENHEIM CAPITAL LLC": 2219241.0,
      "GW HENSSLER & ASSOCIATES LTD": 370761.0,
      "Gilliland Jeter Wealth Management LLC": 27312.0,
@@ -2381,22 +2362,16 @@
      "HIMENSION CAPITAL (SINGAPORE) PTE. LTD.": 2777869.0,
      "HM PAYSON & CO": 24879.0,
      "HRT FINANCIAL LP": 2812.0,
-     "HSBC HOLDINGS PLC": 3598800.0,
      "Harber Asset Management LLC": 2089883.0,
      "Hartree Partners, LP": 1396326.0,
      "Headlands Technologies LLC": 1204820.0,
      "Heritage Family Offices, LLP": 366292.0,
-     "IMC-Chicago, LLC": 54289315.0,
      "IRIDIAN ASSET MANAGEMENT LLC/CT": 1080772.0,
      "Indiana Trust & Investment Management CO": 148485.0,
-     "Invesco Ltd.": 1360111.0,
      "J. Safra Sarasin Holding AG": 2129600.0,
-     "JANE STREET GROUP, LLC": 693972445.0,
      "JBF Capital, Inc.": 11845840.0,
-     "JPMORGAN CHASE & CO": 42113.0,
      "JTC Employer Solutions Trustee Ltd": 494.0,
      "Jaffetilchin Investment Partners, LLC": 9606961.0,
-     "Jefferies Financial Group Inc.": 15531891.0,
      "Jump Financial, LLC": 2098859.0,
      "K2 PRINCIPAL FUND, L.P.": 6828000.0,
      "KEYBANK NATIONAL ASSOCIATION/OH": 250076.0,
@@ -2424,19 +2399,15 @@
      "OxenFree Capital LLC": 446191.0,
      "PEAPACK GLADSTONE FINANCIAL CORP": 892.0,
      "PFG Investments, LLC": 658926.0,
-     "PNC Financial Services Group, Inc.": 16168454.0,
      "Parkwood LLC": 17992.0,
      "Pathstone Holdings, LLC": 3541584.0,
      "RBF Capital, LLC": 7986000.0,
      "ROGCO, LP": 181229.0,
      "Rathbones Group PLC": 1994437.0,
      "SAPIENT CAPITAL LLC": 12798238.0,
-     "SCOTIA CAPITAL INC.": 2168829.0,
      "SPROTT INC.": 1110373.0,
      "ST GERMAIN D J CO INC": 225154.0,
-     "STIFEL FINANCIAL CORP": 1512921.0,
      "SUMMIT SECURITIES GROUP LLC": 53.0,
-     "SUSQUEHANNA INTERNATIONAL GROUP, LLP": 909693555.0,
      "SYNOVUS FINANCIAL CORP": 1106701.0,
      "SouthState Corp": 758856.0,
      "Spartan Fund Management Inc.": 131150.0,
@@ -2446,19 +2417,14 @@
      "TD Waterhouse Canada Inc.": 284171.0,
      "THURSTON, SPRINGER, MILLER, HERD & TITAK, INC.": 35505.0,
      "TRUIST FINANCIAL CORP": 1945542.0,
-     "TWO SIGMA SECURITIES, LLC": 2585047.0,
      "Tidal Investments LLC": 34861130.0,
      "Tidemark, LLC": 60907.0,
      "Tower Research Capital LLC (TRC)": 164670.0,
      "Triad Wealth Partners, LLC": 15493.0,
      "Tudor Investment Corp Et Al": 29686949.0,
-     "UBS Group AG": 305086.0,
      "VIMA LLC": 263485.0,
-     "Virtu Financial LLC": 44694.0,
      "Vise Technologies, Inc.": 1063896.0,
      "WELLINGTON MANAGEMENT GROUP LLP": 15325245.0,
-     "WELLS FARGO & COMPANY/MN": 119734.0,
-     "WOLVERINE TRADING, LLC": 1920231.0,
      "Walleye Trading LLC": 649275.0,
      "Yarbrough Capital, LLC": 2560500.0,
      "Yong Rong (HK) Asset Management Ltd": 25147.0
@@ -2535,32 +2501,36 @@
     "nilai_usd": 32348608245.0,
     "per_jenis": {
      "BANK": {
-      "filer": 65,
-      "nilai_usd": 161642536.0
+      "filer": 80,
+      "nilai_usd": 3412992827.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 119,
-      "nilai_usd": 13335127909.0
+      "filer": 117,
+      "nilai_usd": 13263502600.0
      },
      "INSTITUSI": {
-      "filer": 45,
-      "nilai_usd": 142267614.0
+      "filer": 63,
+      "nilai_usd": 850581791.0
      },
      "LAINNYA": {
       "filer": 41,
       "nilai_usd": 93059848.0
      },
      "MANAJER_REKSA_DANA": {
-      "filer": 23,
-      "nilai_usd": 2018729771.0
+      "filer": 27,
+      "nilai_usd": 2519344271.0
+     },
+     "PEMBUAT_PASAR": {
+      "filer": 14,
+      "nilai_usd": 3918570487.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 1436,
-      "nilai_usd": 6105515929.0
+      "filer": 1417,
+      "nilai_usd": 5336438559.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 222,
-      "nilai_usd": 10492264638.0
+      "filer": 192,
+      "nilai_usd": 2954117862.0
      }
     },
     "tak_terklasifikasi": {
@@ -2583,7 +2553,6 @@
      "Atria Wealth Solutions, Inc.": 399804.0,
      "Avenir Tech Ltd": 1019065268.0,
      "Aviso Financial Inc.": 3182.0,
-     "BARCLAYS PLC": 256474.0,
      "BENJAMIN EDWARDS INC": 5863529.0,
      "BESSEMER GROUP INC": 1220.0,
      "BOYD WATTERSON ASSET MANAGEMENT LLC/OH": 78459.0,
@@ -2593,18 +2562,14 @@
      "Bay Colony Advisory Group, Inc d/b/a Bay Colony Advisors": 2219969.0,
      "Belvedere Trading LLC": 95817827.0,
      "Berbice Capital Management LLC": 41623.0,
-     "BlackRock, Inc.": 496654719.0,
      "Blue Investment Partners LLC": 4226037.0,
      "Blue Trust, Inc.": 8132432.0,
      "BlueCrest Capital Management Ltd": 106007395.0,
      "Bordeaux Wealth Advisors LLC": 2134822.0,
      "Bristlecone Advisors, LLC": 1650961.0,
-     "CANTOR FITZGERALD, L. P.": 219512704.0,
      "CAPITAL ADVISORS INC/OK": 1376492.0,
      "CAPITAL MANAGEMENT ASSOCIATES /NY/": 1224200.0,
      "CARY STREET PARTNERS FINANCIAL LLC": 3809003.0,
-     "CIBC Private Wealth Group LLC": 13154893.0,
-     "CIBC WORLD MARKET INC.": 22401106.0,
      "CITIZENS FINANCIAL GROUP INC/RI": 986838.0,
      "CITY HOLDING CO": 86733.0,
      "CLARK FINANCIAL SERVICES GROUP INC                      /BD": 802793.0,
@@ -2627,7 +2592,6 @@
      "Cullen/Frost Bankers, Inc.": 199789.0,
      "Cypress Capital Group": 734552.0,
      "DELTA ASSET MANAGEMENT LLC/TN": 35864.0,
-     "DRW Securities, LLC": 52958100.0,
      "Dakota Wealth Management": 12637141.0,
      "Dauntless Investment Group, LLC": 367260.0,
      "Defined Financial Planning LLC": 651279.0,
@@ -2639,10 +2603,7 @@
      "Empirical Financial Services, LLC d.b.a. Empirical Wealth Management": 1093701.0,
      "Equitable Holdings, Inc.": 8390973.0,
      "Exchange Capital Management, Inc.": 404157.0,
-     "FLOW TRADERS U.S. LLC": 19560.0,
-     "FMR LLC": 599654.0,
      "FORT WASHINGTON INVESTMENT ADVISORS INC /OH/": 372218.0,
-     "FRANKLIN RESOURCES INC": 1500969.0,
      "FUTURE YOU WEALTH LLC": 311865.0,
      "Federation des caisses Desjardins du Quebec": 1509466.0,
      "Fiduciary Planning LLC": 1262273.0,
@@ -2651,37 +2612,29 @@
      "Franchise Capital Ltd": 159330.0,
      "Future Financial Wealth Managment LLC": 186691.0,
      "GAM Holding AG": 3060500.0,
-     "GOLDMAN SACHS GROUP INC": 2001832037.0,
      "GREENLEAF TRUST": 290711.0,
      "GROUP ONE TRADING LLC": 853836.0,
      "GUGGENHEIM CAPITAL LLC": 5311307.0,
      "Gordian Capital Singapore Pte Ltd": 342776.0,
      "Graypoint LLC": 2516087.0,
-     "HARVARD MANAGEMENT CO INC": 116666260.0,
      "HGC Investment Management Inc.": 8688086.0,
      "HIMENSION CAPITAL (SINGAPORE) PTE. LTD.": 31526700.0,
      "HRT FINANCIAL LP": 4479.0,
-     "HSBC HOLDINGS PLC": 6442200.0,
      "Harber Asset Management LLC": 843090.0,
      "Harvest Portfolios Group Inc.": 17316737.0,
      "Headlands Technologies LLC": 231170.0,
      "Hilltop Holdings Inc.": 538842.0,
-     "IMC-Chicago, LLC": 340623398.0,
      "INVESTMENT MANAGEMENT CORP /VA/ /ADV": 14690.0,
      "IRIDIAN ASSET MANAGEMENT LLC/CT": 895720.0,
      "Indiana Trust & Investment Management Co": 213768.0,
-     "Invesco Ltd.": 1859158.0,
      "Iron Horse Wealth Management, LLC": 26755.0,
      "J. Safra Sarasin Holding AG": 6206283.0,
-     "JANE STREET GROUP, LLC": 2397790754.0,
      "JANUS HENDERSON GROUP PLC": 12041472.0,
      "JBF Capital, Inc.": 5325270.0,
      "JGP Global Gestao de Recursos Ltda.": 12242000.0,
      "JONES FINANCIAL COMPANIES LLLP": 842.0,
-     "JPMORGAN CHASE & CO": 200004211.0,
      "JTC Employer Solutions Trustee Ltd": 25460.0,
      "Jaffetilchin Investment Partners, LLC": 11469580.0,
-     "Jefferies Financial Group Inc.": 2679834.0,
      "Jump Financial, LLC": 1890882.0,
      "K.J. Harrison & Partners Inc": 7297946.0,
      "K2 PRINCIPAL FUND, L.P.": 10650540.0,
@@ -2699,14 +2652,12 @@
      "MEITAV INVESTMENT HOUSE LTD": 19814839.0,
      "MERCER GLOBAL ADVISORS INC /ADV": 10896903.0,
      "Marathon Trading Investment Management LLC": 6511397.0,
-     "Marex Group plc": 18195783.0,
      "MassMutual Private Wealth & Trust, FSB": 382947.0,
      "Massar Capital Management, LP": 1713880.0,
      "Masso Torrence Wealth Management Inc.": 644235.0,
      "Mint Tower Capital Management B.V.": 174405.0,
      "Miracle Mile Advisors, LLC": 927034.0,
      "Missouri Trust & Investment Co": 20175.0,
-     "Mubadala Investment Co PJSC": 534177956.0,
      "NATIXIS": 189506.0,
      "NEUBERGER BERMAN GROUP LLC": 3025152.0,
      "NICOLET BANKSHARES INC": 1163847.0,
@@ -2724,7 +2675,6 @@
      "PATTEN & PATTEN INC/TN": 1254744.0,
      "PEAPACK GLADSTONE FINANCIAL CORP": 2000.0,
      "PFG Investments, LLC": 2076960.0,
-     "PNC Financial Services Group, Inc.": 73722182.0,
      "PPSC Investment Service Corp": 23565850.0,
      "Parkwood LLC": 22648.0,
      "Pathstone Holdings, LLC": 12804694.0,
@@ -2732,7 +2682,6 @@
      "Perfromance Wealth Partners, LLC": 209700.0,
      "Pinpoint Asset Management (Singapore) Pte. Ltd.": 113404134.0,
      "PrairieView Partners, LLC": 11.0,
-     "RAYMOND JAMES FINANCIAL INC": 8185774.0,
      "RBF Capital, LLC": 14157000.0,
      "REGIONS FINANCIAL CORP": 1222994.0,
      "RPTC Inc.": 2151305.0,
@@ -2742,14 +2691,10 @@
      "Rosenberg Matthew Hamilton": 465095.0,
      "SANDERS MORRIS HARRIS LLC": 1897240.0,
      "SANTA MONICA PARTNERS LP": 6128.0,
-     "SCOTIA CAPITAL INC.": 14996218.0,
      "SIH Partners, LLLP": 771897.0,
-     "SIMPLEX TRADING, LLC": 37823.0,
      "SMITH CHAS P & ASSOCIATES PA CPAS": 213389.0,
      "SPROTT INC.": 3407352.0,
      "ST GERMAIN D J CO INC": 513181.0,
-     "STIFEL FINANCIAL CORP": 3895451.0,
-     "SUSQUEHANNA INTERNATIONAL GROUP, LLP": 812693434.0,
      "SYNOVUS FINANCIAL CORP": 2240497.0,
      "Select Asset Management & Trust": 245.0,
      "Smith Anglin Financial, LLC": 2935158.0,
@@ -2766,21 +2711,16 @@
      "TOMPKINS FINANCIAL CORP": 107678.0,
      "TORNO CAPITAL, LLC": 1224200.0,
      "TRUIST FINANCIAL CORP": 5383065.0,
-     "TWO SIGMA SECURITIES, LLC": 2114161.0,
      "Tikvah Management LLC": 7590040.0,
      "Tolleson Wealth Management, Inc.": 1401.0,
      "Tower Research Capital LLC (TRC)": 3081.0,
      "Trans-Canada Capital Inc.": 161498038.0,
-     "UBS Group AG": 7224006.0,
      "VISION FINANCIAL MARKETS LLC": 69370.0,
      "Vantage Investment Partners, LLC": 1171070.0,
-     "Virtu Financial LLC": 38039.0,
      "Vise Technologies, Inc.": 1939798.0,
      "Vontobel Holding Ltd.": 3106408.0,
      "WELLINGTON MANAGEMENT GROUP LLP": 29459474.0,
-     "WELLS FARGO & COMPANY/MN": 187392121.0,
      "WINTON GROUP Ltd": 95883002.0,
-     "WOLVERINE TRADING, LLC": 517797.0,
      "Walleye Trading LLC": 7991457.0,
      "WoodTrust Financial Corp": 636.0,
      "XY Planning Network, Inc.": 231496.0,
@@ -2794,7 +2734,7 @@
     "filer": 1,
     "nilai_usd": 4767.0,
     "per_jenis": {
-     "PENASIHAT_KEKAYAAN": {
+     "INSTITUSI": {
       "filer": 1,
       "nilai_usd": 4767.0
      }
@@ -2804,7 +2744,7 @@
     "filer": 1,
     "nilai_usd": 9407.0,
     "per_jenis": {
-     "PENASIHAT_KEKAYAAN": {
+     "INSTITUSI": {
       "filer": 1,
       "nilai_usd": 9407.0
      }
@@ -2814,7 +2754,7 @@
     "filer": 1,
     "nilai_usd": 11034.0,
     "per_jenis": {
-     "PENASIHAT_KEKAYAAN": {
+     "INSTITUSI": {
       "filer": 1,
       "nilai_usd": 11034.0
      }
@@ -2824,7 +2764,7 @@
     "filer": 1,
     "nilai_usd": 11034.0,
     "per_jenis": {
-     "PENASIHAT_KEKAYAAN": {
+     "INSTITUSI": {
       "filer": 1,
       "nilai_usd": 11034.0
      }
@@ -2834,7 +2774,7 @@
     "filer": 1,
     "nilai_usd": 60273.0,
     "per_jenis": {
-     "PENASIHAT_KEKAYAAN": {
+     "INSTITUSI": {
       "filer": 1,
       "nilai_usd": 60273.0
      }
@@ -2844,9 +2784,13 @@
     "filer": 2,
     "nilai_usd": 8088867.0,
     "per_jenis": {
+     "INSTITUSI": {
+      "filer": 1,
+      "nilai_usd": 225825.0
+     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 2,
-      "nilai_usd": 8088867.0
+      "filer": 1,
+      "nilai_usd": 7863042.0
      }
     }
    },
@@ -2854,9 +2798,13 @@
     "filer": 2,
     "nilai_usd": 6664505.0,
     "per_jenis": {
+     "INSTITUSI": {
+      "filer": 1,
+      "nilai_usd": 142678.0
+     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 2,
-      "nilai_usd": 6664505.0
+      "filer": 1,
+      "nilai_usd": 6521827.0
      }
     }
    },
@@ -2864,9 +2812,13 @@
     "filer": 2,
     "nilai_usd": 7826572.0,
     "per_jenis": {
+     "INSTITUSI": {
+      "filer": 1,
+      "nilai_usd": 43169.0
+     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 2,
-      "nilai_usd": 7826572.0
+      "filer": 1,
+      "nilai_usd": 7783403.0
      }
     }
    },
@@ -2874,9 +2826,13 @@
     "filer": 3,
     "nilai_usd": 13784530.0,
     "per_jenis": {
+     "INSTITUSI": {
+      "filer": 1,
+      "nilai_usd": 66976.0
+     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 3,
-      "nilai_usd": 13784530.0
+      "filer": 2,
+      "nilai_usd": 13717554.0
      }
     }
    },
@@ -2884,9 +2840,13 @@
     "filer": 6,
     "nilai_usd": 10001868.0,
     "per_jenis": {
+     "INSTITUSI": {
+      "filer": 1,
+      "nilai_usd": 57606.0
+     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 5,
-      "nilai_usd": 9998123.0
+      "filer": 4,
+      "nilai_usd": 9940517.0
      },
      "TIDAK_TERKLASIFIKASI": {
       "filer": 1,
@@ -2901,9 +2861,13 @@
     "filer": 8,
     "nilai_usd": 6159560.0,
     "per_jenis": {
+     "INSTITUSI": {
+      "filer": 1,
+      "nilai_usd": 72313.0
+     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 7,
-      "nilai_usd": 6154663.0
+      "filer": 6,
+      "nilai_usd": 6082350.0
      },
      "TIDAK_TERKLASIFIKASI": {
       "filer": 1,
@@ -2918,9 +2882,13 @@
     "filer": 6,
     "nilai_usd": 7304675.0,
     "per_jenis": {
+     "INSTITUSI": {
+      "filer": 1,
+      "nilai_usd": 77226.0
+     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 5,
-      "nilai_usd": 7299475.0
+      "filer": 4,
+      "nilai_usd": 7222249.0
      },
      "TIDAK_TERKLASIFIKASI": {
       "filer": 1,
@@ -2936,21 +2904,24 @@
     "nilai_usd": 191453709.0,
     "per_jenis": {
      "INSTITUSI": {
+      "filer": 2,
+      "nilai_usd": 1194819.0
+     },
+     "PEMBUAT_PASAR": {
       "filer": 1,
-      "nilai_usd": 1142367.0
+      "nilai_usd": 177199087.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 10,
-      "nilai_usd": 10456434.0
+      "filer": 9,
+      "nilai_usd": 10403982.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 6,
-      "nilai_usd": 179854908.0
+      "filer": 5,
+      "nilai_usd": 2655821.0
      }
     },
     "tak_terklasifikasi": {
      "Arbor Wealth Management LLC\\AZ": 1659353.0,
-     "Bullish": 177199087.0,
      "MLG Wealth Management DBA Pine Grove Financial Group": 467802.0,
      "Ravenstone Capital Management Inc.": 3972.0,
      "Thompson David Blair": 227248.0,
@@ -2962,21 +2933,24 @@
     "nilai_usd": 166077640.0,
     "per_jenis": {
      "INSTITUSI": {
+      "filer": 2,
+      "nilai_usd": 1223004.0
+     },
+     "PEMBUAT_PASAR": {
       "filer": 1,
-      "nilai_usd": 1184544.0
+      "nilai_usd": 137210450.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 24,
-      "nilai_usd": 23569513.0
+      "filer": 23,
+      "nilai_usd": 23531053.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 5,
-      "nilai_usd": 141323583.0
+      "filer": 4,
+      "nilai_usd": 4113133.0
      }
     },
     "tak_terklasifikasi": {
      "Arbor Wealth Management LLC\\AZ": 1361144.0,
-     "Bullish": 137210450.0,
      "Ravenstone Capital Management Inc.": 3074.0,
      "Timothy G. Youngquist 2020 Irrevocable Trust": 496574.0,
      "Tolleson Wealth Management, Inc.": 2252341.0
@@ -2987,32 +2961,36 @@
     "nilai_usd": 17346350753.0,
     "per_jenis": {
      "BANK": {
-      "filer": 77,
-      "nilai_usd": 345382802.0
+      "filer": 95,
+      "nilai_usd": 3326356198.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 76,
-      "nilai_usd": 2559153318.0
+      "filer": 75,
+      "nilai_usd": 2558984205.0
      },
      "INSTITUSI": {
-      "filer": 41,
-      "nilai_usd": 116173174.0
+      "filer": 61,
+      "nilai_usd": 1034495842.0
      },
      "LAINNYA": {
       "filer": 41,
       "nilai_usd": 233282891.0
      },
      "MANAJER_REKSA_DANA": {
-      "filer": 21,
-      "nilai_usd": 1606030177.0
+      "filer": 23,
+      "nilai_usd": 2120408534.0
+     },
+     "PEMBUAT_PASAR": {
+      "filer": 17,
+      "nilai_usd": 2419594490.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 1460,
-      "nilai_usd": 4947951736.0
+      "filer": 1440,
+      "nilai_usd": 3985784445.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 213,
-      "nilai_usd": 7538376655.0
+      "filer": 177,
+      "nilai_usd": 1667444148.0
      }
     },
     "tak_terklasifikasi": {
@@ -3020,9 +2998,7 @@
      "AKUNA SECURITIES LLC": 4217477.0,
      "ALBION FINANCIAL GROUP /UT": 10506.0,
      "ALLEN OPERATIONS LLC": 22310958.0,
-     "AMERIPRISE FINANCIAL INC": 5460.0,
      "AUA CAPITAL MANAGEMENT, LLC": 218249.0,
-     "Abu Dhabi Investment Council Co P.J.S.C": 273600922.0,
      "AlTi Global, Inc.": 9909642.0,
      "Alamea Verwaltungs GmbH": 11917741.0,
      "American Trust": 1023434.0,
@@ -3031,11 +3007,9 @@
      "Associated Banc-Corp": 426369.0,
      "Atlantic Union Bankshares Corp": 1058247.0,
      "Avenir Tech Ltd": 450923334.0,
-     "BARCLAYS PLC": 88489714.0,
      "BENJAMIN EDWARDS INC": 3276528.0,
      "BESSEMER GROUP INC": 989.0,
      "BLUEFIN CAPITAL MANAGEMENT, LLC": 482705.0,
-     "BNP PARIBAS FINANCIAL MARKETS": 33.0,
      "BOYD WATTERSON ASSET MANAGEMENT LLC/OH": 6555.0,
      "BROWN ADVISORY INC": 6803751.0,
      "Banco BTG Pactual S.A.": 3103401.0,
@@ -3044,17 +3018,12 @@
      "Banque Transatlantique SA": 22804.0,
      "Bay Colony Advisory Group, Inc d/b/a Bay Colony Advisors": 942277.0,
      "Belvedere Trading LLC": 12267581.0,
-     "BlackRock, Inc.": 515827549.0,
      "Blue Sparrow, LLC /DE": 73970380.0,
      "Blue Trust, Inc.": 7341387.0,
      "Broadhurst Jeffrey B": 519000.0,
-     "Bullish": 118728440.0,
      "CAMBRIDGE ASSOCIATES LLC /MA/ /ADV": 981955.0,
-     "CANTOR FITZGERALD, L. P.": 106479178.0,
      "CAPITAL ADVISORS INC/OK": 491294.0,
      "CARY STREET PARTNERS FINANCIAL LLC": 3299738.0,
-     "CIBC WORLD MARKET INC.": 13001093.0,
-     "CITIGROUP INC": 11555425.0,
      "CITIZENS FINANCIAL GROUP INC/RI": 3126673.0,
      "CITY HOLDING CO": 42188.0,
      "COHEN & STEERS, INC.": 886.0,
@@ -3073,7 +3042,6 @@
      "Corecam Pte. Ltd.": 6834438.0,
      "Cypress Capital Group": 381171.0,
      "DELTA ASSET MANAGEMENT LLC/TN": 24341.0,
-     "DRW Securities, LLC": 94340630.0,
      "Dakota Wealth Management": 5530601.0,
      "Dixon Mitchell Investment Counsel Inc.": 21552.0,
      "EDMOND DE ROTHSCHILD HOLDING S.A.": 139405.0,
@@ -3083,41 +3051,29 @@
      "FARMERS & MERCHANTS INVESTMENTS INC": 8689.0,
      "FELL CAPITAL MANAGEMENT /ADV": 652971.0,
      "FIRST HORIZON CORP": 104864.0,
-     "FLOW TRADERS U.S. LLC": 11298.0,
-     "FMR LLC": 455760.0,
      "FORT WASHINGTON INVESTMENT ADVISORS INC /OH/": 212823.0,
-     "FRANKLIN RESOURCES INC": 4145406.0,
      "Federation des caisses Desjardins du Quebec": 1913734.0,
      "Financial Gravity Companies, Inc.": 67672.0,
      "Financial Security Advisor, Inc.": 3708670.0,
      "Franchise GP Ltd": 8322367.0,
-     "GOLDMAN SACHS GROUP INC": 579657488.0,
      "GROUP ONE TRADING LLC": 1797574.0,
      "GUGGENHEIM CAPITAL LLC": 5511633.0,
      "GW HENSSLER & ASSOCIATES LTD": 231262.0,
-     "Galaxy Digital Inc.": 441224139.0,
      "Granite Bay Wealth Management, LLC": 572.0,
      "Gruss & Co., LLC": 722393.0,
      "Gunpowder Capital Management, LLC dba Oliver Wealth Management": 25346.0,
-     "HARVARD MANAGEMENT CO INC": 101355133.0,
      "HM PAYSON & CO": 70863.0,
      "HRT FINANCIAL LP": 108785.0,
-     "HSBC HOLDINGS PLC": 3502800.0,
      "Harvest Portfolios Group Inc.": 38147577.0,
      "Headlands Technologies LLC": 4410159.0,
      "Hilltop Holdings Inc.": 1059020.0,
      "Humankind Investments LLC": 7723280.0,
-     "IMC-Chicago, LLC": 5765991.0,
      "Indiana Trust & Investment Management Co": 152077.0,
      "Intesa Sanpaolo S.p.A.": 69323734.0,
      "Intesa Sanpaolo Wealth Management": 9987.0,
-     "Invesco Ltd.": 664069.0,
      "J. Safra Sarasin Holding AG": 14005284.0,
-     "JANE STREET GROUP, LLC": 984691305.0,
      "JONES FINANCIAL COMPANIES LLLP": 43806.0,
-     "JPMORGAN CHASE & CO": 362008813.0,
      "JTC Employer Solutions Trustee Ltd": 1904.0,
-     "Jefferies Financial Group Inc.": 872065.0,
      "Jump Financial, LLC": 10810909.0,
      "Jupiter Topco LLC": 16597705.0,
      "K.J. Harrison & Partners Inc": 1638800.0,
@@ -3135,11 +3091,9 @@
      "MERCER GLOBAL ADVISORS INC /ADV": 8631548.0,
      "MIRAE ASSET GLOBAL ETFS HOLDINGS Ltd.": 17805789.0,
      "Marathon Trading Investment Management LLC": 4125463.0,
-     "Marex Group Ltd": 480262020.0,
      "MassMutual Private Wealth & Trust, FSB": 144753.0,
      "Mechanics Financial Corp": 116515.0,
      "Mirabaud & Cie SA": 499350.0,
-     "Mubadala Investment Co PJSC": 490092617.0,
      "NEUBERGER BERMAN GROUP LLC": 3214584.0,
      "NICOLET BANKSHARES INC": 7628508.0,
      "NKCFO LLC": 1997.0,
@@ -3153,22 +3107,18 @@
      "OAKWORTH CAPITAL, INC.": 485953.0,
      "OLD MISSION CAPITAL LLC": 4709644.0,
      "OSAIC HOLDINGS, INC.": 30078679.0,
-     "Optiver Holding B.V.": 960631.0,
      "Orion Porfolio Solutions, LLC": 8608817.0,
      "Orland Properties Ltd": 1592094.0,
      "PATTEN & PATTEN INC/TN": 529544.0,
      "PBCay One RSC Ltd": 13318663.0,
-     "PEAK6 LLC": 24331794.0,
      "PEAPACK GLADSTONE FINANCIAL CORP": 917.0,
      "PFG Investments, LLC": 1049767.0,
-     "PNC Financial Services Group, Inc.": 35828399.0,
      "PPSC Investment Service Corp": 20839540.0,
      "Parkwood LLC": 19608.0,
      "Pathstone Holdings, LLC": 12369316.0,
      "Pinnacle Financial Partners, Inc.": 2394113.0,
      "Purpose Unlimited Inc.": 2329729.0,
      "Quadrature Capital Ltd": 42133119.0,
-     "RAYMOND JAMES FINANCIAL INC": 7791817.0,
      "RBF Capital, LLC": 7606500.0,
      "REGIONS FINANCIAL CORP": 639647.0,
      "ROBERTS GLORE & CO INC /IL/": 343619.0,
@@ -3177,16 +3127,12 @@
      "Rising Stella Capital Pte. Ltd": 25824218.0,
      "Ritter Daniher Financial Advisory LLC / DE": 64045.0,
      "SANTA MONICA PARTNERS LP": 3293.0,
-     "SCOTIA CAPITAL INC.": 11778696.0,
      "SG Americas Securities, LLC": 12857.0,
      "SIG BROKERAGE, LP": 2259093.0,
      "SIH Partners, LLLP": 13316399.0,
-     "SIMPLEX TRADING, LLC": 13428495.0,
      "SPROTT INC.": 1318896.0,
      "ST GERMAIN D J CO INC": 363241.0,
      "STEPH & CO": 32458.0,
-     "STIFEL FINANCIAL CORP": 2589670.0,
-     "SUSQUEHANNA INTERNATIONAL GROUP, LLP": 147319512.0,
      "Saranac Partners Ltd": 279636.0,
      "Select Asset Management & Trust": 1202.0,
      "Shengqi Capital (Hong Kong) Ltd": 3329.0,
@@ -3205,20 +3151,16 @@
      "TOMPKINS FINANCIAL CORP": 57855.0,
      "TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH PZU SA": 666212.0,
      "TRUIST FINANCIAL CORP": 6784703.0,
-     "TWO SIGMA SECURITIES, LLC": 668132.0,
      "Thompson David Blair": 435200.0,
      "Titan Wealth (CI) Ltd": 121883.0,
      "Titiun Yejiel": 632510.0,
      "Tolleson Wealth Management, Inc.": 2125056.0,
      "Tower Research Capital LLC (TRC)": 9057.0,
      "Trustees of Dartmouth College": 6708967.0,
-     "UBS Group AG": 13774178.0,
      "Union Bancaire Privee, UBP SA": 772313.0,
      "VISION FINANCIAL MARKETS LLC": 127783.0,
-     "Virtu Financial LLC": 30785.0,
      "Vise Technologies, Inc.": 23722258.0,
      "Vontobel Holding Ltd.": 1507838.0,
-     "WELLS FARGO & COMPANY/MN": 935693050.0,
      "WESTCO ADVISORY SERVICES INC /ADV": 371967.0,
      "WINTON GROUP Ltd": 33146793.0,
      "WIT Partners Advisory Pte. Ltd.": 371184.0,
@@ -3298,32 +3240,36 @@
     "nilai_usd": 10868676643.0,
     "per_jenis": {
      "BANK": {
-      "filer": 29,
-      "nilai_usd": 45349284.0
+      "filer": 44,
+      "nilai_usd": 410629858.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 78,
-      "nilai_usd": 5076844341.0
+      "filer": 77,
+      "nilai_usd": 5022592234.0
      },
      "INSTITUSI": {
-      "filer": 24,
-      "nilai_usd": 238586743.0
+      "filer": 32,
+      "nilai_usd": 253071421.0
      },
      "LAINNYA": {
       "filer": 19,
       "nilai_usd": 52127740.0
      },
      "MANAJER_REKSA_DANA": {
-      "filer": 15,
-      "nilai_usd": 1198192264.0
+      "filer": 18,
+      "nilai_usd": 1207056700.0
+     },
+     "PEMBUAT_PASAR": {
+      "filer": 11,
+      "nilai_usd": 2080302853.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 667,
-      "nilai_usd": 1931583558.0
+      "filer": 653,
+      "nilai_usd": 1576382286.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 113,
-      "nilai_usd": 2325992713.0
+      "filer": 91,
+      "nilai_usd": 266513551.0
      }
     },
     "tak_terklasifikasi": {
@@ -3334,22 +3280,16 @@
      "Associated Banc-Corp": 216988.0,
      "Atlantic Edge Private Wealth Management, LLC": 10108.0,
      "Atria Wealth Solutions, Inc.": 1961555.0,
-     "BARCLAYS PLC": 180.0,
      "BCS Wealth Management": 581.0,
      "BENJAMIN EDWARDS INC": 57.0,
      "BESSEMER GROUP INC": 65.0,
      "BLUEFIN CAPITAL MANAGEMENT, LLC": 607050.0,
-     "BNP PARIBAS FINANCIAL MARKETS": 41684.0,
      "BOYD WATTERSON ASSET MANAGEMENT LLC/OH": 11497.0,
      "BROWN ADVISORY INC": 3988348.0,
      "Bay Colony Advisory Group, Inc d/b/a Bay Colony Advisors": 593393.0,
-     "BlackRock Inc.": 6564072.0,
      "Blue Investment Partners LLC": 3375779.0,
      "Blue Trust, Inc.": 2607197.0,
      "BlueCrest Capital Management Ltd": 578559.0,
-     "CANTOR FITZGERALD, L. P.": 10379071.0,
-     "CIBC Private Wealth Group, LLC": 8615836.0,
-     "CIBC WORLD MARKET INC.": 915.0,
      "CITY HOLDING CO": 6317.0,
      "CLARK FINANCIAL SERVICES GROUP INC                      /BD": 372.0,
      "COWEN AND COMPANY, LLC": 15071092.0,
@@ -3364,8 +3304,6 @@
      "EDMOND DE ROTHSCHILD HOLDING S.A.": 4274813.0,
      "EagleClaw Capital Managment, LLC": 29556927.0,
      "Equitable Holdings, Inc.": 1020954.0,
-     "FLOW TRADERS U.S. LLC": 12555.0,
-     "FMR LLC": 415687.0,
      "Federation des caisses Desjardins du Quebec": 226569.0,
      "Franchise Capital Ltd": 18043145.0,
      "Future Financial Wealth Managment LLC": 63170.0,
@@ -3374,12 +3312,8 @@
      "HRT FINANCIAL LP": 1762.0,
      "Headlands Technologies LLC": 617992.0,
      "Hilltop Holdings Inc.": 224948.0,
-     "IMC-Chicago, LLC": 64377504.0,
      "IRIDIAN ASSET MANAGEMENT LLC/CT": 1282351.0,
      "Indiana Trust & Investment Management CO": 25067.0,
-     "Invesco Ltd.": 1884677.0,
-     "JANE STREET GROUP, LLC": 628390983.0,
-     "JPMORGAN CHASE & CO": 731246.0,
      "JTC Employer Solutions Trustee Ltd": 84.0,
      "Jaffetilchin Investment Partners, LLC": 11301611.0,
      "K.J. Harrison & Partners Inc": 863630.0,
@@ -3402,12 +3336,10 @@
      "OLD MISSION CAPITAL LLC": 5057766.0,
      "OSAIC HOLDINGS, INC.": 5861247.0,
      "Oakworth Capital, Inc.": 16361.0,
-     "Optiver Holding B.V.": 45367.0,
      "OxenFree Capital LLC": 411400.0,
      "PATTEN & PATTEN INC/TN": 205934.0,
      "PEAPACK GLADSTONE FINANCIAL CORP": 1000.0,
      "PFG Investments, LLC": 1670278.0,
-     "PNC Financial Services Group, Inc.": 11906676.0,
      "Parkwood LLC": 15540.0,
      "Pathstone Holdings, LLC": 4683336.0,
      "RBF Capital, LLC": 9475500.0,
@@ -3415,10 +3347,7 @@
      "Rathbones Group Plc": 2525774.0,
      "Rockline Wealth Management, LLC": 202649.0,
      "SAPIENT CAPITAL LLC": 12312341.0,
-     "SCOTIA CAPITAL INC.": 1579799.0,
      "SPROTT INC.": 1317789.0,
-     "STIFEL FINANCIAL CORP": 1795102.0,
-     "SUSQUEHANNA INTERNATIONAL GROUP, LLP": 1311757531.0,
      "SYNOVUS FINANCIAL CORP": 1461122.0,
      "Shay Capital LLC": 620600.0,
      "SouthState Corp": 577198.0,
@@ -3427,16 +3356,11 @@
      "TCW GROUP INC": 1005372.0,
      "TD Waterhouse Canada Inc.": 224226.0,
      "TRUIST FINANCIAL CORP": 2249930.0,
-     "TWO SIGMA SECURITIES, LLC": 2049822.0,
      "Tidemark, LLC": 72267.0,
      "Tower Research Capital LLC (TRC)": 25187.0,
-     "UBS Group AG": 145692.0,
      "VIMA LLC": 65651.0,
-     "Virtu Financial LLC": 3347.0,
      "Vise Technologies, Inc.": 439552.0,
      "WELLINGTON MANAGEMENT GROUP LLP": 18129712.0,
-     "WELLS FARGO & COMPANY/MN": 141817.0,
-     "WOLVERINE TRADING, LLC": 8639599.0,
      "Walleye Trading LLC": 4390995.0,
      "Wellington Wealth Strategies, LLC.": 582743.0,
      "Yong Rong (HK) Asset Management Ltd": 45633.0
@@ -3466,9 +3390,13 @@
       "filer": 1,
       "nilai_usd": 240520500.0
      },
+     "INSTITUSI": {
+      "filer": 1,
+      "nilai_usd": 1507435.0
+     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 33,
-      "nilai_usd": 44412187.0
+      "filer": 32,
+      "nilai_usd": 42904752.0
      },
      "TIDAK_TERKLASIFIKASI": {
       "filer": 1,
@@ -3484,32 +3412,36 @@
     "nilai_usd": 20182341763.0,
     "per_jenis": {
      "BANK": {
-      "filer": 62,
-      "nilai_usd": 179028825.0
+      "filer": 77,
+      "nilai_usd": 2400600458.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 99,
-      "nilai_usd": 8373181462.0
+      "filer": 97,
+      "nilai_usd": 8340049191.0
      },
      "INSTITUSI": {
-      "filer": 37,
-      "nilai_usd": 85290398.0
+      "filer": 50,
+      "nilai_usd": 532214929.0
      },
      "LAINNYA": {
       "filer": 41,
       "nilai_usd": 69295344.0
      },
      "MANAJER_REKSA_DANA": {
-      "filer": 19,
-      "nilai_usd": 1544240408.0
+      "filer": 23,
+      "nilai_usd": 1825995436.0
+     },
+     "PEMBUAT_PASAR": {
+      "filer": 15,
+      "nilai_usd": 2103612351.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 1227,
-      "nilai_usd": 4003212315.0
+      "filer": 1212,
+      "nilai_usd": 3585075474.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 200,
-      "nilai_usd": 5928093011.0
+      "filer": 170,
+      "nilai_usd": 1325498580.0
      }
     },
     "tak_terklasifikasi": {
@@ -3525,7 +3457,6 @@
      "Associated Banc-Corp": 571585.0,
      "Atria Wealth Solutions, Inc.": 2057277.0,
      "Avenir Tech Ltd": 695451421.0,
-     "BARCLAYS PLC": 184341.0,
      "BENJAMIN EDWARDS INC": 4717210.0,
      "BESSEMER GROUP INC": 525.0,
      "BOYD WATTERSON ASSET MANAGEMENT LLC/OH": 21245.0,
@@ -3536,19 +3467,15 @@
      "Bay Colony Advisory Group, Inc d/b/a Bay Colony Advisors": 1383011.0,
      "Belvedere Trading LLC": 2885529.0,
      "Berbice Capital Management LLC": 28086.0,
-     "BlackRock, Inc.": 279120190.0,
      "Blue Investment Partners LLC": 3216856.0,
      "Blue Rock Wealth Management LLC": 214149.0,
      "Blue Trust, Inc.": 5202345.0,
      "BlueCrest Capital Management Ltd": 16900282.0,
      "Bordeaux Wealth Advisors LLC": 1829355.0,
      "Bristlecone Advisors, LLC": 590275.0,
-     "CANTOR FITZGERALD, L. P.": 87908831.0,
      "CAPITAL ADVISORS INC/OK": 421477.0,
      "CAPITAL MANAGEMENT ASSOCIATES /NY/": 936200.0,
      "CARY STREET PARTNERS FINANCIAL LLC": 2704655.0,
-     "CIBC Private Wealth Group LLC": 10318540.0,
-     "CIBC WORLD MARKET INC.": 8083430.0,
      "CITIZENS FINANCIAL GROUP INC/RI": 755500.0,
      "CITY HOLDING CO": 40854.0,
      "CLARK FINANCIAL SERVICES GROUP INC                      /BD": 822530.0,
@@ -3572,7 +3499,6 @@
      "Cutter & CO Brokerage, Inc.": 215061.0,
      "Cypress Capital Group": 302393.0,
      "DELTA ASSET MANAGEMENT LLC/TN": 27538.0,
-     "DRW Securities, LLC": 115639263.0,
      "Dakota Wealth Management": 9348856.0,
      "Dauntless Investment Group, LLC": 842580.0,
      "Delta Financial Group, Inc.": 296.0,
@@ -3582,9 +3508,6 @@
      "Empirical Financial Services, LLC d.b.a. Empirical Wealth Management": 600058.0,
      "Equitable Holdings, Inc.": 5482238.0,
      "Exchange Capital Management, Inc.": 309471.0,
-     "FLOW TRADERS U.S. LLC": 20950.0,
-     "FMR LLC": 242996.0,
-     "FRANKLIN RESOURCES INC": 908579.0,
      "FUTURE YOU WEALTH LLC": 348126.0,
      "Fedenia Advisers LLC": 4278294.0,
      "Federation des caisses Desjardins du Quebec": 1069263.0,
@@ -3592,9 +3515,7 @@
      "Financial Security Advisor, Inc.": 1332908.0,
      "Franchise Capital Ltd": 243646.0,
      "Future Financial Wealth Managment LLC": 142771.0,
-     "GOLDMAN SACHS GROUP INC": 1693434227.0,
      "GROUP ONE TRADING LLC": 13848799.0,
-     "GTS SECURITIES LLC": 308712.0,
      "GUGGENHEIM CAPITAL LLC": 3990581.0,
      "Gordian Capital Singapore Pte Ltd": 313896.0,
      "Graypoint LLC": 1805687.0,
@@ -3602,24 +3523,18 @@
      "HIMENSION CAPITAL (SINGAPORE) PTE. LTD.": 22716846.0,
      "HM PAYSON & CO": 48153.0,
      "HRT FINANCIAL LP": 10156.0,
-     "HSBC HOLDINGS PLC": 4932000.0,
      "Headlands Technologies LLC": 2728163.0,
      "Hilltop Holdings Inc.": 260748.0,
-     "IMC-Chicago, LLC": 59454747.0,
      "INVESTMENT MANAGEMENT CORP /VA/ /ADV": 11234.0,
      "IRIDIAN ASSET MANAGEMENT LLC/CT": 688130.0,
      "Indiana Trust & Investment Management Co": 159436.0,
-     "Invesco Ltd.": 1483263.0,
      "Iron Horse Wealth Management, LLC": 14394.0,
      "J. Safra Sarasin Holding AG": 7770060.0,
-     "JANE STREET GROUP, LLC": 1253129372.0,
      "JANUS HENDERSON GROUP PLC": 12246897.0,
      "JBF Capital, Inc.": 11562070.0,
      "JONES FINANCIAL COMPANIES LLLP": 16987.0,
-     "JPMORGAN CHASE & CO": 12780761.0,
      "JTC Employer Solutions Trustee Ltd": 2230.0,
      "Jaffetilchin Investment Partners, LLC": 8601664.0,
-     "Jefferies Financial Group Inc.": 742828.0,
      "K.J. Harrison & Partners Inc": 1522636.0,
      "K2 PRINCIPAL FUND, L.P.": 10532250.0,
      "KEYBANK NATIONAL ASSOCIATION/OH": 898846.0,
@@ -3642,7 +3557,6 @@
      "Mint Tower Capital Management B.V.": 10830.0,
      "Miracle Mile Advisors, LLC": 497045.0,
      "Missouri Trust & Investment Co": 15467.0,
-     "Mubadala Investment Co PJSC": 408509559.0,
      "NATIXIS": 154522.0,
      "NCP Inc.": 4681.0,
      "NEUBERGER BERMAN GROUP LLC": 2199923.0,
@@ -3658,17 +3572,14 @@
      "ORG Wealth Partners, LLC": 273801.0,
      "OSAIC HOLDINGS, INC.": 3499418.0,
      "PATTEN & PATTEN INC/TN": 608419.0,
-     "PEAK6 LLC": 8514552.0,
      "PEAPACK GLADSTONE FINANCIAL CORP": 1401.0,
      "PFG Investments, LLC": 1739479.0,
-     "PNC Financial Services Group, Inc.": 53866401.0,
      "PPSC Investment Service Corp": 14838770.0,
      "Parkwood LLC": 19758.0,
      "Pathstone Holdings, LLC": 10085248.0,
      "Pinnacle Financial Partners Inc": 745684.0,
      "PrairieView Partners, LLC": 3.0,
      "Priebe Wealth Holdings LLC": 363649.0,
-     "RAYMOND JAMES FINANCIAL INC": 4622066.0,
      "RBF Capital, LLC": 10870200.0,
      "REGIONS FINANCIAL CORP": 939556.0,
      "ROANOKE ASSET MANAGEMENT CORP/ NY": 209.0,
@@ -3678,13 +3589,9 @@
      "Ritter Daniher Financial Advisory LLC / DE": 11197.0,
      "SANDERS MORRIS HARRIS LLC": 801299.0,
      "SANTA MONICA PARTNERS LP": 4706.0,
-     "SCOTIA CAPITAL INC.": 10202495.0,
      "SIH Partners, LLLP": 417171.0,
-     "SIMPLEX TRADING, LLC": 38665.0,
      "SPROTT INC.": 2731741.0,
      "ST GERMAIN D J CO INC": 392695.0,
-     "STIFEL FINANCIAL CORP": 2558741.0,
-     "SUSQUEHANNA INTERNATIONAL GROUP, LLP": 534162032.0,
      "SYNOVUS FINANCIAL CORP": 1565813.0,
      "Smith Anglin Financial, LLC": 1664447.0,
      "SouthState Corp": 770518.0,
@@ -3698,18 +3605,13 @@
      "TOMPKINS FINANCIAL CORP": 82679.0,
      "TORNO CAPITAL, LLC": 1989425.0,
      "TRUIST FINANCIAL CORP": 4125288.0,
-     "TWO SIGMA SECURITIES, LLC": 2637172.0,
      "Tolleson Wealth Management, Inc.": 1151.0,
      "Trans-Canada Capital Inc.": 55172510.0,
-     "UBS Group AG": 10704449.0,
      "VISION FINANCIAL MARKETS LLC": 55606.0,
      "Vantage Investment Partners, LLC": 895569.0,
-     "Virtu Financial LLC": 19122.0,
      "Vontobel Holding Ltd.": 1165897.0,
      "WELLINGTON MANAGEMENT GROUP LLP": 22557701.0,
-     "WELLS FARGO & COMPANY/MN": 28952795.0,
      "WINTON GROUP Ltd": 8235096.0,
-     "WOLVERINE TRADING, LLC": 9113352.0,
      "Walleye Trading LLC": 5679501.0,
      "WoodTrust Financial Corp": 315.0,
      "Yarbrough Capital, LLC": 16858575.0
@@ -3731,13 +3633,16 @@
     "filer": 2,
     "nilai_usd": 227823360.0,
     "per_jenis": {
+     "PEMBUAT_PASAR": {
+      "filer": 1,
+      "nilai_usd": 227040747.0
+     },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 2,
-      "nilai_usd": 227823360.0
+      "filer": 1,
+      "nilai_usd": 782613.0
      }
     },
     "tak_terklasifikasi": {
-     "Marex Group plc": 227040747.0,
      "National Philanthropic Trust": 782613.0
     }
    },
@@ -3745,13 +3650,16 @@
     "filer": 2,
     "nilai_usd": 375898713.0,
     "per_jenis": {
+     "PEMBUAT_PASAR": {
+      "filer": 1,
+      "nilai_usd": 375239123.0
+     },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 2,
-      "nilai_usd": 375898713.0
+      "filer": 1,
+      "nilai_usd": 659590.0
      }
     },
     "tak_terklasifikasi": {
-     "Marex Group plc": 375239123.0,
      "National Philanthropic Trust": 659590.0
     }
    },
@@ -3759,14 +3667,17 @@
     "filer": 3,
     "nilai_usd": 390458395.0,
     "per_jenis": {
+     "PEMBUAT_PASAR": {
+      "filer": 1,
+      "nilai_usd": 387452486.0
+     },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 3,
-      "nilai_usd": 390458395.0
+      "filer": 2,
+      "nilai_usd": 3005909.0
      }
     },
     "tak_terklasifikasi": {
      "Corecam Pte. Ltd.": 2310514.0,
-     "Marex Group plc": 387452486.0,
      "National Philanthropic Trust": 695395.0
     }
    },
@@ -3778,19 +3689,21 @@
       "filer": 1,
       "nilai_usd": 251.0
      },
+     "PEMBUAT_PASAR": {
+      "filer": 2,
+      "nilai_usd": 1268431945.0
+     },
      "PENASIHAT_KEKAYAAN": {
       "filer": 2,
       "nilai_usd": 509765.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 4,
-      "nilai_usd": 1277267807.0
+      "filer": 2,
+      "nilai_usd": 8835862.0
      }
     },
     "tak_terklasifikasi": {
      "Corecam Pte. Ltd.": 6265737.0,
-     "Galaxy Group Investments LLC": 659544700.0,
-     "Marex Group plc": 608887245.0,
      "National Philanthropic Trust": 2570125.0
     }
    },
@@ -3798,19 +3711,21 @@
     "filer": 9,
     "nilai_usd": 980141006.0,
     "per_jenis": {
+     "PEMBUAT_PASAR": {
+      "filer": 2,
+      "nilai_usd": 962023834.0
+     },
      "PENASIHAT_KEKAYAAN": {
       "filer": 5,
       "nilai_usd": 8266602.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 4,
-      "nilai_usd": 971874404.0
+      "filer": 2,
+      "nilai_usd": 9850570.0
      }
     },
     "tak_terklasifikasi": {
      "Corecam Pte. Ltd.": 6958777.0,
-     "Galaxy Group Investments LLC": 435567211.0,
-     "Marex Group plc": 526456623.0,
      "National Philanthropic Trust": 2891793.0
     }
    },
@@ -3818,19 +3733,21 @@
     "filer": 8,
     "nilai_usd": 640724152.0,
     "per_jenis": {
+     "PEMBUAT_PASAR": {
+      "filer": 2,
+      "nilai_usd": 611311220.0
+     },
      "PENASIHAT_KEKAYAAN": {
       "filer": 4,
       "nilai_usd": 9937822.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 4,
-      "nilai_usd": 630786330.0
+      "filer": 2,
+      "nilai_usd": 19475110.0
      }
     },
     "tak_terklasifikasi": {
      "Corecam Pte. Ltd.": 8833217.0,
-     "Galaxy Digital Capital Management GP LLC": 10292584.0,
-     "Galaxy Group Investments LLC": 601018636.0,
      "National Philanthropic Trust": 10641893.0
     }
    },
@@ -3838,19 +3755,21 @@
     "filer": 11,
     "nilai_usd": 656745084.0,
     "per_jenis": {
+     "PEMBUAT_PASAR": {
+      "filer": 2,
+      "nilai_usd": 622273337.0
+     },
      "PENASIHAT_KEKAYAAN": {
       "filer": 7,
       "nilai_usd": 12372321.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 4,
-      "nilai_usd": 644372763.0
+      "filer": 2,
+      "nilai_usd": 22099426.0
      }
     },
     "tak_terklasifikasi": {
      "Corecam Pte. Ltd.": 10068500.0,
-     "Galaxy Digital Capital Management GP LLC": 11064495.0,
-     "Galaxy Group Investments LLC": 611208842.0,
      "National Philanthropic Trust": 12030926.0
     }
    },
@@ -3859,24 +3778,32 @@
     "nilai_usd": 180304258.0,
     "per_jenis": {
      "BANK": {
-      "filer": 2,
-      "nilai_usd": 103519.0
+      "filer": 3,
+      "nilai_usd": 5330719.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
       "filer": 2,
       "nilai_usd": 37494675.0
      },
+     "INSTITUSI": {
+      "filer": 1,
+      "nilai_usd": 188267.0
+     },
      "LAINNYA": {
       "filer": 2,
       "nilai_usd": 3379011.0
      },
+     "PEMBUAT_PASAR": {
+      "filer": 1,
+      "nilai_usd": 1174223.0
+     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 45,
-      "nilai_usd": 54851648.0
+      "filer": 44,
+      "nilai_usd": 54663381.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 11,
-      "nilai_usd": 84475405.0
+      "filer": 9,
+      "nilai_usd": 78073982.0
      }
     },
     "tak_terklasifikasi": {
@@ -3884,8 +3811,6 @@
      "Broadhurst Jeffrey B": 2916553.0,
      "Corecam Pte. Ltd.": 8994099.0,
      "FELL CAPITAL MANAGEMENT /ADV": 1232402.0,
-     "Galaxy Digital Capital Management GP LLC": 1174223.0,
-     "HSBC HOLDINGS PLC": 5227200.0,
      "National Philanthropic Trust": 12273235.0,
      "Purpose Unlimited Inc.": 2215285.0,
      "Rising Stella Capital Pte. Ltd": 19321049.0,
@@ -3898,32 +3823,36 @@
     "nilai_usd": 19426118119.0,
     "per_jenis": {
      "BANK": {
-      "filer": 75,
-      "nilai_usd": 188916647.0
+      "filer": 90,
+      "nilai_usd": 2589175234.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 88,
-      "nilai_usd": 4512545772.0
+      "filer": 86,
+      "nilai_usd": 4511369449.0
      },
      "INSTITUSI": {
-      "filer": 43,
-      "nilai_usd": 123174473.0
+      "filer": 61,
+      "nilai_usd": 1173484824.0
      },
      "LAINNYA": {
       "filer": 42,
       "nilai_usd": 231325557.0
      },
      "MANAJER_REKSA_DANA": {
-      "filer": 25,
-      "nilai_usd": 1537135845.0
+      "filer": 28,
+      "nilai_usd": 2098883826.0
+     },
+     "PEMBUAT_PASAR": {
+      "filer": 15,
+      "nilai_usd": 2040789203.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 1516,
-      "nilai_usd": 5667073735.0
+      "filer": 1498,
+      "nilai_usd": 4582519941.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 218,
-      "nilai_usd": 7165946090.0
+      "filer": 187,
+      "nilai_usd": 2198570085.0
      }
     },
     "tak_terklasifikasi": {
@@ -3932,7 +3861,6 @@
      "ALBION FINANCIAL GROUP /UT": 11781.0,
      "ALLEN OPERATIONS LLC": 25749084.0,
      "AUA CAPITAL MANAGEMENT, LLC": 251882.0,
-     "Abu Dhabi Investment Council Co P.J.S.C": 315762915.0,
      "AlTi Global, Inc.": 17841378.0,
      "Alamea Verwaltungs GmbH": 13872795.0,
      "American Trust": 1175562.0,
@@ -3940,7 +3868,6 @@
      "Associated Banc-Corp": 493018.0,
      "Atlantic Union Bankshares Corp": 1201587.0,
      "Avenir Tech Ltd": 712001994.0,
-     "BARCLAYS PLC": 172936873.0,
      "BENJAMIN EDWARDS INC": 3710230.0,
      "BESSEMER GROUP INC": 988.0,
      "BOYD WATTERSON ASSET MANAGEMENT LLC/OH": 7597.0,
@@ -3951,18 +3878,14 @@
      "Bay Colony Advisory Group, Inc d/b/a Bay Colony Advisors": 1374892.0,
      "Beacon Capital Management, LLC": 389721.0,
      "Belvedere Trading LLC": 49203997.0,
-     "BlackRock, Inc.": 556284685.0,
      "Blue Trust, Inc.": 7852341.0,
      "BlueCrest Capital Management Ltd": 2497300.0,
      "Boreal Capital Management LLC": 1494658.0,
      "Broadhurst Jeffrey B": 2532430.0,
      "CALIFORNIA FIRST LEASING CORP": 1728900.0,
      "CAMBRIDGE ASSOCIATES LLC /MA/ /ADV": 1133275.0,
-     "CANTOR FITZGERALD, L. P.": 100884458.0,
      "CAPITAL ADVISORS INC/OK": 557589.0,
      "CARY STREET PARTNERS FINANCIAL LLC": 2488518.0,
-     "CIBC WORLD MARKET INC.": 14006457.0,
-     "CITIGROUP INC": 6593564.0,
      "CITIZENS FINANCIAL GROUP INC/RI": 3602150.0,
      "CITY HOLDING CO": 48700.0,
      "CLARK FINANCIAL SERVICES GROUP INC                      /BD": 207468.0,
@@ -3993,38 +3916,28 @@
      "FARMERS & MERCHANTS INVESTMENTS INC": 10028.0,
      "FELL CAPITAL MANAGEMENT /ADV": 754421.0,
      "FIRST HORIZON CORP": 121023.0,
-     "FLOW TRADERS U.S. LLC": 1309.0,
-     "FMR LLC": 331438.0,
      "FORT WASHINGTON INVESTMENT ADVISORS INC /OH/": 245619.0,
-     "FRANKLIN RESOURCES INC": 4651646.0,
      "Federation des caisses Desjardins du Quebec": 2193959.0,
      "Financial Security Advisor, Inc.": 4109500.0,
      "Franchise GP Ltd": 153411.0,
-     "GOLDMAN SACHS GROUP INC": 716165201.0,
      "GROUP ONE TRADING LLC": 3240136.0,
      "GUGGENHEIM CAPITAL LLC": 6366283.0,
-     "Galaxy Digital Inc.": 452214187.0,
      "Greenline Wealth Management LLC": 924251.0,
      "Gunpowder Capital Management, LLC dba Oliver Wealth Management": 3842.0,
-     "HARVARD MANAGEMENT CO INC": 116973993.0,
      "HIMENSION CAPITAL (SINGAPORE) PTE. LTD.": 18479636.0,
      "HM PAYSON & CO": 81785.0,
      "HRT FINANCIAL LP": 58476.0,
-     "HSBC HOLDINGS PLC": 4048200.0,
      "Harvest Portfolios Group Inc.": 38090702.0,
      "Headlands Technologies LLC": 1121156.0,
      "Humankind Investments LLC": 8913440.0,
-     "IMC-Chicago, LLC": 176211254.0,
      "Indiana Trust & Investment Management Co": 175600.0,
      "Intesa Sanpaolo S.p.A.": 106071823.0,
      "J. Safra Sarasin Holding AG": 8425804.0,
-     "JANE STREET GROUP, LLC": 413568311.0,
      "JANUS HENDERSON GROUP PLC": 13467240.0,
      "JONES FINANCIAL COMPANIES LLLP": 46576.0,
      "JOURNEY STRATEGIC WEALTH LLC": 237013.0,
      "JTC Employer Solutions Trustee Ltd": 2200.0,
      "Jaffetilchin Investment Partners, LLC": 5317481.0,
-     "Jefferies Financial Group Inc.": 1459461.0,
      "Jump Financial, LLC": 5960983.0,
      "K.J. Harrison & Partners Inc": 738740.0,
      "K2 PRINCIPAL FUND, L.P.": 5141441.0,
@@ -4042,7 +3955,6 @@
      "MERCER GLOBAL ADVISORS INC /ADV": 9571961.0,
      "MIRAE ASSET GLOBAL ETFS HOLDINGS Ltd.": 10512788.0,
      "Marathon Trading Investment Management LLC": 8894806.0,
-     "Marex Group plc": 539935907.0,
      "MassMutual Private Wealth & Trust, FSB": 192311.0,
      "Massar Capital Management, LP": 9605000.0,
      "McMill Wealth Management": 317463.0,
@@ -4050,7 +3962,6 @@
      "Mint Tower Capital Management B.V.": 46331.0,
      "Mirabaud & Cie SA": 576300.0,
      "Missouri Trust & Investment Co": 108673.0,
-     "Mubadala Investment Co PJSC": 565616051.0,
      "NANO CAP NEW MILLENNIUM GROWTH FUND L P": 192100.0,
      "NATIXIS": 2459.0,
      "NEUBERGER BERMAN GROUP LLC": 4100454.0,
@@ -4065,15 +3976,12 @@
      "Noble Wealth Management PBC": 543211.0,
      "OAKWORTH CAPITAL, INC.": 554393.0,
      "OSAIC HOLDINGS, INC.": 29151084.0,
-     "Optiver Holding B.V.": 10155545.0,
      "Orion Porfolio Solutions, LLC": 10878108.0,
      "Orland Properties Ltd": 1837437.0,
      "PATTEN & PATTEN INC/TN": 611147.0,
      "PBCay One RSC Ltd": 14046698.0,
-     "PEAK6 LLC": 10690134.0,
      "PEAPACK GLADSTONE FINANCIAL CORP": 1095.0,
      "PFG Investments, LLC": 2022059.0,
-     "PNC FINANCIAL SERVICES GROUP, INC.": 46159541.0,
      "PPSC Investment Service Corp": 21745720.0,
      "Pacific Asset Management, LLC": 207930.0,
      "Parkwood LLC": 22629.0,
@@ -4081,7 +3989,6 @@
      "Pinnacle Financial Partners, Inc.": 2655606.0,
      "Purpose Unlimited Inc.": 2754428.0,
      "Quadrature Capital Ltd": 9416910.0,
-     "RAYMOND JAMES FINANCIAL INC": 9290269.0,
      "RBF Capital, LLC": 8813700.0,
      "REGIONS FINANCIAL CORP": 793985.0,
      "ROBERTS GLORE & CO INC /IL/": 387274.0,
@@ -4092,17 +3999,13 @@
      "Russell Investments Group, Ltd.": 383.0,
      "SANDERS MORRIS HARRIS LLC": 457044.0,
      "SANTA MONICA PARTNERS LP": 3815.0,
-     "SCOTIA CAPITAL INC.": 14501338.0,
      "SG Americas Securities, LLC": 12087.0,
      "SIG BROKERAGE, LP": 2363675.0,
      "SIH Partners, LLLP": 22543319.0,
-     "SIMPLEX TRADING, LLC": 11641389.0,
      "SPROTT INC.": 1519224.0,
      "ST GERMAIN D J CO INC": 419411.0,
      "STEPH & CO": 37460.0,
-     "STIFEL FINANCIAL CORP": 2302175.0,
      "SUMMIT SECURITIES GROUP LLC": 15667.0,
-     "SUSQUEHANNA INTERNATIONAL GROUP, LLP": 322924224.0,
      "Select Asset Management & Trust": 1353.0,
      "Shay Capital LLC": 599800.0,
      "Shengqi Capital (Hong Kong) Ltd": 3842.0,
@@ -4121,27 +4024,22 @@
      "TOMPKINS FINANCIAL CORP": 101192.0,
      "TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH PZU SA": 706468.0,
      "TRUIST FINANCIAL CORP": 6233901.0,
-     "TWO SIGMA SECURITIES, LLC": 467266.0,
      "Titan Wealth (CI) Ltd": 140826.0,
      "Titiun Yejiel": 749190.0,
      "Tower Research Capital LLC (TRC)": 170262.0,
      "Trustees of Dartmouth College": 7742821.0,
-     "UBS Group AG": 14044809.0,
      "UHLMANN PRICE SECURITIES, LLC": 221725.0,
      "Union Bancaire Privee, UBP SA": 843215.0,
      "VISION FINANCIAL MARKETS LLC": 54127.0,
      "Vantage Investment Partners, LLC": 735051.0,
-     "Virtu Financial LLC": 29191.0,
      "Vise Technologies, Inc.": 14160168.0,
      "Vontobel Holding Ltd.": 321883.0,
-     "WELLS FARGO & COMPANY/MN": 367269616.0,
      "WESTCO ADVISORY SERVICES INC /ADV": 449370.0,
      "WINTON GROUP Ltd": 38279406.0,
      "WIT Partners Advisory Pte. Ltd.": 428383.0,
      "WIT, LLC": 3110867.0,
      "Walleye Trading LLC": 69660202.0,
      "WoodTrust Financial Corp": 294.0,
-     "XTX Topco Ltd": 254598.0,
      "XY Planning Network, Inc.": 260975.0,
      "YANKCOM Partnership": 22783.0,
      "Yarbrough Capital, LLC": 5466551.0
@@ -4234,12 +4132,12 @@
     "nilai_usd": 8723951.0,
     "per_jenis": {
      "INSTITUSI": {
-      "filer": 1,
-      "nilai_usd": 394813.0
+      "filer": 2,
+      "nilai_usd": 1763484.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 4,
-      "nilai_usd": 7974565.0
+      "filer": 3,
+      "nilai_usd": 6605894.0
      },
      "TIDAK_TERKLASIFIKASI": {
       "filer": 1,
@@ -4254,9 +4152,13 @@
     "filer": 13,
     "nilai_usd": 14388518.0,
     "per_jenis": {
+     "INSTITUSI": {
+      "filer": 1,
+      "nilai_usd": 1156953.0
+     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 11,
-      "nilai_usd": 14089368.0
+      "filer": 10,
+      "nilai_usd": 12932415.0
      },
      "TIDAK_TERKLASIFIKASI": {
       "filer": 2,
@@ -4273,32 +4175,36 @@
     "nilai_usd": 12031074247.0,
     "per_jenis": {
      "BANK": {
-      "filer": 37,
-      "nilai_usd": 59678741.0
+      "filer": 52,
+      "nilai_usd": 1067716718.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 80,
-      "nilai_usd": 5581494543.0
+      "filer": 79,
+      "nilai_usd": 5558809539.0
      },
      "INSTITUSI": {
-      "filer": 24,
-      "nilai_usd": 150749314.0
+      "filer": 34,
+      "nilai_usd": 171011569.0
      },
      "LAINNYA": {
       "filer": 24,
       "nilai_usd": 32454955.0
      },
      "MANAJER_REKSA_DANA": {
-      "filer": 17,
-      "nilai_usd": 1148518005.0
+      "filer": 21,
+      "nilai_usd": 1243909584.0
+     },
+     "PEMBUAT_PASAR": {
+      "filer": 12,
+      "nilai_usd": 1635974200.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 790,
-      "nilai_usd": 2257454153.0
+      "filer": 775,
+      "nilai_usd": 1980285158.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 174,
-      "nilai_usd": 2800724536.0
+      "filer": 149,
+      "nilai_usd": 340912524.0
      }
     },
     "tak_terklasifikasi": {
@@ -4316,21 +4222,17 @@
      "Avenir Tech Ltd": 22215076.0,
      "Avitas Wealth Management LLC": 531689.0,
      "Axiom Advisory, LLC": 13882395.0,
-     "BARCLAYS PLC": 16.0,
      "BENJAMIN EDWARDS INC": 4087073.0,
      "BESSEMER GROUP INC": 255.0,
      "BOYD WATTERSON ASSET MANAGEMENT LLC/OH": 10216.0,
      "BROWN ADVISORY INC": 5153337.0,
      "Bay Colony Advisory Group, Inc d/b/a Bay Colony Advisors": 583500.0,
-     "BlackRock, Inc.": 92295999.0,
      "Blue Investment Partners LLC": 3421263.0,
      "Blue Trust, Inc.": 2353703.0,
      "BlueCrest Capital Management Ltd": 2782010.0,
      "Bordeaux Wealth Advisors LLC": 1248364.0,
      "Bray Capital Advisors": 3393241.0,
-     "CANTOR FITZGERALD, L. P.": 18826065.0,
      "CAROLINAS WEALTH CONSULTING LLC": 427287.0,
-     "CIBC WORLD MARKET INC.": 1266.0,
      "CITY HOLDING CO": 14645.0,
      "CLARK FINANCIAL SERVICES GROUP INC                      /BD": 331673.0,
      "CONCOURSE FINANCIAL GROUP SECURITIES, INC.": 0.0,
@@ -4349,7 +4251,6 @@
      "Compagnie Lombard Odier SCmA": 2290840.0,
      "DC Investments Management, LLC": 1295044.0,
      "DELTA ASSET MANAGEMENT LLC/TN": 21329.0,
-     "DRW Securities, LLC": 5379142.0,
      "Dakota Wealth Management": 9258251.0,
      "Dixon Mitchell Investment Counsel Inc.": 23856.0,
      "EDMOND DE ROTHSCHILD HOLDING S.A.": 4055579.0,
@@ -4358,19 +4259,14 @@
      "Equitable Holdings, Inc.": 1686086.0,
      "Exchange Capital Management, Inc.": 238779.0,
      "Executive Wealth Management, LLC": 1687813.0,
-     "FLOW TRADERS U.S. LLC": 67686.0,
-     "FMR LLC": 141046.0,
      "FORT WASHINGTON INVESTMENT ADVISORS INC /OH/": 216419.0,
-     "FRANKLIN RESOURCES INC": 1470777.0,
      "Federation des caisses Desjardins du Quebec": 166940.0,
      "Fernwood Investment Management, LLC": 346270.0,
      "FinTrust Capital Advisors, LLC": 3235364.0,
      "Financial Gravity Companies, Inc.": 238038.0,
      "First Personal Financial Services": 6066.0,
      "Future Financial Wealth Managment LLC": 57937.0,
-     "GOLDMAN SACHS GROUP INC": 718847104.0,
      "GREENLEAF TRUST": 81663.0,
-     "GTS SECURITIES LLC": 945883.0,
      "GUGGENHEIM CAPITAL LLC": 2349199.0,
      "GW HENSSLER & ASSOCIATES LTD": 392625.0,
      "Gordian Capital Singapore Pte Ltd": 650340.0,
@@ -4380,21 +4276,15 @@
      "HIMENSION CAPITAL (SINGAPORE) PTE. LTD.": 2862038.0,
      "HM PAYSON & CO": 26329.0,
      "HRT FINANCIAL LP": 1481.0,
-     "HSBC HOLDINGS PLC": 3808200.0,
      "Headlands Technologies LLC": 523201.0,
-     "IMC-Chicago, LLC": 346487681.0,
      "IRIDIAN ASSET MANAGEMENT LLC/CT": 1139439.0,
      "Indiana Trust & Investment Management Co": 138999.0,
-     "Invesco Ltd.": 1483757.0,
      "Iron Horse Wealth Management, LLC": 5553.0,
      "J. Safra Sarasin Holding AG": 3083025.0,
-     "JANE STREET GROUP, LLC": 566813124.0,
      "JBF Capital, Inc.": 12790390.0,
      "JONES FINANCIAL COMPANIES LLLP": 10579.0,
-     "JPMORGAN CHASE & CO": 81436.0,
      "JTC Employer Solutions Trustee Ltd": 823.0,
      "Jaffetilchin Investment Partners, LLC": 10026114.0,
-     "Jefferies Financial Group Inc.": 584475.0,
      "K2 PRINCIPAL FUND, L.P.": 8671236.0,
      "KEYBANK NATIONAL ASSOCIATION/OH": 415964.0,
      "Kamunting Street Capital Management, L.P.": 5412274.0,
@@ -4428,7 +4318,6 @@
      "Oakworth Capital, Inc.": 14705.0,
      "PEAPACK GLADSTONE FINANCIAL CORP": 876.0,
      "PFG Investments, LLC": 992648.0,
-     "PNC Financial Services Group, Inc.": 22844222.0,
      "Parkwood LLC": 19041.0,
      "Pathstone Holdings, LLC": 3723605.0,
      "Pegasus Partners Ltd.": 361300.0,
@@ -4441,13 +4330,10 @@
      "RE Dickinson Investment Advisors, LLC": 9503.0,
      "Rathbones Group PLC": 2114937.0,
      "Rosenberg Matthew Hamilton": 208127.0,
-     "SCOTIA CAPITAL INC.": 3483357.0,
      "SINECERA CAPITAL, LLC": 343703.0,
      "SPROTT INC.": 1082523.0,
      "SRS Capital Advisors, Inc.": 191009.0,
      "ST GERMAIN D J CO INC": 238101.0,
-     "STIFEL FINANCIAL CORP": 1588872.0,
-     "SUSQUEHANNA INTERNATIONAL GROUP, LLP": 673166749.0,
      "SYNOVUS FINANCIAL CORP": 1156351.0,
      "Sanctuary Wealth Management, L.L.C.": 27546.0,
      "Schechter Investment Advisors, LLC": 1522248.0,
@@ -4460,18 +4346,13 @@
      "TD Waterhouse Canada Inc.": 284983.0,
      "THURSTON, SPRINGER, MILLER, HERD & TITAK, INC.": 37575.0,
      "TRUIST FINANCIAL CORP": 2104831.0,
-     "TWO SIGMA SECURITIES, LLC": 702919.0,
      "Tower Research Capital LLC (TRC)": 22459.0,
-     "UBS Group AG": 336457.0,
-     "Virtu Financial LLC": 12775.0,
      "Vise Technologies, Inc.": 1155410.0,
      "VitalStone Financial, LLC": 2098493.0,
      "WELLINGTON MANAGEMENT GROUP LLP": 16638565.0,
-     "WELLS FARGO & COMPANY/MN": 140307.0,
      "WR Wealth Planners, LLC": 137684.0,
      "Walleye Trading LLC": 468173.0,
      "WoodTrust Financial Corp": 238.0,
-     "XTX Topco Ltd": 302697.0,
      "Yarbrough Capital, LLC": 5078902.0,
      "Yong Rong (HK) Asset Management Ltd": 22603.0,
      "ZIMMERMANN INVESTMENT MANAGEMENT & PLANNING LLC": 637333.0,
@@ -4494,9 +4375,13 @@
     "filer": 6,
     "nilai_usd": 5714017.0,
     "per_jenis": {
+     "INSTITUSI": {
+      "filer": 1,
+      "nilai_usd": 2264971.0
+     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 6,
-      "nilai_usd": 5714017.0
+      "filer": 5,
+      "nilai_usd": 3449046.0
      }
     }
    },
@@ -4508,9 +4393,13 @@
       "filer": 1,
       "nilai_usd": 18798.0
      },
+     "INSTITUSI": {
+      "filer": 1,
+      "nilai_usd": 3057958.0
+     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 20,
-      "nilai_usd": 29302930.0
+      "filer": 19,
+      "nilai_usd": 26244972.0
      },
      "TIDAK_TERKLASIFIKASI": {
       "filer": 3,
@@ -4528,32 +4417,36 @@
     "nilai_usd": 37580534551.0,
     "per_jenis": {
      "BANK": {
-      "filer": 75,
-      "nilai_usd": 392091234.0
+      "filer": 92,
+      "nilai_usd": 5044007575.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 117,
-      "nilai_usd": 13692102368.0
+      "filer": 115,
+      "nilai_usd": 13655633923.0
      },
      "INSTITUSI": {
-      "filer": 49,
-      "nilai_usd": 238246100.0
+      "filer": 70,
+      "nilai_usd": 1322928855.0
      },
      "LAINNYA": {
       "filer": 47,
       "nilai_usd": 106402986.0
      },
      "MANAJER_REKSA_DANA": {
-      "filer": 28,
-      "nilai_usd": 2344425522.0
+      "filer": 31,
+      "nilai_usd": 3046858493.0
+     },
+     "PEMBUAT_PASAR": {
+      "filer": 17,
+      "nilai_usd": 3671818819.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 1593,
-      "nilai_usd": 7733007279.0
+      "filer": 1571,
+      "nilai_usd": 6646973720.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 214,
-      "nilai_usd": 13074259062.0
+      "filer": 180,
+      "nilai_usd": 4085910180.0
      }
     },
     "tak_terklasifikasi": {
@@ -4572,7 +4465,6 @@
      "Atlantic Union Bankshares Corp": 914479.0,
      "Avenir Tech Ltd": 1195162618.0,
      "Aviso Financial Inc.": 3835.0,
-     "BARCLAYS PLC": 279964165.0,
      "BENJAMIN EDWARDS INC": 6157832.0,
      "BESSEMER GROUP INC": 1154.0,
      "BOYD WATTERSON ASSET MANAGEMENT LLC/OH": 83215.0,
@@ -4582,18 +4474,13 @@
      "Bay Colony Advisory Group, Inc d/b/a Bay Colony Advisors": 2696032.0,
      "Belvedere Trading LLC": 150421196.0,
      "Berbice Capital Management LLC": 58500.0,
-     "BlackRock, Inc.": 697423403.0,
      "Blue Trust, Inc.": 10540220.0,
      "Bristlecone Advisors, LLC": 1608659.0,
      "CALIFORNIA FIRST LEASING CORP": 2925000.0,
-     "CANTOR FITZGERALD, L. P.": 226653387.0,
      "CAPITAL ADVISORS INC/OK": 1665635.0,
      "CAPITAL MANAGEMENT ASSOCIATES /NY/": 1300000.0,
      "CARY STREET PARTNERS FINANCIAL LLC": 4201288.0,
      "CHESAPEAKE CAPITAL CORP /IL/": 939835.0,
-     "CIBC Private Wealth Group LLC": 15068708.0,
-     "CIBC WORLD MARKET INC.": 26046310.0,
-     "CITIGROUP INC": 1235.0,
      "CITIZENS FINANCIAL GROUP INC/RI": 3625502.0,
      "CITY HOLDING CO": 128484.0,
      "CLARK FINANCIAL SERVICES GROUP INC                      /BD": 508822.0,
@@ -4612,7 +4499,6 @@
      "Cypress Capital Group": 1009825.0,
      "DELTA ASSET MANAGEMENT LLC/TN": 47950.0,
      "DIXON FNANCIAL SERVICES, INC.": 240760.0,
-     "DRW Securities, LLC": 262932631.0,
      "Dakota Wealth Management": 13497109.0,
      "Defined Financial Planning LLC": 280590.0,
      "Dixon Mitchell Investment Counsel Inc.": 42456.0,
@@ -4625,42 +4511,30 @@
      "Evergreen Quality Fund GP, Ltd.": 2490930.0,
      "FARMERS & MERCHANTS INVESTMENTS INC": 44850.0,
      "FIRST HORIZON CORP": 204750.0,
-     "FLOW TRADERS U.S. LLC": 3385.0,
-     "FMR LLC": 441763.0,
      "FORT WASHINGTON INVESTMENT ADVISORS INC /OH/": 557115.0,
-     "FRANKLIN RESOURCES INC": 2575953.0,
      "Federation des caisses Desjardins du Quebec": 1587060.0,
      "Fiduciary Planning LLC": 1360190.0,
      "Financial Security Advisor, Inc.": 4053657.0,
      "Franchise Capital Ltd": 259545.0,
      "Future Financial Wealth Managment LLC": 198250.0,
-     "GOLDMAN SACHS GROUP INC": 2301646662.0,
      "GREENLEAF TRUST": 201616.0,
      "GROUP ONE TRADING LLC": 1562343.0,
-     "GTS SECURITIES LLC": 924300.0,
      "GUGGENHEIM CAPITAL LLC": 7998465.0,
-     "HARVARD MANAGEMENT CO INC": 442884780.0,
      "HGC Investment Management Inc.": 2790840.0,
      "HIMENSION CAPITAL (SINGAPORE) PTE. LTD.": 33191730.0,
      "HM PAYSON & CO": 138362.0,
      "HRT FINANCIAL LP": 7687.0,
-     "HSBC HOLDINGS PLC": 6843600.0,
      "Harvest Portfolios Group Inc.": 47476910.0,
      "Headlands Technologies LLC": 734757.0,
      "Hilltop Holdings Inc.": 584088.0,
-     "IMC-Chicago, LLC": 414443465.0,
      "IRIDIAN ASSET MANAGEMENT LLC/CT": 947881.0,
      "Indiana Trust & Investment Management Co": 251410.0,
-     "Invesco Ltd.": 2420072.0,
      "J. Safra Sarasin Holding AG": 7339826.0,
-     "JANE STREET GROUP, LLC": 1507179311.0,
      "JANUS HENDERSON GROUP PLC": 9375984.0,
      "JGP Global Gestao de Recursos Ltda.": 205920.0,
      "JONES FINANCIAL COMPANIES LLLP": 55163.0,
-     "JPMORGAN CHASE & CO": 343665344.0,
      "JTC Employer Solutions Trustee Ltd": 27033.0,
      "Jaffetilchin Investment Partners, LLC": 12155170.0,
-     "Jefferies Financial Group Inc.": 6619468.0,
      "Jump Financial, LLC": 37108080.0,
      "K.J. Harrison & Partners Inc": 2422630.0,
      "K2 PRINCIPAL FUND, L.P.": 4946500.0,
@@ -4677,7 +4551,6 @@
      "MERCER GLOBAL ADVISORS INC /ADV": 14163697.0,
      "MIRAE ASSET GLOBAL ETFS HOLDINGS Ltd.": 8781955.0,
      "Marathon Trading Investment Management LLC": 6172855.0,
-     "Marex Group plc": 961177699.0,
      "MassMutual Private Wealth & Trust, FSB": 418144.0,
      "Massar Capital Management, LP": 8355425.0,
      "Masso Torrence Wealth Management Inc.": 693225.0,
@@ -4686,7 +4559,6 @@
      "Mint Tower Capital Management B.V.": 173000.0,
      "Miracle Mile Advisors, LLC": 1473719.0,
      "Missouri Trust & Investment Co": 73396.0,
-     "Mubadala Investment Co PJSC": 567253180.0,
      "NATIXIS": 29770.0,
      "NEUBERGER BERMAN GROUP LLC": 3801738.0,
      "NICOLET BANKSHARES INC": 1492321.0,
@@ -4705,10 +4577,8 @@
      "Orion Porfolio Solutions, LLC": 17552423.0,
      "Orland Properties Ltd": 529360.0,
      "PATTEN & PATTEN INC/TN": 1840670.0,
-     "PEAK6 LLC": 4785430.0,
      "PEAPACK GLADSTONE FINANCIAL CORP": 2330.0,
      "PFG Investments, LLC": 3152626.0,
-     "PNC Financial Services Group, Inc.": 90032275.0,
      "PPSC Investment Service Corp": 27560000.0,
      "Parkwood LLC": 19240.0,
      "Pathstone Holdings, LLC": 15965112.0,
@@ -4717,7 +4587,6 @@
      "Pinnacle Financial Partners Inc": 1132625.0,
      "Pinpoint Asset Management (Singapore) Pte. Ltd.": 116192115.0,
      "Quadrature Capital Ltd": 6079441.0,
-     "RAYMOND JAMES FINANCIAL INC": 12692038.0,
      "RBF Capital, LLC": 14984400.0,
      "REGIONS FINANCIAL CORP": 1294214.0,
      "Rakuten Group, Inc.": 7144670.0,
@@ -4726,15 +4595,11 @@
      "Ritter Daniher Financial Advisory LLC / DE": 43353.0,
      "SANDERS MORRIS HARRIS LLC": 1752359.0,
      "SANTA MONICA PARTNERS LP": 6486.0,
-     "SCOTIA CAPITAL INC.": 19025140.0,
      "SG Americas Securities, LLC": 1586.0,
      "SIG BROKERAGE, LP": 6842290.0,
      "SIH Partners, LLLP": 30188819.0,
-     "SIMPLEX TRADING, LLC": 133468.0,
      "SPROTT INC.": 3347207.0,
      "ST GERMAIN D J CO INC": 592718.0,
-     "STIFEL FINANCIAL CORP": 4268439.0,
-     "SUSQUEHANNA INTERNATIONAL GROUP, LLP": 239283915.0,
      "SYNOVUS FINANCIAL CORP": 2779549.0,
      "Select Asset Management & Trust": 487.0,
      "Shay Capital LLC": 202520.0,
@@ -4750,30 +4615,24 @@
      "TOMPKINS FINANCIAL CORP": 113972.0,
      "TOWARZYSTWO FUNDUSZY INWESTYCYJNYCH PZU SA": 246228.0,
      "TRUIST FINANCIAL CORP": 6143184.0,
-     "TWO SIGMA SECURITIES, LLC": 3169616.0,
      "Telligent Fund, LP": 4030000.0,
      "Tolleson Wealth Management, Inc.": 1485550.0,
      "Tower Research Capital LLC (TRC)": 8561.0,
      "Trans-Canada Capital Inc.": 200104425.0,
-     "UBS Group AG": 9111994.0,
      "Union Bancaire Privee, UBP SA": 1187410.0,
      "VISION FINANCIAL MARKETS LLC": 73665.0,
      "Vantage Investment Partners, LLC": 1243580.0,
-     "Virtu Financial LLC": 34131.0,
      "Vise Technologies, Inc.": 9114628.0,
      "Vontobel Holding Ltd.": 6109090.0,
-     "WELLS FARGO & COMPANY/MN": 534346566.0,
      "WINTON GROUP Ltd": 122513750.0,
      "WIT Partners Advisory Pte. Ltd.": 688513.0,
-     "WOLVERINE TRADING, LLC": 4761749.0,
      "Walleye Trading LLC": 79183491.0,
      "WoodTrust Financial Corp": 725.0,
-     "XTX Topco Ltd": 535300.0,
      "XY Planning Network, Inc.": 231496.0,
      "Yarbrough Capital, LLC": 34073845.0
     }
    }
   }
  },
- "versi_cocok": 6
+ "versi_cocok": 7
 }
