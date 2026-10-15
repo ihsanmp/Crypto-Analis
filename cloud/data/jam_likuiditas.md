@@ -177,3 +177,27 @@ Jam 15:00 dipilih. Ini kalibrasi penyelarasan data, bukan kalibrasi sinyal.
 ### 6. Jejak basis trade
 
 Sampel 141 minggu sejak 2024. Korelasi peringkat antara arus ETF 4 minggu dan perubahan short bersih leveraged funds CFTC 4 minggu adalah **+0,48**. Sebagian besar arus ETF berjalan bersamaan dengan penambahan short futures. Bagian arus itu adalah basis trade yang netral arah, bukan permintaan.
+
+### Jenis pemegang 13F (`etf_13f.py`, run 38757921517)
+
+Klasifikasi memakai tiga jalur, berurutan:
+
+1. Daftar nama eksplisit untuk pemegang besar tanpa Form ADV.
+2. CRD atau nomor berkas SEC di sampul 13F, dicocokkan dengan Form ADV Item 5.D (jenis klien dengan aset kelolaan terbesar). Berkas exempt-reporting adviser dimasukkan sebagai dana privat.
+3. Nama resmi yang dinormalkan.
+
+Halaman SEC tidak memuat berkas penasihat untuk Jun 2023 – Nov 2025. Kuartal-kuartal itu memakai berkas terdekat, dan nama berkasnya dicatat per kuartal.
+
+Porsi nilai per jenis pemegang:
+
+| Kuartal | Penasihat kekayaan | Hedge fund / dana privat | Pembuat pasar | Bank | Manajer reksa dana | Institusi | Tak terklasifikasi |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 2024-03 | 15% | 45% | 21% | 4% | 11% | 2% | 3% |
+| 2024-12 | 13% | 49% | 14% | 8% | 7% | 3% | 5% |
+| 2025-06 | 16% | 40% | 14% | 10% | 8% | 3% | 9% |
+| 2025-12 | 21% | 28% | 13% | 12% | 9% | 4% | 12% |
+| 2026-06 | 23% | 15% | 14% | 19% | 12% | 6% | 10% |
+
+- **Hedge fund keluar:** porsi hedge fund turun dari 49% (Q4 2024) menjadi 15% (Q2 2026). Sebaliknya, penasihat kekayaan dan bank naik.
+- **Hitungan inti A3:** hanya penasihat kekayaan, bank, institusi, manajer reksa dana, dan lainnya. Hedge fund, pembuat pasar (netral arah), dan yang tak terklasifikasi dikeluarkan.
+- **Cek silang dengan CFTC (Q2 2026):** hedge fund memegang ETF setara ±43.700 BTC. Short bersih leveraged funds di CME ±35.900 BTC, atau 82% dari jumlah itu. Kepemilikan ETF oleh hedge fund sebagian besar adalah basis trade.

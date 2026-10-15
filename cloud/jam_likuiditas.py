@@ -500,9 +500,15 @@ def _bagian_adopsi(jumat, hasil):
         c = [x for t, x in adopsi.cftc_leveraged() if t <= jumat[-1]]
         if c:
             kini, lalu = c[-1], (c[-5] if len(c) >= 5 else c[0])
+            a3 = (hasil.get("adopsi_struktural") or {}).get("A3_13f")
+            hf = a3.get("hedge_fund_btc_setara") if isinstance(a3, dict) else None
             hasil["jejak_basis_trade_cftc"] = {
                 "short_bersih_leveraged_funds_btc": kini["short_bersih_btc"],
                 "perubahan_4_laporan_btc": kini["short_bersih_btc"] - lalu["short_bersih_btc"],
+                # Berapa bagian ETF milik hedge fund (13F) yang tertutup short CME. Dekat
+                # 100% = kepemilikan hedge fund nyaris seluruhnya basis trade, bukan arah.
+                "short_cme_per_etf_hedge_fund_persen": (
+                    round(kini["short_bersih_btc"] / hf * 100) if hf else None),
                 "arti": ("short bersih hedge fund/CTA di futures BTC CME (CFTC TFF) = kaki "
                          "short basis trade; bandingkan dengan hedge_fund_btc_setara di A3. "
                          "Naik bersama arus ETF = sebagian arus itu basis trade, bukan "
@@ -600,6 +606,31 @@ def pesan(h):
     return "\n".join(baris)
 
 
+# Versi --ringkas untuk brief bot: teks bukti panjang diganti rujukan pendek — isinya
+# sudah ada di seed analis, dan mengulang ~1,5 rb karakter di setiap brief koin adalah
+# ongkos token tanpa informasi baru.
+RINGKAS_STATUS = {
+    "status_bukti": ("Liquidity TERUJI ~12 mg (BTC IC +0,33, ETH +0,30, SOL +0,34); 4 mg "
+                     "tidak; momentum jarum terbalik dari teori"),
+    "gelombang.status_bukti": "DITOLAK: tinggi = momentum, bukan puncak",
+    "adopsi_struktural.jam_adopsi.riwayat": "BELUM TERBUKTI",
+}
+
+
+def ringkas(h):
+    h = json.loads(json.dumps(h))
+    for jalur, teks in RINGKAS_STATUS.items():
+        *induk, kunci = jalur.split(".")
+        d = h
+        for k in induk:
+            d = d.get(k) if isinstance(d, dict) else None
+        if isinstance(d, dict) and kunci in d:
+            d[kunci] = teks
+    for d in (h.get("jejak_basis_trade_cftc") or {},):
+        d.pop("arti", None)
+    return h
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ringkas", action="store_true", help="JSON padat untuk brief")
@@ -610,6 +641,8 @@ def main():
         print(pesan(json.load(sys.stdin)))
         return
     h = analisa()
+    if a.ringkas:
+        h = ringkas(h)
     print(json.dumps(h, ensure_ascii=False, separators=(",", ":") if a.ringkas else None,
                      indent=None if a.ringkas else 2))
 

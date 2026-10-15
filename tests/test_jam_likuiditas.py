@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 from datetime import date, timedelta
@@ -140,3 +141,15 @@ def test_fred_gagal_memakai_salinan_dan_menyebut_umurnya(tmp_path, monkeypatch):
     monkeypatch.setattr(makro, "ambil", lambda kode: (None, "TimeoutError"))
     data, gagal = jl.ambil_fred()
     assert not gagal and "salinan" in data["_cadangan"] and set(jl.SERI) <= set(data)
+
+
+def test_ringkas_mengganti_teks_bukti_panjang_tanpa_mengubah_angka():
+    h = {"status_bukti": jl.STATUS_BUKTI, "skor_likuiditas": -0.43,
+         "gelombang": {"skor": 0.1, "status_bukti": jl.STATUS_GELOMBANG},
+         "adopsi_struktural": {"jam_adopsi": {"riwayat": jl.STATUS_ADOPSI}},
+         "jejak_basis_trade_cftc": {"short_bersih_leveraged_funds_btc": 1, "arti": "x" * 300}}
+    r = jl.ringkas(h)
+    assert len(json.dumps(r)) < len(json.dumps(h)) / 2
+    assert r["skor_likuiditas"] == -0.43 and r["gelombang"]["skor"] == 0.1
+    assert "DITOLAK" in r["gelombang"]["status_bukti"]
+    assert h["gelombang"]["status_bukti"] == jl.STATUS_GELOMBANG       # asli tidak diubah
