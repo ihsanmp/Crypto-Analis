@@ -77,7 +77,7 @@ hasil.
 - Satu rezim selama 11,7 tahun. Jendela 12 minggu yang benar-benar independen hanya sekitar 50.
 - NFCI memakai vintage terkini. Uji tanpa NFCI menutup sebagian besar risiko ini, tetapi
   tidak seluruhnya.
-- Hanya diuji pada BTC. Untuk altcoin, angka ini hanya konteks.
+- Diuji pada BTC, lalu ETH dan SOL (lihat uji lanjutan). Untuk altcoin lain, angka ini hanya konteks.
 
 ## Uji lanjutan — `uji_jam_lanjutan.py` (15 Okt 2026, pra-registrasi)
 
