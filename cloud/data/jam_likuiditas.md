@@ -78,3 +78,45 @@ hasil.
 - NFCI memakai vintage terkini. Uji tanpa NFCI menutup sebagian besar risiko ini, tetapi
   tidak seluruhnya.
 - Hanya diuji pada BTC. Untuk altcoin, angka ini hanya konteks.
+
+## Uji lanjutan — `uji_jam_lanjutan.py` (15 Okt 2026, pra-registrasi)
+
+Kriteria lolos ditulis di docstring sebelum dijalankan.
+
+### 1. Liquidity pada altcoin (hanya 12 minggu, Bonferroni 2 aset)
+
+| Aset | N minggu | IC | p placebo | Paruh 1 / 2 | Vonis |
+| --- | --- | --- | --- | --- | --- |
+| ETH | 454 | +0,297 | 0,0005 | +0,30 / +0,33 | **LOLOS** |
+| SOL | 327 | +0,339 | 0,0005 | +0,40 / +0,29 | **LOLOS** |
+
+### 2. Gelombang (funding + Fear & Greed) — hipotesis IC < 0
+
+Skor tersedia sejak 2021-01, 300 minggu. Hipotesis ditolak di semua horizon:
+
+| Horizon | IC | p ekor bawah | 2021–23 | 2024–26 |
+| --- | --- | --- | --- | --- |
+| 4 minggu | +0,100 | 0,96 | +0,09 | +0,11 |
+| 8 minggu | +0,111 | 0,96 | +0,06 | +0,13 |
+| 12 minggu | +0,093 | 0,97 | +0,08 | +0,10 |
+
+- **Per komponen (12 minggu):** funding −0,02 (tidak ada sinyal), Fear & Greed +0,23. Sentimen bekerja sebagai momentum, bukan sebagai tanda puncak.
+- **Aturan "skor > 0,5 → potong 25 pp":** sesudah minggu-minggu itu, median return 12 minggu +20,1% (N = 32), sedangkan minggu lainnya −0,1%. Aturan ini merugikan, jadi dimatikan (`PAKAI_ATURAN_GELOMBANG = False`).
+
+### 3. Adopsi struktural (A1 + A2, Farside) — cek arah saja
+
+Sampelnya 114 minggu, kira-kira 9 jendela 12 minggu yang independen. Hasilnya:
+
+- IC 4 minggu +0,22, searah dengan teori.
+- IC 12 minggu −0,06, berlawanan dengan teori.
+
+Karena itu tidak ada vonis. A3 (13F) dan A4 (treasury) belum punya riwayat yang cukup.
+
+### 4. Strategi pada periode skor adopsi (113 minggu, deskriptif)
+
+| Varian | Hasil | MaxDD |
+| --- | --- | --- |
+| Liquidity saja | +20,3% | −28% |
+| + Struktural | +24,8% | −23% |
+| + Struktural + Gelombang | +22,3% | −23% |
+| Beli-tahan | +36,0% | — |

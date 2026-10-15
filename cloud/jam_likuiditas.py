@@ -71,7 +71,21 @@ STATUS_BUKTI = (
     "(+0,28). Horizon 4 minggu TIDAK lolos (IC +0,05), 8 minggu nyaris (+0,22, p 0,02). "
     "MOMENTUM jarum TIDAK mendukung rancangan: 'ketat mulai membaik' justru kuadran "
     "terburuk. Satu rezim 11,7 tahun ~ 50 jendela 12 minggu independen — kuat, bukan "
-    "kepastian. Skor Adopsi: BELUM DIUJI (ETF baru sejak Jan 2024).")
+    "kepastian. Juga LOLOS untuk ETH (IC +0,30) dan SOL (+0,34) pada 12 minggu, kedua "
+    "paruh sampel positif (uji_jam_lanjutan.py).")
+STATUS_GELOMBANG = (
+    "Hipotesis rancangan (Gelombang tinggi = rawan koreksi) DITOLAK pada BTC 2021-2026: IC "
+    "justru POSITIF (+0,09..+0,11, p ekor bawah 0,96) di kedua era. Sesudah minggu skor "
+    "> 0,5 median return 12 minggu +20,1% vs -0,1% sisanya. Karena itu aturan 'potong 25 pp' "
+    "TIDAK diterapkan pada target eksposur. Funding (W1) sendiri ~nol (IC -0,02); Fear & "
+    "Greed (W2) +0,23 = momentum sentimen, bukan sinyal puncak.")
+STATUS_ADOPSI = (
+    "BELUM TERBUKTI: arus ETF baru 114 minggu (~9 jendela 12 minggu independen). Arah "
+    "campur — IC 4 minggu +0,22 (sesuai teori), 12 minggu -0,06 (berlawanan). Bobot "
+    "ditetapkan rancangan, tidak dioptimasi.")
+# Aturan Gelombang > 0,5 -> potong 25 pp dari rancangan. Dimatikan: datanya menunjukkan
+# minggu-minggu itu justru diikuti return TERTINGGI (lihat STATUS_GELOMBANG).
+PAKAI_ATURAN_GELOMBANG = False
 
 # Hasil uji_jam_likuiditas.py — return BTC 12 minggu sesudah sinyal, 2015-2026. Sumber
 # KEBENARAN untuk arti kuadran; teks rancangan disimpan hanya untuk dibandingkan.
@@ -183,7 +197,13 @@ def jarum(posisi, momentum, terukur=False):
         keluar["riwayat_btc_12mg_tersil_skor"] = next(
             t for b, t in TERUKUR_TERSIL_12MG if b is None or posisi <= b)
     else:
-        keluar["riwayat"] = "BELUM DIUJI — arti kuadran hanya teori rancangan"
+        # Jam ADOPSI: nama kuadran likuiditas ("longgar/ketat") tidak berarti di sini.
+        keluar["fase"] = {(True, True): "ADOPSI KUAT & MENGUAT",
+                          (True, False): "ADOPSI KUAT, MULAI MELEMAH",
+                          (False, True): "ADOPSI LEMAH, MULAI MEMBAIK",
+                          (False, False): "ADOPSI LEMAH & MELEMAH"}[(posisi >= 0, momentum >= 0)]
+        del keluar["menurut_rancangan"]
+        keluar["riwayat"] = STATUS_ADOPSI
     return keluar
 
 
@@ -203,34 +223,132 @@ def deret_likuiditas(fred, jumat):
             "likuiditas_bersih_miliar": net}
 
 
-def deret_adopsi(baris_etf, jumat):
-    """A1 & A2 per Jumat dari arus harian (arus tanggal d dianggap tersedia d+1)."""
-    hari = []
-    for b in baris_etf:
-        try:
-            hari.append((date.fromisoformat(b["date"]) + timedelta(days=1),
-                         float(b["totalNetInflow"]), float(b.get("totalNetAssets") or 0)))
-        except (KeyError, TypeError, ValueError):
-            continue
-    a1, a2 = [], []
+def harga_yahoo(simbol="BTC-USD"):
+    """{tanggal ISO: penutupan harian} dari Yahoo (riwayat penuh, gratis)."""
+    import urllib.request
+    import makro
+    # range=max diam-diam menurunkan resolusi ke BULANAN; period1/period2 tetap harian.
+    url = makro.YAHOO + simbol + f"?period1=0&period2={int(datetime.now().timestamp())}&interval=1d"
+    req = urllib.request.Request(url, headers=makro.UA)
+    with urllib.request.urlopen(req, timeout=40) as r:
+        d = json.loads(r.read().decode())["chart"]["result"][0]
+    tutup = d["indicators"]["quote"][0]["close"]
+    return {datetime.fromtimestamp(t, timezone.utc).date().isoformat(): c
+            for t, c in zip(d["timestamp"], tutup) if c}
+
+
+def _harga_pada(harga, tgl, mundur=7):
+    for i in range(mundur + 1):
+        p = harga.get((tgl - timedelta(days=i)).isoformat())
+        if p:
+            return p
+    return None
+
+
+def _skor_tetap(pertumbuhan_persen, skala):
+    """Skala TETAP (bukan z-score) untuk komponen dengan titik terlalu sedikit untuk
+    z bergulir: 13F hanya ~10 kuartal. tanh(g/skala), skala ditetapkan di awal."""
+    return None if pertumbuhan_persen is None else math.tanh(pertumbuhan_persen / skala)
+
+
+def deret_adopsi(arus, harga, jumat, kuartal_13f=(), treasury=()):
+    """Skor struktural per Jumat.
+
+    arus      [(tanggal, US$ juta)] — arus tanggal d dianggap tersedia d+1.
+    harga     {tanggal: harga BTC} — untuk menormalkan A1 dengan estimasi aset ETF.
+    kuartal_13f [(tanggal_tersedia, {"akhir_kuartal","pemegang","nilai_usd"})].
+    treasury  [{"tanggal","total_btc"}] dari arsip mingguan.
+    """
+    import adopsi
+    milik = adopsi.kepemilikan_btc(arus, harga)
+    hari = [(date.fromisoformat(t) + timedelta(days=1), v, t) for t, v in arus]
+    a1, a2, s3, info3 = [], [], [], []
     for f in jumat:
         lalu = [h for h in hari if h[0] <= f][-20:]
-        if len(lalu) < 20 or not lalu[-1][2] or (f - lalu[-1][0]).days > 7:
+        p = harga.get(lalu[-1][2]) if lalu else None
+        if len(lalu) < 20 or not p or (f - lalu[-1][0]).days > 7:
             a1.append(None)
             a2.append(None)
-            continue
-        a1.append(sum(h[1] for h in lalu) / lalu[-1][2])
-        a2.append(sum(1 for h in lalu if h[1] > 0) / 20)
+        else:
+            aset = milik[lalu[-1][2]] * p
+            a1.append(sum(h[1] for h in lalu) * 1e6 / aset)
+            a2.append(sum(1 for h in lalu if h[1] > 0) / 20)
+        sudah = [q for t, q in kuartal_13f if t <= f]
+        if len(sudah) >= 2:
+            kini, dulu = sudah[-1], sudah[-2]
+            gh = (kini["pemegang"] / dulu["pemegang"] - 1) * 100 if dulu["pemegang"] else None
+            pk = _harga_pada(harga, date.fromisoformat(kini["akhir_kuartal"]))
+            pd_ = _harga_pada(harga, date.fromisoformat(dulu["akhir_kuartal"]))
+            gb = ((kini["nilai_usd"] / pk) / (dulu["nilai_usd"] / pd_) - 1) * 100 \
+                if pk and pd_ and dulu["nilai_usd"] else None
+            # 10% per kuartal -> tanh(1) = 0,76. Ditetapkan sebelum melihat data.
+            s3.append(_rata(_skor_tetap(gh, 10), _skor_tetap(gb, 10)))
+            info3.append({"kuartal": kini["akhir_kuartal"], "pemegang": kini["pemegang"],
+                          "pemegang_qoq_persen": round(gh, 1) if gh is not None else None,
+                          "btc_setara_qoq_persen": round(gb, 1) if gb is not None else None})
+        else:
+            s3.append(None)
+            info3.append(None)
+    t4 = [(date.fromisoformat(r["tanggal"]), r["total_btc"]) for r in treasury]
+    w4 = ke_mingguan(t4, jumat, maks_basi=10)
+    s4 = skor(w4, lookback=LOOKBACK_ADOPSI, min_riwayat=MIN_ADOPSI)
     s1 = skor(a1, k=0, lookback=LOOKBACK_ADOPSI, min_riwayat=MIN_ADOPSI)
     s2 = skor(a2, k=0, lookback=LOOKBACK_ADOPSI, min_riwayat=MIN_ADOPSI)
-    return {"A1": a1, "A2": a2, "skor_A1": s1, "skor_A2": s2,
-            "struktural": [_rata(x, y) for x, y in zip(s1, s2)]}
+    struk, pakai = [], []
+    for v in zip(s1, s2, s3, s4):
+        # A1 & A2 (harian) WAJIB ada; A3 & A4 ikut kalau sudah tersedia.
+        if v[0] is None or v[1] is None:
+            struk.append(None)
+            pakai.append(())
+            continue
+        ada = [(n, x) for n, x in zip(("A1", "A2", "A3", "A4"), v) if x is not None]
+        struk.append(sum(x for _, x in ada) / len(ada))
+        pakai.append(tuple(n for n, _ in ada))
+    return {"A1": a1, "A2": a2, "skor_A1": s1, "skor_A2": s2, "skor_A3": s3,
+            "info_A3": info3, "treasury_btc": w4, "skor_A4": s4,
+            "struktural": struk, "komponen_terpakai": pakai}
 
 
-def eksposur(liq, struktural, resesi):
+FASE_ADOPSI = {
+    (True, False): ("AKUMULASI SEHAT", "institusi membeli diam-diam; kondisi terbaik"),
+    (True, True): ("EUFORIA TERDUKUNG", "masih naik, risiko koreksi tajam meningkat"),
+    (False, True): ("SPEKULASI MURNI", "kenaikan tanpa pembeli kuat; rawan puncak"),
+    (False, False): ("DIABAIKAN", "sering dekat dasar, belum ada pemicu"),
+}
+
+
+def eksposur(liq, struktural, resesi, gelombang=None):
+    """0,5 + 0,5 x gabungan; Gelombang > 0,5 memotong 25 pp; resesi membatasi 50%."""
+    import gelombang as gl
     gabung = liq if struktural is None else 0.5 * liq + 0.5 * struktural
-    e = max(0.0, min(1.0, 0.5 + 0.5 * gabung))
+    e = 0.5 + 0.5 * gabung
+    if PAKAI_ATURAN_GELOMBANG and gelombang is not None and gelombang > gl.AMBANG_GELOMBANG:
+        e -= gl.POTONG_EKSPOSUR
+    e = max(0.0, min(1.0, e))
     return min(e, BATAS_RESESI) if resesi else e
+
+
+# Rentang wajar nilai TERAKHIR — penjaga satuan (checklist rancangan: "WALCL & WDTGAL dalam
+# juta, RRPONTSYD dalam miliar"). Kalau FRED mengganti satuan, skor L2 akan salah 1000x
+# tanpa error apa pun; lebih baik ditolak.
+RENTANG_WAJAR = {"WALCL": (1e6, 2e7), "WDTGAL": (1e3, 3e6), "RRPONTSYD": (0, 5e3),
+                 "DGS2": (-2, 20), "DTWEXBGS": (50, 250), "NFCI": (-3, 10),
+                 "SAHMREALTIME": (-1, 10)}
+BATAS_BASI_HARI = {"SAHMREALTIME": 75}       # bulanan; lainnya 10 hari (checklist)
+
+
+def validasi(fred, hari_ini):
+    """(masalah_satuan, peringatan_basi)."""
+    satuan, basi = [], []
+    for k, titik in fred.items():
+        lo, hi = RENTANG_WAJAR[k]
+        if not lo <= titik[-1][1] <= hi:
+            satuan.append(f"{k}={titik[-1][1]} di luar {lo}..{hi}")
+        ukur = titik[-1][0] - timedelta(days=JEDA_RILIS[k])
+        umur = (hari_ini - ukur).days
+        if umur > BATAS_BASI_HARI.get(k, 10):
+            basi.append(f"{k} terakhir {ukur} ({umur} hari)")
+    return satuan, basi
 
 
 # ------------------------------------------------------------------ keluaran
@@ -241,12 +359,81 @@ def _terakhir_isi(deret):
     return None
 
 
+def _bagian_adopsi(jumat, hasil):
+    """Isi hasil["adopsi_struktural"] & ["gelombang"]. Return (struktural, gelombang)."""
+    import adopsi
+    import gelombang as gl
+    struk = gel = None
+    try:
+        harga = harga_yahoo("BTC-USD")
+    except Exception as e:
+        harga = {}
+        hasil["adopsi_struktural"] = {"tidak_tersedia": f"harga BTC gagal ({type(e).__name__})"}
+    arus, sumber, err = adopsi.arus_etf(perbarui=True)
+    if harga and not arus:
+        hasil["adopsi_struktural"] = {"tidak_tersedia": err}
+    elif harga:
+        A = deret_adopsi(arus, harga, jumat, adopsi.seri_13f(), adopsi.seri_treasury())
+        j = _terakhir_isi(A["struktural"])
+        if j is None:
+            hasil["adopsi_struktural"] = {"tidak_tersedia": "riwayat arus ETF < 26 minggu"}
+        else:
+            struk = A["struktural"][j]
+            s0 = A["struktural"][j - K_MINGGU] if j >= K_MINGGU else None
+            hilang = [n for n in ("A3", "A4") if n not in A["komponen_terpakai"][j]]
+            hasil["adopsi_struktural"] = {
+                "sinyal_jumat": jumat[j].isoformat(),
+                "skor": round(struk, 3),
+                "komponen": {n: round(A[f"skor_{n}"][j], 3)
+                             for n in A["komponen_terpakai"][j]},
+                "A1_arus_20hari_per_aset_persen": round(A["A1"][j] * 100, 2),
+                "A2_hari_arus_positif_persen": round(A["A2"][j] * 100),
+                "A3_13f": A["info_A3"][j] or "belum ada 2 kuartal 13F (etf_13f.py)",
+                "jam_adopsi": jarum(struk, None if s0 is None else struk - s0),
+                "sumber_arus": sumber + (f" — {err}" if err else ""),
+            }
+            if hilang:
+                hasil["adopsi_struktural"]["belum_ikut"] = (
+                    f"{', '.join(hilang)} belum ikut skor: A3 butuh etf_13f.json (workflow "
+                    "jam-mingguan, perlu SEC_CONTACT); A4 butuh >= 30 minggu arsip treasury "
+                    "(sumber gratis hanya memberi angka hari ini, arsip mulai 15 Okt 2026)")
+    try:
+        funding, cat = gl.funding_harian()
+        G = gl.deret_gelombang(funding, gl.fear_greed(), jumat)
+        k = _terakhir_isi(G["gelombang"])
+        if k is None:
+            hasil["gelombang"] = {"tidak_tersedia": "; ".join(cat) or "riwayat kurang"}
+        else:
+            gel = G["gelombang"][k]
+            hasil["gelombang"] = {
+                "sinyal_jumat": jumat[k].isoformat(), "skor": round(gel, 3),
+                "W1_funding_persen_per_8jam": round(G["W1_funding"][k], 4),
+                "W2_fear_greed_7hari": round(G["W2_fng"][k]),
+                "aturan_rancangan": ("skor > 0,5 memotong eksposur 25 pp — TIDAK "
+                                     "diterapkan, ditolak data"),
+                "status_bukti": STATUS_GELOMBANG}
+            if (jumat[-1] - jumat[k]).days > 7:
+                hasil["gelombang"]["peringatan_basi"] = "; ".join(cat)
+    except Exception as e:
+        hasil["gelombang"] = {"tidak_tersedia": f"{type(e).__name__}"}
+    if struk is not None and gel is not None:
+        nama, arti = FASE_ADOPSI[(struk >= 0, gel >= 0)]
+        hasil["fase_adopsi"] = {"fase": nama, "menurut_rancangan": arti,
+                                "status_bukti": "BELUM TERBUKTI — sumbu Gelombang-nya "
+                                                "terbalik dari teori (lihat gelombang)"}
+    return struk, gel
+
+
 def analisa(hari_ini=None):
     hari_ini = hari_ini or datetime.now(timezone.utc).date()
     fred, gagal = ambil_fred()
     if gagal:
         return {"tidak_tersedia": f"seri FRED gagal: {gagal}. Skor Liquidity sengaja "
                                   "TIDAK dihitung dari komponen yang tersisa."}
+    satuan, basi = validasi(fred, hari_ini)
+    if satuan:
+        return {"tidak_tersedia": f"satuan FRED tidak wajar: {satuan}. Skor sengaja tidak "
+                                  "dihitung — salah satuan membuat L2 meleset 1000x."}
     jumat = jumat_dari(date.fromisoformat(MULAI), hari_ini)
     L = deret_likuiditas(fred, jumat)
     i = _terakhir_isi(L["likuiditas"])
@@ -263,53 +450,69 @@ def analisa(hari_ini=None):
                              "sahm_realtime": L["mentah"]["SAHMREALTIME"][i]},
         "likuiditas_bersih_miliar_usd": round(L["likuiditas_bersih_miliar"][i], 1),
     }
+    if basi:
+        hasil["peringatan_basi"] = basi
     if (jumat[-1] - jumat[i]).days > 7:
-        hasil["peringatan_basi"] = (f"sinyal terakhir yang lengkap bertanggal {jumat[i]} — "
-                                    "ada komponen yang belum diperbarui; sebutkan tanggalnya")
-
-    struk = None
-    try:
-        import sosovalue
-        baris, err = sosovalue.historis_etf("us-btc-spot")
-    except Exception as e:
-        baris, err = None, type(e).__name__
-    if err or not baris:
-        hasil["adopsi_struktural"] = {"tidak_tersedia": err or "riwayat ETF kosong"}
-    else:
-        A = deret_adopsi(baris, jumat)
-        j = _terakhir_isi(A["struktural"])
-        if j is None:
-            hasil["adopsi_struktural"] = {"tidak_tersedia": "riwayat ETF < 26 minggu"}
-        else:
-            struk = A["struktural"][j]
-            mom_a = (struk - A["struktural"][j - K_MINGGU]
-                     if j >= K_MINGGU and A["struktural"][j - K_MINGGU] is not None else None)
-            hasil["adopsi_struktural"] = {
-                "sinyal_jumat": jumat[j].isoformat(),
-                "skor": round(struk, 3),
-                "A1_arus_20hari_per_aset_persen": round(A["A1"][j] * 100, 2),
-                "A2_hari_arus_positif_persen": round(A["A2"][j] * 100),
-                "jam_adopsi": jarum(struk, mom_a),
-                "cakupan": "PARSIAL 2 dari 4 komponen (A3 13F & A4 treasury belum ada "
-                           "sumbernya); skor Gelombang belum dibangun",
-            }
-    e = eksposur(liq[i], struk, L["resesi"][i])
+        hasil["peringatan_sinyal"] = (f"sinyal lengkap terakhir bertanggal {jumat[i]}; "
+                                      "sebutkan tanggalnya")
+    struk, gel = _bagian_adopsi(jumat, hasil)
+    e = eksposur(liq[i], struk, L["resesi"][i], gel)
     hasil["target_eksposur_btc_persen"] = round(e * 100)
-    hasil["dasar_eksposur"] = ("0,5 + 0,5 x rata-rata(Liquidity, Struktural)" if struk is not None
-                               else "0,5 + 0,5 x Liquidity (adopsi tidak tersedia)")
+    hasil["dasar_eksposur"] = (
+        ("0,5 + 0,5 x rata-rata(Liquidity, Struktural)" if struk is not None
+         else "0,5 + 0,5 x Liquidity (adopsi tidak tersedia)")
+        + ("; dibatasi 50% oleh filter resesi" if L["resesi"][i] else ""))
+    # Separuh bobot rancangan jatuh ke Struktural yang belum terbukti. Versi yang hanya
+    # memakai komponen TERUJI disajikan berdampingan supaya bedanya terlihat.
+    hasil["eksposur_komponen_teruji_saja_persen"] = round(
+        eksposur(liq[i], None, L["resesi"][i]) * 100)
     hasil["status_bukti"] = STATUS_BUKTI
     hasil["wajib_dibaca"] = (
         "Ini FILTER REZIM ~12 minggu (seberapa besar eksposur), BUKAN sinyal entry harian "
         "dan bukan arah harga besok/pekan depan (horizon 4 minggu tidak terbukti). Long-only/"
-        "cash. Pakai angka riwayat_btc_12mg, BUKAN teks menurut_rancangan, bila keduanya "
-        "berbeda. Teruji pada BTC saja — untuk altcoin sebut itu.")
+        "cash; eksposur hanya diubah bila selisihnya >= 10 pp. Pakai angka riwayat_btc_12mg, "
+        "BUKAN teks menurut_rancangan, bila berbeda. Lihat status_bukti tiap bagian; "
+        "sebut kedua angka eksposur kalau berbeda >= 10 pp.")
     return hasil
+
+
+def pesan(h):
+    """Ringkasan Telegram mingguan dari hasil analisa()."""
+    if "tidak_tersedia" in h:
+        return "🕰 JAM LIKUIDITAS: tidak tersedia — " + h["tidak_tersedia"]
+    j = h["jam_likuiditas"]
+    baris = [f"🕰 JAM LIKUIDITAS & ADOPSI (sinyal {h['sinyal_jumat']})",
+             f"Liquidity {h['skor_likuiditas']:+.2f} · fase {j['fase']}",
+             f"  riwayat BTC 12 mg fase ini: {j['riwayat_btc_12mg_kuadran_ini']}",
+             "  komponen: " + " · ".join(f"{k.split('_')[0]} {v:+.2f}"
+                                         for k, v in h["komponen"].items()),
+             f"Filter resesi: {'AKTIF' if h['filter_resesi_L5']['aktif'] else 'tidak aktif'}"]
+    a = h.get("adopsi_struktural") or {}
+    baris.append(f"Adopsi struktural {a['skor']:+.2f} ({', '.join(a['komponen'])}) · "
+                 f"{a['jam_adopsi']['fase'] if a.get('jam_adopsi') else '-'} — belum terbukti"
+                 if "skor" in a else f"Adopsi: {a.get('tidak_tersedia', '-')}")
+    g = h.get("gelombang") or {}
+    if "skor" in g:
+        baris.append(f"Gelombang {g['skor']:+.2f} (funding {g['W1_funding_persen_per_8jam']}%"
+                     f"/8j, F&G {g['W2_fear_greed_7hari']}) — aturan potong ditolak data")
+    baris += ["",
+              f"Target eksposur BTC (rancangan): {h['target_eksposur_btc_persen']}%",
+              f"Komponen teruji saja: {h['eksposur_komponen_teruji_saja_persen']}%",
+              "Filter rezim ~12 minggu, long-only — bukan sinyal entry, bukan nasihat."]
+    for w in (h.get("peringatan_basi") or []):
+        baris.append(f"⚠ basi: {w}")
+    return "\n".join(baris)
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ringkas", action="store_true", help="JSON padat untuk brief")
+    ap.add_argument("--pesan", action="store_true",
+                    help="baca JSON analisa dari stdin, cetak pesan Telegram")
     a = ap.parse_args()
+    if a.pesan:
+        print(pesan(json.load(sys.stdin)))
+        return
     h = analisa()
     print(json.dumps(h, ensure_ascii=False, separators=(",", ":") if a.ringkas else None,
                      indent=None if a.ringkas else 2))

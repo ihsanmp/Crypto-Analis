@@ -44,10 +44,13 @@ sering lebih menentukan daripada berita proyeknya sendiri.
 
 **Rezim likuiditas = blok JAM LIKUIDITAS (jam_likuiditas.py)**, langkah pertama top-down.
 Skornya (−1..+1: yield 2th, likuiditas bersih Fed, dolar, NFCI; filter resesi Sahm) TERUJI
-pada BTC untuk horizon **~12 minggu** (IC +0,33, lolos di dua era) — tidak untuk 4 minggu,
-jadi jangan dipakai menjelaskan gerak harian/pekanan. Arti kuadran ambil dari angka
-`riwayat_btc_12mg_*`, bukan dari teori rancangan: "ketat, mulai membaik" justru terburuk.
-Adopsi (arus ETF) belum diuji. Target eksposur = filter rezim long-only, bukan sinyal entry.
+untuk horizon **~12 minggu** pada BTC (IC +0,33), ETH (+0,30), dan SOL (+0,34) — tidak untuk
+4 minggu, jadi jangan dipakai menjelaskan gerak harian/pekanan. Arti kuadran ambil dari angka
+`riwayat_btc_12mg_*`, bukan teori rancangan: "ketat, mulai membaik" justru terburuk.
+Adopsi struktural (ETF/13F/treasury) BELUM terbukti. Gelombang (funding + Fear & Greed)
+terbalik dari teori: tinggi = momentum, bukan tanda puncak — jangan dipakai sebagai alasan
+mengurangi posisi. Target eksposur = filter rezim long-only, bukan sinyal entry; sebut juga
+`eksposur_komponen_teruji_saja_persen` bila beda >= 10 pp.
 <!-- /BLOK -->
 
 <!-- BLOK: analis-forex | pemicu: forex -->

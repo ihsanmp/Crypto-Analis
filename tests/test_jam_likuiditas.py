@@ -50,25 +50,75 @@ def test_eksposur_dan_filter_resesi():
     assert jl.eksposur(0.0, -0.4, False) == 0.4
 
 
+def test_aturan_gelombang_dimatikan_karena_ditolak_data():
+    """Rancangan: Gelombang > 0,5 -> potong 25 pp. Uji: minggu-minggu itu justru diikuti
+    median +20% dalam 12 minggu. Aturan yang merugikan tidak boleh diam-diam aktif."""
+    assert jl.PAKAI_ATURAN_GELOMBANG is False
+    assert jl.eksposur(0.2, None, False, gelombang=0.9) == jl.eksposur(0.2, None, False)
+    assert "DITOLAK" in jl.STATUS_GELOMBANG
+
+
 def test_arti_kuadran_dari_uji_bukan_teori():
     j = jl.jarum(-0.3, 0.2, terukur=True)
     assert j["fase"] == "KETAT, MULAI MEMBAIK"
     assert "MENOLAKNYA" in j["riwayat_btc_12mg_kuadran_ini"]
     assert j["riwayat_btc_12mg_tersil_skor"].startswith("RENDAH")
-    assert "BELUM DIUJI" in jl.jarum(0.3, 0.2)["riwayat"]          # jam adopsi
+    adopsi = jl.jarum(0.3, 0.2)
+    assert adopsi["fase"].startswith("ADOPSI") and "BELUM TERBUKTI" in adopsi["riwayat"]
     assert "TERUJI" in jl.STATUS_BUKTI and "4 minggu TIDAK lolos" in jl.STATUS_BUKTI
+    assert "ETH" in jl.STATUS_BUKTI and "SOL" in jl.STATUS_BUKTI
+
+
+def _arus(n=400, awal=date(2024, 1, 11)):
+    return [((awal + timedelta(days=i)).isoformat(), (100.0 if i % 3 else -50.0) * (1 + i % 11))
+            for i in range(n)]
 
 
 def test_adopsi_dari_arus_etf():
-    awal = date(2024, 1, 11)
-    baris = [{"date": (awal + timedelta(days=i)).isoformat(),
-              "totalNetInflow": (100.0 if i % 3 else -50.0) * (1 + i % 11),
-              "totalNetAssets": 1e5} for i in range(400)]
-    jumat = jl.jumat_dari(awal, awal + timedelta(days=400))
-    A = jl.deret_adopsi(baris, jumat)
+    arus = _arus()
+    harga = {t: 50_000.0 for t, _ in arus}
+    jumat = jl.jumat_dari(date(2024, 1, 12), date(2024, 1, 11) + timedelta(days=400))
+    A = jl.deret_adopsi(arus, harga, jumat)
     assert A["A1"][0] is None and A["A1"][-1] is not None
     assert 0 <= A["A2"][-1] <= 1
-    assert any(v is not None for v in A["struktural"])
+    i = max(k for k, v in enumerate(A["struktural"]) if v is not None)
+    assert A["komponen_terpakai"][i] == ("A1", "A2")      # A3/A4 belum ada -> tidak ikut
+
+
+def test_a3_dari_13f_memakai_tanggal_tersedia_bukan_akhir_kuartal():
+    arus = _arus()
+    harga = {t: 50_000.0 for t, _ in arus}
+    jumat = jl.jumat_dari(date(2024, 1, 12), date(2025, 2, 1))
+    q = [(date(2024, 6, 30) + timedelta(days=45),
+          {"akhir_kuartal": "2024-06-30", "pemegang": 1000, "nilai_usd": 5e10}),
+         (date(2024, 9, 30) + timedelta(days=45),
+          {"akhir_kuartal": "2024-09-30", "pemegang": 1100, "nilai_usd": 6e10})]
+    A = jl.deret_adopsi(arus, harga, jumat, q)
+    sebelum = [s for f, s in zip(jumat, A["skor_A3"]) if f < date(2024, 11, 14)]
+    sesudah = [s for f, s in zip(jumat, A["skor_A3"]) if f >= date(2024, 11, 14)]
+    assert all(s is None for s in sebelum) and sesudah[0] > 0
+    assert A["info_A3"][-1]["pemegang_qoq_persen"] == 10.0
+
+
+def test_validasi_menolak_satuan_dan_menandai_basi():
+    hari = date(2026, 10, 15)
+    fred = {k: [(hari, sum(jl.RENTANG_WAJAR[k]) / 2)] for k in jl.SERI}
+    assert jl.validasi(fred, hari) == ([], [])
+    fred["WALCL"] = [(hari, 6_700.0)]                       # miliar, bukan juta
+    fred["NFCI"] = [(hari - timedelta(days=30), 0.0)]
+    satuan, basi = jl.validasi(fred, hari)
+    assert satuan and "WALCL" in satuan[0] and basi and "NFCI" in basi[0]
+
+
+def test_pesan_telegram_menyebut_kedua_eksposur():
+    h = {"sinyal_jumat": "2026-10-09", "skor_likuiditas": -0.43,
+         "komponen": {"L1_bunga": -0.3}, "filter_resesi_L5": {"aktif": False},
+         "jam_likuiditas": {"fase": "KETAT & MAKIN KETAT",
+                            "riwayat_btc_12mg_kuadran_ini": "median -0,2%"},
+         "adopsi_struktural": {"tidak_tersedia": "x"}, "gelombang": {},
+         "target_eksposur_btc_persen": 43, "eksposur_komponen_teruji_saja_persen": 29}
+    t = jl.pesan(h)
+    assert "43%" in t and "29%" in t and "bukan sinyal entry" in t
 
 
 def test_masuk_brief_crypto():

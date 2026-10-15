@@ -3391,7 +3391,8 @@ def data_mentah_crypto(coin, proyeksi=True):
     tugas.append(("LINTAS ASET (sebab.py)", ["cloud/sebab.py", coin, "--ringkas"], 0))
     # Liquidity & Adoption Clock (rancangan user 15 Okt 2026): rezim likuiditas Fed/dolar/
     # kondisi keuangan sebagai filter eksposur ~12 minggu — langkah pertama top-down di
-    # seed analis. Teruji pada BTC (uji_jam_likuiditas.py); ~1,6 rb karakter.
+    # seed analis. Teruji pada BTC/ETH/SOL (uji_jam_likuiditas.py, uji_jam_lanjutan.py);
+    # ~2,6 rb karakter termasuk adopsi & gelombang.
     tugas.append(("JAM LIKUIDITAS (jam_likuiditas.py)",
                   ["cloud/jam_likuiditas.py", "--ringkas"], 0))
     lewat = []

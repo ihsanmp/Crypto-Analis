@@ -1,0 +1,88 @@
+# Liquidity & Adoption Clock MINGGUAN — perbarui data adopsi, hitung skor, kirim ke Telegram.
+#
+# Jadwal mengikuti rancangan: sinyal dihitung sesudah penutupan pasar AS hari Jumat
+# (Sabtu pagi WIB). Cron GitHub bisa meleset berjam-jam; untuk sinyal mingguan itu tidak
+# masalah.
+#
+# Yang diperbarui & disimpan ke repo (data publik, tanpa kunci):
+#   etf_arus_farside.json     arus harian ETF spot BTC (A1/A2)
+#   treasury_arsip.jsonl      snapshot total BTC treasury perusahaan (A4 — riwayat dibangun di sini)
+#   etf_13f.json              ringkasan 13F per kuartal (A3; butuh secret SEC_CONTACT)
+#   funding_btcusdt_harian.json  funding harian Binance dari arsip bulanan (Gelombang W1)
+name: Jam likuiditas mingguan
+
+on:
+  schedule:
+    - cron: "30 0 * * 6"      # Sabtu ~07:30 WIB
+  workflow_dispatch:
+
+# Grup yang sama dengan bot.yml: keduanya bisa menulis ke cloud/data dan push ke main.
+concurrency:
+  group: telegram-analisa-bot
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  jam:
+    runs-on: ubuntu-latest
+    env:
+      COINALYZE_API_KEY: ${{ secrets.COINALYZE_API_KEY }}
+      SOSOVALUE_API_KEY: ${{ secrets.SOSOVALUE_API_KEY }}
+      SEC_CONTACT: ${{ secrets.SEC_CONTACT }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Perbarui arus ETF & arsip treasury
+        run: |
+          python cloud/adopsi.py --perbarui
+          python cloud/adopsi.py --cek-silang || true
+
+      - name: Perbarui funding Binance
+        run: python -c "import sys; sys.path.insert(0,'cloud'); import gelombang as g; h,c=g.funding_harian(); print(len(h),'hari', c)"
+
+      # Data set 13F SEC berukuran puluhan MB per rentang filing; hanya yang BELUM pernah
+      # diproses yang diunduh. Gagal di sini tidak boleh membatalkan skor mingguan.
+      - name: Perbarui 13F (A3)
+        continue-on-error: true
+        timeout-minutes: 40
+        run: python cloud/etf_13f.py
+
+      - name: Hitung skor
+        run: python cloud/jam_likuiditas.py > jam.json && head -c 3000 jam.json
+
+      - name: Simpan data
+        run: |
+          ADA=""
+          for f in cloud/data/etf_arus_farside.json cloud/data/treasury_arsip.jsonl \
+                   cloud/data/etf_13f.json cloud/data/funding_btcusdt_harian.json; do
+            [ -f "$f" ] && ADA="$ADA $f"
+          done
+          if [ -z "$(git status --porcelain $ADA)" ]; then
+            echo "tidak ada perubahan — lewati commit"; exit 0
+          fi
+          git config user.name "crypto-analis-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add $ADA
+          git commit -m "Data jam likuiditas mingguan ${GITHUB_RUN_ID}"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin HEAD:main && exit 0
+            echo "percobaan $i gagal, ulangi..."; sleep 3
+          done
+          echo "::warning::Data mingguan gagal disimpan setelah 3 percobaan."
+
+      - name: Kirim ke Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          PESAN=$(python cloud/jam_likuiditas.py --pesan < jam.json)
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" --data-urlencode "text=${PESAN}" > /dev/null
