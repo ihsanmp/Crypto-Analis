@@ -83,7 +83,12 @@ def prediksi_harga(candles, horizon, simbol=""):
             "kisaran_80_persen": [round(q[10], 8), round(q[90], 8)],
             "kisaran_50_persen": [round(q[25], 8), round(q[75], 8)],
             "titik_tengah": round(q[50], 8),
-            "lebar_80_persen_dari_harga": round((q[90] - q[10]) / harga * 100, 2),
+            # Jarak KEDUA sisi ditulis eksplisit. Versi pertama memberi "lebar total" 5,08%
+            # dan model menulisnya "±5%" — padahal -2,5% s/d +2,6%.
+            "jarak_80_dari_harga": f"{(q[10] / harga - 1) * 100:+.1f}% s/d "
+                                   f"{(q[90] / harga - 1) * 100:+.1f}%",
+            "jarak_50_dari_harga": f"{(q[25] / harga - 1) * 100:+.1f}% s/d "
+                                   f"{(q[75] / harga - 1) * 100:+.1f}%",
             "riwayat_aset_ini_ditutup_lebih_tinggi": (
                 f"{100 * sum(naik) / len(naik):.1f}% dari {len(naik)} jendela"
                 if naik else None),
@@ -92,7 +97,12 @@ def prediksi_harga(candles, horizon, simbol=""):
         item["kalibrasi_terukur"] = (
             {"kisaran_80_benar": kal[0], "kisaran_50_benar": kal[1],
              "btc_ditutup_lebih_tinggi_2012_2026": kal[2],
-             "diuji_pada": "BTC harian 2012-2026 (semua / 2019-2026), uji_prediksi.py"}
+             "diuji_pada": "BTC harian 2012-2026 (semua / 2019-2026), uji_prediksi.py",
+             # Arah pembacaannya sempat terbalik di jawaban produksi ("80-84% berarti
+             # lebih sempit dari kenyataan") karena tercampur kalibrasi tabel puncak/dasar.
+             "wajib_dibaca": ("benar LEBIH dari 80% = kisaran ini sedikit LEBIH LEBAR dari perlu "
+                      "(konservatif); KURANG dari 80% = sedikit lebih sempit, lebih sering "
+                      "ditembus")}
             if kal else
             "horizon ini BELUM diukur kalibrasinya (yang diukur: 1, 7, 30 hari) — sebut begitu")
         baris.append(item)
@@ -429,6 +439,12 @@ def main():
     # menyiratkan — dan sisi BAWAH yang paling sering meleset. Menyebut "p10" tanpa
     # menyebut ini membuat pembacanya mengira risikonya sudah terhitung penuh.
     keluar["kalibrasi_terukur"] = {
+        # Berlaku untuk tabel PUNCAK/DASAR di atas, BUKAN prediksi_harga — keduanya pernah
+        # tercampur dan "lebih sempit, terutama di sisi bawah" ditempel ke kisaran prediksi
+        # yang justru sedikit lebih lebar dari perlu.
+        "berlaku_untuk": ("peluang_historis & kelayakan_imbalan_risiko (puncak/dasar yang "
+                          "TERCAPAI dalam jendela) — BUKAN prediksi_harga, yang punya "
+                          "kalibrasinya sendiri"),
         "cakupan_p10_p90_sebenarnya_persen": "72-80 (puncak) · 72-74 (dasar)",
         "target_nominal_persen": 80,
         "diuji_pada": "BTC/ETH/SOL, 1.068 titik asal, horizon 60 hari",

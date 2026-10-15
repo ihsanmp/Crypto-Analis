@@ -4723,7 +4723,7 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
     jejak = audit_angka(brief, body)
     asal = audit_sumber(brief)
     imbalan = audit_imbalan(body)
-    outlook = audit_outlook(brief, body)
+    outlook = audit_outlook(brief, body, kind)
     keyakinan = audit_keyakinan(brief, body)
     if not body.startswith("❌"):
         # Aturan user ditegakkan KODE, bukan diharapkan. Pelanggaran yang punya
@@ -4850,7 +4850,7 @@ def audit_imbalan(body):
         return None
 
 
-def audit_outlook(brief, body):
+def audit_outlook(brief, body, kind=None):
     """Apakah jawaban memuat OUTLOOK, padahal briefnya membawa data proyeksi?
 
     proyeksi.py jalan di SETIAP analisa dan menghasilkan sebaran p10-p90 ke depan. Sebelum
@@ -4875,7 +4875,16 @@ def audit_outlook(brief, body):
     # OUTLOOK yang hilang tidak akan pernah ketahuan.
     if "peluang_historis" not in brief:
         return None                      # scriptnya jalan tapi gagal mengisi
-    return None if "OUTLOOK" in body else "HILANG"
+    # MODE NGOBROL. Proyeksi 60 hari ikut di SETIAP brief koin, jadi jawaban yang tidak
+    # menanyakan masa depan ("penyebab btc tiba-tiba naik pagi ini") selalu divonis
+    # "tidak dipakai" — dan jawaban prediksi pun kena karena tidak memakai judul OUTLOOK
+    # milik format analisa. Terjadi di >= 8 dari 25 run terakhir (15 Okt 2026). Di mode
+    # ngobrol, audit hanya berlaku bila proyeksi memang DIMINTA (judul berhorizon).
+    if kind == "chat" and "### PROYEKSI (proyeksi.py, horizon" not in brief:
+        return None
+    if "OUTLOOK" in body or re.search(r"kisaran|rentang|jendela|peluang", body, re.I):
+        return None
+    return "HILANG"
 
 
 _RE_KELENGKAPAN = re.compile(r"(\d+) dari (\d+) sumber berisi data")

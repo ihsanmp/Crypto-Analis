@@ -38,7 +38,8 @@ def test_kisaran_prediksi_tersusun_dan_melebar_dengan_horizon():
         lo50, hi50 = b["kisaran_50_persen"]
         assert lo80 < lo50 < b["titik_tengah"] < hi50 < hi80
         assert abs(b["titik_tengah"] - harga) < 1e-6        # tanpa arah
-        lebar.append(b["lebar_80_persen_dari_harga"])
+        lebar.append(hi80 - lo80)
+        assert b["jarak_80_dari_harga"].startswith("-") and " s/d +" in b["jarak_80_dari_harga"]
     assert lebar[0] < lebar[1] < lebar[2]
     assert "JANGAN satu angka" in h["wajib_dibaca"]
 
@@ -95,3 +96,29 @@ def test_pertanyaan_prediksi_sampai_ke_prompt_lewat_process():
     finally:
         (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.run_claude,
          bot.data_mentah_crypto, bot.data_proyeksi, bot._muat_riwayat) = asli
+
+
+def test_jarak_dari_harga_bukan_lebar_total():
+    """Produksi 15 Okt: lebar total 5,08% ditulis model sebagai "±5%" — padahal -2,5/+2,6%."""
+    b = proyeksi.prediksi_harga(_candles(sigma=0.02), [1], "BTC")["per_horizon"][0]
+    bawah, atas = (float(x.strip(" %").replace("+", "")) for x in b["jarak_80_dari_harga"].split("s/d"))
+    assert -4 < bawah < -1 and 1 < atas < 4
+
+
+def test_kalibrasi_prediksi_tidak_tertukar_dengan_tabel_puncak_dasar():
+    """Produksi: "80-84% benar -> lebih sempit dari kenyataan" — arahnya terbalik, dicampur
+    dari kalibrasi tabel puncak/dasar 60 hari."""
+    b = proyeksi.prediksi_harga(_candles(), [7], "BTC")["per_horizon"][0]
+    assert "LEBIH LEBAR" in b["kalibrasi_terukur"]["wajib_dibaca"]
+    src = open(proyeksi.__file__, encoding="utf-8").read()
+    assert "BUKAN prediksi_harga" in src
+
+
+def test_audit_outlook_tidak_salah_vonis_jawaban_ngobrol():
+    """>= 8 dari 25 run: "Sebaran 60 hari ... tidak dipakai" menempel di jawaban ngobrol."""
+    bawaan = "PROYEKSI (proyeksi.py)\n{'peluang_historis': {}}"          # brief koin biasa
+    diminta = "### PROYEKSI (proyeksi.py, horizon 7 hari)\n{'peluang_historis': {}}"
+    assert bot.audit_outlook(bawaan, "BTC naik karena likuidasi short", "chat") is None
+    assert bot.audit_outlook(diminta, "Kisaran 80% besok: $79.005-$83.130", "chat") is None
+    assert bot.audit_outlook(diminta, "Target $100 -> $120", "chat") == "HILANG"
+    assert bot.audit_outlook(bawaan, "Target $100 -> $120", "analisa") == "HILANG"
