@@ -7491,8 +7491,8 @@ def test_ppi_cpi_terjangkau_dari_bot():
     bot.JEJAK_PATH = os.path.join(_tf.mkdtemp(), "d.json")
     bot.simpan_riwayat = lambda *a: None
     bot.send_message = lambda *a: True
-    bot.data_mentah_pasar = lambda *a: "### DATA"
-    bot.data_mentah_crypto = lambda *a: "### DATA"
+    bot.data_mentah_pasar = lambda *a, **k: "### DATA"
+    bot.data_mentah_crypto = lambda *a, **k: "### DATA"
     dipanggil, prompt = [], {}
     bot.data_ppi_cpi = lambda: (dipanggil.append(1), "### APAKAH PPI MEMPREDIKSI KEJUTAN CPI")[1]
     bot.run_claude = lambda p, *a, **k: (prompt.__setitem__("p", p), ("ok", None))[1]
@@ -7521,8 +7521,8 @@ def test_peta_rilis_terjangkau_dari_bot():
     bot.JEJAK_PATH = os.path.join(_tf.mkdtemp(), "d.json")
     bot.simpan_riwayat = lambda *a: None
     bot.send_message = lambda *a: True
-    bot.data_mentah_pasar = lambda *a: "### DATA"
-    bot.data_mentah_crypto = lambda *a: "### DATA"
+    bot.data_mentah_pasar = lambda *a, **k: "### DATA"
+    bot.data_mentah_crypto = lambda *a, **k: "### DATA"
     dipanggil, prompt = [], {}
     bot.data_rilis = lambda *a: (dipanggil.append(a), "### PETA RILIS CPI")[1]
     bot.run_claude = lambda p, *a, **k: (prompt.__setitem__("p", p), ("ok", None))[1]
@@ -7915,8 +7915,8 @@ def test_naratif_terjangkau_lewat_process_sungguhan():
     bot.JEJAK_PATH = os.path.join(_tf.mkdtemp(), "d.json")
     bot.simpan_riwayat = lambda *a: None
     bot.send_message = lambda *a: True
-    bot.data_mentah_crypto = lambda *a: "### DATA"
-    bot.data_mentah_pasar = lambda *a: "### DATA"
+    bot.data_mentah_crypto = lambda *a, **k: "### DATA"
+    bot.data_mentah_pasar = lambda *a, **k: "### DATA"
     bot.data_proyeksi = lambda *a, **k: ""
     bot.data_sebab = lambda *a, **k: ""
     bot.belajar_dari = lambda *a, **k: []
@@ -8867,7 +8867,7 @@ def test_lanjutan_mewarisi_aset_bobot_dan_proyeksi():
     bot.simpan_riwayat = lambda *a: None
     bot.send_message = lambda *a: True
     dipanggil = {}
-    bot.data_mentah_crypto = lambda s, *a: (dipanggil.__setitem__("aset", s), "### DATA")[1]
+    bot.data_mentah_crypto = lambda s, *a, **k: (dipanggil.__setitem__("aset", s), "### DATA")[1]
     bot.data_proyeksi = lambda t, j, s: (dipanggil.__setitem__("proyeksi", (t, s)), "### PROYEKSI")[1]
     bot.run_claude = lambda p, *a, **k: (dipanggil.__setitem__("putaran", k.get("max_turns")),
                                          ("ok", None))[1]

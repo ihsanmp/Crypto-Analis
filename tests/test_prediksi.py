@@ -84,15 +84,23 @@ def test_pertanyaan_prediksi_sampai_ke_prompt_lewat_process():
     bot.simpan_riwayat = lambda *a: None
     bot.send_message = lambda *a: True
     bot._muat_riwayat = lambda: []
-    bot.data_mentah_crypto = lambda *a: "### DATA"
+    bawaan = []
+    bot.data_mentah_crypto = lambda *a, **k: (bawaan.append(k.get("proyeksi", True)),
+                                              "### DATA")[1]
     dipanggil, prompt = [], {}
     bot.data_proyeksi = lambda t, j, s: (dipanggil.append((t, s)), "### PREDIKSI KISARAN")[1]
     bot.run_claude = lambda p, *a, **k: (prompt.__setitem__("p", p), ("ok", None))[1]
     try:
         for teks in ("prediksi btc daily", "prediksi harga eth weekly", "btc bulan depan kemana?"):
-            dipanggil.clear(); prompt.clear()
+            dipanggil.clear(); prompt.clear(); bawaan.clear()
             bot.process("tok", "9", teks)
             assert dipanggil and "### PREDIKSI KISARAN" in prompt.get("p", ""), teks
+            # Blok proyeksi 60 hari bawaan dilewati: dua blok proyeksi = token dobel dan
+            # dua kalibrasi yang sempat tertukar.
+            assert bawaan == [False], (teks, bawaan)
+        bawaan.clear()
+        bot.process("tok", "9", "penyebab btc tiba tiba naik pagi ini")
+        assert bawaan == [True], bawaan
     finally:
         (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.run_claude,
          bot.data_mentah_crypto, bot.data_proyeksi, bot._muat_riwayat) = asli

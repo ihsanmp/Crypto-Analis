@@ -3319,7 +3319,7 @@ def _sisipkan_jejak(bagian):
 _CG_ID_KOIN = {}
 
 
-def data_mentah_crypto(coin):
+def data_mentah_crypto(coin, proyeksi=True):
     """Kumpulkan data koin dengan KODE, hanya yang RELEVAN untuk koin itu.
 
     Dijalankan paralel supaya penyaringan tidak mengorbankan kecepatan. Bagian yang
@@ -3415,9 +3415,13 @@ def data_mentah_crypto(coin):
         tugas.append(("ARUS DANA ETF SPOT (etf.py)", ["cloud/etf.py", coin, "--ringkas"], 0))
     else:
         lewat.append(f"etf.py ({t} tidak punya ETF spot AS)")
-    tugas.append(("PROYEKSI (proyeksi.py)",
-                  ["cloud/proyeksi.py", coin, "--hari", "60", "--ringkas",
-                   "--prediksi", "1,7,30"], 0))
+    # proyeksi=False saat jalur ngobrol menjalankan data_proyeksi() sendiri untuk horizon
+    # yang DIMINTA. Dua blok proyeksi di satu brief (60 hari + horizon user) membayar token
+    # dua kali, dan dua kalibrasinya sempat tertukar di jawaban produksi (15 Okt 2026).
+    if proyeksi:
+        tugas.append(("PROYEKSI (proyeksi.py)",
+                      ["cloud/proyeksi.py", coin, "--hari", "60", "--ringkas",
+                       "--prediksi", "1,7,30"], 0))
     # Regresi log BTC — chart BitcoinTalk 2014 yang dikirim user (24 Sep 2026). Yang
     # ditanam UJIANNYA, bukan garisnya: di luar sampelnya garis itu gagal, dan tanpa blok
     # ini model akan mengutip chart populer itu sebagai "nilai wajar". Harga acuannya
@@ -3737,7 +3741,7 @@ def data_banding(aset):
             + (keluar if not err else f"tidak tersedia: {err}"))
 
 
-def data_mentah_pasar(simbol, jenis):
+def data_mentah_pasar(simbol, jenis, proyeksi=True):
     """Kumpulkan data deterministik saham/forex dengan KODE, bukan lewat model.
 
     Kenapa: tahap gather pernah mengembalikan brief 759 karakter untuk 'analisa gold'
@@ -3811,8 +3815,9 @@ def data_mentah_pasar(simbol, jenis):
                        "--simbol", simbol, "--pasar", "--rezim", "--ringkas"]))
     # Berlaku untuk saham maupun forex: sebaran historis + level struktural, supaya seed
     # FORECASTER punya angka untuk dikutip pada tahap sintesis yang berjalan tanpa tool.
-    tugas.append(("PROYEKSI (proyeksi.py)",
-                  ["cloud/proyeksi.py", simbol, "--hari", "60", "--pasar", "--ringkas"]))
+    if proyeksi:
+        tugas.append(("PROYEKSI (proyeksi.py)",
+                      ["cloud/proyeksi.py", simbol, "--hari", "60", "--pasar", "--ringkas"]))
 
     # Dijalankan paralel seperti jalur crypto. Jalur saham kini punya enam bagian dan
     # berurutan memakan ~70 detik, yang memakan jatah tahap analisa. Pekerja dibatasi 2
@@ -4584,17 +4589,23 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
                       file=sys.stderr)
         elif simbol_chat:
             try:
-                brief = (data_mentah_crypto(simbol_chat) if jenis_chat == "crypto"
-                         else data_mentah_pasar(simbol_chat, jenis_chat))
+                # Ditentukan DULU, supaya blok proyeksi bawaan tidak ikut dihitung saat
+                # proyeksi untuk horizon yang diminta akan ditambahkan di bawah.
+                minta_proyeksi = bool(
+                    _MINTA_PROYEKSI.search(text.lower()) or _KEMANA_RE.search(text) or (
+                        lanjut_dari and _MINTA_PROYEKSI.search(
+                            _pesan_terakhir(chat_id).lower())))
+                brief = (data_mentah_crypto(simbol_chat, proyeksi=not minta_proyeksi)
+                         if jenis_chat == "crypto"
+                         else data_mentah_pasar(simbol_chat, jenis_chat,
+                                                proyeksi=not minta_proyeksi))
                 # Pertanyaan proyeksi butuh angka yang tidak ada di brief biasa: sebaran
                 # historis, ATR, dan — kalau user menyebut target — pengujian target itu.
                 if _MINTA_NARATIF.search(text or ""):
                     brief += "\n\n" + data_naratif(simbol_chat)
                 # Lanjutan pertanyaan proyeksi ("kalo seminggu?") mewarisi niatnya;
                 # horizonnya tetap dibaca dari pesan BARU.
-                if _MINTA_PROYEKSI.search(text.lower()) or _KEMANA_RE.search(text) or (
-                        lanjut_dari and _MINTA_PROYEKSI.search(
-                            _pesan_terakhir(chat_id).lower())):
+                if minta_proyeksi:
                     brief += "\n\n" + data_proyeksi(text, jenis_chat, simbol_chat)
                 # Pertanyaan SEBAB butuh pemisahan berlapis: berapa bagian gerakan ini
                 # milik seluruh pasar, berapa milik selera risiko yang lebih luas, dan
