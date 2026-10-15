@@ -1,37 +1,37 @@
 {
  "berkas_ia": {
-  "2020-06-30": "ia050120.zip",
-  "2020-09-30": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2020-12-31": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2021-03-31": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2021-06-30": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2021-09-30": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2021-12-31": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2022-03-31": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2022-06-30": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2022-09-30": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2022-12-31": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2023-03-31": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2023-06-30": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2023-09-30": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2023-12-31": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2024-03-31": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2024-06-30": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2024-09-30": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2024-12-31": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2025-03-31": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2025-06-30": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2025-09-30": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2025-12-31": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2026-03-31": "ia050120.zip (terdekat, SESUDAH batas)",
-  "2026-06-30": "ia050120.zip (terdekat, SESUDAH batas)"
+  "2020-06-30": "ia080320.zip",
+  "2020-09-30": "ia110220.zip",
+  "2020-12-31": "ia020121.zip",
+  "2021-03-31": "ia050321.zip",
+  "2021-06-30": "ia080221.zip",
+  "2021-09-30": "ia110121.zip",
+  "2021-12-31": "ia020722.zip",
+  "2022-03-31": "ia050222.zip",
+  "2022-06-30": "ia080122.zip",
+  "2022-09-30": "ia110722.zip",
+  "2022-12-31": "ia020323.zip",
+  "2023-03-31": "ia051023_1.zip",
+  "2023-06-30": "ia051023_1.zip",
+  "2023-09-30": "ia051023_1.zip (terdekat; tidak ada berkas <= 120 hari sebelum batas filing)",
+  "2023-12-31": "ia051023_1.zip (terdekat; tidak ada berkas <= 120 hari sebelum batas filing)",
+  "2024-03-31": "ia051023_1.zip (terdekat; tidak ada berkas <= 120 hari sebelum batas filing)",
+  "2024-06-30": "ia051023_1.zip (terdekat; tidak ada berkas <= 120 hari sebelum batas filing)",
+  "2024-09-30": "ia122025.zip (terdekat; tidak ada berkas <= 120 hari sebelum batas filing)",
+  "2024-12-31": "ia122025.zip (terdekat; tidak ada berkas <= 120 hari sebelum batas filing)",
+  "2025-03-31": "ia122025.zip (terdekat; tidak ada berkas <= 120 hari sebelum batas filing)",
+  "2025-06-30": "ia122025.zip (terdekat; tidak ada berkas <= 120 hari sebelum batas filing)",
+  "2025-09-30": "ia122025.zip (terdekat; tidak ada berkas <= 120 hari sebelum batas filing)",
+  "2025-12-31": "ia020226.zip",
+  "2026-03-31": "ia050126.zip",
+  "2026-06-30": "ia08032026_1.zip"
  },
  "catatan": "13F-HR asli saja. Jenis pemegang dari Form ADV Item 5.D (jenis klien dengan RAUM terbesar), lewat CRD/nomor berkas SEC di sampul 13F; berkas IA yang dipakai = yang terakhir terbit sebelum batas filing kuartal itu. Filer tanpa CRD dipetakan dari nama hanya untuk bank/institusi yang jelas. HEDGE_FUND_DANA_PRIVAT memuat pelaku basis trade (long ETF + short futures, netral arah) — bandingkan dengan short leveraged funds CFTC.",
- "diperbarui_utc": "2026-10-15T14:42:39+00:00",
+ "diperbarui_utc": "2026-10-15T14:54:20+00:00",
  "kuartal": [
   {
    "akhir_kuartal": "2024-03-31",
-   "berkas_ia": "ia050120.zip (terdekat, SESUDAH batas)",
+   "berkas_ia": "ia051023_1.zip (terdekat; tidak ada berkas <= 120 hari sebelum batas filing)",
    "nilai_usd": 11187241213,
    "pemegang": 987,
    "per_jenis": {
@@ -40,34 +40,34 @@
      "pemegang": 29
     },
     "HEDGE_FUND_DANA_PRIVAT": {
-     "nilai_usd": 4844273143,
-     "pemegang": 67
+     "nilai_usd": 5076844341,
+     "pemegang": 78
     },
     "INSTITUSI": {
-     "nilai_usd": 237028482,
-     "pemegang": 25
+     "nilai_usd": 238988252,
+     "pemegang": 26
     },
     "LAINNYA": {
-     "nilai_usd": 49191579,
-     "pemegang": 16
+     "nilai_usd": 52127740,
+     "pemegang": 19
     },
     "MANAJER_REKSA_DANA": {
-     "nilai_usd": 227791134,
+     "nilai_usd": 1198192264,
      "pemegang": 15
     },
     "PENASIHAT_KEKAYAAN": {
-     "nilai_usd": 2780200685,
-     "pemegang": 598
+     "nilai_usd": 2003589579,
+     "pemegang": 700
     },
     "TIDAK_TERKLASIFIKASI": {
-     "nilai_usd": 3003406906,
-     "pemegang": 237
+     "nilai_usd": 2572149753,
+     "pemegang": 120
     }
    }
   },
   {
    "akhir_kuartal": "2024-06-30",
-   "berkas_ia": "ia050120.zip (terdekat, SESUDAH batas)",
+   "berkas_ia": "ia051023_1.zip (terdekat; tidak ada berkas <= 120 hari sebelum batas filing)",
    "nilai_usd": 10902516562,
    "pemegang": 1130,
    "per_jenis": {
@@ -76,34 +76,34 @@
      "pemegang": 38
     },
     "HEDGE_FUND_DANA_PRIVAT": {
-     "nilai_usd": 4136670454,
-     "pemegang": 72
+     "nilai_usd": 4260215656,
+     "pemegang": 80
     },
     "INSTITUSI": {
-     "nilai_usd": 163455755,
-     "pemegang": 26
+     "nilai_usd": 161214460,
+     "pemegang": 30
     },
     "LAINNYA": {
-     "nilai_usd": 39098188,
-     "pemegang": 22
+     "nilai_usd": 39014421,
+     "pemegang": 23
     },
     "MANAJER_REKSA_DANA": {
-     "nilai_usd": 224157945,
-     "pemegang": 14
+     "nilai_usd": 1038998359,
+     "pemegang": 13
     },
     "PENASIHAT_KEKAYAAN": {
-     "nilai_usd": 2522586311,
-     "pemegang": 673
+     "nilai_usd": 1980894866,
+     "pemegang": 799
     },
     "TIDAK_TERKLASIFIKASI": {
-     "nilai_usd": 3767261918,
-     "pemegang": 285
+     "nilai_usd": 3372892809,
+     "pemegang": 147
     }
    }
   },
   {
    "akhir_kuartal": "2024-09-30",
-   "berkas_ia": "ia050120.zip (terdekat, SESUDAH batas)",
+   "berkas_ia": "ia122025.zip (terdekat; tidak ada berkas <= 120 hari sebelum batas filing)",
    "nilai_usd": 12465584605,
    "pemegang": 1169,
    "per_jenis": {
@@ -112,34 +112,34 @@
      "pemegang": 37
     },
     "HEDGE_FUND_DANA_PRIVAT": {
-     "nilai_usd": 5374004267,
-     "pemegang": 76
+     "nilai_usd": 5581494543,
+     "pemegang": 80
     },
     "INSTITUSI": {
-     "nilai_usd": 191229285,
-     "pemegang": 27
+     "nilai_usd": 150749314,
+     "pemegang": 24
     },
     "LAINNYA": {
-     "nilai_usd": 45732570,
-     "pemegang": 22
+     "nilai_usd": 32454955,
+     "pemegang": 24
     },
     "MANAJER_REKSA_DANA": {
-     "nilai_usd": 217211918,
-     "pemegang": 14
+     "nilai_usd": 1148518005,
+     "pemegang": 17
     },
     "PENASIHAT_KEKAYAAN": {
-     "nilai_usd": 2866916518,
-     "pemegang": 701
+     "nilai_usd": 2301505865,
+     "pemegang": 809
     },
     "TIDAK_TERKLASIFIKASI": {
-     "nilai_usd": 3710811306,
-     "pemegang": 292
+     "nilai_usd": 3191183182,
+     "pemegang": 178
     }
    }
   },
   {
    "akhir_kuartal": "2024-12-31",
-   "berkas_ia": "ia050120.zip (terdekat, SESUDAH batas)",
+   "berkas_ia": "ia122025.zip (terdekat; tidak ada berkas <= 120 hari sebelum batas filing)",
    "nilai_usd": 27382063422,
    "pemegang": 1685,
    "per_jenis": {
@@ -148,34 +148,34 @@
      "pemegang": 51
     },
     "HEDGE_FUND_DANA_PRIVAT": {
-     "nilai_usd": 12794621199,
-     "pemegang": 101
+     "nilai_usd": 13462884596,
+     "pemegang": 118
     },
     "INSTITUSI": {
-     "nilai_usd": 499026406,
-     "pemegang": 47
+     "nilai_usd": 419700970,
+     "pemegang": 35
     },
     "LAINNYA": {
-     "nilai_usd": 86961627,
-     "pemegang": 30
+     "nilai_usd": 68121944,
+     "pemegang": 36
     },
     "MANAJER_REKSA_DANA": {
-     "nilai_usd": 363284755,
-     "pemegang": 18
+     "nilai_usd": 1759394477,
+     "pemegang": 19
     },
     "PENASIHAT_KEKAYAAN": {
-     "nilai_usd": 4600278730,
-     "pemegang": 951
+     "nilai_usd": 4074761096,
+     "pemegang": 1206
     },
     "TIDAK_TERKLASIFIKASI": {
-     "nilai_usd": 8821878236,
-     "pemegang": 487
+     "nilai_usd": 7381187870,
+     "pemegang": 220
     }
    }
   },
   {
    "akhir_kuartal": "2025-03-31",
-   "berkas_ia": "ia050120.zip (terdekat, SESUDAH batas)",
+   "berkas_ia": "ia122025.zip (terdekat; tidak ada berkas <= 120 hari sebelum batas filing)",
    "nilai_usd": 21221571510,
    "pemegang": 1733,
    "per_jenis": {
@@ -184,34 +184,34 @@
      "pemegang": 64
     },
     "HEDGE_FUND_DANA_PRIVAT": {
-     "nilai_usd": 7848256932,
-     "pemegang": 89
+     "nilai_usd": 8380277866,
+     "pemegang": 101
     },
     "INSTITUSI": {
-     "nilai_usd": 175911039,
-     "pemegang": 46
+     "nilai_usd": 85291118,
+     "pemegang": 38
     },
     "LAINNYA": {
-     "nilai_usd": 71413069,
-     "pemegang": 35
+     "nilai_usd": 69295344,
+     "pemegang": 41
     },
     "MANAJER_REKSA_DANA": {
-     "nilai_usd": 283884675,
-     "pemegang": 16
+     "nilai_usd": 1544240408,
+     "pemegang": 19
     },
     "PENASIHAT_KEKAYAAN": {
-     "nilai_usd": 4435302624,
-     "pemegang": 976
+     "nilai_usd": 4062197227,
+     "pemegang": 1262
     },
     "TIDAK_TERKLASIFIKASI": {
-     "nilai_usd": 8227757509,
-     "pemegang": 507
+     "nilai_usd": 6901223885,
+     "pemegang": 208
     }
    }
   },
   {
    "akhir_kuartal": "2025-06-30",
-   "berkas_ia": "ia050120.zip (terdekat, SESUDAH batas)",
+   "berkas_ia": "ia122025.zip (terdekat; tidak ada berkas <= 120 hari sebelum batas filing)",
    "nilai_usd": 33073852432,
    "pemegang": 2001,
    "per_jenis": {
@@ -220,34 +220,34 @@
      "pemegang": 68
     },
     "HEDGE_FUND_DANA_PRIVAT": {
-     "nilai_usd": 12481826790,
-     "pemegang": 107
+     "nilai_usd": 13335127909,
+     "pemegang": 119
     },
     "INSTITUSI": {
-     "nilai_usd": 290919061,
-     "pemegang": 54
+     "nilai_usd": 142267614,
+     "pemegang": 45
     },
     "LAINNYA": {
-     "nilai_usd": 87929377,
-     "pemegang": 37
+     "nilai_usd": 93059848,
+     "pemegang": 41
     },
     "MANAJER_REKSA_DANA": {
-     "nilai_usd": 315455320,
-     "pemegang": 20
+     "nilai_usd": 2018729771,
+     "pemegang": 23
     },
     "PENASIHAT_KEKAYAAN": {
-     "nilai_usd": 6430578676,
-     "pemegang": 1097
+     "nilai_usd": 6186396340,
+     "pemegang": 1474
     },
     "TIDAK_TERKLASIFIKASI": {
-     "nilai_usd": 13305398647,
-     "pemegang": 618
+     "nilai_usd": 11136526389,
+     "pemegang": 231
     }
    }
   },
   {
    "akhir_kuartal": "2025-09-30",
-   "berkas_ia": "ia050120.zip (terdekat, SESUDAH batas)",
+   "berkas_ia": "ia122025.zip (terdekat; tidak ada berkas <= 120 hari sebelum batas filing)",
    "nilai_usd": 38299962660,
    "pemegang": 2174,
    "per_jenis": {
@@ -256,34 +256,34 @@
      "pemegang": 76
     },
     "HEDGE_FUND_DANA_PRIVAT": {
-     "nilai_usd": 12870680963,
-     "pemegang": 110
+     "nilai_usd": 13692103041,
+     "pemegang": 118
     },
     "INSTITUSI": {
-     "nilai_usd": 415881523,
-     "pemegang": 54
+     "nilai_usd": 238247248,
+     "pemegang": 50
     },
     "LAINNYA": {
-     "nilai_usd": 288821707,
-     "pemegang": 37
+     "nilai_usd": 106402986,
+     "pemegang": 47
     },
     "MANAJER_REKSA_DANA": {
-     "nilai_usd": 378153504,
-     "pemegang": 25
+     "nilai_usd": 2344425522,
+     "pemegang": 28
     },
     "PENASIHAT_KEKAYAAN": {
-     "nilai_usd": 7719973924,
-     "pemegang": 1196
+     "nilai_usd": 7803845274,
+     "pemegang": 1632
     },
     "TIDAK_TERKLASIFIKASI": {
-     "nilai_usd": 16234271730,
-     "pemegang": 676
+     "nilai_usd": 13722759280,
+     "pemegang": 223
     }
    }
   },
   {
    "akhir_kuartal": "2025-12-31",
-   "berkas_ia": "ia050120.zip (terdekat, SESUDAH batas)",
+   "berkas_ia": "ia020226.zip",
    "nilai_usd": 28121459492,
    "pemegang": 2204,
    "per_jenis": {
@@ -292,34 +292,34 @@
      "pemegang": 75
     },
     "HEDGE_FUND_DANA_PRIVAT": {
-     "nilai_usd": 7292159430,
-     "pemegang": 97
+     "nilai_usd": 7990813491,
+     "pemegang": 106
     },
     "INSTITUSI": {
-     "nilai_usd": 287154061,
-     "pemegang": 55
+     "nilai_usd": 190906370,
+     "pemegang": 51
     },
     "LAINNYA": {
-     "nilai_usd": 197589571,
-     "pemegang": 39
+     "nilai_usd": 78114588,
+     "pemegang": 47
     },
     "MANAJER_REKSA_DANA": {
-     "nilai_usd": 274725611,
-     "pemegang": 21
+     "nilai_usd": 1832166022,
+     "pemegang": 25
     },
     "PENASIHAT_KEKAYAAN": {
-     "nilai_usd": 6757910342,
-     "pemegang": 1155
+     "nilai_usd": 7040509406,
+     "pemegang": 1660
     },
     "TIDAK_TERKLASIFIKASI": {
-     "nilai_usd": 13137933193,
-     "pemegang": 762
+     "nilai_usd": 10814962331,
+     "pemegang": 240
     }
    }
   },
   {
    "akhir_kuartal": "2026-03-31",
-   "berkas_ia": "ia050120.zip (terdekat, SESUDAH batas)",
+   "berkas_ia": "ia050126.zip",
    "nilai_usd": 19592195759,
    "pemegang": 2037,
    "per_jenis": {
@@ -328,34 +328,34 @@
      "pemegang": 75
     },
     "HEDGE_FUND_DANA_PRIVAT": {
-     "nilai_usd": 4040271593,
-     "pemegang": 79
+     "nilai_usd": 4512545772,
+     "pemegang": 88
     },
     "INSTITUSI": {
-     "nilai_usd": 227249238,
-     "pemegang": 50
+     "nilai_usd": 124359017,
+     "pemegang": 44
     },
     "LAINNYA": {
-     "nilai_usd": 227551845,
-     "pemegang": 34
+     "nilai_usd": 231325557,
+     "pemegang": 42
     },
     "MANAJER_REKSA_DANA": {
-     "nilai_usd": 206966189,
-     "pemegang": 21
+     "nilai_usd": 1537135845,
+     "pemegang": 25
     },
     "PENASIHAT_KEKAYAAN": {
-     "nilai_usd": 5573739369,
-     "pemegang": 1063
+     "nilai_usd": 5690643248,
+     "pemegang": 1540
     },
     "TIDAK_TERKLASIFIKASI": {
-     "nilai_usd": 9127500878,
-     "pemegang": 715
+     "nilai_usd": 7307269673,
+     "pemegang": 223
     }
    }
   },
   {
    "akhir_kuartal": "2026-06-30",
-   "berkas_ia": "ia050120.zip (terdekat, SESUDAH batas)",
+   "berkas_ia": "ia08032026_1.zip",
    "nilai_usd": 17346350753,
    "pemegang": 1929,
    "per_jenis": {
@@ -364,28 +364,28 @@
      "pemegang": 77
     },
     "HEDGE_FUND_DANA_PRIVAT": {
-     "nilai_usd": 2184304955,
-     "pemegang": 71
+     "nilai_usd": 2559153318,
+     "pemegang": 76
     },
     "INSTITUSI": {
-     "nilai_usd": 203762877,
-     "pemegang": 49
+     "nilai_usd": 116173174,
+     "pemegang": 41
     },
     "LAINNYA": {
-     "nilai_usd": 182461349,
-     "pemegang": 31
+     "nilai_usd": 233282891,
+     "pemegang": 41
     },
     "MANAJER_REKSA_DANA": {
-     "nilai_usd": 409411787,
-     "pemegang": 18
+     "nilai_usd": 1606030177,
+     "pemegang": 21
     },
     "PENASIHAT_KEKAYAAN": {
-     "nilai_usd": 4773065966,
-     "pemegang": 986
+     "nilai_usd": 4947951736,
+     "pemegang": 1460
     },
     "TIDAK_TERKLASIFIKASI": {
-     "nilai_usd": 9247961017,
-     "pemegang": 697
+     "nilai_usd": 7538376655,
+     "pemegang": 213
     }
    }
   }
@@ -718,13 +718,17 @@
     "filer": 8,
     "nilai_usd": 20932866.0,
     "per_jenis": {
+     "INSTITUSI": {
+      "filer": 1,
+      "nilai_usd": 6696.0
+     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 5,
-      "nilai_usd": 3770896.0
+      "filer": 6,
+      "nilai_usd": 4738170.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 3,
-      "nilai_usd": 17161970.0
+      "filer": 1,
+      "nilai_usd": 16188000.0
      }
     }
    },
@@ -733,12 +737,8 @@
     "nilai_usd": 6485776.0,
     "per_jenis": {
      "PENASIHAT_KEKAYAAN": {
-      "filer": 5,
-      "nilai_usd": 5582834.0
-     },
-     "TIDAK_TERKLASIFIKASI": {
-      "filer": 2,
-      "nilai_usd": 902942.0
+      "filer": 7,
+      "nilai_usd": 6485776.0
      }
     }
    },
@@ -746,17 +746,13 @@
     "filer": 13,
     "nilai_usd": 24086557.0,
     "per_jenis": {
-     "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 1,
-      "nilai_usd": 251.0
-     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 9,
-      "nilai_usd": 18861757.0
+      "filer": 12,
+      "nilai_usd": 24086306.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 3,
-      "nilai_usd": 5224549.0
+      "filer": 1,
+      "nilai_usd": 251.0
      }
     }
    },
@@ -769,28 +765,28 @@
       "nilai_usd": 215657154.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 99,
-      "nilai_usd": 12551456659.0
+      "filer": 115,
+      "nilai_usd": 13214420891.0
      },
      "INSTITUSI": {
-      "filer": 46,
-      "nilai_usd": 498959430.0
+      "filer": 34,
+      "nilai_usd": 419699909.0
      },
      "LAINNYA": {
-      "filer": 28,
-      "nilai_usd": 86846456.0
+      "filer": 36,
+      "nilai_usd": 68121944.0
      },
      "MANAJER_REKSA_DANA": {
-      "filer": 18,
-      "nilai_usd": 363284755.0
+      "filer": 19,
+      "nilai_usd": 1759394477.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 925,
-      "nilai_usd": 4559487591.0
+      "filer": 1153,
+      "nilai_usd": 3994095583.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 456,
-      "nilai_usd": 7499226944.0
+      "filer": 215,
+      "nilai_usd": 6103529031.0
      }
     }
    }
@@ -800,7 +796,7 @@
     "filer": 2,
     "nilai_usd": 2756467.0,
     "per_jenis": {
-     "TIDAK_TERKLASIFIKASI": {
+     "PENASIHAT_KEKAYAAN": {
       "filer": 2,
       "nilai_usd": 2756467.0
      }
@@ -811,12 +807,8 @@
     "nilai_usd": 1147834.0,
     "per_jenis": {
      "PENASIHAT_KEKAYAAN": {
-      "filer": 2,
-      "nilai_usd": 1067974.0
-     },
-     "TIDAK_TERKLASIFIKASI": {
-      "filer": 1,
-      "nilai_usd": 79860.0
+      "filer": 3,
+      "nilai_usd": 1147834.0
      }
     }
    },
@@ -824,7 +816,7 @@
     "filer": 1,
     "nilai_usd": 101000.0,
     "per_jenis": {
-     "TIDAK_TERKLASIFIKASI": {
+     "PENASIHAT_KEKAYAAN": {
       "filer": 1,
       "nilai_usd": 101000.0
      }
@@ -834,13 +826,9 @@
     "filer": 4,
     "nilai_usd": 3040524.0,
     "per_jenis": {
-     "LAINNYA": {
-      "filer": 1,
-      "nilai_usd": 114110.0
-     },
-     "TIDAK_TERKLASIFIKASI": {
-      "filer": 3,
-      "nilai_usd": 2926414.0
+     "PENASIHAT_KEKAYAAN": {
+      "filer": 4,
+      "nilai_usd": 3040524.0
      }
     }
    },
@@ -852,17 +840,13 @@
       "filer": 2,
       "nilai_usd": 16837.0
      },
-     "LAINNYA": {
-      "filer": 1,
-      "nilai_usd": 419792.0
-     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 3,
-      "nilai_usd": 16887102.0
+      "filer": 5,
+      "nilai_usd": 17419310.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 2,
-      "nilai_usd": 206036.0
+      "filer": 1,
+      "nilai_usd": 93620.0
      }
     }
    },
@@ -875,12 +859,12 @@
       "nilai_usd": 83227.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 4,
-      "nilai_usd": 27964841.0
+      "filer": 7,
+      "nilai_usd": 35484996.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 4,
-      "nilai_usd": 8530120.0
+      "filer": 1,
+      "nilai_usd": 1009965.0
      }
     }
    },
@@ -896,17 +880,17 @@
       "filer": 1,
       "nilai_usd": 673.0
      },
-     "LAINNYA": {
+     "INSTITUSI": {
       "filer": 1,
       "nilai_usd": 1148.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 17,
-      "nilai_usd": 47545212.0
+      "filer": 27,
+      "nilai_usd": 51166199.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 14,
-      "nilai_usd": 7743242.0
+      "filer": 4,
+      "nilai_usd": 4122255.0
      }
     }
    },
@@ -919,28 +903,28 @@
       "nilai_usd": 173883765.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 95,
-      "nilai_usd": 7254664755.0
+      "filer": 104,
+      "nilai_usd": 7953318816.0
      },
      "INSTITUSI": {
-      "filer": 53,
-      "nilai_usd": 285959242.0
+      "filer": 50,
+      "nilai_usd": 189764003.0
      },
      "LAINNYA": {
-      "filer": 37,
-      "nilai_usd": 194053249.0
+      "filer": 45,
+      "nilai_usd": 74735577.0
      },
      "MANAJER_REKSA_DANA": {
-      "filer": 21,
-      "nilai_usd": 274725611.0
+      "filer": 25,
+      "nilai_usd": 1832166022.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 1129,
-      "nilai_usd": 6726314193.0
+      "filer": 1605,
+      "nilai_usd": 6975201324.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 717,
-      "nilai_usd": 12840100710.0
+      "filer": 223,
+      "nilai_usd": 10550632018.0
      }
     }
    }
@@ -1025,20 +1009,24 @@
       "nilai_usd": 211217.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 1,
-      "nilai_usd": 10.0
+      "filer": 2,
+      "nilai_usd": 63614.0
+     },
+     "LAINNYA": {
+      "filer": 2,
+      "nilai_usd": 834516.0
      },
      "MANAJER_REKSA_DANA": {
       "filer": 2,
-      "nilai_usd": 580820.0
+      "nilai_usd": 540237068.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 24,
-      "nilai_usd": 563456829.0
+      "filer": 23,
+      "nilai_usd": 23735944.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 4,
-      "nilai_usd": 1062425.0
+      "filer": 2,
+      "nilai_usd": 228942.0
      }
     }
    }
@@ -1159,12 +1147,8 @@
     "nilai_usd": 7275652.0,
     "per_jenis": {
      "PENASIHAT_KEKAYAAN": {
-      "filer": 2,
-      "nilai_usd": 7251276.0
-     },
-     "TIDAK_TERKLASIFIKASI": {
-      "filer": 1,
-      "nilai_usd": 24376.0
+      "filer": 3,
+      "nilai_usd": 7275652.0
      }
     }
    },
@@ -1173,12 +1157,8 @@
     "nilai_usd": 8654076.0,
     "per_jenis": {
      "PENASIHAT_KEKAYAAN": {
-      "filer": 2,
-      "nilai_usd": 8625483.0
-     },
-     "TIDAK_TERKLASIFIKASI": {
-      "filer": 1,
-      "nilai_usd": 28593.0
+      "filer": 3,
+      "nilai_usd": 8654076.0
      }
     }
    },
@@ -1187,12 +1167,8 @@
     "nilai_usd": 30992.0,
     "per_jenis": {
      "PENASIHAT_KEKAYAAN": {
-      "filer": 1,
-      "nilai_usd": 2399.0
-     },
-     "TIDAK_TERKLASIFIKASI": {
-      "filer": 1,
-      "nilai_usd": 28593.0
+      "filer": 2,
+      "nilai_usd": 30992.0
      }
     }
    },
@@ -1211,12 +1187,12 @@
     "nilai_usd": 50239059.0,
     "per_jenis": {
      "PENASIHAT_KEKAYAAN": {
-      "filer": 16,
-      "nilai_usd": 46937706.0
+      "filer": 19,
+      "nilai_usd": 48447952.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 6,
-      "nilai_usd": 3301353.0
+      "filer": 3,
+      "nilai_usd": 1791107.0
      }
     }
    },
@@ -1229,28 +1205,28 @@
       "nilai_usd": 49285991.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 72,
-      "nilai_usd": 4136670454.0
+      "filer": 80,
+      "nilai_usd": 4260215656.0
      },
      "INSTITUSI": {
-      "filer": 25,
-      "nilai_usd": 163313077.0
+      "filer": 30,
+      "nilai_usd": 161214460.0
      },
      "LAINNYA": {
-      "filer": 22,
-      "nilai_usd": 39098188.0
+      "filer": 23,
+      "nilai_usd": 39014421.0
      },
      "MANAJER_REKSA_DANA": {
-      "filer": 14,
-      "nilai_usd": 224157945.0
+      "filer": 13,
+      "nilai_usd": 1038998359.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 653,
-      "nilai_usd": 2494236496.0
+      "filer": 775,
+      "nilai_usd": 1951419571.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 278,
-      "nilai_usd": 3390081253.0
+      "filer": 143,
+      "nilai_usd": 2996694946.0
      }
     }
    }
@@ -1281,20 +1257,16 @@
     "nilai_usd": 23517758.0,
     "per_jenis": {
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 1,
-      "nilai_usd": 2644040.0
+      "filer": 2,
+      "nilai_usd": 7943205.0
      },
-     "LAINNYA": {
+     "INSTITUSI": {
       "filer": 1,
       "nilai_usd": 1061.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 4,
-      "nilai_usd": 12960609.0
-     },
-     "TIDAK_TERKLASIFIKASI": {
-      "filer": 6,
-      "nilai_usd": 7912048.0
+      "filer": 9,
+      "nilai_usd": 15573492.0
      }
     }
    },
@@ -1303,24 +1275,20 @@
     "nilai_usd": 25843089.0,
     "per_jenis": {
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 1,
-      "nilai_usd": 3815491.0
+      "filer": 2,
+      "nilai_usd": 7096404.0
      },
      "INSTITUSI": {
-      "filer": 1,
-      "nilai_usd": 15354.0
-     },
-     "LAINNYA": {
       "filer": 1,
       "nilai_usd": 720.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 8,
-      "nilai_usd": 15003631.0
+      "filer": 14,
+      "nilai_usd": 17586860.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 8,
-      "nilai_usd": 7007893.0
+      "filer": 2,
+      "nilai_usd": 1159105.0
      }
     }
    },
@@ -1333,28 +1301,28 @@
       "nilai_usd": 161642536.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 107,
-      "nilai_usd": 12481826790.0
+      "filer": 119,
+      "nilai_usd": 13335127909.0
      },
      "INSTITUSI": {
-      "filer": 52,
-      "nilai_usd": 287788790.0
+      "filer": 45,
+      "nilai_usd": 142267614.0
      },
      "LAINNYA": {
-      "filer": 36,
-      "nilai_usd": 87658952.0
+      "filer": 41,
+      "nilai_usd": 93059848.0
      },
      "MANAJER_REKSA_DANA": {
-      "filer": 20,
-      "nilai_usd": 315455320.0
+      "filer": 23,
+      "nilai_usd": 2018729771.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 1076,
-      "nilai_usd": 6372047753.0
+      "filer": 1436,
+      "nilai_usd": 6105515929.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 595,
-      "nilai_usd": 12642188104.0
+      "filer": 222,
+      "nilai_usd": 10492264638.0
      }
     }
    }
@@ -1364,7 +1332,7 @@
     "filer": 1,
     "nilai_usd": 4767.0,
     "per_jenis": {
-     "INSTITUSI": {
+     "PENASIHAT_KEKAYAAN": {
       "filer": 1,
       "nilai_usd": 4767.0
      }
@@ -1374,7 +1342,7 @@
     "filer": 1,
     "nilai_usd": 9407.0,
     "per_jenis": {
-     "INSTITUSI": {
+     "PENASIHAT_KEKAYAAN": {
       "filer": 1,
       "nilai_usd": 9407.0
      }
@@ -1384,7 +1352,7 @@
     "filer": 1,
     "nilai_usd": 11034.0,
     "per_jenis": {
-     "INSTITUSI": {
+     "PENASIHAT_KEKAYAAN": {
       "filer": 1,
       "nilai_usd": 11034.0
      }
@@ -1394,7 +1362,7 @@
     "filer": 1,
     "nilai_usd": 11034.0,
     "per_jenis": {
-     "INSTITUSI": {
+     "PENASIHAT_KEKAYAAN": {
       "filer": 1,
       "nilai_usd": 11034.0
      }
@@ -1404,7 +1372,7 @@
     "filer": 1,
     "nilai_usd": 60273.0,
     "per_jenis": {
-     "INSTITUSI": {
+     "PENASIHAT_KEKAYAAN": {
       "filer": 1,
       "nilai_usd": 60273.0
      }
@@ -1414,13 +1382,9 @@
     "filer": 2,
     "nilai_usd": 8088867.0,
     "per_jenis": {
-     "INSTITUSI": {
-      "filer": 1,
-      "nilai_usd": 225825.0
-     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 1,
-      "nilai_usd": 7863042.0
+      "filer": 2,
+      "nilai_usd": 8088867.0
      }
     }
    },
@@ -1428,13 +1392,9 @@
     "filer": 2,
     "nilai_usd": 6664505.0,
     "per_jenis": {
-     "INSTITUSI": {
-      "filer": 1,
-      "nilai_usd": 142678.0
-     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 1,
-      "nilai_usd": 6521827.0
+      "filer": 2,
+      "nilai_usd": 6664505.0
      }
     }
    },
@@ -1442,13 +1402,9 @@
     "filer": 2,
     "nilai_usd": 7826572.0,
     "per_jenis": {
-     "INSTITUSI": {
-      "filer": 1,
-      "nilai_usd": 43169.0
-     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 1,
-      "nilai_usd": 7783403.0
+      "filer": 2,
+      "nilai_usd": 7826572.0
      }
     }
    },
@@ -1456,17 +1412,9 @@
     "filer": 3,
     "nilai_usd": 13784530.0,
     "per_jenis": {
-     "INSTITUSI": {
-      "filer": 1,
-      "nilai_usd": 66976.0
-     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 1,
-      "nilai_usd": 12346602.0
-     },
-     "TIDAK_TERKLASIFIKASI": {
-      "filer": 1,
-      "nilai_usd": 1370952.0
+      "filer": 3,
+      "nilai_usd": 13784530.0
      }
     }
    },
@@ -1474,17 +1422,13 @@
     "filer": 6,
     "nilai_usd": 10001868.0,
     "per_jenis": {
-     "INSTITUSI": {
-      "filer": 1,
-      "nilai_usd": 57606.0
-     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 2,
-      "nilai_usd": 737523.0
+      "filer": 5,
+      "nilai_usd": 9998123.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 3,
-      "nilai_usd": 9206739.0
+      "filer": 1,
+      "nilai_usd": 3745.0
      }
     }
    },
@@ -1492,17 +1436,13 @@
     "filer": 8,
     "nilai_usd": 6159560.0,
     "per_jenis": {
-     "INSTITUSI": {
-      "filer": 1,
-      "nilai_usd": 72313.0
-     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 3,
-      "nilai_usd": 1236573.0
+      "filer": 7,
+      "nilai_usd": 6154663.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 4,
-      "nilai_usd": 4850674.0
+      "filer": 1,
+      "nilai_usd": 4897.0
      }
     }
    },
@@ -1510,17 +1450,13 @@
     "filer": 6,
     "nilai_usd": 7304675.0,
     "per_jenis": {
-     "INSTITUSI": {
-      "filer": 1,
-      "nilai_usd": 77226.0
-     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 1,
-      "nilai_usd": 547557.0
+      "filer": 5,
+      "nilai_usd": 7299475.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 4,
-      "nilai_usd": 6679892.0
+      "filer": 1,
+      "nilai_usd": 5200.0
      }
     }
    },
@@ -1529,16 +1465,16 @@
     "nilai_usd": 191453709.0,
     "per_jenis": {
      "INSTITUSI": {
-      "filer": 2,
-      "nilai_usd": 1194819.0
+      "filer": 1,
+      "nilai_usd": 1142367.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 5,
-      "nilai_usd": 2111750.0
+      "filer": 10,
+      "nilai_usd": 10456434.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 10,
-      "nilai_usd": 188147140.0
+      "filer": 6,
+      "nilai_usd": 179854908.0
      }
     }
    },
@@ -1547,16 +1483,16 @@
     "nilai_usd": 166077640.0,
     "per_jenis": {
      "INSTITUSI": {
-      "filer": 2,
-      "nilai_usd": 1223004.0
+      "filer": 1,
+      "nilai_usd": 1184544.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 15,
-      "nilai_usd": 13417409.0
+      "filer": 24,
+      "nilai_usd": 23569513.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 13,
-      "nilai_usd": 151437227.0
+      "filer": 5,
+      "nilai_usd": 141323583.0
      }
     }
    },
@@ -1569,28 +1505,28 @@
       "nilai_usd": 345382802.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 71,
-      "nilai_usd": 2184304955.0
+      "filer": 76,
+      "nilai_usd": 2559153318.0
      },
      "INSTITUSI": {
-      "filer": 49,
-      "nilai_usd": 203762877.0
+      "filer": 41,
+      "nilai_usd": 116173174.0
      },
      "LAINNYA": {
-      "filer": 31,
-      "nilai_usd": 182461349.0
+      "filer": 41,
+      "nilai_usd": 233282891.0
      },
      "MANAJER_REKSA_DANA": {
-      "filer": 18,
-      "nilai_usd": 409411787.0
+      "filer": 21,
+      "nilai_usd": 1606030177.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 986,
-      "nilai_usd": 4773065966.0
+      "filer": 1460,
+      "nilai_usd": 4947951736.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 697,
-      "nilai_usd": 9247961017.0
+      "filer": 213,
+      "nilai_usd": 7538376655.0
      }
     }
    }
@@ -1651,12 +1587,8 @@
     "nilai_usd": 468478.0,
     "per_jenis": {
      "PENASIHAT_KEKAYAAN": {
-      "filer": 4,
-      "nilai_usd": 46079.0
-     },
-     "TIDAK_TERKLASIFIKASI": {
-      "filer": 1,
-      "nilai_usd": 422399.0
+      "filer": 5,
+      "nilai_usd": 468478.0
      }
     }
    },
@@ -1669,28 +1601,28 @@
       "nilai_usd": 45349284.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 67,
-      "nilai_usd": 4844273143.0
+      "filer": 78,
+      "nilai_usd": 5076844341.0
      },
      "INSTITUSI": {
-      "filer": 23,
-      "nilai_usd": 236407844.0
+      "filer": 24,
+      "nilai_usd": 238586743.0
      },
      "LAINNYA": {
-      "filer": 16,
-      "nilai_usd": 49191579.0
+      "filer": 19,
+      "nilai_usd": 52127740.0
      },
      "MANAJER_REKSA_DANA": {
       "filer": 15,
-      "nilai_usd": 227791134.0
+      "nilai_usd": 1198192264.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 572,
-      "nilai_usd": 2713654476.0
+      "filer": 667,
+      "nilai_usd": 1931583558.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 223,
-      "nilai_usd": 2752009183.0
+      "filer": 113,
+      "nilai_usd": 2325992713.0
      }
     }
    }
@@ -1719,12 +1651,12 @@
       "nilai_usd": 240520500.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 18,
-      "nilai_usd": 14555970.0
+      "filer": 33,
+      "nilai_usd": 44412187.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 16,
-      "nilai_usd": 30247249.0
+      "filer": 1,
+      "nilai_usd": 391032.0
      }
     }
    },
@@ -1737,28 +1669,28 @@
       "nilai_usd": 179028825.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 88,
-      "nilai_usd": 7844441441.0
+      "filer": 99,
+      "nilai_usd": 8373181462.0
      },
      "INSTITUSI": {
-      "filer": 43,
-      "nilai_usd": 173573108.0
+      "filer": 37,
+      "nilai_usd": 85290398.0
      },
      "LAINNYA": {
-      "filer": 33,
-      "nilai_usd": 70992557.0
+      "filer": 41,
+      "nilai_usd": 69295344.0
      },
      "MANAJER_REKSA_DANA": {
-      "filer": 16,
-      "nilai_usd": 283884675.0
+      "filer": 19,
+      "nilai_usd": 1544240408.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 955,
-      "nilai_usd": 4393065605.0
+      "filer": 1227,
+      "nilai_usd": 4003212315.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 488,
-      "nilai_usd": 7237355552.0
+      "filer": 200,
+      "nilai_usd": 5928093011.0
      }
     }
    }
@@ -1768,7 +1700,7 @@
     "filer": 1,
     "nilai_usd": 346168.0,
     "per_jenis": {
-     "TIDAK_TERKLASIFIKASI": {
+     "PENASIHAT_KEKAYAAN": {
       "filer": 1,
       "nilai_usd": 346168.0
      }
@@ -1827,12 +1759,12 @@
     "nilai_usd": 980141006.0,
     "per_jenis": {
      "PENASIHAT_KEKAYAAN": {
-      "filer": 4,
-      "nilai_usd": 7881436.0
+      "filer": 5,
+      "nilai_usd": 8266602.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 5,
-      "nilai_usd": 972259570.0
+      "filer": 4,
+      "nilai_usd": 971874404.0
      }
     }
    },
@@ -1841,12 +1773,12 @@
     "nilai_usd": 640724152.0,
     "per_jenis": {
      "PENASIHAT_KEKAYAAN": {
-      "filer": 3,
-      "nilai_usd": 9855100.0
+      "filer": 4,
+      "nilai_usd": 9937822.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 5,
-      "nilai_usd": 630869052.0
+      "filer": 4,
+      "nilai_usd": 630786330.0
      }
     }
    },
@@ -1855,12 +1787,12 @@
     "nilai_usd": 656745084.0,
     "per_jenis": {
      "PENASIHAT_KEKAYAAN": {
-      "filer": 5,
-      "nilai_usd": 12281512.0
+      "filer": 7,
+      "nilai_usd": 12372321.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 6,
-      "nilai_usd": 644463572.0
+      "filer": 4,
+      "nilai_usd": 644372763.0
      }
     }
    },
@@ -1878,15 +1810,15 @@
      },
      "LAINNYA": {
       "filer": 2,
-      "nilai_usd": 3536322.0
+      "nilai_usd": 3379011.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 21,
-      "nilai_usd": 29484399.0
+      "filer": 45,
+      "nilai_usd": 54851648.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 35,
-      "nilai_usd": 109685343.0
+      "filer": 11,
+      "nilai_usd": 84475405.0
      }
     }
    },
@@ -1899,28 +1831,28 @@
       "nilai_usd": 188916647.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 79,
-      "nilai_usd": 4040271593.0
+      "filer": 88,
+      "nilai_usd": 4512545772.0
      },
      "INSTITUSI": {
-      "filer": 48,
-      "nilai_usd": 226026234.0
+      "filer": 43,
+      "nilai_usd": 123174473.0
      },
      "LAINNYA": {
-      "filer": 34,
-      "nilai_usd": 227551845.0
+      "filer": 42,
+      "nilai_usd": 231325557.0
      },
      "MANAJER_REKSA_DANA": {
-      "filer": 21,
-      "nilai_usd": 206966189.0
+      "filer": 25,
+      "nilai_usd": 1537135845.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 1048,
-      "nilai_usd": 5560321960.0
+      "filer": 1516,
+      "nilai_usd": 5667073735.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 702,
-      "nilai_usd": 8976063651.0
+      "filer": 218,
+      "nilai_usd": 7165946090.0
      }
     }
    }
@@ -1931,12 +1863,8 @@
     "nilai_usd": 48559.0,
     "per_jenis": {
      "PENASIHAT_KEKAYAAN": {
-      "filer": 1,
-      "nilai_usd": 5650.0
-     },
-     "TIDAK_TERKLASIFIKASI": {
-      "filer": 1,
-      "nilai_usd": 42909.0
+      "filer": 2,
+      "nilai_usd": 48559.0
      }
     }
    },
@@ -1945,12 +1873,8 @@
     "nilai_usd": 19175.0,
     "per_jenis": {
      "PENASIHAT_KEKAYAAN": {
-      "filer": 1,
-      "nilai_usd": 2231.0
-     },
-     "TIDAK_TERKLASIFIKASI": {
-      "filer": 1,
-      "nilai_usd": 16944.0
+      "filer": 2,
+      "nilai_usd": 19175.0
      }
     }
    },
@@ -1959,12 +1883,8 @@
     "nilai_usd": 636051.0,
     "per_jenis": {
      "PENASIHAT_KEKAYAAN": {
-      "filer": 2,
-      "nilai_usd": 620020.0
-     },
-     "TIDAK_TERKLASIFIKASI": {
-      "filer": 1,
-      "nilai_usd": 16031.0
+      "filer": 3,
+      "nilai_usd": 636051.0
      }
     }
    },
@@ -1973,12 +1893,8 @@
     "nilai_usd": 455278.0,
     "per_jenis": {
      "PENASIHAT_KEKAYAAN": {
-      "filer": 2,
-      "nilai_usd": 443631.0
-     },
-     "TIDAK_TERKLASIFIKASI": {
-      "filer": 1,
-      "nilai_usd": 11647.0
+      "filer": 3,
+      "nilai_usd": 455278.0
      }
     }
    },
@@ -2063,28 +1979,28 @@
       "nilai_usd": 59678741.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 75,
-      "nilai_usd": 5374004016.0
+      "filer": 80,
+      "nilai_usd": 5581494543.0
      },
      "INSTITUSI": {
-      "filer": 26,
-      "nilai_usd": 191186116.0
+      "filer": 24,
+      "nilai_usd": 150749314.0
      },
      "LAINNYA": {
-      "filer": 22,
-      "nilai_usd": 45732570.0
+      "filer": 24,
+      "nilai_usd": 32454955.0
      },
      "MANAJER_REKSA_DANA": {
-      "filer": 14,
-      "nilai_usd": 217211918.0
+      "filer": 17,
+      "nilai_usd": 1148518005.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 687,
-      "nilai_usd": 2828233524.0
+      "filer": 790,
+      "nilai_usd": 2257454153.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 285,
-      "nilai_usd": 3315027362.0
+      "filer": 174,
+      "nilai_usd": 2800724536.0
      }
     }
    }
@@ -2095,12 +2011,8 @@
     "nilai_usd": 3345015.0,
     "per_jenis": {
      "PENASIHAT_KEKAYAAN": {
-      "filer": 1,
-      "nilai_usd": 418193.0
-     },
-     "TIDAK_TERKLASIFIKASI": {
-      "filer": 1,
-      "nilai_usd": 2926822.0
+      "filer": 2,
+      "nilai_usd": 3345015.0
      }
     }
    },
@@ -2108,17 +2020,9 @@
     "filer": 6,
     "nilai_usd": 5714017.0,
     "per_jenis": {
-     "INSTITUSI": {
-      "filer": 1,
-      "nilai_usd": 2264971.0
-     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 4,
-      "nilai_usd": 1727327.0
-     },
-     "TIDAK_TERKLASIFIKASI": {
-      "filer": 1,
-      "nilai_usd": 1721719.0
+      "filer": 6,
+      "nilai_usd": 5714017.0
      }
     }
    },
@@ -2130,21 +2034,13 @@
       "filer": 1,
       "nilai_usd": 18798.0
      },
-     "INSTITUSI": {
-      "filer": 1,
-      "nilai_usd": 3057958.0
-     },
-     "LAINNYA": {
-      "filer": 1,
-      "nilai_usd": 270425.0
-     },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 11,
-      "nilai_usd": 19474409.0
+      "filer": 20,
+      "nilai_usd": 29302930.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 10,
-      "nilai_usd": 18960697.0
+      "filer": 3,
+      "nilai_usd": 12460559.0
      }
     }
    },
@@ -2157,32 +2053,32 @@
       "nilai_usd": 392091234.0
      },
      "HEDGE_FUND_DANA_PRIVAT": {
-      "filer": 109,
-      "nilai_usd": 12870680290.0
+      "filer": 117,
+      "nilai_usd": 13692102368.0
      },
      "INSTITUSI": {
-      "filer": 53,
-      "nilai_usd": 415804297.0
+      "filer": 49,
+      "nilai_usd": 238246100.0
      },
      "LAINNYA": {
-      "filer": 36,
-      "nilai_usd": 288820559.0
+      "filer": 47,
+      "nilai_usd": 106402986.0
      },
      "MANAJER_REKSA_DANA": {
-      "filer": 25,
-      "nilai_usd": 378153504.0
+      "filer": 28,
+      "nilai_usd": 2344425522.0
      },
      "PENASIHAT_KEKAYAAN": {
-      "filer": 1173,
-      "nilai_usd": 7659599643.0
+      "filer": 1593,
+      "nilai_usd": 7733007279.0
      },
      "TIDAK_TERKLASIFIKASI": {
-      "filer": 652,
-      "nilai_usd": 15575385024.0
+      "filer": 214,
+      "nilai_usd": 13074259062.0
      }
     }
    }
   }
  },
- "versi_cocok": 4
+ "versi_cocok": 5
 }
