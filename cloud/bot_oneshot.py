@@ -1754,6 +1754,25 @@ def data_sebab(jenis, simbol):
     return judul + keluar
 
 
+# Pertanyaan yang langsung menyangkut Liquidity & Adoption Clock (jam_likuiditas.py).
+_MINTA_JAM = re.compile(
+    r"likuiditas|liquidity|jam (?:likuiditas|adopsi)|adoption clock|rezim|regime|"
+    r"risk[ -]?on|risk[ -]?off|\bfed\b|\bthe fed\b|\bqt\b|\bqe\b|\btga\b|reverse repo|"
+    r"eksposur|exposure|arus (?:dana )?etf|etf flows?|\b13f\b|basis trade|basis cme|"
+    r"funding rate|makro|macro|\bdxy\b|indeks dolar|yield|nfci|resesi|recession|"
+    r"sahm|treasury (?:perusahaan|korporasi)|corporate treasur", re.I)
+
+
+def data_jam():
+    """Blok JAM LIKUIDITAS berdiri sendiri (tanpa aset). "" kalau gagal."""
+    label = "JAM LIKUIDITAS (jam_likuiditas.py)"
+    keluar, err = _jalankan_terukur(label, ["cloud/jam_likuiditas.py", "--ringkas"])
+    if err or not keluar:
+        print(f"[data] {label} gagal: {err}", file=sys.stderr)
+        return ""
+    return f"[{label}]" + chr(10) + keluar
+
+
 def rakit_peran(sektor, peran=PERAN_LENGKAP):
     """Gabungkan seed peran, hanya blok yang cocok sektornya.
 
@@ -2028,6 +2047,9 @@ _KATA_UMUM_BUKAN_KOIN = {
     # Sapaan & basa-basi. HALO, PING, dan OKE semuanya nama koin sungguhan di CoinGecko —
     # tanpa baris ini, "halo" mengembalikan analisa aset.
     "HALO", "HAI", "PAGI", "SIANG", "SORE", "MALAM", "OKE", "OKEY", "SIP", "PING",
+    # "jam" = pukul/jam dinding, bukan token JAM: "jam berapa rilis cpi" dan "jam
+    # likuiditas minggu ini" sempat dianalisa sebagai koin JAM (15 Okt 2026).
+    "JAM", "MENIT", "DETIK",
     "THANKS", "MAKASIH", "TERIMA", "KASIH", "MAAF", "TOLONG", "COBA", "LAGI",
     # KOSAKATA TRADING. Ini justru kata yang PALING sering muncul di percakapan pasar,
     # dan banyak di antaranya token sungguhan di CoinGecko. Terjadi nyata: "koreksi untuk
@@ -4626,6 +4648,17 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
                 brief = None
                 print(f"[proses] chat: pengumpulan data gagal ({type(e).__name__}) — "
                       f"model mencari sendiri", file=sys.stderr)
+        # JAM LIKUIDITAS BERDIRI SENDIRI. Di jalur aset crypto blok ini sudah ikut lewat
+        # data_mentah_crypto; pertanyaan rezim makro/likuiditas justru paling sering TANPA
+        # nama koin ("likuiditas fed lagi gimana?", "rezim sekarang risk on?") dan dulu
+        # dijawab tanpa skor sama sekali. Pertanyaan konsep ("apa itu QT") tidak perlu
+        # angka minggu ini.
+        if (_MINTA_JAM.search(text or "") and not _KONSEP_RE.search(text or "")
+                and '"skor_likuiditas"' not in (brief or "")):
+            jam = data_jam()
+            if jam:
+                brief = (brief + chr(10) * 2 if brief else "") + jam
+                print(f"[proses] chat: jam likuiditas {len(jam)} karakter", file=sys.stderr)
         # PPI -> KEJUTAN CPI BERDIRI SENDIRI, dengan alasan yang sama seperti riset
         # Telegram di bawah: pertanyaan PPI hampir tidak pernah menyebut aset.
         if _MINTA_PPI_CPI.search(text or ""):

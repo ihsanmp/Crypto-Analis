@@ -190,3 +190,40 @@ def test_blok_jam_sampai_ke_prompt_lewat_process_sungguhan():
         (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.belajar_dari,
          bot._jalankan_terukur, bot.run_claude, indicators.resolve_ticker,
          kategori.data_koin) = asli
+
+
+def test_pemicu_jam_tanpa_aset_dan_jam_bukan_koin():
+    """15 Okt 2026: "jam berapa rilis cpi" & "jam likuiditas minggu ini" terbaca koin JAM,
+    dan pertanyaan rezim makro tanpa nama koin tidak mendapat skor sama sekali."""
+    import tempfile
+    import bot_oneshot as bot
+    assert bot.aset_dari_pesan("jam berapa rilis cpi", dalam=True)[1] != "JAM"
+    assert bot.aset_dari_pesan("jam likuiditas minggu ini", dalam=True)[1] != "JAM"
+    asli = (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.belajar_dari,
+            bot._jalankan_terukur, bot.run_claude, bot.data_mentah_crypto)
+    label = []
+    bot.simpan_riwayat = lambda *a, **k: None
+    bot.send_message = lambda *a, **k: True
+    bot.belajar_dari = lambda *a, **k: []
+    bot._jalankan_terukur = lambda lb, args, min_kar=0: (
+        label.append(lb), ('{"skor_likuiditas":-0.4}', None))[1]
+    bot.data_mentah_crypto = lambda c, *a, **k: (
+        label.append("JAM LIKUIDITAS (jam_likuiditas.py)"), '[JAM]\n{"skor_likuiditas":-0.4}')[1]
+    bot.run_claude = lambda p, *a, **k: ("ok", None)
+    try:
+        for teks, harus in (("likuiditas fed lagi gimana?", 1),
+                            ("rezim makro sekarang risk on?", 1),
+                            ("yield 2 tahun naik, dampaknya?", 1),
+                            ("arus etf minggu ini", 1),
+                            ("jam berapa rilis cpi", 0),
+                            ("apa itu likuiditas", 0),          # konsep: tanpa angka
+                            ("btc gimana makro sekarang?", 1),  # sekali, bukan dua kali
+                            ("halo", 0)):
+            label.clear()
+            bot.JEJAK_PATH = os.path.join(tempfile.mkdtemp(), "j.json")
+            bot.process("tok", "9", teks)
+            n = sum(1 for x in label if "JAM LIKUIDITAS" in x)
+            assert n == harus, (teks, label)
+    finally:
+        (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.belajar_dari,
+         bot._jalankan_terukur, bot.run_claude, bot.data_mentah_crypto) = asli
