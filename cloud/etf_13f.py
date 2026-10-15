@@ -427,9 +427,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--semua", action="store_true")
     ap.add_argument("--periksa", action="store_true")
+    ap.add_argument("--daftar-ia", dest="daftar_ia", action="store_true")
     a = ap.parse_args()
     if a.periksa:
         periksa()
+        return
+    if a.daftar_ia:
+        html = _get(IA_HALAMAN)
+        for t in sorted(set(re.findall(r'href="([^"]+\.zip)"', html, re.I))):
+            print(t.rsplit("/", 1)[-1])
         return
     s = perbarui(a.semua)
     for q in s["kuartal"]:
