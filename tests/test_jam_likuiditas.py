@@ -97,7 +97,7 @@ def test_a3_dari_13f_memakai_tanggal_tersedia_bukan_akhir_kuartal():
     sebelum = [s for f, s in zip(jumat, A["skor_A3"]) if f < date(2024, 11, 14)]
     sesudah = [s for f, s in zip(jumat, A["skor_A3"]) if f >= date(2024, 11, 14)]
     assert all(s is None for s in sebelum) and sesudah[0] > 0
-    assert A["info_A3"][-1]["pemegang_qoq_persen"] == 10.0
+    assert A["info_A3"][-1]["inti_qoq_persen"] == 10.0
 
 
 def test_validasi_menolak_satuan_dan_menandai_basi():

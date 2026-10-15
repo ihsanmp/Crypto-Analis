@@ -141,3 +141,39 @@ Angka berikut dihitung dari 13F-HR asli dengan pencocokan daftar putih ETF spot.
 - **Tren pemegang:** jumlah pemegang turun dua kuartal berturut-turut sejak puncaknya di Q4 2025.
 - **Skor A3:** skala tetap tanh(pertumbuhan / 10%), dipakai karena 10 titik terlalu sedikit untuk z-score bergulir.
 - **A4 (treasury):** arsipnya baru dimulai 15 Okt 2026, jadi skornya baru muncul sekitar 30 minggu lagi.
+
+## Pengganti gratis untuk dua bagian yang tadinya tidak bisa (15 Okt 2026)
+
+| Yang dibutuhkan rancangan | Sumber berbayar / tidak ada | Pengganti gratis |
+| --- | --- | --- |
+| Basis futures CME tahunan (W1) | Data futures CME | Yahoo `BTC=F` dibandingkan spot BTCUSDT per jam dari arsip Binance, tepat pada jam penutupan CME (15:00 Chicago) |
+| Jenis pemegang 13F (A3) | 13F tidak punya kolom jenis | CRD / nomor berkas SEC di sampul 13F, dicocokkan dengan Form ADV Item 5.D (berkas IA bulanan SEC) |
+| Pemisahan basis trade | — | CFTC Traders in Financial Futures: short bersih leveraged funds di futures BTC CME (standar + mikro) |
+
+### Penyelarasan jam basis
+
+Derau harian basis diukur sebagai simpangan baku perubahan hari ke hari:
+
+| Pembanding spot | Derau | Median basis |
+| --- | --- | --- |
+| Harian 00:00 UTC | 78 pp | 1,4% |
+| Jam 16:00 Chicago | 54 pp | 4,7% |
+| Jam 15:00 Chicago | 34 pp | 5,1% |
+
+Jam 15:00 dipilih. Ini kalibrasi penyelarasan data, bukan kalibrasi sinyal.
+
+### 5. Gelombang dengan basis CME (pra-registrasi, kriteria sama dengan #2)
+
+| Horizon | IC | p ekor bawah | 2021–23 | 2024–26 |
+| --- | --- | --- | --- | --- |
+| 4 minggu | +0,132 | 0,98 | +0,14 | +0,13 |
+| 8 minggu | +0,131 | 0,98 | +0,11 | +0,12 |
+| 12 minggu | +0,119 | 0,97 | +0,11 | +0,10 |
+
+- Hipotesis tetap ditolak.
+- Skor basis sendiri: IC 12 minggu +0,15 (sejak 2018-12).
+- Sesudah minggu dengan skor > 0,5, median return 12 minggu +29,8% (N = 28), sedangkan minggu lainnya −0,2%.
+
+### 6. Jejak basis trade
+
+Sampel 141 minggu sejak 2024. Korelasi peringkat antara arus ETF 4 minggu dan perubahan short bersih leveraged funds CFTC 4 minggu adalah **+0,48**. Sebagian besar arus ETF berjalan bersamaan dengan penambahan short futures. Bagian arus itu adalah basis trade yang netral arah, bukan permintaan.

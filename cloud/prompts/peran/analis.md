@@ -47,9 +47,10 @@ Skornya (−1..+1: yield 2th, likuiditas bersih Fed, dolar, NFCI; filter resesi 
 untuk horizon **~12 minggu** pada BTC (IC +0,33), ETH (+0,30), dan SOL (+0,34) — tidak untuk
 4 minggu, jadi jangan dipakai menjelaskan gerak harian/pekanan. Arti kuadran ambil dari angka
 `riwayat_btc_12mg_*`, bukan teori rancangan: "ketat, mulai membaik" justru terburuk.
-Adopsi struktural (ETF/13F/treasury) BELUM terbukti. Gelombang (funding + Fear & Greed)
-terbalik dari teori: tinggi = momentum, bukan tanda puncak — jangan dipakai sebagai alasan
-mengurangi posisi. Target eksposur = filter rezim long-only, bukan sinyal entry; sebut juga
+Adopsi struktural (ETF/13F/treasury) BELUM terbukti. Gelombang (funding, basis CME,
+Fear & Greed) terbalik dari teori: tinggi = momentum, bukan tanda puncak — jangan dipakai
+sebagai alasan mengurangi posisi. Arus ETF berkorelasi +0,48 dengan penambahan short
+leveraged funds CFTC: sebagian arus itu basis trade netral arah (`jejak_basis_trade_cftc`). Target eksposur = filter rezim long-only, bukan sinyal entry; sebut juga
 `eksposur_komponen_teruji_saja_persen` bila beda >= 10 pp.
 <!-- /BLOK -->
 

@@ -48,7 +48,7 @@ MULAI = "2024"          # ETF spot BTC mulai diperdagangkan 11 Jan 2024
 # ETF futures (ProShares), covered call / protection / floor, Grayscale Bitcoin CASH, dan
 # "BlackRock Institutional Trust ... BTC iShares MSCI". Sekarang DAFTAR PUTIH: keluarga
 # penerbit ETF spot + kata Bitcoin, lalu pengecualian produk turunannya.
-VERSI_COCOK = 2
+VERSI_COCOK = 3          # 3: + jenis pemegang (Form ADV 5.D)
 _FAMILI = re.compile(r"I ?SHARES?|ISHS|ISHA|IBIT|FIDELITY|WISE ORIGIN|G?R[AE]YSCALE|\bARK\b|"
                      r"21 ?SHARES|BITWISE|ITWISE|INVESCO|GALAXY|VAN ?ECK|ANECK|FRANKLIN|"
                      r"VALKYRIE|COINSHARES|COINSHRS|WISDOMTREE|ISDOMTREE|HASHDEX|"
@@ -87,8 +87,131 @@ def _baca(z, nama):
                                            errors="replace"), delimiter="\t")
 
 
-def proses_zip(path):
-    """{periode ISO: {"filer": n, "nilai_usd": x}}, {penerbit: jumlah baris}."""
+# ------------------------------------------------------------------ jenis pemegang
+# 13F tidak punya kolom jenis, tapi COVERPAGE memuat CRD / nomor berkas SEC filer, dan
+# berkas bulanan "Information about Registered Investment Advisers" (Form ADV Part 1A)
+# memuat Item 5.D: aset kelolaan (RAUM) per JENIS KLIEN. Jenis pemegang ditentukan dari
+# jenis klien yang memegang porsi RAUM terbesar — data resmi, bisa diaudit, bukan tebakan
+# dari nama. Filer tanpa CRD (bank, asuransi, penasihat terdaftar di negara bagian, filer
+# asing) dipetakan dari nama hanya untuk pola yang tak ambigu; sisanya TIDAK TERKLASIFIKASI.
+IA_HALAMAN = ("https://www.sec.gov/data-research/sec-markets-data/"
+              "information-about-registered-investment-advisers-exempt-reporting-advisers")
+# Item 5.D Form ADV: (a) individu, (b) individu kaya, (c) bank, (d) investment company,
+# (e) BDC, (f) pooled investment vehicle (hedge fund/dana privat), (g) dana pensiun,
+# (h) yayasan, (i) pemerintah negara bagian/kota, (j) penasihat lain, (k) asuransi,
+# (l) dana kekayaan negara, (m) korporasi, (n) lainnya. Kolom (x)(3) = RAUM.
+JENIS_5D = {
+    "PENASIHAT_KEKAYAAN": ("a", "b"),
+    "HEDGE_FUND_DANA_PRIVAT": ("f",),
+    "INSTITUSI": ("c", "g", "h", "i", "k", "l"),
+    "MANAJER_REKSA_DANA": ("d", "e"),
+    "LAINNYA": ("j", "m", "n"),
+}
+_NAMA_BANK = re.compile(r"\bBANK\b|BANCORP|\bN\.?A\.?$|TRUST CO(MPANY)?\b|SAVINGS")
+_NAMA_INSTITUSI = re.compile(r"RETIREMENT|PENSION|TEACHERS|EMPLOYEES|\bSTATE OF\b|"
+                             r"INSURANCE|ASSURANCE|\bLIFE\b|UNIVERSITY|ENDOWMENT|"
+                             r"FOUNDATION|SOVEREIGN|INVESTMENT AUTHORITY|MONETARY")
+
+
+def _angka(x):
+    try:
+        return float(str(x).replace(",", "").strip() or 0)
+    except ValueError:
+        return 0.0
+
+
+def jenis_dari_5d(baris):
+    """Jenis klien dengan RAUM terbesar dari satu baris berkas IA. None kalau kosong."""
+    raum = {j: sum(_angka(baris.get(f"5D({h})(3)")) for h in hs) for j, hs in JENIS_5D.items()}
+    if not any(raum.values()):
+        return None
+    return max(raum, key=raum.get)
+
+
+def jenis_dari_nama(nama):
+    nama = re.sub(r"\s+", " ", (nama or "").upper().strip())
+    if _NAMA_BANK.search(nama):
+        return "BANK"
+    if _NAMA_INSTITUSI.search(nama):
+        return "INSTITUSI"
+    return "TIDAK_TERKLASIFIKASI"
+
+
+def _norm_crd(x):
+    x = re.sub(r"\D", "", x or "")
+    return x.lstrip("0") or None
+
+
+def _norm_sec(x):
+    m = re.search(r"(\d{3})-0*(\d+)", x or "")
+    return f"{m.group(1)}-{m.group(2)}" if m else None
+
+
+def baca_ia(path):
+    """{("crd", n) | ("sec", "801-n"): jenis} dari satu zip berkas IA bulanan."""
+    peta = {}
+    with zipfile.ZipFile(path) as z:
+        nama = [n for n in z.namelist() if n.lower().endswith(".csv")][0]
+        teks = io.TextIOWrapper(z.open(nama), encoding="latin-1", newline="")
+        for b in csv.DictReader(teks):
+            j = jenis_dari_5d(b)
+            if not j:
+                continue
+            crd = _norm_crd(b.get("Organization CRD#"))
+            sec = _norm_sec(b.get("SEC#"))
+            if crd:
+                peta[("crd", crd)] = j
+            if sec:
+                peta[("sec", sec)] = j
+    return peta
+
+
+def _tanggal_ia(url):
+    m = re.search(r"/ia(\d{2})(\d{2})(\d{2})\.zip$", url)
+    if not m:
+        return None
+    try:
+        return datetime(2000 + int(m.group(3)), int(m.group(1)), int(m.group(2))).date()
+    except ValueError:
+        return None
+
+
+class Klasifikasi:
+    """Memilih berkas IA terdekat SEBELUM batas filing tiap kuartal, memuatnya sekali."""
+
+    def __init__(self, unduh=None):
+        self._unduh = unduh
+        self._berkas = None
+        self._muat = {}
+
+    def _daftar(self):
+        if self._berkas is None:
+            html = _get(IA_HALAMAN)
+            tautan = set(re.findall(r'href="([^"]+/ia\d{6}\.zip)"', html, re.I))
+            self._berkas = sorted((t, _tanggal_ia(t)) for t in tautan if _tanggal_ia(t))
+        return self._berkas
+
+    def peta_untuk(self, periode):
+        from datetime import date as _d, timedelta as _td
+        batas = _d.fromisoformat(periode) + _td(days=45)
+        calon = [(t, d) for t, d in self._daftar() if d <= batas]
+        if not calon:
+            return {}, None
+        url = max(calon, key=lambda x: x[1])[0]
+        if url not in self._muat:
+            with tempfile.TemporaryDirectory() as d:
+                path = os.path.join(d, "ia.zip")
+                with open(path, "wb") as f:
+                    f.write((self._unduh or _get)(url if url.startswith("http") else SEC + url,
+                                                  biner=True))
+                self._muat[url] = baca_ia(path)
+            time.sleep(1)
+        return self._muat[url], url.rsplit("/", 1)[-1]
+
+
+def proses_zip(path, klasifikasi=None):
+    """{periode: {"filer","nilai_usd","per_jenis":{jenis:{"filer","nilai_usd"}}}},
+    {penerbit: jumlah baris}, {periode: berkas IA yang dipakai}."""
     with zipfile.ZipFile(path) as z:
         asli = {}
         for b in _baca(z, "SUBMISSION.TSV"):
@@ -98,24 +221,42 @@ def proses_zip(path):
                         b["PERIODOFREPORT"].strip(), "%d-%b-%Y").date().isoformat()
                 except (KeyError, ValueError):
                     continue
-        per, filer, penerbit = {}, {}, {}
+        sampul = {}
+        try:
+            for b in _baca(z, "COVERPAGE.TSV"):
+                if b.get("ACCESSION_NUMBER") in asli:
+                    sampul[b["ACCESSION_NUMBER"]] = (_norm_crd(b.get("CRDNUMBER")),
+                                                     _norm_sec(b.get("SECFILENUMBER")),
+                                                     b.get("FILINGMANAGER_NAME"))
+        except ValueError:
+            pass
+        nilai, penerbit = {}, {}
         for b in _baca(z, "INFOTABLE.TSV"):
             acc = b.get("ACCESSION_NUMBER")
             if acc not in asli or (b.get("PUTCALL") or "").strip():
                 continue
             if not cocok(b.get("NAMEOFISSUER")):
                 continue
-            try:
-                v = float(b.get("VALUE") or 0)
-            except ValueError:
-                continue
-            p = asli[acc]
-            per.setdefault(p, 0.0)
-            per[p] += v
-            filer.setdefault(p, set()).add(acc)
+            nilai[acc] = nilai.get(acc, 0.0) + _angka(b.get("VALUE"))
             n = (b.get("NAMEOFISSUER") or "").strip().upper()
             penerbit[n] = penerbit.get(n, 0) + 1
-    return ({p: {"filer": len(filer[p]), "nilai_usd": per[p]} for p in per}, penerbit)
+    hasil, ia_dipakai = {}, {}
+    for acc, v in nilai.items():
+        p = asli[acc]
+        crd, sec, nama = sampul.get(acc, (None, None, None))
+        jenis = "TIDAK_TERKLASIFIKASI"
+        if klasifikasi is not None:
+            peta, berkas = klasifikasi.peta_untuk(p)
+            ia_dipakai[p] = berkas
+            jenis = (peta.get(("crd", crd)) if crd else None) or \
+                    (peta.get(("sec", sec)) if sec else None) or jenis_dari_nama(nama)
+        h = hasil.setdefault(p, {"filer": 0, "nilai_usd": 0.0, "per_jenis": {}})
+        h["filer"] += 1
+        h["nilai_usd"] += v
+        pj = h["per_jenis"].setdefault(jenis, {"filer": 0, "nilai_usd": 0.0})
+        pj["filer"] += 1
+        pj["nilai_usd"] += v
+    return hasil, penerbit, ia_dipakai
 
 
 def perbarui(semua=False):
@@ -128,6 +269,8 @@ def perbarui(semua=False):
         simpan = {"versi_cocok": VERSI_COCOK}
     simpan.setdefault("per_data_set", {})
     simpan.setdefault("penerbit_cocok", {})
+    simpan.setdefault("berkas_ia", {})
+    kl = Klasifikasi()
     baru = [t for t in daftar_data_set() if t.rsplit("/", 1)[-1] not in simpan["per_data_set"]]
     for t in baru:
         nama = t.rsplit("/", 1)[-1]
@@ -136,8 +279,9 @@ def perbarui(semua=False):
             path = os.path.join(d, nama)
             with open(path, "wb") as f:
                 f.write(_get(url, biner=True))
-            hasil, penerbit = proses_zip(path)
+            hasil, penerbit, ia = proses_zip(path, kl)
         simpan["per_data_set"][nama] = hasil
+        simpan["berkas_ia"].update(ia)
         for k, v in penerbit.items():
             simpan["penerbit_cocok"][k] = simpan["penerbit_cocok"].get(k, 0) + v
         print(f"{nama}: {sum(h['filer'] for h in hasil.values())} filing ETF BTC", flush=True)
@@ -145,16 +289,27 @@ def perbarui(semua=False):
     total = {}
     for hasil in simpan["per_data_set"].values():
         for p, h in hasil.items():
-            t = total.setdefault(p, {"filer": 0, "nilai_usd": 0.0})
+            t = total.setdefault(p, {"filer": 0, "nilai_usd": 0.0, "per_jenis": {}})
             t["filer"] += h["filer"]
             t["nilai_usd"] += h["nilai_usd"]
-    simpan["kuartal"] = [{"akhir_kuartal": p, "pemegang": t["filer"],
-                          "nilai_usd": round(t["nilai_usd"])}
-                         for p, t in sorted(total.items()) if p >= MULAI]
+            for j, x in (h.get("per_jenis") or {}).items():
+                tj = t["per_jenis"].setdefault(j, {"filer": 0, "nilai_usd": 0.0})
+                tj["filer"] += x["filer"]
+                tj["nilai_usd"] += x["nilai_usd"]
+    simpan["kuartal"] = [
+        {"akhir_kuartal": p, "pemegang": t["filer"], "nilai_usd": round(t["nilai_usd"]),
+         "per_jenis": {j: {"pemegang": x["filer"], "nilai_usd": round(x["nilai_usd"])}
+                       for j, x in sorted(t["per_jenis"].items())},
+         "berkas_ia": simpan["berkas_ia"].get(p)}
+        for p, t in sorted(total.items()) if p >= MULAI]
     simpan["diperbarui_utc"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    simpan["catatan"] = ("13F-HR asli saja; jenis pemegang tidak dipisah (basis trade "
-                         "hedge fund ikut terhitung). Kuartal terakhir bisa belum lengkap "
-                         "kalau data set SEC untuk rentang filing-nya belum terbit.")
+    simpan["catatan"] = (
+        "13F-HR asli saja. Jenis pemegang dari Form ADV Item 5.D (jenis klien dengan RAUM "
+        "terbesar), lewat CRD/nomor berkas SEC di sampul 13F; berkas IA yang dipakai = yang "
+        "terakhir terbit sebelum batas filing kuartal itu. Filer tanpa CRD dipetakan dari nama "
+        "hanya untuk bank/institusi yang jelas. HEDGE_FUND_DANA_PRIVAT memuat pelaku basis "
+        "trade (long ETF + short futures, netral arah) — bandingkan dengan short leveraged "
+        "funds CFTC.")
     os.makedirs(os.path.dirname(F13_PATH), exist_ok=True)
     with open(F13_PATH, "w", encoding="utf-8", newline="\n") as f:
         json.dump(simpan, f, ensure_ascii=False, indent=1, sort_keys=True)
@@ -229,7 +384,9 @@ def main():
     s = perbarui(a.semua)
     for q in s["kuartal"]:
         print(f"{q['akhir_kuartal']}  pemegang {q['pemegang']:>5}  "
-              f"nilai ${q['nilai_usd'] / 1e9:,.1f} miliar")
+              f"nilai ${q['nilai_usd'] / 1e9:,.1f} miliar  ({q.get('berkas_ia')})")
+        for j, x in (q.get("per_jenis") or {}).items():
+            print(f"    {j:<24} {x['pemegang']:>5}  ${x['nilai_usd'] / 1e9:,.1f} miliar")
 
 
 if __name__ == "__main__":

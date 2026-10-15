@@ -77,8 +77,10 @@ STATUS_GELOMBANG = (
     "Hipotesis rancangan (Gelombang tinggi = rawan koreksi) DITOLAK pada BTC 2021-2026: IC "
     "justru POSITIF (+0,09..+0,11, p ekor bawah 0,96) di kedua era. Sesudah minggu skor "
     "> 0,5 median return 12 minggu +20,1% vs -0,1% sisanya. Karena itu aturan 'potong 25 pp' "
-    "TIDAK diterapkan pada target eksposur. Funding (W1) sendiri ~nol (IC -0,02); Fear & "
-    "Greed (W2) +0,23 = momentum sentimen, bukan sinyal puncak.")
+    "TIDAK diterapkan pada target eksposur. Funding sendiri ~nol (IC -0,02); Fear & Greed "
+    "+0,23 = momentum sentimen, bukan sinyal puncak. Dengan basis CME ikut di W1 hasilnya "
+    "SAMA: IC +0,12..+0,13, p 0,97; basis sendiri +0,15; sesudah skor > 0,5 median 12 "
+    "minggu +29,8%.")
 STATUS_ADOPSI = (
     "BELUM TERBUKTI: arus ETF baru 114 minggu (~9 jendela 12 minggu independen). Arah "
     "campur — IC 4 minggu +0,22 (sesuai teori), 12 minggu -0,06 (berlawanan). Bobot "
@@ -251,6 +253,22 @@ def _skor_tetap(pertumbuhan_persen, skala):
     return None if pertumbuhan_persen is None else math.tanh(pertumbuhan_persen / skala)
 
 
+# Jenis pemegang 13F (etf_13f.py, Form ADV 5.D) yang dihitung sebagai PERMINTAAN NYATA.
+# HEDGE_FUND_DANA_PRIVAT dikeluarkan: di situ pelaku basis trade (long ETF + short
+# futures, netral arah) berada. TIDAK_TERKLASIFIKASI juga dikeluarkan — isinya tidak
+# diketahui, jadi tidak boleh diam-diam dihitung sebagai adopsi.
+JENIS_INTI = ("PENASIHAT_KEKAYAAN", "INSTITUSI", "BANK", "MANAJER_REKSA_DANA", "LAINNYA")
+
+
+def _inti_13f(q):
+    """(pemegang, nilai_usd) inti — atau total kalau berkas lama belum punya per_jenis."""
+    pj = q.get("per_jenis")
+    if not pj:
+        return q["pemegang"], q["nilai_usd"]
+    return (sum(pj.get(j, {}).get("pemegang", 0) for j in JENIS_INTI),
+            sum(pj.get(j, {}).get("nilai_usd", 0) for j in JENIS_INTI))
+
+
 def deret_adopsi(arus, harga, jumat, kuartal_13f=(), treasury=()):
     """Skor struktural per Jumat.
 
@@ -276,16 +294,25 @@ def deret_adopsi(arus, harga, jumat, kuartal_13f=(), treasury=()):
         sudah = [q for t, q in kuartal_13f if t <= f]
         if len(sudah) >= 2:
             kini, dulu = sudah[-1], sudah[-2]
-            gh = (kini["pemegang"] / dulu["pemegang"] - 1) * 100 if dulu["pemegang"] else None
+            (hk, vk), (hd, vd) = _inti_13f(kini), _inti_13f(dulu)
+            gh = (hk / hd - 1) * 100 if hd else None
             pk = _harga_pada(harga, date.fromisoformat(kini["akhir_kuartal"]))
             pd_ = _harga_pada(harga, date.fromisoformat(dulu["akhir_kuartal"]))
-            gb = ((kini["nilai_usd"] / pk) / (dulu["nilai_usd"] / pd_) - 1) * 100 \
-                if pk and pd_ and dulu["nilai_usd"] else None
+            gb = ((vk / pk) / (vd / pd_) - 1) * 100 if pk and pd_ and vd else None
             # 10% per kuartal -> tanh(1) = 0,76. Ditetapkan sebelum melihat data.
             s3.append(_rata(_skor_tetap(gh, 10), _skor_tetap(gb, 10)))
-            info3.append({"kuartal": kini["akhir_kuartal"], "pemegang": kini["pemegang"],
-                          "pemegang_qoq_persen": round(gh, 1) if gh is not None else None,
-                          "btc_setara_qoq_persen": round(gb, 1) if gb is not None else None})
+            pj = kini.get("per_jenis") or {}
+            info3.append({
+                "kuartal": kini["akhir_kuartal"], "pemegang_total": kini["pemegang"],
+                "pemegang_inti": hk,
+                "inti_qoq_persen": round(gh, 1) if gh is not None else None,
+                "inti_btc_setara_qoq_persen": round(gb, 1) if gb is not None else None,
+                "porsi_nilai_persen": {j: round(x["nilai_usd"] / kini["nilai_usd"] * 100, 1)
+                                       for j, x in pj.items()} if kini["nilai_usd"] else {},
+                # None (bukan 0) kalau etf_13f.json belum punya pemisahan jenis.
+                "hedge_fund_btc_setara": round(pj.get("HEDGE_FUND_DANA_PRIVAT", {})
+                                               .get("nilai_usd", 0) / pk)
+                if pk and pj else None})
         else:
             s3.append(None)
             info3.append(None)
@@ -399,7 +426,12 @@ def _bagian_adopsi(jumat, hasil):
                     "(sumber gratis hanya memberi angka hari ini, arsip mulai 15 Okt 2026)")
     try:
         funding, cat = gl.funding_harian()
-        G = gl.deret_gelombang(funding, gl.fear_greed(), jumat)
+        try:
+            basis = gl.basis_cme(gl.spot_jam_cme(), harga_yahoo("BTC=F"))
+        except Exception as e:
+            basis = None
+            cat.append(f"basis CME gagal ({type(e).__name__}) — W1 hanya funding")
+        G = gl.deret_gelombang(funding, gl.fear_greed(), jumat, basis)
         k = _terakhir_isi(G["gelombang"])
         if k is None:
             hasil["gelombang"] = {"tidak_tersedia": "; ".join(cat) or "riwayat kurang"}
@@ -408,6 +440,9 @@ def _bagian_adopsi(jumat, hasil):
             hasil["gelombang"] = {
                 "sinyal_jumat": jumat[k].isoformat(), "skor": round(gel, 3),
                 "W1_funding_persen_per_8jam": round(G["W1_funding"][k], 4),
+                "W1_basis_cme_tahunan_persen": (round(G["W1_basis"][k], 1)
+                                                if G.get("W1_basis") and G["W1_basis"][k]
+                                                is not None else None),
                 "W2_fear_greed_7hari": round(G["W2_fng"][k]),
                 "aturan_rancangan": ("skor > 0,5 memotong eksposur 25 pp — TIDAK "
                                      "diterapkan, ditolak data"),
@@ -416,6 +451,19 @@ def _bagian_adopsi(jumat, hasil):
                 hasil["gelombang"]["peringatan_basi"] = "; ".join(cat)
     except Exception as e:
         hasil["gelombang"] = {"tidak_tersedia": f"{type(e).__name__}"}
+    try:
+        c = [x for t, x in adopsi.cftc_leveraged() if t <= jumat[-1]]
+        if c:
+            kini, lalu = c[-1], (c[-5] if len(c) >= 5 else c[0])
+            hasil["jejak_basis_trade_cftc"] = {
+                "short_bersih_leveraged_funds_btc": kini["short_bersih_btc"],
+                "perubahan_4_laporan_btc": kini["short_bersih_btc"] - lalu["short_bersih_btc"],
+                "arti": ("short bersih hedge fund/CTA di futures BTC CME (CFTC TFF) = kaki "
+                         "short basis trade; bandingkan dengan hedge_fund_btc_setara di A3. "
+                         "Naik bersama arus ETF = sebagian arus itu basis trade, bukan "
+                         "permintaan arah")}
+    except Exception as e:
+        hasil["jejak_basis_trade_cftc"] = {"tidak_tersedia": type(e).__name__}
     if struk is not None and gel is not None:
         nama, arti = FASE_ADOPSI[(struk >= 0, gel >= 0)]
         hasil["fase_adopsi"] = {"fase": nama, "menurut_rancangan": arti,

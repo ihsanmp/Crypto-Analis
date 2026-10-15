@@ -161,6 +161,38 @@ def seri_treasury():
         return []
 
 
+# ------------------------------------------------------------------ jejak basis trade
+# Pengganti gratis untuk memisahkan basis trade dari permintaan nyata: laporan CFTC
+# Traders in Financial Futures (TFF). "Leveraged funds" = hedge fund/CTA; posisi SHORT
+# bersih mereka di futures BTC CME adalah kaki short basis trade (long ETF/spot + short
+# futures). Laporan per Selasa, terbit Jumat sore AS -> tersedia +3 hari.
+CFTC = ("https://publicreporting.cftc.gov/resource/gpe5-46if.json?$select="
+        "report_date_as_yyyy_mm_dd,cftc_contract_market_code,lev_money_positions_long,"
+        "lev_money_positions_short,asset_mgr_positions_long,asset_mgr_positions_short"
+        "&$where=cftc_contract_market_code%20in('133741','133742')"
+        "&$order=report_date_as_yyyy_mm_dd&$limit=5000")
+UKURAN_KONTRAK = {"133741": 5.0, "133742": 0.1}      # BTC per kontrak (standar, mikro)
+
+
+def cftc_leveraged():
+    """[(tanggal_tersedia, {"short_bersih_btc", "lev_long_btc", "lev_short_btc"})]."""
+    per = {}
+    for b in json.loads(_get(CFTC)):
+        t = b["report_date_as_yyyy_mm_dd"][:10]
+        n = UKURAN_KONTRAK.get(b.get("cftc_contract_market_code"))
+        if not n:
+            continue
+        x = per.setdefault(t, {"lev_long_btc": 0.0, "lev_short_btc": 0.0})
+        x["lev_long_btc"] += float(b.get("lev_money_positions_long") or 0) * n
+        x["lev_short_btc"] += float(b.get("lev_money_positions_short") or 0) * n
+    keluar = []
+    for t in sorted(per):
+        x = per[t]
+        x["short_bersih_btc"] = round(x["lev_short_btc"] - x["lev_long_btc"])
+        keluar.append((date.fromisoformat(t) + timedelta(days=3), x))
+    return keluar
+
+
 # ------------------------------------------------------------------ A3 13F
 def seri_13f():
     """[(tanggal_tersedia, ringkasan kuartal)] dari etf_13f.json, terurut."""

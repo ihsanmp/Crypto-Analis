@@ -18,6 +18,16 @@ Melengkapi uji_jam_likuiditas.py (yang hanya menguji skor Liquidity pada BTC).
   4. STRATEGI Eksposur Liquidity saja vs Liquidity+Struktural+Gelombang pada periode yang
               sama (sejak skor adopsi ada). Deskriptif.
 
+Ditambahkan 15 Okt 2026, SEBELUM dijalankan (basis CME & CFTC baru tersedia):
+  5. GELOMBANG+BASIS  Uji #2 diulang dengan W1 = rata-rata skor funding & skor basis CME
+              tahunan (Yahoo BTC=F vs spot Binance pada jam penutupan CME). Kriteria SAMA
+              dengan #2: IC < 0, p ekor bawah < 0,05/3, negatif di 2021-23 dan 2024-26.
+              Skor basis sendiri dilaporkan deskriptif (IC 12 minggu, sejak 2019).
+  6. JEJAK BASIS TRADE  Deskriptif: korelasi peringkat antara arus ETF 4 minggu (Farside)
+              dan perubahan 4 minggu short bersih leveraged funds CFTC (BTC), sejak 2024.
+              Positif = sebagian arus ETF berjalan bersama penambahan short futures, yaitu
+              basis trade yang netral arah.
+
     python cloud/uji_jam_lanjutan.py [--placebo 2000]
 """
 import argparse
@@ -147,6 +157,44 @@ def main():
           if st[i] is not None]
     bh = [x for x in bh if x]
     print(f"{'Beli-tahan':<26} hasil {(bh[-1] / bh[0] - 1) * 100:+.1f}%")
+
+    basis = gl.basis_cme(gl.spot_jam_cme(), jl.harga_yahoo("BTC=F"))
+    G2 = gl.deret_gelombang(funding, gl.fear_greed(), jumat, basis)
+    gel2 = G2["gelombang"]
+    print(f"\n== 5. GELOMBANG dengan basis CME (hipotesis IC < 0) · "
+          f"{sum(v is not None for v in gel2)} minggu ==")
+    for h in (4, 8, 12):
+        r = ret_maju(jumat, btc, h)
+        ic = uj.spearman(gel2, r)
+        p = uj.placebo_p([None if v is None else -v for v in gel2], r, -ic, a.placebo, rng)
+        era = [uj.spearman(potong(jumat, gel2, *e), r) for e in ERA_GEL]
+        lolos = ic < 0 and p < 0.05 / 3 and all(x is not None and x < 0 for x in era)
+        print(f"h={h:>2}  IC={ic:+.3f}  p={p:.4f}  era21-23={era[0]:+.3f}  "
+              f"era24-26={era[1]:+.3f}  -> {'LOLOS' if lolos else 'tidak lolos'}")
+    r12 = ret_maju(jumat, btc, 12)
+    print(f"  skor_basis IC h=12 (sejak {next(f for f, v in zip(jumat, G2['skor_basis']) if v is not None)}): "
+          f"{uj.spearman(G2['skor_basis'], r12):+.3f}")
+    print(f"  skor_W1 (funding+basis) IC h=12: {uj.spearman(G2['skor_W1'], r12):+.3f}")
+    for h in (4, 12):
+        r = ret_maju(jumat, btc, h)
+        atas = [y for x, y in zip(gel2, r) if x is not None and y is not None and x > 0.5]
+        bawah = [y for x, y in zip(gel2, r) if x is not None and y is not None and x <= 0.5]
+        print(f"  aturan > 0,5, h={h}: median {median_persen(atas):+.1f}% (N={len(atas)}) vs "
+              f"{median_persen(bawah):+.1f}% (N={len(bawah)})")
+
+    print("\n== 6. JEJAK BASIS TRADE: arus ETF 4 mg vs perubahan short bersih CFTC 4 mg ==")
+    cftc = adopsi.cftc_leveraged()
+    short = jl.ke_mingguan([(t, x["short_bersih_btc"]) for t, x in cftc], jumat, maks_basi=10)
+    hari = [(date.fromisoformat(t) + timedelta(days=1), v) for t, v in arus]
+    arus4, dshort = [], []
+    for i, f in enumerate(jumat):
+        xs = [v for t, v in hari if f - timedelta(days=28) < t <= f]
+        ok = len(xs) >= 15 and i >= 4 and short[i] is not None and short[i - 4] is not None
+        arus4.append(sum(xs) if ok else None)
+        dshort.append(short[i] - short[i - 4] if ok else None)
+    n = sum(1 for x in arus4 if x is not None)
+    print(f"N={n} minggu  korelasi peringkat = {uj.spearman(arus4, dshort):+.3f}  "
+          f"(> 0: arus ETF berjalan bersama penambahan short futures = basis trade)")
 
 
 if __name__ == "__main__":

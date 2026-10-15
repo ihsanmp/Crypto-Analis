@@ -85,22 +85,103 @@ def test_13f_hanya_etf_spot():
         assert etf_13f.cocok(nama), nama
 
 
-def test_13f_proses_zip_hanya_13f_hr_asli_dan_tanpa_opsi(tmp_path):
+def _zip_13f(p):
     sub = ("ACCESSION_NUMBER\tFILING_DATE\tSUBMISSIONTYPE\tCIK\tPERIODOFREPORT\n"
            "A1\t14-MAY-2024\t13F-HR\t1\t31-MAR-2024\n"
            "A2\t15-MAY-2024\t13F-HR\t2\t31-MAR-2024\n"
-           "A3\t20-JUN-2024\t13F-HR/A\t1\t31-MAR-2024\n")
+           "A3\t20-JUN-2024\t13F-HR/A\t1\t31-MAR-2024\n"
+           "A4\t15-MAY-2024\t13F-HR\t4\t31-MAR-2024\n")
+    sampul = ("ACCESSION_NUMBER\tFILINGMANAGER_NAME\tCRDNUMBER\tSECFILENUMBER\n"
+              "A1\tWEALTH PARTNERS LLC\t000123456\t801-00777\n"
+              "A2\tPINE CAPITAL LP\t\t801-99\n"
+              "A4\tFIRST NATIONAL BANK\t\t\n")
     info = ("ACCESSION_NUMBER\tNAMEOFISSUER\tVALUE\tPUTCALL\n"
             "A1\tISHARES BITCOIN TR\t1000\t\n"
             "A1\tFIDELITY WISE ORIGIN BITCOIN\t500\t\n"
             "A1\tISHARES BITCOIN TR\t9999\tPut\n"
             "A2\tGRAYSCALE BITCOIN TR\t300\t\n"
             "A2\tAPPLE INC\t7777\t\n"
-            "A3\tISHARES BITCOIN TR\t5555\t\n")
-    p = tmp_path / "x_form13f.zip"
+            "A3\tISHARES BITCOIN TR\t5555\t\n"
+            "A4\tISHARES BITCOIN TR\t50\t\n")
     with zipfile.ZipFile(p, "w") as z:
         z.writestr("SUBMISSION.tsv", sub)
+        z.writestr("COVERPAGE.tsv", sampul)
         z.writestr("INFOTABLE.tsv", info)
-    hasil, penerbit = etf_13f.proses_zip(str(p))
-    assert hasil == {"2024-03-31": {"filer": 2, "nilai_usd": 1800.0}}
+
+
+class _KlasPalsu:
+    def peta_untuk(self, periode):
+        return {("crd", "123456"): "PENASIHAT_KEKAYAAN",
+                ("sec", "801-99"): "HEDGE_FUND_DANA_PRIVAT"}, "ia040124.zip"
+
+
+def test_13f_proses_zip_hanya_13f_hr_asli_dan_tanpa_opsi(tmp_path):
+    p = tmp_path / "x_form13f.zip"
+    _zip_13f(p)
+    hasil, penerbit, _ = etf_13f.proses_zip(str(p))
+    h = hasil["2024-03-31"]
+    assert (h["filer"], h["nilai_usd"]) == (3, 1850.0)
     assert "APPLE INC" not in penerbit
+
+
+def test_13f_jenis_pemegang_dari_crd_sec_lalu_nama(tmp_path):
+    p = tmp_path / "x_form13f.zip"
+    _zip_13f(p)
+    hasil, _, ia = etf_13f.proses_zip(str(p), _KlasPalsu())
+    pj = hasil["2024-03-31"]["per_jenis"]
+    assert pj["PENASIHAT_KEKAYAAN"] == {"filer": 1, "nilai_usd": 1500.0}     # lewat CRD
+    assert pj["HEDGE_FUND_DANA_PRIVAT"] == {"filer": 1, "nilai_usd": 300.0}  # lewat 801-
+    assert pj["BANK"] == {"filer": 1, "nilai_usd": 50.0}                     # lewat nama
+    assert ia == {"2024-03-31": "ia040124.zip"}
+
+
+def test_jenis_dari_form_adv_5d(tmp_path):
+    kepala = ["Organization CRD#", "SEC#"] + [f"5D({h})(3)" for h in "abcdefghijklmn"]
+    baris = [["123456", "801-777"] + ["900", "100"] + ["0"] * 12,
+             ["999", "801-99"] + ["0"] * 5 + ["5,000,000"] + ["10"] * 8]
+    teks = ",".join(kepala) + "\n" + "\n".join(
+        ",".join(f'"{x}"' for x in b) for b in baris) + "\n"
+    p = tmp_path / "ia090126.zip"
+    with zipfile.ZipFile(p, "w") as z:
+        z.writestr("ia09012026.csv", teks)
+    peta = etf_13f.baca_ia(str(p))
+    assert peta[("crd", "123456")] == "PENASIHAT_KEKAYAAN"
+    assert peta[("sec", "801-99")] == "HEDGE_FUND_DANA_PRIVAT"
+    assert etf_13f.jenis_dari_nama("PINE CAPITAL LP") == "TIDAK_TERKLASIFIKASI"
+    assert etf_13f._tanggal_ia("/x/ia100226.zip").isoformat() == "2026-10-02"
+
+
+def test_jam_cme_mengikuti_musim_panas_chicago():
+    assert gelombang.jam_utc_cme(date(2026, 7, 1), 15) == 20      # CDT
+    assert gelombang.jam_utc_cme(date(2026, 12, 1), 15) == 21     # CST
+    assert gelombang.jam_utc_cme(date(2026, 3, 8), 15) == 20      # Minggu ke-2 Maret
+    assert gelombang.jam_utc_cme(date(2026, 11, 1), 15) == 21     # Minggu ke-1 Nov
+
+
+def test_kline_mikrodetik_dan_jam_yang_tepat():
+    # candle 19:00-20:00 UTC 1 Jul 2026 = tutup 15:00 Chicago (CDT); waktu dalam mikrodetik
+    t = 1782932400 * 10**6
+    baris = f"{t},1,1,1,100.5,0\n{t + 3600 * 10**6},1,1,1,999,0\n"
+    assert gelombang._urai_kline(baris, 15) == {"2026-07-01": 100.5}
+
+
+def test_basis_tahunan_dan_sisa_hari_minimal():
+    assert gelombang.sisa_hari_kontrak(date(2026, 10, 1)) == 29     # Jumat terakhir 30 Okt
+    assert gelombang.sisa_hari_kontrak(date(2026, 10, 28)) == 7     # dekat roll: minimal 7
+    assert gelombang.sisa_hari_kontrak(date(2026, 10, 31)) == 27    # lewat -> 27 Nov
+    b = gelombang.basis_cme({"2026-10-01": 100.0}, {"2026-10-01": 101.0})
+    assert abs(b["2026-10-01"] - 1 * 365 / 29) < 1e-9
+
+
+def test_cftc_short_bersih_dalam_btc(monkeypatch):
+    import json
+    data = [{"report_date_as_yyyy_mm_dd": "2026-10-06T00:00:00.000",
+             "cftc_contract_market_code": "133741",
+             "lev_money_positions_long": "100", "lev_money_positions_short": "300"},
+            {"report_date_as_yyyy_mm_dd": "2026-10-06T00:00:00.000",
+             "cftc_contract_market_code": "133742",
+             "lev_money_positions_long": "0", "lev_money_positions_short": "1000"}]
+    monkeypatch.setattr(adopsi, "_get", lambda url: json.dumps(data))
+    (tgl, x), = adopsi.cftc_leveraged()
+    assert tgl == date(2026, 10, 9)                      # Selasa + 3 = terbit Jumat
+    assert x["short_bersih_btc"] == 200 * 5 + 1000 * 0.1
