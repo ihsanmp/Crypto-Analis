@@ -241,3 +241,15 @@ def test_folder_exempt_tidak_membuat_berkas_terdaftar_jadi_era(monkeypatch):
     k._baca = lambda url, era: {}
     assert k.peta_untuk("2026-03-31")[1] == "ia050126.zip"
     assert k.peta_untuk("2025-09-30")[1].startswith("ia122025.zip")
+
+
+def test_daftar_eksplisit_pemegang_besar_tanpa_form_adv():
+    j = etf_13f.jenis_dari_nama
+    assert j("JANE STREET GROUP, LLC") == "PEMBUAT_PASAR"
+    assert j("SUSQUEHANNA INTERNATIONAL GROUP, LLP") == "PEMBUAT_PASAR"
+    assert j("WELLS FARGO & COMPANY/MN") == "BANK"
+    assert j("Mubadala Investment Co PJSC") == "INSTITUSI"
+    assert j("BlackRock, Inc.") == "MANAJER_REKSA_DANA"
+    assert j("Avenir Tech Ltd") == "TIDAK_TERKLASIFIKASI"
+    import jam_likuiditas as jl
+    assert "PEMBUAT_PASAR" not in jl.JENIS_INTI          # netral arah, bukan adopsi

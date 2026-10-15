@@ -48,7 +48,7 @@ MULAI = "2024"          # ETF spot BTC mulai diperdagangkan 11 Jan 2024
 # ETF futures (ProShares), covered call / protection / floor, Grayscale Bitcoin CASH, dan
 # "BlackRock Institutional Trust ... BTC iShares MSCI". Sekarang DAFTAR PUTIH: keluarga
 # penerbit ETF spot + kata Bitcoin, lalu pengecualian produk turunannya.
-VERSI_COCOK = 6          # 3: jenis (Form ADV 5.D); 4: ERA, nama; 5: berkas IA benar; 6: audit
+VERSI_COCOK = 7          # 3: 5.D; 4: ERA, nama; 5: berkas IA; 6: audit; 7: daftar eksplisit
 _FAMILI = re.compile(r"I ?SHARES?|ISHS|ISHA|IBIT|FIDELITY|WISE ORIGIN|G?R[AE]YSCALE|\bARK\b|"
                      r"21 ?SHARES|BITWISE|ITWISE|INVESCO|GALAXY|VAN ?ECK|ANECK|FRANKLIN|"
                      r"VALKYRIE|COINSHARES|COINSHRS|WISDOMTREE|ISDOMTREE|HASHDEX|"
@@ -128,8 +128,31 @@ def jenis_dari_5d(baris):
     return max(raum, key=raum.get)
 
 
+# Pemegang BESAR tanpa Form ADV yang muncul di daftar audit `tak_terklasifikasi_terbesar`
+# (run 38756366402). Daftar EKSPLISIT, bukan tebakan pola: setiap nama bisa diperiksa.
+# PEMBUAT_PASAR memegang ETF untuk membuat pasar/arbitrase — netral arah, jadi BUKAN adopsi.
+DAFTAR_NAMA = (
+    ("PEMBUAT_PASAR", r"JANE STREET|SUSQUEHANNA|\bDRW\b|\bIMC\b|CITADEL SECURITIES|VIRTU|"
+                      r"FLOW TRADERS|OPTIVER|HUDSON RIVER TRADING|MAREX|CANTOR FITZGERALD|"
+                      r"JEFFERIES|GALAXY DIGITAL|GALAXY GROUP|\bBULLISH\b|XTX|TWO SIGMA SEC|"
+                      r"WOLVERINE|PEAK6|SIMPLEX|RADIX TRADING|GTS SECURITIES"),
+    ("BANK", r"WELLS FARGO|GOLDMAN SACHS|JPMORGAN|MORGAN STANLEY|CITIGROUP|BANK OF AMERICA|"
+             r"\bUBS\b|BARCLAYS|PNC FINANCIAL|ROYAL BANK|BNP PARIBAS|DEUTSCHE BANK|HSBC|"
+             r"SOCIETE GENERALE|NOMURA|MIZUHO|TORONTO.DOMINION|BMO|CIBC|SCOTIA|"
+             r"RAYMOND JAMES|LPL FINANCIAL|AMERIPRISE|CHARLES SCHWAB|STIFEL"),
+    ("INSTITUSI", r"MUBADALA|ABU DHABI INVESTMENT|HARVARD MANAGEMENT|NORGES|\bGIC\b|TEMASEK|"
+                  r"BRIGHAM YOUNG|YALE|PRINCETON|STANFORD MANAGEMENT|QATAR INVESTMENT|"
+                  r"KUWAIT INVESTMENT|PUBLIC INVESTMENT FUND"),
+    ("MANAJER_REKSA_DANA", r"^BLACKROCK\b|STATE STREET CORP|VANGUARD GROUP|FIDELITY MANAGEMENT|"
+                           r"FMR LLC|INVESCO LTD|FRANKLIN RESOURCES"),
+)
+
+
 def jenis_dari_nama(nama):
     nama = re.sub(r"\s+", " ", (nama or "").upper().strip())
+    for jenis, pola in DAFTAR_NAMA:
+        if re.search(pola, nama):
+            return jenis
     if _NAMA_BANK.search(nama):
         return "BANK"
     if _NAMA_INSTITUSI.search(nama):
@@ -350,9 +373,13 @@ def proses_zip(path, klasifikasi=None):
             peta, berkas = klasifikasi.peta_untuk(p)
             ia_dipakai[p] = berkas
             nn = norm_nama(nama)
-            jenis = (peta.get(("crd", crd)) if crd else None) or \
+            # Daftar eksplisit DULUAN: induk bank & market maker kadang punya entitas
+            # penasihat kecil dengan CRD yang sama-nama, yang 5.D-nya tidak mewakili 13F induk.
+            eksplisit = jenis_dari_nama(nama)
+            jenis = (eksplisit if eksplisit in dict(DAFTAR_NAMA) else None) or \
+                    (peta.get(("crd", crd)) if crd else None) or \
                     (peta.get(("sec", sec)) if sec else None) or \
-                    (peta.get(("nama", nn)) if nn else None) or jenis_dari_nama(nama)
+                    (peta.get(("nama", nn)) if nn else None) or eksplisit
         h = hasil.setdefault(p, {"filer": 0, "nilai_usd": 0.0, "per_jenis": {}})
         h["filer"] += 1
         h["nilai_usd"] += v
