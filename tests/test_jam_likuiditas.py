@@ -153,3 +153,40 @@ def test_ringkas_mengganti_teks_bukti_panjang_tanpa_mengubah_angka():
     assert r["skor_likuiditas"] == -0.43 and r["gelombang"]["skor"] == 0.1
     assert "DITOLAK" in r["gelombang"]["status_bukti"]
     assert h["gelombang"]["status_bukti"] == jl.STATUS_GELOMBANG       # asli tidak diubah
+
+
+def test_blok_jam_sampai_ke_prompt_lewat_process_sungguhan():
+    """Sumber teks saja tidak cukup: label JAM harus benar-benar diminta lewat
+    data_mentah_crypto dan keluarannya sampai ke prompt model — di analisa DAN ngobrol."""
+    import tempfile
+    import bot_oneshot as bot
+    import indicators
+    import kategori
+    asli = (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.belajar_dari,
+            bot._jalankan_terukur, bot.run_claude, indicators.resolve_ticker, kategori.data_koin)
+    label, prompt = [], []
+    bot.JEJAK_PATH = os.path.join(tempfile.mkdtemp(), "j.json")
+    bot.simpan_riwayat = lambda *a, **k: None
+    bot.send_message = lambda *a, **k: True
+    bot.belajar_dari = lambda *a, **k: []
+    indicators.resolve_ticker = lambda c: (c.upper(), c.lower(), c)
+    kategori.data_koin = lambda x: {"mcap_usd": 1.0}
+
+    def palsu(lb, args, min_kar=0):
+        label.append(lb)
+        if "cloud/jam_likuiditas.py" in args:
+            return '{"skor_likuiditas":-0.43,"target_eksposur_btc_persen":44}', None
+        return f"<<{lb}>>", None
+    bot._jalankan_terukur = palsu
+    bot.run_claude = lambda p, *a, **k: (prompt.append(p), ("ok", None))[1]
+    try:
+        for teks in ("analisa btc", "btc kenapa turun minggu ini", "eth layak hold 3 bulan?"):
+            label.clear()
+            prompt.clear()
+            bot.process("tok", "9", teks)
+            assert "JAM LIKUIDITAS (jam_likuiditas.py)" in label, teks
+            assert any('"skor_likuiditas":-0.43' in p for p in prompt), teks
+    finally:
+        (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.belajar_dari,
+         bot._jalankan_terukur, bot.run_claude, indicators.resolve_ticker,
+         kategori.data_koin) = asli
