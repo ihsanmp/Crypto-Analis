@@ -147,13 +147,57 @@ def _norm_sec(x):
     return f"{m.group(1)}-{m.group(2)}" if m else None
 
 
+def _baris_xlsx(f):
+    """Baris dict dari sheet pertama berkas .xlsx — stdlib saja (zip + XML)."""
+    import xml.etree.ElementTree as ET
+    ns = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+    with zipfile.ZipFile(f) as x:
+        teks = []
+        if "xl/sharedStrings.xml" in x.namelist():
+            for _, el in ET.iterparse(x.open("xl/sharedStrings.xml")):
+                if el.tag == ns + "si":
+                    teks.append("".join(t.text or "" for t in el.iter(ns + "t")))
+                    el.clear()
+        lembar = sorted(n for n in x.namelist() if n.startswith("xl/worksheets/sheet"))[0]
+        kepala = None
+        for _, el in ET.iterparse(x.open(lembar)):
+            if el.tag != ns + "row":
+                continue
+            sel = {}
+            for c in el.iter(ns + "c"):
+                kol = re.match(r"[A-Z]+", c.get("r", "")).group(0)
+                v = c.find(ns + "v")
+                if v is None:
+                    isi = "".join(t.text or "" for t in c.iter(ns + "t"))
+                else:
+                    isi = teks[int(v.text)] if c.get("t") == "s" else (v.text or "")
+                sel[kol] = isi
+            el.clear()
+            if kepala is None:
+                kepala = sel
+                continue
+            yield {kepala[k]: sel.get(k, "") for k in kepala}
+
+
+def _baris_ia(z):
+    """Berkas IA SEC: CSV untuk bulan-bulan terbaru, XLSX untuk sebagian bulan lama
+    (run 38750933265 jatuh karena hanya CSV yang dicari)."""
+    nama = z.namelist()
+    csvs = [n for n in nama if n.lower().endswith(".csv")]
+    if csvs:
+        return csv.DictReader(io.TextIOWrapper(z.open(csvs[0]), encoding="latin-1",
+                                               newline=""))
+    xlsx = [n for n in nama if n.lower().endswith(".xlsx")]
+    if xlsx:
+        return _baris_xlsx(io.BytesIO(z.read(xlsx[0])))
+    raise ValueError(f"berkas IA tanpa CSV/XLSX: {nama}")
+
+
 def baca_ia(path):
     """{("crd", n) | ("sec", "801-n"): jenis} dari satu zip berkas IA bulanan."""
     peta = {}
     with zipfile.ZipFile(path) as z:
-        nama = [n for n in z.namelist() if n.lower().endswith(".csv")][0]
-        teks = io.TextIOWrapper(z.open(nama), encoding="latin-1", newline="")
-        for b in csv.DictReader(teks):
+        for b in _baris_ia(z):
             j = jenis_dari_5d(b)
             if not j:
                 continue
@@ -204,7 +248,13 @@ class Klasifikasi:
                 with open(path, "wb") as f:
                     f.write((self._unduh or _get)(url if url.startswith("http") else SEC + url,
                                                   biner=True))
-                self._muat[url] = baca_ia(path)
+                try:
+                    self._muat[url] = baca_ia(path)
+                except Exception as e:
+                    # Lebih baik kuartal ini TIDAK TERKLASIFIKASI (terlihat) daripada
+                    # seluruh pembaruan 13F jatuh.
+                    print(f"berkas IA {url.rsplit('/', 1)[-1]} gagal dibaca: {e}", flush=True)
+                    self._muat[url] = {}
             time.sleep(1)
         return self._muat[url], url.rsplit("/", 1)[-1]
 

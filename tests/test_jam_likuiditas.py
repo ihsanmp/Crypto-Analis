@@ -128,3 +128,15 @@ def test_masuk_brief_crypto():
     seed = open(os.path.join(os.path.dirname(__file__), "..", "cloud", "prompts", "peran",
                              "analis.md"), encoding="utf-8").read()
     assert "JAM LIKUIDITAS" in seed
+
+
+def test_fred_gagal_memakai_salinan_dan_menyebut_umurnya(tmp_path, monkeypatch):
+    import makro
+    monkeypatch.setattr(jl, "FRED_PATH", str(tmp_path / "fred.json"))
+    ok = {k: [("2026-10-01", 1.0)] for k in jl.SERI}
+    monkeypatch.setattr(makro, "ambil", lambda kode: (ok[kode.split("&")[0]], None))
+    data, gagal = jl.ambil_fred()
+    assert not gagal and "_cadangan" not in data
+    monkeypatch.setattr(makro, "ambil", lambda kode: (None, "TimeoutError"))
+    data, gagal = jl.ambil_fred()
+    assert not gagal and "salinan" in data["_cadangan"] and set(jl.SERI) <= set(data)

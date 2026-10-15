@@ -10,6 +10,8 @@
 #   etf_13f.json              ringkasan 13F per kuartal (A3; butuh secret SEC_CONTACT)
 #   funding_btcusdt_harian.json  funding harian Binance dari arsip bulanan (Gelombang W1)
 #   spot_btc_jam_cme.json     spot BTC pada jam penutupan CME (pembanding basis CME, W1)
+#   fred_jam_likuiditas.json  salinan seri FRED terakhir yang lengkap — cadangan saat FRED
+#                             lambat dari runner (sinyal mingguan; umurnya selalu disebut)
 name: Jam likuiditas mingguan
 
 on:
@@ -69,7 +71,7 @@ jobs:
           ADA=""
           for f in cloud/data/etf_arus_farside.json cloud/data/treasury_arsip.jsonl \
                    cloud/data/etf_13f.json cloud/data/funding_btcusdt_harian.json \
-                   cloud/data/spot_btc_jam_cme.json; do
+                   cloud/data/spot_btc_jam_cme.json cloud/data/fred_jam_likuiditas.json; do
             [ -f "$f" ] && ADA="$ADA $f"
           done
           if [ -z "$(git status --porcelain $ADA)" ]; then

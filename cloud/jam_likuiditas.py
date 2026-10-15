@@ -119,13 +119,58 @@ def ambil_fred(mulai=MULAI):
         return kode, [(date.fromisoformat(t) + jeda, v) for t, v in data], None
 
     keluar, gagal = {}, {}
-    with ThreadPoolExecutor(len(SERI)) as ex:
-        for kode, data, err in ex.map(satu, SERI):
-            if err:
-                gagal[kode] = err
-            else:
-                keluar[kode] = data
+    # Dari runner GitHub, FRED sering lebih lambat dari batas 20 detik makro.py (run
+    # 38750933265: ketujuh seri TimeoutError). Riwayat sejak 2012 lebih besar daripada yang
+    # biasa ditarik makro.py, jadi batasnya dilonggarkan dan yang gagal diulang sekali.
+    makro.TIMEOUT = max(makro.TIMEOUT, 45)
+    sisa = list(SERI)
+    for _ in range(2):
+        with ThreadPoolExecutor(len(sisa)) as ex:
+            for kode, data, err in ex.map(satu, sisa):
+                if err:
+                    gagal[kode] = err
+                else:
+                    keluar[kode] = data
+                    gagal.pop(kode, None)
+        sisa = list(gagal)
+        if not sisa:
+            break
+    if not gagal:
+        _simpan_fred(keluar)
+        return keluar, {}
+    # Cadangan: salinan tarikan terakhir yang LENGKAP (diperbarui workflow mingguan).
+    # Sinyalnya mingguan, jadi salinan beberapa hari masih sah — asal umurnya disebut.
+    cadangan, umur = _muat_fred()
+    if cadangan:
+        cadangan["_cadangan"] = f"FRED gagal ({gagal}); memakai salinan {umur}"
+        return cadangan, {}
     return keluar, gagal
+
+
+FRED_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data",
+                         "fred_jam_likuiditas.json")
+
+
+def _simpan_fred(data):
+    try:
+        with open(FRED_PATH, "w", encoding="utf-8", newline="\n") as f:
+            json.dump({"ditarik_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                       "seri": {k: [[t.isoformat(), v] for t, v in xs]
+                                for k, xs in data.items()}}, f, separators=(",", ":"))
+    except OSError:
+        pass
+
+
+def _muat_fred():
+    try:
+        with open(FRED_PATH, encoding="utf-8") as f:
+            d = json.load(f)
+        seri = {k: [(date.fromisoformat(t), v) for t, v in xs] for k, xs in d["seri"].items()}
+        if set(seri) != set(SERI):
+            return None, None
+        return seri, d.get("ditarik_utc", "?")[:10]
+    except (OSError, ValueError, KeyError):
+        return None, None
 
 
 def jumat_dari(awal, akhir):
@@ -478,6 +523,7 @@ def analisa(hari_ini=None):
     if gagal:
         return {"tidak_tersedia": f"seri FRED gagal: {gagal}. Skor Liquidity sengaja "
                                   "TIDAK dihitung dari komponen yang tersisa."}
+    cadangan = fred.pop("_cadangan", None)
     satuan, basi = validasi(fred, hari_ini)
     if satuan:
         return {"tidak_tersedia": f"satuan FRED tidak wajar: {satuan}. Skor sengaja tidak "
@@ -498,6 +544,8 @@ def analisa(hari_ini=None):
                              "sahm_realtime": L["mentah"]["SAHMREALTIME"][i]},
         "likuiditas_bersih_miliar_usd": round(L["likuiditas_bersih_miliar"][i], 1),
     }
+    if cadangan:
+        basi = [cadangan] + basi
     if basi:
         hasil["peringatan_basi"] = basi
     if (jumat[-1] - jumat[i]).days > 7:

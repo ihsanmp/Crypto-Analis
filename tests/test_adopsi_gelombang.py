@@ -185,3 +185,24 @@ def test_cftc_short_bersih_dalam_btc(monkeypatch):
     (tgl, x), = adopsi.cftc_leveraged()
     assert tgl == date(2026, 10, 9)                      # Selasa + 3 = terbit Jumat
     assert x["short_bersih_btc"] == 200 * 5 + 1000 * 0.1
+
+
+def test_berkas_ia_xlsx_juga_terbaca(tmp_path):
+    """Run 38750933265: berkas IA lama berisi XLSX, bukan CSV — pembaca jatuh."""
+    kepala = ["Organization CRD#", "SEC#", "5D(a)(3)", "5D(f)(3)"]
+    nilai = ["123", "801-5", "10", "900"]
+    teks = kepala + nilai
+    ss = "".join(f"<si><t>{t}</t></si>" for t in teks)
+    def baris(r, i0):
+        return f'<row r="{r}">' + "".join(
+            f'<c r="{chr(65 + k)}{r}" t="s"><v>{i0 + k}</v></c>' for k in range(4)) + "</row>"
+    ns = 'xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'
+    lembar = f"<worksheet {ns}><sheetData>{baris(1, 0)}{baris(2, 4)}</sheetData></worksheet>"
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as x:
+        x.writestr("xl/sharedStrings.xml", f"<sst {ns}>{ss}</sst>")
+        x.writestr("xl/worksheets/sheet1.xml", lembar)
+    p = tmp_path / "ia040124.zip"
+    with zipfile.ZipFile(p, "w") as z:
+        z.writestr("IA_FOIA_April_2024.xlsx", buf.getvalue())
+    assert etf_13f.baca_ia(str(p))[("crd", "123")] == "HEDGE_FUND_DANA_PRIVAT"
