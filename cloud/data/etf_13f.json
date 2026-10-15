@@ -27,7 +27,7 @@
   "2026-06-30": "ia08032026_1.zip"
  },
  "catatan": "13F-HR asli saja. Jenis pemegang dari Form ADV Item 5.D (jenis klien dengan RAUM terbesar), lewat CRD/nomor berkas SEC di sampul 13F; berkas IA yang dipakai = yang terakhir terbit sebelum batas filing kuartal itu. Filer tanpa CRD dipetakan dari nama hanya untuk bank/institusi yang jelas. HEDGE_FUND_DANA_PRIVAT memuat pelaku basis trade (long ETF + short futures, netral arah) — bandingkan dengan short leveraged funds CFTC.",
- "diperbarui_utc": "2026-10-15T14:54:20+00:00",
+ "diperbarui_utc": "2026-10-15T14:57:36+00:00",
  "kuartal": [
   {
    "akhir_kuartal": "2024-03-31",
@@ -63,7 +63,8 @@
      "nilai_usd": 2572149753,
      "pemegang": 120
     }
-   }
+   },
+   "tak_terklasifikasi_terbesar": []
   },
   {
    "akhir_kuartal": "2024-06-30",
@@ -99,7 +100,8 @@
      "nilai_usd": 3372892809,
      "pemegang": 147
     }
-   }
+   },
+   "tak_terklasifikasi_terbesar": []
   },
   {
    "akhir_kuartal": "2024-09-30",
@@ -135,7 +137,8 @@
      "nilai_usd": 3191183182,
      "pemegang": 178
     }
-   }
+   },
+   "tak_terklasifikasi_terbesar": []
   },
   {
    "akhir_kuartal": "2024-12-31",
@@ -171,7 +174,8 @@
      "nilai_usd": 7381187870,
      "pemegang": 220
     }
-   }
+   },
+   "tak_terklasifikasi_terbesar": []
   },
   {
    "akhir_kuartal": "2025-03-31",
@@ -207,7 +211,8 @@
      "nilai_usd": 6901223885,
      "pemegang": 208
     }
-   }
+   },
+   "tak_terklasifikasi_terbesar": []
   },
   {
    "akhir_kuartal": "2025-06-30",
@@ -243,7 +248,8 @@
      "nilai_usd": 11136526389,
      "pemegang": 231
     }
-   }
+   },
+   "tak_terklasifikasi_terbesar": []
   },
   {
    "akhir_kuartal": "2025-09-30",
@@ -279,7 +285,8 @@
      "nilai_usd": 13722759280,
      "pemegang": 223
     }
-   }
+   },
+   "tak_terklasifikasi_terbesar": []
   },
   {
    "akhir_kuartal": "2025-12-31",
@@ -315,7 +322,8 @@
      "nilai_usd": 10814962331,
      "pemegang": 240
     }
-   }
+   },
+   "tak_terklasifikasi_terbesar": []
   },
   {
    "akhir_kuartal": "2026-03-31",
@@ -351,7 +359,8 @@
      "nilai_usd": 7307269673,
      "pemegang": 223
     }
-   }
+   },
+   "tak_terklasifikasi_terbesar": []
   },
   {
    "akhir_kuartal": "2026-06-30",
@@ -387,7 +396,8 @@
      "nilai_usd": 7538376655,
      "pemegang": 213
     }
-   }
+   },
+   "tak_terklasifikasi_terbesar": []
   }
  ],
  "penerbit_cocok": {
