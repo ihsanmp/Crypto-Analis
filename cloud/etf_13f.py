@@ -359,6 +359,11 @@ def proses_zip(path, klasifikasi=None):
         pj = h["per_jenis"].setdefault(jenis, {"filer": 0, "nilai_usd": 0.0})
         pj["filer"] += 1
         pj["nilai_usd"] += v
+        if jenis == "TIDAK_TERKLASIFIKASI" and nama:
+            # Nama filer 13F = data publik institusi. Disimpan supaya pemegang besar yang
+            # tak terpetakan bisa diaudit, bukan disembunyikan di satu angka porsi.
+            tk = h.setdefault("tak_terklasifikasi", {})
+            tk[nama.strip()] = tk.get(nama.strip(), 0.0) + v
     return hasil, penerbit, ia_dipakai
 
 
@@ -399,11 +404,17 @@ def perbarui(semua=False):
                 tj = t["per_jenis"].setdefault(j, {"filer": 0, "nilai_usd": 0.0})
                 tj["filer"] += x["filer"]
                 tj["nilai_usd"] += x["nilai_usd"]
+            for n, x in (h.get("tak_terklasifikasi") or {}).items():
+                tt = t.setdefault("tak", {})
+                tt[n] = tt.get(n, 0.0) + x
     simpan["kuartal"] = [
         {"akhir_kuartal": p, "pemegang": t["filer"], "nilai_usd": round(t["nilai_usd"]),
          "per_jenis": {j: {"pemegang": x["filer"], "nilai_usd": round(x["nilai_usd"])}
                        for j, x in sorted(t["per_jenis"].items())},
-         "berkas_ia": simpan["berkas_ia"].get(p)}
+         "berkas_ia": simpan["berkas_ia"].get(p),
+         "tak_terklasifikasi_terbesar": [
+             [n, round(x)] for n, x in sorted((t.get("tak") or {}).items(),
+                                              key=lambda kv: -kv[1])[:15]]}
         for p, t in sorted(total.items()) if p >= MULAI]
     simpan["diperbarui_utc"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     simpan["catatan"] = (
