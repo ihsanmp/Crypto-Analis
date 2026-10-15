@@ -301,7 +301,8 @@ class Klasifikasi:
         v = self._daftar()[pilih]
         peta = dict(self._baca(v["era"], True)) if "era" in v else {}
         peta.update(self._baca(v["terdaftar"], False))      # terdaftar menang atas ERA
-        label = v["terdaftar"].rsplit("/", 1)[-1] + ("" if sebelum else " (terdekat, SESUDAH batas)")
+        label = v["terdaftar"].rsplit("/", 1)[-1] + (
+            "" if sebelum else " (terdekat; tidak ada berkas <= 120 hari sebelum batas filing)")
         return peta, label
 
 
@@ -483,7 +484,10 @@ def main():
     if a.daftar_ia:
         html = _get(IA_HALAMAN)
         for t in sorted(set(re.findall(r'href="([^"]+\.zip)"', html, re.I))):
-            print(t.rsplit("/", 1)[-1])
+            if "26" in t.rsplit("/", 1)[-1] or "25" in t.rsplit("/", 1)[-1]:
+                print(repr(t))
+        d = Klasifikasi()._daftar()
+        print("terurai:", len(d), [(k.isoformat(), v) for k, v in sorted(d.items())[-4:]])
         return
     s = perbarui(a.semua)
     for q in s["kuartal"]:
