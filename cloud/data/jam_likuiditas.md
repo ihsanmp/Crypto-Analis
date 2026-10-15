@@ -120,3 +120,24 @@ Karena itu tidak ada vonis. A3 (13F) dan A4 (treasury) belum punya riwayat yang 
 | + Struktural | +24,8% | −23% |
 | + Struktural + Gelombang | +22,3% | −23% |
 | Beli-tahan | +36,0% | — |
+
+## Data A3 — 13F per kuartal (`etf_13f.py`, run 38747445399)
+
+Angka berikut dihitung dari 13F-HR asli dengan pencocokan daftar putih ETF spot. Tanggal datanya dianggap tersedia 45 hari sesudah akhir kuartal.
+
+| Kuartal | Pemegang | Nilai |
+| --- | --- | --- |
+| 2024-03 | 987 | $11,2 miliar |
+| 2024-06 | 1.130 | $10,9 miliar |
+| 2024-09 | 1.169 | $12,5 miliar |
+| 2024-12 | 1.685 | $27,4 miliar |
+| 2025-03 | 1.733 | $21,2 miliar |
+| 2025-06 | 2.001 | $33,1 miliar |
+| 2025-09 | 2.174 | $38,3 miliar |
+| 2025-12 | 2.204 | $28,1 miliar |
+| 2026-03 | 2.037 | $19,6 miliar |
+| 2026-06 | 1.929 | $17,3 miliar |
+
+- **Tren pemegang:** jumlah pemegang turun dua kuartal berturut-turut sejak puncaknya di Q4 2025.
+- **Skor A3:** skala tetap tanh(pertumbuhan / 10%), dipakai karena 10 titik terlalu sedikit untuk z-score bergulir.
+- **A4 (treasury):** arsipnya baru dimulai 15 Okt 2026, jadi skornya baru muncul sekitar 30 minggu lagi.
