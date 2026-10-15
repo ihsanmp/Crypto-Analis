@@ -1,0 +1,80 @@
+# Liquidity & Adoption Clock — hasil uji (15 Okt 2026)
+
+Rancangan: catatan user "Liquidity & Adoption Clock: Rancangan Kuantitatif" (15 Okt 2026).
+Kode: `cloud/jam_likuiditas.py`. Uji: `cloud/uji_jam_likuiditas.py` (aturan lolos ditulis di
+docstring SEBELUM dijalankan).
+
+## Kesimpulan
+
+- **Skor Liquidity memprediksi return BTC ~12 minggu, bukan 4 minggu.** IC Spearman +0,33
+  (p placebo < 0,001), positif di kedua era, dan tetap lolos tanpa NFCI (+0,28).
+- **Momentum jarum jam tidak sesuai rancangan.** "Ketat, mulai membaik", yang di rancangan
+  disebut titik balik terbaik, ternyata kuadran terburuk. Yang menentukan adalah POSISI skor.
+- **Strategi eksposur** menukar return dengan drawdown: CAGR 40% vs 62% beli-tahan, maxDD
+  −48% vs −83%, Sharpe 1,17 vs 1,04.
+- **Adoption Clock belum diuji.** ETF spot baru ada sejak Jan 2024, dan API hanya memberi
+  sekitar 300 hari bursa. Sesuai rancangan, bobot adopsi ditetapkan di awal dan tidak
+  dioptimasi.
+
+## Desain uji
+
+| Aspek | Pilihan |
+| --- | --- |
+| Data | BTC harian Bitstamp (`btc_daily_bitstamp.csv.gz`); FRED fredgraph.csv sejak 2012 |
+| Sinyal | Jumat; tiap titik FRED diberi tanggal tersedia = tanggal ukur + `JEDA_RILIS` |
+| Masuk | Penutupan candle Sabtu (t+1), sesudah sinyal |
+| Ukuran | Spearman skor vs log-return t+1 → t+1+7h, h = 4, 8, 12 minggu |
+| Signifikansi | Placebo geser-melingkar 2.000x (geser ≥ 26 minggu), satu sisi |
+| Lolos | IC > 0, p < 0,05/3, dan positif di 2015–2020 serta 2021–2026 |
+
+## Hasil utama
+
+Sinyal Jumat 2015-01-02 s/d 2026-09-01, 609 minggu.
+
+| Horizon | IC | p placebo | 2015–20 | 2021–26 | Vonis |
+| --- | --- | --- | --- | --- | --- |
+| 4 minggu | +0,050 | 0,264 | +0,081 | −0,029 | tidak lolos |
+| 8 minggu | +0,217 | 0,020 | +0,200 | +0,191 | tidak lolos (Bonferroni) |
+| 12 minggu | +0,333 | < 0,001 | +0,286 | +0,346 | **LOLOS** |
+
+Pemeriksaan bocor: NFCI direvisi setiap minggu, dan ALFRED tidak terjangkau dari jaringan
+pengembang. Tanpa L4, h = 12 tetap IC +0,282, p 0,0005, era +0,21 / +0,31.
+
+IC per komponen (h = 8): L1 bunga +0,11 · L2 likuiditas bersih +0,13 · L3 dolar +0,12 ·
+L4 NFCI +0,19. Tidak ada satu komponen yang mendominasi.
+
+## Return BTC 12 minggu per kuadran
+
+| Kuadran (posisi, momentum) | N | Median | Naik |
+| --- | --- | --- | --- |
+| Longgar, mulai melambat | 102 | +32,2% | 78% |
+| Longgar & makin longgar | 199 | +17,2% | 66% |
+| Ketat & makin ketat | 204 | −0,2% | 50% |
+| Ketat, mulai membaik | 92 | −7,5% | 40% |
+
+## Return BTC 12 minggu per tersil skor
+
+| Tersil | Rentang skor | Median | Naik |
+| --- | --- | --- | --- |
+| Rendah | −0,81 .. −0,09 | −5,8% | 41% |
+| Tengah | −0,09 .. +0,11 | +8,0% | 57% |
+| Tinggi | +0,11 .. +0,62 | +25,4% | 77% |
+
+## Ketahanan (IC h = 8)
+
+| Lookback | k = 2 | k = 4 | k = 8 |
+| --- | --- | --- | --- |
+| 52 | +0,10 | +0,16 | +0,32 |
+| 104 | +0,16 | +0,22 | +0,36 |
+| 156 | +0,18 | +0,23 | +0,38 |
+
+Semua kombinasi parameter positif, jadi hasilnya tidak bergantung pada satu setelan. k = 8
+lebih kuat, tetapi parameter rancangan (k = 4, lookback 104) TIDAK diganti sesudah melihat
+hasil.
+
+## Batasan
+
+- Satu rezim selama 11,7 tahun. Jendela 12 minggu yang benar-benar independen hanya sekitar 50.
+- NFCI memakai vintage terkini. Uji tanpa NFCI menutup sebagian besar risiko ini, tetapi
+  tidak seluruhnya.
+- Hanya diuji pada BTC. Untuk altcoin, angka ini hanya konteks.

@@ -41,6 +41,13 @@ berubah walau bukti menumpuk. Kalau pandanganmu berubah dari percakapan sebelumn
 = altcoin season. ETH/BTC barometer selera risiko internal crypto. Dan crypto makin
 berperilaku sebagai **aset risiko makro** — korelasi dengan Nasdaq dan likuiditas global
 sering lebih menentukan daripada berita proyeknya sendiri.
+
+**Rezim likuiditas = blok JAM LIKUIDITAS (jam_likuiditas.py)**, langkah pertama top-down.
+Skornya (−1..+1: yield 2th, likuiditas bersih Fed, dolar, NFCI; filter resesi Sahm) TERUJI
+pada BTC untuk horizon **~12 minggu** (IC +0,33, lolos di dua era) — tidak untuk 4 minggu,
+jadi jangan dipakai menjelaskan gerak harian/pekanan. Arti kuadran ambil dari angka
+`riwayat_btc_12mg_*`, bukan dari teori rancangan: "ketat, mulai membaik" justru terburuk.
+Adopsi (arus ETF) belum diuji. Target eksposur = filter rezim long-only, bukan sinyal entry.
 <!-- /BLOK -->
 
 <!-- BLOK: analis-forex | pemicu: forex -->

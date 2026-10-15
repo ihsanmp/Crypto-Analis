@@ -3389,6 +3389,11 @@ def data_mentah_crypto(coin, proyeksi=True):
     # "korelasi ke QQQ/dolar/yield TIDAK tersedia di brief" (keluhan user, 5 Okt 2026).
     # Versi --ringkas: ~1,3 rb karakter, angka sama dengan JSON lengkap (~7 rb).
     tugas.append(("LINTAS ASET (sebab.py)", ["cloud/sebab.py", coin, "--ringkas"], 0))
+    # Liquidity & Adoption Clock (rancangan user 15 Okt 2026): rezim likuiditas Fed/dolar/
+    # kondisi keuangan sebagai filter eksposur ~12 minggu — langkah pertama top-down di
+    # seed analis. Teruji pada BTC (uji_jam_likuiditas.py); ~1,6 rb karakter.
+    tugas.append(("JAM LIKUIDITAS (jam_likuiditas.py)",
+                  ["cloud/jam_likuiditas.py", "--ringkas"], 0))
     lewat = []
     if t in _TANPA_PROTOKOL:
         lewat.append(f"fundamentals.py ({t} tidak punya protokol berpendapatan)")
