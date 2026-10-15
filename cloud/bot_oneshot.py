@@ -293,8 +293,46 @@ def fragmen_wallet(text):
     return konteks_wallet(text)[0]
 
 
+# PERINTAH ANALISA dalam bentuk sopan/santai. Pemilah lama hanya mengenali pesan yang
+# DIAWALI "analisa"/"analisis", sehingga "tolong analisa btc", "minta analisa sol dong",
+# "coba analisa render", "analisain eth", dan "btc analisa dong" masuk mode NGOBROL —
+# jawaban yang bentuk & kedalamannya berbeda dari "analisa btc" untuk permintaan yang sama.
+_VERBA_ANALISA = r"(?:analisa|analisis|analisain|analisisin|analisakan|analyze|analyse)"
+_SOPAN_AWAL = re.compile(
+    r"^(?:(?:tolong|coba|cobain|minta|mohon|bisa|bisakah|boleh|please|pls|bantu|bantuin|"
+    r"yuk|ayo|bro|kak|min|gan)\s+)+", re.I)
+_PARTIKEL_AKHIR = re.compile(
+    r"(?:\s+(?:dong|donk|dund|ya|yah|yuk|deh|sih|nih|please|pls|bro|kak|min|gan|lagi))+"
+    r"\s*[?!.]*$", re.I)
+# "coba analisa ini", "analisa chart ini" merujuk KONTEN yang dikirim, bukan aset.
+_BUKAN_ASET_ANALISA = {"ini", "itu", "data", "chart", "grafik", "gambar", "foto", "berita",
+                       "artikel", "postingan", "post", "klaim", "tweet", "cuitan", "pesan",
+                       "link", "dong", "lagi", "yang", "dulu"}
+
+
+def normal_perintah_analisa(text):
+    """'tolong analisa btc dong' -> 'analisa btc'. Selain bentuk perintah, kembali apa adanya."""
+    asli = (text or "").strip()
+    t = _PARTIKEL_AKHIR.sub("", asli.lower().lstrip("/")).strip(" ?!.")
+    t = _SOPAN_AWAL.sub("", t).strip()
+    m = re.match(rf"^{_VERBA_ANALISA}\s+(.+)$", t)
+    if m:
+        sisa = m.group(1).strip()
+        if sisa.split()[0] in _BUKAN_ASET_ANALISA:
+            return asli
+        if t == asli.lower() and t.startswith(("analisa ", "analisis ")):
+            return asli                     # sudah bentuk perintah — jangan diubah
+        return "analisa " + sisa
+    # Urutan terbalik: "btc analisa dong" — hanya kalau katanya memang aset yang dikenal.
+    m = re.match(rf"^([a-z0-9]{{2,12}})\s+{_VERBA_ANALISA}$", t)
+    if m and aset_dari_pesan(m.group(1))[1]:
+        return "analisa " + m.group(1)
+    return asli
+
+
 def classify(text):
     """Tentukan jenis: 'help' | 'tokenbaru' | 'cariwallet' | 'analisa' | 'narasi' | 'chat'."""
+    text = normal_perintah_analisa(text)
     low = (text or "").strip().lower().lstrip("/")
     if low in ("start", "help", "mulai", "bantuan"):
         return "help"
@@ -318,6 +356,10 @@ def classify(text):
     if is_narasi(low):
         return "narasi"
     if low in ("analisa", "analisis") or low.startswith(("analisa ", "analisis ")):
+        # "analisa chart ini" merujuk KONTEN yang dikirim — dulu dibaca sebagai koin CHART.
+        kata = low.split()
+        if len(kata) > 1 and kata[1] in _BUKAN_ASET_ANALISA:
+            return "chat"
         return "analisa"
     return "chat"
 
@@ -1790,6 +1832,17 @@ _ISTILAH_TRADING = re.compile(
     re.I)
 
 
+# Kosakata FUNDAMENTAL. "bagaimana revenue dari pons?" bukan pesan pasar menurut kosakata
+# lama, sehingga pencarian dalam (CoinGecko) tidak dijalankan: PONS tidak dikenali dan
+# fundamentals.py tidak pernah dipanggil — padahal "analisa pons" mengenalinya.
+# Sengaja TANPA kata "fundamental" polos: "kalo secara fundamental di X apakah ada info
+# yang menarik" adalah permintaan TEMUAN (riset lebih dalam), bukan pertanyaan satu aset.
+_FUNDAMENTAL_RE = re.compile(
+    r"\b(revenue|pendapatan|fees?|biaya protokol|tokenomics?|valuasi|valuation|"
+    r"market ?cap|marketcap|circulating|max supply|emisi|inflasi token|"
+    r"buyback|burn|treasury)\b", re.I)
+
+
 # Niat transaksi + harga konkret. Gabungan keduanya berarti user sedang menimbang
 # keputusan nyata, dan itu tidak boleh dijawab dari angka giliran sebelumnya.
 _NIAT_TRANSAKSI = re.compile(
@@ -2177,6 +2230,7 @@ def pesan_pasar(text):
     return bool(_PASAR_UMUM.search(low)
                 or _TEKNIKAL_RE.search(low)
                 or _ISTILAH_TRADING.search(low)
+                or _FUNDAMENTAL_RE.search(low)
                 # Meminta target/proyeksi jelas pertanyaan pasar, walau kalimatnya tidak
                 # memakai satu pun kosakata harga: "solana berpotensi naik sampai $200?"
                 or _MINTA_PROYEKSI.search(low)
@@ -4317,7 +4371,7 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
     timeout = int(os.environ.get("ANALYSIS_TIMEOUT", "900"))
 
     if kind == "analisa":
-        words = text.strip().lower().split()
+        words = normal_perintah_analisa(text).strip().lower().split()
         jenis, simbol = jenis_aset(" ".join(words[1:]))
         # Normalisasi NAMA PROYEK -> TICKER dilakukan DI SINI, bukan di dalam
         # data_mentah_crypto. Di sana hasilnya cuma variabel lokal, sehingga brief benar
@@ -4431,6 +4485,10 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
         # menurunkan bobot — benangnya sudah ada, tidak perlu digali dari nol.
         ada_konteks = bool(konteks_percakapan(chat_id, balas=balas).strip())
         jatah, model_chat, putaran, tingkat = bobot_chat(text, ada_konteks)
+        lanjut_dari = lanjutan_pasar(text, chat_id)
+        if lanjut_dari and putaran < 20:
+            jatah, model_chat, putaran = 300, MODEL_NARASI, 20
+            tingkat = f"SEDANG (lanjutan pertanyaan pasar {lanjut_dari})"
         print(f"[proses] bobot chat: {tingkat} -> {jatah} dtk, {model_chat}, "
               f"{putaran} putaran", file=sys.stderr)
 
@@ -4460,7 +4518,8 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
                 asal_aset = "balas"
                 print(f"[aset] dari pesan yang dibalas: {ditunjuk}", file=sys.stderr)
         if (not simbol_chat and not _PASAR_MENYELURUH.search(text or "")
-                and (pesan_pasar(text) or _MINTA_PANTAU.search(text.lower()))):
+                and (pesan_pasar(text) or _MINTA_PANTAU.search(text.lower())
+                     or lanjut_dari)):
             dulu = _simbol_terakhir(chat_id)
             if dulu:
                 jenis_chat, simbol_chat = jenis_aset(dulu)[0], dulu
@@ -4487,7 +4546,11 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
                 # historis, ATR, dan — kalau user menyebut target — pengujian target itu.
                 if _MINTA_NARATIF.search(text or ""):
                     brief += "\n\n" + data_naratif(simbol_chat)
-                if _MINTA_PROYEKSI.search(text.lower()):
+                # Lanjutan pertanyaan proyeksi ("kalo seminggu?") mewarisi niatnya;
+                # horizonnya tetap dibaca dari pesan BARU.
+                if _MINTA_PROYEKSI.search(text.lower()) or (
+                        lanjut_dari and _MINTA_PROYEKSI.search(
+                            _pesan_terakhir(chat_id).lower())):
                     brief += "\n\n" + data_proyeksi(text, jenis_chat, simbol_chat)
                 # Pertanyaan SEBAB butuh pemisahan berlapis: berapa bagian gerakan ini
                 # milik seluruh pasar, berapa milik selera risiko yang lebih luas, dan
@@ -5550,6 +5613,42 @@ def _simbol_terakhir(chat_id):
         if s:
             return s
     return None
+
+
+# PERTANYAAN LANJUTAN. "kalo dalam jangka waktu seminggu?" setelah "bagaimana proyeksi
+# btc sebulan" dipilah RINGAN (8 putaran), tanpa aset dan tanpa data proyeksi — padahal
+# giliran sebelumnya mendapat semuanya. Dua giliran tentang hal yang sama dijawab dengan
+# bahan berbeda dan bisa saling bertentangan. Sama untuk "apakah masih ada peluang untuk
+# kembali naik?". Pesan lanjutan dikenali dari BENTUKNYA, lalu konteks pasar giliran
+# sebelumnya (6 jam terakhir) diwarisi.
+_LANJUTAN_RE = re.compile(
+    r"^\s*(?:kalo|kalau|klo|kl|terus|trus|lalu|lantas|jadi|nah|masih|apakah masih|"
+    r"bagaimana dengan|gimana dengan|gmn dengan|bagaimana kalau|gimana kalau|gmn kalau|"
+    r"kalau begitu|kalo gitu|tapi|tp|bukannya|bukankah|berarti|artinya)\b", re.I)
+_ARAH_LANJUTAN = re.compile(
+    r"\b(?:naik|turun|peluang|potensi|target|support|resisten\w*|tembus|koreksi|rebound|"
+    r"seminggu|sebulan|setahun|minggu|bulan|jangka|lanjut|bertahan|aman)\b", re.I)
+
+
+def _pesan_terakhir(chat_id):
+    """Pesan user giliran sebelumnya (6 jam terakhir), atau ""."""
+    if not chat_id:
+        return ""
+    sekarang = time.time()
+    lalu = [r for r in _muat_riwayat()
+            if str(r.get("chat")) == _id_chat(chat_id)
+            and sekarang - r.get("waktu", 0) < RIWAYAT_UMUR]
+    return (lalu[-1].get("pesan") or "") if lalu else ""
+
+
+def lanjutan_pasar(text, chat_id):
+    """Simbol giliran sebelumnya kalau pesan ini LANJUTAN pertanyaan pasar, selain itu None."""
+    low = (text or "").strip().lower()
+    if not low or _RINGAN_RE.match(low) or _KONSEP_RE.search(low) or pesan_pasar(text):
+        return None
+    if not (_LANJUTAN_RE.match(low) or _ARAH_LANJUTAN.search(low)):
+        return None
+    return _simbol_terakhir(chat_id)
 
 
 def _simbol_dari_balasan(chat_id, balas):

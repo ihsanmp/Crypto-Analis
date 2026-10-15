@@ -8829,3 +8829,69 @@ def test_petunjuk_mcp_hanya_saat_mcp_diberikan():
     assert "ToolSearch" not in cmd[2]
     _, cmd = _perintah_untuk(with_tools=False)
     assert cmd[2] == "x"
+
+
+# ------------------------- konsistensi mode analisa vs ngobrol (15 Okt 2026)
+
+def test_perintah_analisa_bentuk_sopan_tetap_mode_analisa():
+    """"tolong analisa btc" dulu masuk NGOBROL, "analisa btc" masuk ANALISA — permintaan
+    sama, jawaban beda bentuk & kedalaman."""
+    for t, harus in [("tolong analisa btc", "analisa btc"), ("minta analisa sol dong", "analisa sol"),
+                     ("coba analisa render", "analisa render"), ("analisain eth", "analisa eth"),
+                     ("btc analisa dong", "analisa btc"), ("bisa tolong analisa pons?", "analisa pons")]:
+        assert bot.classify(t) == "analisa", t
+        assert bot.normal_perintah_analisa(t) == harus, t
+
+
+def test_analisa_konten_bukan_koin():
+    for t in ("coba analisa ini", "analisa chart ini", "analisa data ini",
+              "menurutmu analisa ini bener ga"):
+        assert bot.classify(t) == "chat", t
+
+
+def test_kosakata_fundamental_membuka_pencarian_koin():
+    """"bagaimana revenue dari pons?" dulu bukan pesan pasar -> PONS tidak dicari sama
+    sekali, padahal "analisa pons" mengenalinya."""
+    for t in ("bagaimana revenue dari pons?", "tokenomics hype gimana", "fee protokol uniswap naik?"):
+        assert bot.pesan_pasar(t), t
+
+
+def test_lanjutan_mewarisi_aset_bobot_dan_proyeksi():
+    """Run 4 Okt: "bagaimana proyeksi kamu untuk btc ... sebulan" (SEDANG + proyeksi) lalu
+    "kalo dalam jangka waktu seminggu?" dipilah RINGAN, tanpa aset, tanpa proyeksi."""
+    import tempfile as _tf
+    import time as _t
+    asli = (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.run_claude,
+            bot.data_mentah_crypto, bot.data_proyeksi, bot._muat_riwayat)
+    bot.JEJAK_PATH = os.path.join(_tf.mkdtemp(), "d.json")
+    bot.simpan_riwayat = lambda *a: None
+    bot.send_message = lambda *a: True
+    dipanggil = {}
+    bot.data_mentah_crypto = lambda s, *a: (dipanggil.__setitem__("aset", s), "### DATA")[1]
+    bot.data_proyeksi = lambda t, j, s: (dipanggil.__setitem__("proyeksi", (t, s)), "### PROYEKSI")[1]
+    bot.run_claude = lambda p, *a, **k: (dipanggil.__setitem__("putaran", k.get("max_turns")),
+                                         ("ok", None))[1]
+    bot._muat_riwayat = lambda: [{
+        "chat": bot._id_chat("9"), "waktu": _t.time() - 600, "waktu_utc": "x",
+        "pesan": "bagaimana proyeksi kamu untuk btc dalam jangka waktu menengah untuk sebulan",
+        "balasan": "BTC ...", "angka_kunci": []}]
+    try:
+        bot.process("tok", "9", "kalo dalam jangka waktu seminggu?")
+        assert dipanggil.get("aset") == "BTC", dipanggil
+        assert dipanggil.get("proyeksi", (None, None))[1] == "BTC", dipanggil
+        assert dipanggil.get("putaran", 0) >= 20, dipanggil
+        dipanggil.clear()
+        bot.process("tok", "9", "makasih ya")
+        assert "aset" not in dipanggil and dipanggil.get("putaran") == 8, dipanggil
+    finally:
+        (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.run_claude,
+         bot.data_mentah_crypto, bot.data_proyeksi, bot._muat_riwayat) = asli
+
+
+def test_lanjutan_tanpa_riwayat_tidak_mengarang_aset():
+    asli = bot._muat_riwayat
+    bot._muat_riwayat = lambda: []
+    try:
+        assert bot.lanjutan_pasar("kalo dalam jangka waktu seminggu?", "9") is None
+    finally:
+        bot._muat_riwayat = asli
