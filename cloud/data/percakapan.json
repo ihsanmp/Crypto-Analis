@@ -425,5 +425,18 @@
    "ema21=75.634",
    "rsi=46,6"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1792059452.5252793,
+  "waktu_utc": "2026-10-15 10:17",
+  "pesan": "prediksi btc daily dan weekly",
+  "balasan": "Ini praktis pertanyaan yang sama dengan 7 menit lalu — datanya belum banyak berubah (saat itu $81.041, sekarang $81.018, per 15 Okt 2026 10:16 UTC). Proyeksinya tetap dari proyeksi.py: titik tengah = harga sekarang, TANPA menebak arah, lebar dari vol\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+1 lainnya)",
+  "angka_kunci": [
+   "harga=81.018",
+   "ema21=82.915",
+   "ema21=75.634",
+   "rsi=46,6"
+  ]
  }
 ]
