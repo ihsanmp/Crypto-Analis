@@ -48,7 +48,7 @@ MULAI = "2024"          # ETF spot BTC mulai diperdagangkan 11 Jan 2024
 # ETF futures (ProShares), covered call / protection / floor, Grayscale Bitcoin CASH, dan
 # "BlackRock Institutional Trust ... BTC iShares MSCI". Sekarang DAFTAR PUTIH: keluarga
 # penerbit ETF spot + kata Bitcoin, lalu pengecualian produk turunannya.
-VERSI_COCOK = 5          # 3: jenis (Form ADV 5.D); 4: ERA, nama; 5: berkas IA benar
+VERSI_COCOK = 6          # 3: jenis (Form ADV 5.D); 4: ERA, nama; 5: berkas IA benar; 6: audit
 _FAMILI = re.compile(r"I ?SHARES?|ISHS|ISHA|IBIT|FIDELITY|WISE ORIGIN|G?R[AE]YSCALE|\bARK\b|"
                      r"21 ?SHARES|BITWISE|ITWISE|INVESCO|GALAXY|VAN ?ECK|ANECK|FRANKLIN|"
                      r"VALKYRIE|COINSHARES|COINSHRS|WISDOMTREE|ISDOMTREE|HASHDEX|"
