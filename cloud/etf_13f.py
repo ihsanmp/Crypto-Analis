@@ -195,6 +195,27 @@ def periksa():
             continue
         z = sorted(set(re.findall(r'href="([^"]+\.zip)"', html, re.I)))
         print(h, "->", len(z), "zip;", z[:6], "...", z[-6:])
+        ia = [x for x in z if re.search(r"/ia\d{6}\.zip$", x)]
+        if ia:
+            terbaru = max(ia, key=lambda x: (x[-6:-4], x[-10:-8], x[-8:-6]))
+            print("berkas IA terbaru:", terbaru)
+            with tempfile.TemporaryDirectory() as d:
+                path = os.path.join(d, "ia.zip")
+                with open(path, "wb") as f:
+                    f.write(_get(terbaru if terbaru.startswith("http") else SEC + terbaru,
+                                 biner=True))
+                with zipfile.ZipFile(path) as zz:
+                    print("isi:", zz.namelist())
+                    nama = zz.namelist()[0]
+                    with zz.open(nama) as f:
+                        kepala = f.readline().decode("latin-1").rstrip()
+                        n = sum(1 for _ in f)
+            kol = re.split(r"[,|	]", kepala)
+            print(f"{len(kol)} kolom, {n} baris")
+            for k in kol:
+                if re.search(r"5D|5F|7B|Pool|Hedge|CRD|Organization CRD|SEC#|Legal Name|Primary",
+                             k, re.I):
+                    print("  kolom:", k)
 
 
 def main():
