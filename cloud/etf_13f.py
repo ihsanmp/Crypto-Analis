@@ -48,7 +48,7 @@ MULAI = "2024"          # ETF spot BTC mulai diperdagangkan 11 Jan 2024
 # ETF futures (ProShares), covered call / protection / floor, Grayscale Bitcoin CASH, dan
 # "BlackRock Institutional Trust ... BTC iShares MSCI". Sekarang DAFTAR PUTIH: keluarga
 # penerbit ETF spot + kata Bitcoin, lalu pengecualian produk turunannya.
-VERSI_COCOK = 4          # 3: + jenis (Form ADV 5.D); 4: + ERA, nama, berkas terdekat
+VERSI_COCOK = 5          # 3: jenis (Form ADV 5.D); 4: ERA, nama; 5: berkas IA benar
 _FAMILI = re.compile(r"I ?SHARES?|ISHS|ISHA|IBIT|FIDELITY|WISE ORIGIN|G?R[AE]YSCALE|\bARK\b|"
                      r"21 ?SHARES|BITWISE|ITWISE|INVESCO|GALAXY|VAN ?ECK|ANECK|FRANKLIN|"
                      r"VALKYRIE|COINSHARES|COINSHRS|WISDOMTREE|ISDOMTREE|HASHDEX|"
@@ -266,7 +266,11 @@ class Klasifikasi:
             for t in set(re.findall(r'href="([^"]+/ia\d{6,8}[^"/]*\.zip)"', html, re.I)):
                 d = _tanggal_ia(t)
                 if d:
-                    jenis = "era" if "exempt" in t.lower() else "terdaftar"
+                    # Cek NAMA BERKAS saja: folder SEC sejak 2023 bernama "...-exempt-
+                    # reporting-advisers/", sehingga memeriksa seluruh URL membuat setiap
+                    # berkas terdaftar dianggap ERA (run 38753072380: semua kuartal jatuh
+                    # ke berkas Mei 2020).
+                    jenis = "era" if "exempt" in t.rsplit("/", 1)[-1].lower() else "terdaftar"
                     self._berkas.setdefault(d, {})[jenis] = t
         return self._berkas
 

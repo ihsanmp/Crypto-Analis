@@ -227,3 +227,17 @@ def test_era_dan_nama_resmi(tmp_path):
     assert peta[("crd", "555")] == "HEDGE_FUND_DANA_PRIVAT"
     assert peta[("nama", etf_13f.norm_nama("Pine Capital Management LP"))] == \
         "HEDGE_FUND_DANA_PRIVAT"
+
+
+def test_folder_exempt_tidak_membuat_berkas_terdaftar_jadi_era(monkeypatch):
+    """Run 38753072380: folder SEC '...-exempt-reporting-advisers/' membuat semua berkas
+    terdaftar sejak 2023 terbaca sebagai ERA; kuartal 2024-2026 jatuh ke berkas Mei 2020."""
+    folder = "/files/investment/data/other/information-about-registered-investment-advisers-exempt-reporting-advisers/"
+    html = "".join(f'<a href="{folder}{n}">' for n in
+                   ("ia050126.zip", "ia050126-exempt.zip", "ia122025.zip"))
+    html += '<a href="/files/data/old/ia050120.zip">'
+    monkeypatch.setattr(etf_13f, "_get", lambda url, biner=False: html)
+    k = etf_13f.Klasifikasi()
+    k._baca = lambda url, era: {}
+    assert k.peta_untuk("2026-03-31")[1] == "ia050126.zip"
+    assert k.peta_untuk("2025-09-30")[1].startswith("ia122025.zip")
