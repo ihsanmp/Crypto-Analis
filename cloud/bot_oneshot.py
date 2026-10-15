@@ -1724,7 +1724,7 @@ _MINTA_PROYEKSI = re.compile(
     # "performa X seminggu kedepan" adalah pertanyaan proyeksi yang paling wajar,
     # dan sempat jatuh ke jalur RINGAN tanpa data sama sekali. "kedepan" ditulis
     # tanpa spasi jauh lebih sering daripada "ke depan".
-    r"performa|kinerja|ke ?depan|mendatang|"
+    r"performa|kinerja|ke ?depan|mendatang|kisaran harga|range harga|"
     r"predict|projection|where will|how (?:high|low|far)|next (?:week|month|quarter|year)|"
     r"dampak(?:nya)?|efek(?:nya)?|hasil(?:nya)? (?:cpi|nfp|fomc))", re.I)
 
@@ -3416,7 +3416,8 @@ def data_mentah_crypto(coin):
     else:
         lewat.append(f"etf.py ({t} tidak punya ETF spot AS)")
     tugas.append(("PROYEKSI (proyeksi.py)",
-                  ["cloud/proyeksi.py", coin, "--hari", "60", "--ringkas"], 0))
+                  ["cloud/proyeksi.py", coin, "--hari", "60", "--ringkas",
+                   "--prediksi", "1,7,30"], 0))
     # Regresi log BTC — chart BitcoinTalk 2014 yang dikirim user (24 Sep 2026). Yang
     # ditanam UJIANNYA, bukan garisnya: di luar sampelnya garis itu gagal, dan tanpa blok
     # ini model akan mengutip chart populer itu sebagai "nilai wajar". Harga acuannya
@@ -3592,6 +3593,41 @@ def horizon_dari_pesan(teks):
     return 60
 
 
+# "btc bulan depan kemana?" adalah pertanyaan proyeksi — tapi "kemana" sendirian terlalu
+# umum ("long weekend enaknya kemana"). Dipakai HANYA di cabang yang asetnya sudah ada.
+_KEMANA_RE = re.compile(r"\bke ?mana\b", re.I)
+
+
+# HORIZON PREDIKSI (15 Okt 2026, "prediksi harga daily, weekly"). horizon_dari_pesan()
+# membaca "harian" sebagai 5 hari dan "mingguan" 10 hari (jendela tabel peluang), dan tidak
+# mengenal "daily"/"weekly"/"3 hari" sama sekali — "prediksi btc daily" dijawab dengan
+# horizon 60 hari. Kisaran prediksi memakai horizon KALENDER yang diminta user.
+_SATUAN_HORIZON = {"hari": 1, "day": 1, "days": 1, "d": 1, "minggu": 7, "pekan": 7,
+                   "week": 7, "weeks": 7, "w": 7, "bulan": 30, "month": 30, "months": 30}
+_KATA_ANGKA = {"satu": 1, "se": 1, "dua": 2, "tiga": 3, "empat": 4, "lima": 5, "enam": 6}
+_HORIZON_PREDIKSI = (
+    (r"\b(?:besok|tomorrow|harian|daily|24 ?jam|hari ini|1d)\b", 1),
+    (r"\b(?:mingguan|weekly|seminggu|minggu depan|pekan depan|minggu ini|pekan ini|1w)\b", 7),
+    (r"\b(?:bulanan|monthly|sebulan|bulan depan|bulan ini|1m)\b", 30),
+)
+
+
+def horizon_prediksi(teks):
+    """Daftar horizon (hari kalender) yang diminta, urut naik. Tanpa penanda: 1, 7, 30."""
+    low = (teks or "").lower()
+    hz = set()
+    for m in re.finditer(r"\b(\d{1,3}|satu|dua|tiga|empat|lima|enam)\s*(hari|days?|d|"
+                         r"minggu|pekan|weeks?|w|bulan|months?)\b", low):
+        n = int(m.group(1)) if m.group(1).isdigit() else _KATA_ANGKA[m.group(1)]
+        if n > 0:
+            hz.add(n * _SATUAN_HORIZON[m.group(2)])
+    for pola, h in _HORIZON_PREDIKSI:
+        if re.search(pola, low):
+            hz.add(h)
+    hz = {h for h in hz if 1 <= h <= 365}
+    return sorted(hz) or [1, 7, 30]
+
+
 def data_proyeksi(teks, jenis, simbol):
     """Tambahan brief untuk pertanyaan proyeksi — dijalankan KODE, bukan diminta ke model.
 
@@ -3601,13 +3637,21 @@ def data_proyeksi(teks, jenis, simbol):
     """
     hari = horizon_dari_pesan(teks)
     target = target_dari_pesan(teks)
-    args = ["cloud/proyeksi.py", simbol, "--hari", str(hari), "--ringkas"]
+    args = ["cloud/proyeksi.py", simbol, "--hari", str(hari), "--ringkas",
+            "--prediksi", ",".join(str(h) for h in horizon_prediksi(teks))]
     if jenis != "crypto":
         args.append("--pasar")
     if target:
         args += ["--target", f"{target:g}"]
 
     bagian = []
+    # Horizon dalam JAM tidak didukung: kisaran dihitung dari candle HARIAN. Dikatakan
+    # terus terang, bukan diam-diam diganti horizon harian.
+    if re.search(r"\b\d+\s*(?:h|jam|hour|hours)\b|\bintraday\b", (teks or "").lower()):
+        bagian.append("### CATATAN HORIZON\nUser meminta horizon dalam JAM/intraday. "
+                      "Kisaran prediksi di bawah dihitung dari candle HARIAN (horizon "
+                      "terpendek 1 hari) — katakan itu, jangan menyajikannya sebagai "
+                      "prediksi per jam.")
     keluar, err = _jalankan_terukur("PROYEKSI (proyeksi.py)", args)
     bagian.append(f"### PROYEKSI (proyeksi.py, horizon {hari} hari)\n"
                   + (keluar if not err else f"tidak tersedia: {err}"))
@@ -4548,7 +4592,7 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
                     brief += "\n\n" + data_naratif(simbol_chat)
                 # Lanjutan pertanyaan proyeksi ("kalo seminggu?") mewarisi niatnya;
                 # horizonnya tetap dibaca dari pesan BARU.
-                if _MINTA_PROYEKSI.search(text.lower()) or (
+                if _MINTA_PROYEKSI.search(text.lower()) or _KEMANA_RE.search(text) or (
                         lanjut_dari and _MINTA_PROYEKSI.search(
                             _pesan_terakhir(chat_id).lower())):
                     brief += "\n\n" + data_proyeksi(text, jenis_chat, simbol_chat)

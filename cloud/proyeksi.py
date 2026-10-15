@@ -41,6 +41,79 @@ PERSENTIL = (10, 25, 50, 75, 90)
 # di tes, bukan sebagai cara menghitungnya.
 
 
+# PREDIKSI HARGA PENUTUPAN per horizon — permintaan user 15 Okt 2026 ("prediksi harga
+# daily, weekly"). Metodenya jalan acak: median = harga terakhir, lebar = sigma 90 hari *
+# akar(h). Itu pemenang uji sebelumnya untuk harga PENUTUP (uji_timesfm.py: TimesFM 6-11%
+# lebih buruk, sebaran empiris juga kalah). Kalibrasinya diukur uji_prediksi.py, aturan
+# ditetapkan sebelum melihat hasil, BTC 2012-2026 — angkanya disematkan di sini supaya
+# ikut ke setiap jawaban.
+JENDELA_SIGMA = 90
+Z_KUANTIL = {10: -1.2816, 25: -0.6745, 50: 0.0, 75: 0.6745, 90: 1.2816}
+KALIBRASI_PREDIKSI = {
+    # horizon: (cakupan p10-p90 semua / 2019-2026, cakupan p25-p75 semua / 2019-2026,
+    #           porsi ditutup lebih tinggi)
+    1: ("83,7% / 84,0%", "63,3% / 62,1%", "52,5%"),
+    7: ("79,5% / 82,7%", "57,7% / 60,7%", "55,3%"),
+    30: ("75,0% / 76,3%", "51,0% / 51,3%", "58,5%"),
+}
+
+
+def _label_horizon(h):
+    return {1: "besok (1 hari)", 7: "1 minggu", 14: "2 minggu", 30: "1 bulan"}.get(
+        h, f"{h} hari")
+
+
+def prediksi_harga(candles, horizon, simbol=""):
+    """Kisaran harga PENUTUPAN di akhir tiap horizon, beserta kalibrasi terukurnya."""
+    import math
+    import statistics
+    tutup = [c[4] for c in candles if c[4]]
+    if len(tutup) < JENDELA_SIGMA + 2:
+        return {"tidak_tersedia": f"riwayat {len(tutup)} hari, perlu > {JENDELA_SIGMA}"}
+    r = [math.log(tutup[j] / tutup[j - 1]) for j in range(len(tutup) - JENDELA_SIGMA, len(tutup))]
+    sigma = statistics.pstdev(r)
+    harga = tutup[-1]
+    baris = []
+    for h in horizon:
+        s_h = sigma * math.sqrt(h)
+        q = {p: harga * math.exp(z * s_h) for p, z in Z_KUANTIL.items()}
+        naik = [tutup[i + h] > tutup[i] for i in range(len(tutup) - h)]
+        item = {
+            "horizon": _label_horizon(h), "horizon_hari": h,
+            "kisaran_80_persen": [round(q[10], 8), round(q[90], 8)],
+            "kisaran_50_persen": [round(q[25], 8), round(q[75], 8)],
+            "titik_tengah": round(q[50], 8),
+            "lebar_80_persen_dari_harga": round((q[90] - q[10]) / harga * 100, 2),
+            "riwayat_aset_ini_ditutup_lebih_tinggi": (
+                f"{100 * sum(naik) / len(naik):.1f}% dari {len(naik)} jendela"
+                if naik else None),
+        }
+        kal = KALIBRASI_PREDIKSI.get(h)
+        item["kalibrasi_terukur"] = (
+            {"kisaran_80_benar": kal[0], "kisaran_50_benar": kal[1],
+             "btc_ditutup_lebih_tinggi_2012_2026": kal[2],
+             "diuji_pada": "BTC harian 2012-2026 (semua / 2019-2026), uji_prediksi.py"}
+            if kal else
+            "horizon ini BELUM diukur kalibrasinya (yang diukur: 1, 7, 30 hari) — sebut begitu")
+        baris.append(item)
+    return {
+        "metode": (f"jalan acak: titik tengah = harga terakhir (TANPA arah), lebar dari "
+                   f"volatilitas {JENDELA_SIGMA} hari terakhir ({sigma * 100:.2f}% per hari) "
+                   "x akar(horizon)"),
+        "per_horizon": baris,
+        "wajib_dibaca": (
+            "Sajikan sebagai KISARAN per horizon (80% dan 50%), JANGAN satu angka dan JANGAN "
+            "'harga akan ke $X'. Titik tengah = harga sekarang karena metode ini sengaja "
+            "tidak menebak arah — secara historis arah harian BTC hampir 50:50 (52,5% naik). "
+            "Sebut kalibrasinya: kisaran 80% benar sekitar 75-84% dari waktu. "
+            + ("Kalibrasi diukur pada BTC; altcoin berekor lebih gemuk — kisarannya lebih "
+               "sering ditembus. " if simbol.upper() not in ("BTC", "BITCOIN") else "")
+            + "Kalau ada level struktural (support/resisten) di dalam kisaran, sebut sebagai "
+            "titik yang perlu dilewati. Arah boleh dibahas dari data LAIN di brief, tapi "
+            "kisaran ini tidak memuatnya."),
+    }
+
+
 def peluang_sentuh(nilai, ambang_persen, naik):
     """Berapa persen jendela yang benar-benar mencapai ambang itu. Dicacah, bukan dibalik.
 
@@ -245,6 +318,7 @@ def main():
     ap.add_argument("--hari", type=int, default=30, help="horizon proyeksi (hari perdagangan)")
     ap.add_argument("--target", type=float, help="uji target harga yang diajukan")
     ap.add_argument("--ringkas", action="store_true", help="buang panduan statis")
+    ap.add_argument("--prediksi", help="kisaran harga penutupan per horizon, mis. 1,7,30")
     args = ap.parse_args()
 
     keluar = {
@@ -285,13 +359,17 @@ def main():
 
     tercapai, terdalam, tertutup = sebaran_gerakan(candles, args.hari, pakai_high)
     if tercapai:
-        def tangga(nilai, naik, acuan=None):
+        def tangga(nilai, naik, acuan=None, hanya_sisi=False):
             """Tangga level + peluang menyentuhnya. Levelnya dari persentil sebaran itu
             sendiri supaya rentangnya realistis; yang DILAPORKAN peluangnya."""
             baris = []
             for p in PERSENTIL:
                 pct = _persentil(nilai, p)
                 if pct is None:
+                    continue
+                # "Menyentuh ke atas" level yang sudah DI BAWAH harga (atau sebaliknya)
+                # selalu benar dan tidak bermakna — sempat muncul "-1,27%, peluang 90%".
+                if hanya_sisi and ((naik and pct <= 0) or (not naik and pct >= 0)):
                     continue
                 baris.append({
                     "harga": round(harga * (1 + pct / 100), 8),
@@ -308,8 +386,8 @@ def main():
         keluar["peluang_historis"] = {
             "jendela_diuji": len(tercapai),
             "jendela_riwayat": _rentang_tanggal(candles),
-            "menyentuh_ke_atas": tangga(tercapai, True),
-            "menyentuh_ke_bawah": tangga(terdalam, False),
+            "menyentuh_ke_atas": tangga(tercapai, True, hanya_sisi=True),
+            "menyentuh_ke_bawah": tangga(terdalam, False, hanya_sisi=True),
             "menutup_di_atas": tangga(tertutup, True),
             # Bukan "cara_baca" — dibuang --ringkas. Peringatan "ini BUKAN ramalan" dan
             # "frekuensi, bukan probabilitas" harus sampai ke model.
@@ -378,6 +456,13 @@ def main():
 
     if args.target is not None:
         keluar["uji_target"] = uji_target(candles, harga, args.target, args.hari, atr, pakai_high)
+
+    if args.prediksi:
+        try:
+            hz = sorted({int(x) for x in args.prediksi.split(",") if x.strip()})
+            keluar["prediksi_harga"] = prediksi_harga(candles, hz, args.simbol)
+        except ValueError:
+            keluar["prediksi_harga"] = {"tidak_tersedia": f"horizon tidak sah: {args.prediksi}"}
 
     if args.ringkas:
         from backtest import buang_panduan
