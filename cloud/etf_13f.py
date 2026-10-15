@@ -161,10 +161,50 @@ def perbarui(semua=False):
     return simpan
 
 
+ADV_HALAMAN = (
+    "https://www.sec.gov/data-research/sec-markets-data/"
+    "information-about-registered-investment-advisers-exempt-reporting-advisers",
+    "https://www.sec.gov/foia-services/frequently-requested-documents/form-adv-data",
+)
+
+
+def periksa():
+    """Bentuk data untuk memisahkan JENIS pemegang: kolom COVERPAGE 13F (adakah CRD /
+    nomor berkas 801- penasihat?) dan berkas data Form ADV. Hanya nama kolom & hitungan
+    yang dicetak — tidak ada nama atau alamat filer."""
+    t = daftar_data_set()[-1]
+    url = t if t.startswith("http") else SEC + t
+    with tempfile.TemporaryDirectory() as d:
+        path = os.path.join(d, "x.zip")
+        with open(path, "wb") as f:
+            f.write(_get(url, biner=True))
+        with zipfile.ZipFile(path) as z:
+            print("isi zip:", z.namelist())
+            baris = list(_baca(z, "COVERPAGE.TSV"))
+    print("COVERPAGE kolom:", list(baris[0].keys()))
+    for k in baris[0]:
+        isi = [b[k] for b in baris if (b.get(k) or "").strip()]
+        print(f"  {k}: terisi {len(isi)}/{len(baris)}"
+              + (f" contoh awalan {sorted({x[:4] for x in isi})[:8]}"
+                 if k.upper() in ("CRDNUMBER", "SECFILENUMBER", "FORM13FFILENUMBER") else ""))
+    for h in ADV_HALAMAN:
+        try:
+            html = _get(h)
+        except Exception as e:
+            print(h, "gagal", type(e).__name__)
+            continue
+        z = sorted(set(re.findall(r'href="([^"]+\.zip)"', html, re.I)))
+        print(h, "->", len(z), "zip;", z[:6], "...", z[-6:])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--semua", action="store_true")
+    ap.add_argument("--periksa", action="store_true")
     a = ap.parse_args()
+    if a.periksa:
+        periksa()
+        return
     s = perbarui(a.semua)
     for q in s["kuartal"]:
         print(f"{q['akhir_kuartal']}  pemegang {q['pemegang']:>5}  "

@@ -1,0 +1,26 @@
+# Diagnostik manual: bentuk kolom 13F COVERPAGE & berkas Form ADV SEC, untuk memisahkan
+# JENIS pemegang ETF BTC (penasihat vs hedge fund). SEC menolak jaringan pengembang (403),
+# jadi pemeriksaannya harus dari runner. Hanya nama kolom & hitungan yang dicetak.
+name: Periksa 13F & Form ADV
+
+on:
+  workflow_dispatch:
+    inputs:
+      perintah:
+        description: "Argumen untuk etf_13f.py"
+        default: "--periksa"
+
+permissions:
+  contents: read
+
+jobs:
+  periksa:
+    runs-on: ubuntu-latest
+    env:
+      SEC_CONTACT: ${{ secrets.SEC_CONTACT }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - run: python cloud/etf_13f.py ${{ inputs.perintah }}
