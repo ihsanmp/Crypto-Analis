@@ -412,5 +412,18 @@
   "angka_kunci": [
    "harga=83.342"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1792058955.4409924,
+  "waktu_utc": "2026-10-15 10:09",
+  "pesan": "prediksi btc daily dan weekly",
+  "balasan": "Prediksi di bawah pakai metode jalan acak dari proyeksi.py (titik tengah = harga sekarang, TANPA menebak arah, lebar dari volatilitas 90 hari) — bukan ramalan arah, tapi rentang kemungkinan. Data per 15 Okt 2026 10:08 UTC, harga $81.041.\n\n• Daily (be\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+1 lainnya)",
+  "angka_kunci": [
+   "harga=81.041",
+   "ema21=82.916",
+   "ema21=75.634",
+   "rsi=46,6"
+  ]
  }
 ]
