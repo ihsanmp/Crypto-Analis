@@ -71,6 +71,18 @@ def test_13f_hanya_etf_spot():
     assert not etf_13f.cocok("VALKYRIE BITCOIN MINERS ETF")
     assert not etf_13f.cocok("MICROSTRATEGY INC")
     assert not etf_13f.cocok("APPLE INC")
+    # Kebocoran nyata dari run 38746731651 (versi pencocokan pertama):
+    for nama in ("AMERICAN BITCOIN CORP.", "BTC DEV CORP", "BITCOIN INFRASTRUCTURE ACQUI",
+                 "PROSHARES BITCOIN ETF", "GRAYSCALE BITCOIN CASH TRUST BCH",
+                 "GRAYSCALE BTC COV CALL ETF", "ROUNDHILL BITCOIN CC STR ETF",
+                 "CALAMOS BITCOIN STRUCTURED ALT PROTECTION ETF - JANUARY",
+                 "BLACKROCK INSTITUTIONAL TRUST COMPANY N.A. - BTC ISHARES S&P 100 ETF",
+                 "PUT ISHR BITCOIN TR ETF $35 EXP 01/15/27"):
+        assert not etf_13f.cocok(nama), nama
+    for nama in ("GRAYSCALE    BITCOIN     MINI   TR    ET", "RAYSCALE BITCOIN TRUST ETF",
+                 "ISHS BITCOIN TRUST", "COINSHARES VALKYRIE BITCOIN FUND",
+                 "MORGAN STANLEY BITCOIN TRUST ETP"):
+        assert etf_13f.cocok(nama), nama
 
 
 def test_13f_proses_zip_hanya_13f_hr_asli_dan_tanpa_opsi(tmp_path):

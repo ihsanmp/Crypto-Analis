@@ -91,8 +91,11 @@ def funding_harian(perbarui=True, hari_ini=None):
     try:
         import coinalyze
         if coinalyze._kunci():
-            sim = coinalyze._simbol_btc()
-            titik, err = coinalyze._riwayat("/funding-rate-history", sim, 40)
+            # _simbol_btc mengembalikan (simbol, error) — versi pertama mengirim tuple-nya
+            # utuh sebagai simbol, dan Coinalyze membalas kosong (run 38746731651).
+            sim, err = coinalyze._simbol_btc()
+            titik, err = (coinalyze._riwayat("/funding-rate-history", sim, 40)
+                          if sim else ([], err))
             n = 0
             for x in titik if not err else []:
                 tgl = datetime.fromtimestamp(x["t"], timezone.utc).date().isoformat()

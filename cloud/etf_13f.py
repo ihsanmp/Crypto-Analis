@@ -41,17 +41,27 @@ SEC = "https://www.sec.gov"
 F13_PATH = os.path.join(BASE_DIR, "data", "etf_13f.json")
 MULAI = "2024"          # ETF spot BTC mulai diperdagangkan 11 Jan 2024
 
-# Nama penerbit di 13F berupa singkatan huruf besar ("ISHARES BITCOIN TR", "FIDELITY WISE
-# ORIGIN BITCOIN", "ARK 21SHARES BITCOIN ETF"). Semua yang memuat BITCOIN, KECUALI produk
-# futures/leverage/opsi/penambang — itu bukan permintaan BTC spot.
-_BTC = re.compile(r"BITCOIN|\bBTC\b")
-_BUKAN = re.compile(r"STRATEGY|FUTURE|MINING|MINER|DEPOT|2X|ULTRA|SHORT|INVERSE|INCOME|"
-                    r"COVERED|OPTION|YIELD|LEVERAG|BUFFER|PREMIUM|TREASURY CO|ETHER|MSTR")
+# Nama penerbit di 13F diketik bebas oleh tiap filer ("ISHARES BITCOIN TR", "ISHS BITCOIN
+# TRUST", "RAYSCALE BITCOIN MINI TR ET"). Versi pertama mencocokkan SEMUA yang memuat
+# "BITCOIN" lalu membuang pengecualian — run 38746731651 membuktikan itu bocor: saham
+# penambang (American Bitcoin Corp), SPAC (BTC Dev Corp, Bitcoin Infrastructure Acqui),
+# ETF futures (ProShares), covered call / protection / floor, Grayscale Bitcoin CASH, dan
+# "BlackRock Institutional Trust ... BTC iShares MSCI". Sekarang DAFTAR PUTIH: keluarga
+# penerbit ETF spot + kata Bitcoin, lalu pengecualian produk turunannya.
+VERSI_COCOK = 2
+_FAMILI = re.compile(r"I ?SHARES?|ISHS|ISHA|IBIT|FIDELITY|WISE ORIGIN|G?R[AE]YSCALE|\bARK\b|"
+                     r"21 ?SHARES|BITWISE|ITWISE|INVESCO|GALAXY|VAN ?ECK|ANECK|FRANKLIN|"
+                     r"VALKYRIE|COINSHARES|COINSHRS|WISDOMTREE|ISDOMTREE|HASHDEX|"
+                     r"MORGAN STANLEY|BITCOIN INVESTMENT TR")
+_BITCOIN = re.compile(r"BITC(?:OI|IO|O)N")
+_BUKAN = re.compile(r"CASH|BCH|\bCOV|CALL|\bCC\b|PREM|FLOOR|STRUCT|PROTECT|STANDARD|CORP|"
+                    r"EX-BTC|ACTIVE|FUT|MINER|MINING|\bAND\b|\bPUT\b|PROSHARES|STRAT|"
+                    r"INCOME|\bINC\b|INSTITUTIONAL TRUST COMPANY|LEVERAG|2X|SHORT|INVERSE")
 
 
 def cocok(nama):
-    nama = (nama or "").upper()
-    return bool(_BTC.search(nama)) and not _BUKAN.search(nama)
+    nama = re.sub(r"\s+", " ", (nama or "").upper())
+    return bool(_FAMILI.search(nama) and _BITCOIN.search(nama)) and not _BUKAN.search(nama)
 
 
 def _get(url, biner=False):
@@ -114,8 +124,8 @@ def perbarui(semua=False):
             simpan = json.load(f)
     except (OSError, ValueError):
         simpan = {}
-    if semua:
-        simpan = {}
+    if semua or simpan.get("versi_cocok") != VERSI_COCOK:
+        simpan = {"versi_cocok": VERSI_COCOK}
     simpan.setdefault("per_data_set", {})
     simpan.setdefault("penerbit_cocok", {})
     baru = [t for t in daftar_data_set() if t.rsplit("/", 1)[-1] not in simpan["per_data_set"]]
@@ -157,7 +167,8 @@ def main():
     a = ap.parse_args()
     s = perbarui(a.semua)
     for q in s["kuartal"]:
-        print(f"{q['akhir_kuartal']}  pemegang {q['pemegang']:>5}  nilai ${q['nilai_usd'] / 1e9:,.1f} M")
+        print(f"{q['akhir_kuartal']}  pemegang {q['pemegang']:>5}  "
+              f"nilai ${q['nilai_usd'] / 1e9:,.1f} miliar")
 
 
 if __name__ == "__main__":

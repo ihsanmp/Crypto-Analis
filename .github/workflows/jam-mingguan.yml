@@ -15,6 +15,11 @@ on:
   schedule:
     - cron: "30 0 * * 6"      # Sabtu ~07:30 WIB
   workflow_dispatch:
+    inputs:
+      kirim:
+        description: "Kirim ringkasan ke Telegram"
+        type: boolean
+        default: true
 
 # Grup yang sama dengan bot.yml: keduanya bisa menulis ke cloud/data dan push ke main.
 concurrency:
@@ -79,6 +84,7 @@ jobs:
           echo "::warning::Data mingguan gagal disimpan setelah 3 percobaan."
 
       - name: Kirim ke Telegram
+        if: github.event_name == 'schedule' || inputs.kirim
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
