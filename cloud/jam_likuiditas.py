@@ -90,6 +90,35 @@ STATUS_ADOPSI = (
 # minggu-minggu itu justru diikuti return TERTINGGI (lihat STATUS_GELOMBANG).
 PAKAI_ATURAN_GELOMBANG = False
 
+# Di bawah persentil ini |momentum 4 minggu| dianggap LEMAH: kuadran ditentukan oleh tanda
+# angka yang nyaris nol. Jawaban produksi 16 Okt 2026 menulis "mengetat makin dalam" untuk
+# momentum -0,05 (persentil 14) padahal skor seminggu itu MEMBAIK dari -0,43 ke -0,29.
+PERSENTIL_MOMENTUM_LEMAH = 25
+
+
+def konteks_momentum(liq, i, k=K_MINGGU):
+    """Besaran relatif momentum & arah terbaru — supaya tanda kecil tidak dibaca sebagai tren."""
+    if i < k or liq[i] is None or liq[i - k] is None:
+        return {}
+    m = liq[i] - liq[i - k]
+    riwayat = [abs(liq[j] - liq[j - k]) for j in range(k, i)
+               if liq[j] is not None and liq[j - k] is not None]
+    keluar = {}
+    if riwayat:
+        pct = round(sum(1 for x in riwayat if x < abs(m)) / len(riwayat) * 100)
+        keluar["momentum_persentil_mutlak"] = pct
+    if i >= 1 and liq[i - 1] is not None:
+        keluar["perubahan_1mg"] = round(liq[i] - liq[i - 1], 3)
+    if riwayat and keluar["momentum_persentil_mutlak"] < PERSENTIL_MOMENTUM_LEMAH:
+        d1 = keluar.get("perubahan_1mg")
+        keluar["catatan_momentum"] = (
+            f"Momentum 4 minggu LEMAH (persentil {keluar['momentum_persentil_mutlak']} dari "
+            f"riwayat): kuadran ini di PERBATASAN, jangan disebut 'makin ketat/longgar'"
+            + (f". Arah TERBARU: seminggu terakhir skor {'membaik' if d1 > 0 else 'memburuk'} "
+               f"{d1:+.2f}" if d1 else ""))
+    return keluar
+
+
 # Hasil uji_jam_likuiditas.py — return BTC 12 minggu sesudah sinyal, 2015-2026. Sumber
 # KEBENARAN untuk arti kuadran; teks rancangan disimpan hanya untuk dibandingkan.
 TERUKUR_KUADRAN_12MG = {
@@ -100,9 +129,10 @@ TERUKUR_KUADRAN_12MG = {
                              "titik balik terbaik, data MENOLAKNYA: ini yang terburuk"),
 }
 TERUKUR_TERSIL_12MG = (
-    (-0.09, "RENDAH (skor <= -0,09): median -5,8%, naik 41%"),
-    (0.11, "TENGAH (-0,09..+0,11): median +8,0%, naik 57%"),
-    (None, "TINGGI (skor > +0,11): median +25,4%, naik 77%"),
+    # N disebut: tanpa itu jawaban produksi 16 Okt menyebut tersil 199 minggu "sampel kecil".
+    (-0.09, "RENDAH (skor <= -0,09): median -5,8%, naik 41% dari 199 minggu"),
+    (0.11, "TENGAH (-0,09..+0,11): median +8,0%, naik 57% dari 199 minggu"),
+    (None, "TINGGI (skor > +0,11): median +25,4%, naik 77% dari 199 minggu"),
 )
 
 
@@ -546,7 +576,8 @@ def analisa(hari_ini=None):
         "sinyal_jumat": jumat[i].isoformat(),
         "skor_likuiditas": round(liq[i], 3),
         "komponen": {k: round(v[i], 3) for k, v in L["komponen"].items()},
-        "jam_likuiditas": jarum(liq[i], mom, terukur=True),
+        "jam_likuiditas": {**(jarum(liq[i], mom, terukur=True) or {}),
+                           **konteks_momentum(liq, i)},
         "filter_resesi_L5": {"aktif": bool(L["resesi"][i]),
                              "sahm_realtime": L["mentah"]["SAHMREALTIME"][i]},
         "likuiditas_bersih_miliar_usd": round(L["likuiditas_bersih_miliar"][i], 1),
@@ -587,6 +618,7 @@ def pesan(h):
     baris = [f"🕰 JAM LIKUIDITAS & ADOPSI (sinyal {h['sinyal_jumat']})",
              f"Liquidity {h['skor_likuiditas']:+.2f} · fase {j['fase']}",
              f"  riwayat BTC 12 mg fase ini: {j['riwayat_btc_12mg_kuadran_ini']}",
+             *([f"  ⚠ {j['catatan_momentum']}"] if j.get("catatan_momentum") else []),
              "  komponen: " + " · ".join(f"{k.split('_')[0]} {v:+.2f}"
                                          for k, v in h["komponen"].items()),
              f"Filter resesi: {'AKTIF' if h['filter_resesi_L5']['aktif'] else 'tidak aktif'}"]

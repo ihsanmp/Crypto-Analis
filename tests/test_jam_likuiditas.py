@@ -227,3 +227,16 @@ def test_pemicu_jam_tanpa_aset_dan_jam_bukan_koin():
     finally:
         (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.belajar_dari,
          bot._jalankan_terukur, bot.run_claude, bot.data_mentah_crypto) = asli
+
+
+def test_momentum_lemah_tidak_dibaca_sebagai_tren():
+    """Produksi 16 Okt 2026: momentum -0,05 (persentil 14) ditulis "mengetat makin dalam",
+    padahal skor seminggu itu membaik -0,43 -> -0,29."""
+    liq = [0.3 * ((-1) ** (i // 4)) for i in range(60)] + [-0.24, -0.30, -0.467, -0.429, -0.289]
+    k = jl.konteks_momentum(liq, len(liq) - 1)
+    assert k["momentum_persentil_mutlak"] < jl.PERSENTIL_MOMENTUM_LEMAH
+    assert k["perubahan_1mg"] == 0.14
+    assert "PERBATASAN" in k["catatan_momentum"] and "membaik +0.14" in k["catatan_momentum"]
+    kuat = [0.0] * 60 + [0.0, 0.0, 0.0, 0.0, 0.9]
+    assert "catatan_momentum" not in jl.konteks_momentum(kuat, len(kuat) - 1)
+    assert all("dari 199 minggu" in t for _, t in jl.TERUKUR_TERSIL_12MG)
