@@ -201,3 +201,50 @@ Porsi nilai per jenis pemegang:
 - **Hedge fund keluar:** porsi hedge fund turun dari 49% (Q4 2024) menjadi 15% (Q2 2026). Sebaliknya, penasihat kekayaan dan bank naik.
 - **Hitungan inti A3:** hanya penasihat kekayaan, bank, institusi, manajer reksa dana, dan lainnya. Hedge fund, pembuat pasar (netral arah), dan yang tak terklasifikasi dikeluarkan.
 - **Cek silang dengan CFTC (Q2 2026):** hedge fund memegang ETF setara ±43.700 BTC. Short bersih leveraged funds di CME ±35.900 BTC, atau 82% dari jumlah itu. Kepemilikan ETF oleh hedge fund sebagian besar adalah basis trade.
+
+## Pemicu dan peluang aktif (matriks 16 Okt 2026)
+
+Blok JAM LIKUIDITAS dimuat lewat tiga jalan:
+
+1. Perintah analisa koin.
+2. Pesan ngobrol yang menyebut koin kripto.
+3. Pesan ngobrol tanpa koin yang cocok dengan `_MINTA_JAM` (`cloud/bot_oneshot.py`), kecuali pertanyaan definisi seperti "apa itu …" atau "jelaskan …".
+
+Peluangnya diukur lewat `bot.process` sungguhan. Set held-out ditulis sebelum diukur dan tidak dipakai untuk menambal putaran yang sama.
+
+| Set | Dipakai untuk | Aktif (seharusnya aktif) | Salah aktif (seharusnya tidak) |
+| --- | --- | --- | --- |
+| Tuning (70 frasa) | menambal putaran 1 | 49/62 = 79% → 62/62 | 0/8 |
+| Held-out 1 (35 frasa) | estimasi, lalu tambal putaran 2 | **18/26 = 69%** | 0/9 |
+| Held-out 2 (32 frasa) | estimasi, lalu tambal putaran 3 | **16/24 = 67%** | 1/8* |
+| Held-out 3 (32 frasa) | estimasi akhir | **21/24 = 88%** | 0/8 |
+
+\* "apa itu bitcoin halving" aktif lewat jalur koin. Setiap pesan yang menyebut koin selalu menarik data lengkap, termasuk blok ini. Ini perilaku lama, bukan dari pola JAM.
+
+**Perkiraan untuk kalimat baru:** sekitar 85–90% pertanyaan makro/likuiditas tanpa nama koin akan memicu blok ini. Angka ini dari held-out 3, yang diukur sebelum tiga frasa sisanya ikut ditambal. Kata umum dan pertanyaan definisi tidak memicunya (0 salah aktif dari 25).
+
+### Peluang per kelompok kata (sesudah semua putaran)
+
+| Kelompok | Contoh pemicu | Aktif |
+| --- | --- | --- |
+| Likuiditas | likuiditas, liquidity, net liquidity, uang beredar, M2, money printer | 100% |
+| Fed & neraca | fed, the fed, powell, QT, QE, neraca, TGA, RRP, reverse repo, bank sentral | 100% |
+| Bunga & FOMC | suku bunga, bunga acuan, rate cut/hike, FOMC, dovish, hawkish, moneter, pelonggaran, pengetatan | 100% |
+| Dolar & obligasi | dolar, dollar, USD, DXY, yield, imbal hasil, obligasi, bond | 100% |
+| Kondisi keuangan & rezim | kondisi keuangan/finansial, financial conditions, NFCI, spread kredit, rezim, risk on/off, makro, macro, fiskal, stimulus | 100% |
+| Resesi & tenaga kerja | resesi, recession, sahm, pengangguran, tenaga kerja, NFP | 100% |
+| Adopsi & ETF | etf, arus/aliran etf, inflow, outflow, net flow, 13F, institusi, akumulasi, treasury perusahaan, basis trade | 100% |
+| Leverage & sentimen | funding (rate), leverage, overheat, euforia, fear & greed, greed | 100% |
+| Nama program & eksposur | jam likuiditas, liquidity/adoption clock, eksposur, porsi/alokasi/persen … kripto | 100% |
+| Menyebut koin kripto | btc gimana, eth layak hold?, analisa sol | 100% |
+
+Angka 100% berlaku untuk frasa yang sudah diuji. Untuk frasa baru, pakai perkiraan 85–90% di atas.
+
+### Dua salah-rute yang ketemu lewat matriks ini
+
+Keduanya sudah diperbaiki:
+
+- "jam" terbaca sebagai token JAM, misalnya pada "jam berapa rilis cpi".
+- "etf" terbaca sebagai token ETF, misalnya pada "arus masuk etf ethereum" (seharusnya ETH) dan "masih beli etf?".
+
+Semua 164 frasa dikunci di `tests/_frasa_jam.py` dan diuji oleh `test_matriks_pemicu_jam_tanpa_aset`.

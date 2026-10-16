@@ -240,3 +240,35 @@ def test_momentum_lemah_tidak_dibaca_sebagai_tren():
     kuat = [0.0] * 60 + [0.0, 0.0, 0.0, 0.0, 0.9]
     assert "catatan_momentum" not in jl.konteks_momentum(kuat, len(kuat) - 1)
     assert all("dari 199 minggu" in t for _, t in jl.TERUKUR_TERSIL_12MG)
+
+
+def test_matriks_pemicu_jam_tanpa_aset():
+    """164 frasa dari matriks pemicu (set tuning + 3 set held-out). Peluang aktif untuk
+    frasa yang BELUM pernah dilihat diukur 69% -> 67% -> 88% (jam_likuiditas.md); tes ini
+    mengunci agar perluasan pola berikutnya tidak menurunkan yang sudah tertangkap."""
+    import bot_oneshot as bot
+    sys.path.insert(0, os.path.dirname(__file__))
+    from _frasa_jam import NEGATIF, POSITIF
+
+    def aktif(t):
+        # Mengikuti urutan routing bot: analisa selalu memuat blok; mode lain (narasi, dst.)
+        # tidak; ngobrol memuat lewat aset crypto ATAU pola tanpa aset.
+        jenis = bot.classify(t)
+        if jenis == "analisa":
+            return True
+        if jenis != "chat":
+            return False
+        if bot.aset_dari_pesan(t, dalam=True)[0] == "crypto":
+            return True
+        return (bool(bot._MINTA_JAM.search(t)) and not bot._KONSEP_RE.search(t)
+                and not bot._KONSEP_JAM.search(t))
+    lolos = [t for t in POSITIF if not aktif(t)]
+    salah = [t for t in NEGATIF if aktif(t)]
+    assert not lolos, lolos
+    assert not salah, salah
+
+
+def test_etf_bukan_koin():
+    import bot_oneshot as bot
+    assert bot.aset_dari_pesan("arus masuk etf ethereum", dalam=True)[1] == "ETH"
+    assert bot.aset_dari_pesan("fund manager masih beli etf?", dalam=True)[1] != "ETF"

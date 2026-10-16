@@ -1760,7 +1760,27 @@ _MINTA_JAM = re.compile(
     r"risk[ -]?on|risk[ -]?off|\bfed\b|\bthe fed\b|\bqt\b|\bqe\b|\btga\b|reverse repo|"
     r"eksposur|exposure|arus (?:dana )?etf|etf flows?|\b13f\b|basis trade|basis cme|"
     r"funding rate|makro|macro|\bdxy\b|indeks dolar|yield|nfci|resesi|recession|"
-    r"sahm|treasury (?:perusahaan|korporasi)|corporate treasur", re.I)
+    r"sahm|treasury (?:perusahaan|korporasi)|corporate treasur|"
+    # Ditambah dari matriks pemicu 16 Okt 2026 (79% -> lihat jam_likuiditas.md): istilah
+    # sehari-hari untuk komponen yang sama.
+    r"uang beredar|money supply|\bm2\b|\brrp\b|\bfomc\b|bunga acuan|suku bunga|"
+    r"interest rate|rate (?:cut|hike)|dolar|dollar|\busd\b|kondisi keuangan|"
+    r"financial conditions?|pengangguran|unemployment|\binflow|\boutflow|leverage|"
+    r"euforia|euphoria|overheat|fear (?:and|&) greed|greed index|"
+    # Putaran kedua, dari set held-out 1 (69% aktif): kebijakan moneter/fiskal & slang.
+    r"powell|moneter|monetary|fiskal|fiscal|stimulus|money print|cetak uang|"
+    r"institusi|institusional|institutional|akumulasi|\bfunding\b|fear.?greed|"
+    # Putaran ketiga, dari set held-out 2 (67% aktif): istilah pasar uang & obligasi.
+    r"dovish|hawkish|bank sentral|central bank|pelonggaran|pengetatan|quantitative|"
+    r"imbal hasil|obligasi|\bbonds?\b|spread kredit|credit spread|net ?flow|"
+    r"(?:persen|porsi|alokasi)\b.{0,25}\b(?:crypto|kripto)|"
+    # Sisa set held-out 3 (88% aktif SEBELUM baris ini; angka itu yang dilaporkan).
+    r"\bgreed\b|tenaga kerja|nonfarm|\bnfp\b|kondisi finansial|\betfs?\b", re.I)
+
+
+# Pertanyaan definisi yang lolos _KONSEP_RE ("jelaskan cara kerja etf"). Khusus untuk
+# blok JAM supaya penggolongan bobot jalur lain tidak ikut berubah.
+_KONSEP_JAM = re.compile(r"^\s*(?:jelaskan|jelasin|terangkan|definisi|pengertian|apa (?:itu|sih|yang dimaksud)|what is)\b", re.I)
 
 
 def data_jam():
@@ -2050,6 +2070,9 @@ _KATA_UMUM_BUKAN_KOIN = {
     # "jam" = pukul/jam dinding, bukan token JAM: "jam berapa rilis cpi" dan "jam
     # likuiditas minggu ini" sempat dianalisa sebagai koin JAM (15 Okt 2026).
     "JAM", "MENIT", "DETIK",
+    # "etf" = exchange-traded fund, bukan token ETF: "arus masuk etf ethereum" sempat
+    # diarahkan ke koin ETF alih-alih ETH (matriks pemicu, 16 Okt 2026).
+    "ETF", "ETFS",
     "THANKS", "MAKASIH", "TERIMA", "KASIH", "MAAF", "TOLONG", "COBA", "LAGI",
     # KOSAKATA TRADING. Ini justru kata yang PALING sering muncul di percakapan pasar,
     # dan banyak di antaranya token sungguhan di CoinGecko. Terjadi nyata: "koreksi untuk
@@ -2132,8 +2155,12 @@ def aset_dari_pesan(teks, dalam=False):
                    teks or "", re.I)
     if m2:
         atas = m2.group(1).upper()
+        # "arus masuk etf ethereum" & "masih beli etf?" sempat diarahkan ke token ETF
+        # (matriks pemicu, 16 Okt 2026). Hanya ETF yang dikecualikan di sini — seluruh
+        # _KATA_UMUM_BUKAN_KOIN terlalu luas: "buy pump" memang berarti token PUMP.
         if (atas not in _KATA_BUKAN_TICKER
                 and atas not in _SETELAH_TRANSAKSI_BUKAN_ASET
+                and atas not in ("ETF", "ETFS")
                 and atas not in ("DARI", "UNTUK", "DENGAN")):
             return "crypto", atas
 
@@ -4654,6 +4681,7 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
         # dijawab tanpa skor sama sekali. Pertanyaan konsep ("apa itu QT") tidak perlu
         # angka minggu ini.
         if (_MINTA_JAM.search(text or "") and not _KONSEP_RE.search(text or "")
+                and not _KONSEP_JAM.search(text or "")
                 and '"skor_likuiditas"' not in (brief or "")):
             jam = data_jam()
             if jam:
