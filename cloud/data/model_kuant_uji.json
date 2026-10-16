@@ -1,0 +1,181 @@
+{
+ "diuji_utc": "2026-10-16T04:04:42+00:00",
+ "cakupan_fitur": {
+  "likuiditas": "2014-10-03",
+  "mom_4": "2016-09-16",
+  "mom_12": "2016-09-16",
+  "mom_26": "2016-09-16",
+  "mom_52": "2016-09-16",
+  "tren_200h": "2016-09-16",
+  "vol_30h": "2016-09-16",
+  "rsi_14": "2016-09-16",
+  "jarak_puncak": "2016-09-16",
+  "fear_greed": "2019-02-08",
+  "basis_cme": "2018-12-21",
+  "funding": "2021-01-08"
+ },
+ "horizon": {
+  "12": {
+   "ic_oos": 0.312,
+   "p_placebo": 0.0055,
+   "brier_skill": 0.111,
+   "tahun_positif": "5/8",
+   "keandalan": {
+    "45-55%": "terjadi 49% (N=82)",
+    "55-65%": "terjadi 54% (N=89)",
+    "<45%": "terjadi 33% (N=48)",
+    ">=65%": "terjadi 70% (N=175)"
+   },
+   "ic_oos_gabungan": 0.11,
+   "ic_oos_likuiditas": 0.312,
+   "gabungan_ic": {
+    "ic_oos": 0.11,
+    "p_placebo": 0.2614,
+    "brier": 0.2545,
+    "brier_laju_dasar": 0.2511,
+    "brier_skill": -0.014,
+    "ic_per_tahun": {
+     "2019": -0.609,
+     "2020": 0.272,
+     "2021": -0.252,
+     "2022": 0.204,
+     "2023": -0.244,
+     "2024": -0.353,
+     "2025": 0.235,
+     "2026": -0.571
+    },
+    "tahun_positif": "3/8",
+    "n_minggu_oos": 394,
+    "keandalan": {
+     "45-55%": "terjadi 48% (N=98)",
+     "55-65%": "terjadi 71% (N=100)",
+     "<45%": "terjadi 55% (N=51)",
+     ">=65%": "terjadi 56% (N=145)"
+    }
+   },
+   "likuiditas_saja": {
+    "ic_oos": 0.312,
+    "p_placebo": 0.0055,
+    "brier": 0.2232,
+    "brier_laju_dasar": 0.2511,
+    "brier_skill": 0.111,
+    "ic_per_tahun": {
+     "2019": 0.334,
+     "2020": -0.305,
+     "2021": -0.049,
+     "2022": 0.434,
+     "2023": 0.115,
+     "2024": 0.275,
+     "2025": 0.443,
+     "2026": -0.396
+    },
+    "tahun_positif": "5/8",
+    "n_minggu_oos": 394,
+    "keandalan": {
+     "45-55%": "terjadi 49% (N=82)",
+     "55-65%": "terjadi 54% (N=89)",
+     "<45%": "terjadi 33% (N=48)",
+     ">=65%": "terjadi 70% (N=175)"
+    }
+   },
+   "rata_bobot_gabungan": {
+    "likuiditas": 0.363,
+    "mom_4": 0.214,
+    "mom_12": 0.272,
+    "mom_26": 0.316,
+    "mom_52": 0.248,
+    "tren_200h": 0.307,
+    "vol_30h": 0.096,
+    "rsi_14": 0.248,
+    "jarak_puncak": 0.304,
+    "fear_greed": 0.222,
+    "basis_cme": -0.002,
+    "funding": -0.113
+   },
+   "diadopsi": true,
+   "versi": "likuiditas_saja",
+   "vonis": "gabungan TIDAK lolos (A-D); Liquidity-saja lolos A-C dan dipakai"
+  },
+  "4": {
+   "ic_oos": 0.087,
+   "p_placebo": 0.1939,
+   "brier_skill": -0.012,
+   "tahun_positif": "2/8",
+   "keandalan": {
+    "45-55%": "terjadi 55% (N=113)",
+    "55-65%": "terjadi 57% (N=217)",
+    "<45%": "terjadi 100% (N=2)",
+    ">=65%": "terjadi 56% (N=70)"
+   },
+   "ic_oos_gabungan": 0.087,
+   "ic_oos_likuiditas": 0.015,
+   "gabungan_ic": {
+    "ic_oos": 0.087,
+    "p_placebo": 0.1939,
+    "brier": 0.251,
+    "brier_laju_dasar": 0.248,
+    "brier_skill": -0.012,
+    "ic_per_tahun": {
+     "2019": -0.31,
+     "2020": -0.094,
+     "2021": 0.098,
+     "2022": -0.013,
+     "2023": -0.217,
+     "2024": -0.185,
+     "2025": -0.042,
+     "2026": 0.064
+    },
+    "tahun_positif": "2/8",
+    "n_minggu_oos": 402,
+    "keandalan": {
+     "45-55%": "terjadi 55% (N=113)",
+     "55-65%": "terjadi 57% (N=217)",
+     "<45%": "terjadi 100% (N=2)",
+     ">=65%": "terjadi 56% (N=70)"
+    }
+   },
+   "likuiditas_saja": {
+    "ic_oos": 0.015,
+    "p_placebo": 0.3798,
+    "brier": 0.2488,
+    "brier_laju_dasar": 0.248,
+    "brier_skill": -0.003,
+    "ic_per_tahun": {
+     "2019": 0.05,
+     "2020": -0.31,
+     "2021": -0.087,
+     "2022": 0.073,
+     "2023": -0.412,
+     "2024": -0.241,
+     "2025": 0.33,
+     "2026": -0.516
+    },
+    "tahun_positif": "3/8",
+    "n_minggu_oos": 402,
+    "keandalan": {
+     "45-55%": "terjadi 55% (N=78)",
+     "55-65%": "terjadi 54% (N=250)",
+     "<45%": "terjadi 83% (N=6)",
+     ">=65%": "terjadi 65% (N=68)"
+    }
+   },
+   "rata_bobot_gabungan": {
+    "likuiditas": 0.132,
+    "mom_4": 0.097,
+    "mom_12": 0.208,
+    "mom_26": 0.187,
+    "mom_52": 0.191,
+    "tren_200h": 0.189,
+    "vol_30h": 0.121,
+    "rsi_14": 0.141,
+    "jarak_puncak": 0.179,
+    "fear_greed": 0.15,
+    "basis_cme": 0.086,
+    "funding": -0.031
+   },
+   "diadopsi": false,
+   "versi": null,
+   "vonis": "TIDAK LOLOS: horizon ini tidak memberi peluang"
+  }
+ }
+}

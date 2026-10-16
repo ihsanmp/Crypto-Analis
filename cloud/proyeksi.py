@@ -89,8 +89,14 @@ def prediksi_harga(candles, horizon, simbol=""):
                                    f"{(q[90] / harga - 1) * 100:+.1f}%",
             "jarak_50_dari_harga": f"{(q[25] / harga - 1) * 100:+.1f}% s/d "
                                    f"{(q[75] / harga - 1) * 100:+.1f}%",
+            # Rentang & peringatan sampel pendek: bila sumber harga jatuh ke cadangan ber-
+            # riwayat ~1 tahun, "31,5% dari 276 jendela" sempat disajikan sebagai "base rate
+            # historis BTC" (uji 16 Okt 2026), padahal run sebelumnya 42,9% dari 631.
             "riwayat_aset_ini_ditutup_lebih_tinggi": (
-                f"{100 * sum(naik) / len(naik):.1f}% dari {len(naik)} jendela"
+                f"{100 * sum(naik) / len(naik):.1f}% dari {len(naik)} jendela "
+                f"(riwayat {len(tutup) / 365:.1f} tahun"
+                + ("; SAMPEL PENDEK — bukan laju dasar jangka panjang, sebut begitu)"
+                   if len(tutup) < 3 * 365 else ")")
                 if naik else None),
         }
         kal = KALIBRASI_PREDIKSI.get(h)

@@ -661,7 +661,12 @@ _MINTA_BELAJAR = re.compile(
     r"\b(?:jangan|hindari|stop)\b[^.?!]{0,60}\b(?:lagi|ya|dong|kalau|kalo|pakai|pake|"
     r"tulis|sebut|bilang)\b|"
     r"\b(?:harusnya|seharusnya|mestinya|bukan begitu|salah|keliru)\b|"
-    r"\b(?:mulai sekarang|ke depan(?:nya)?|selanjutnya|lain kali|kedepannya)\b|"
+    # "ke depan" & "selanjutnya" polos adalah kosakata PERTANYAAN pasar ("3 bulan ke depan",
+    # "target selanjutnya") — dulu memicu ekstraksi aturan (satu panggilan model sia-sia)
+    # di setiap pertanyaan prediksi (16 Okt 2026). Hanya bentuk instruksinya yang dihitung.
+    r"\b(?:mulai sekarang|lain kali|ke ?depannya)\b|"
+    r"\b(?:ke ?depan|selanjutnya)\b,?\s+(?:jangan|tolong|harus|wajib|pakai|pake|tulis|"
+    r"sebut|bilang|gunakan|cukup)\b|"
     r"\b(?:ingat|catat|pelajari|camkan|perhatikan)\b[^.?!]{0,20}\b(?:ya|ini|itu|dong)\b|"
     r"\b(?:pelajari|catat|ingat) ini\b|"
     r"\b(?:koreksi|masukan|masukkan|feedback)\b", re.I)
@@ -1781,6 +1786,24 @@ _MINTA_JAM = re.compile(
 # Pertanyaan definisi yang lolos _KONSEP_RE ("jelaskan cara kerja etf"). Khusus untuk
 # blok JAM supaya penggolongan bobot jalur lain tidak ikut berubah.
 _KONSEP_JAM = re.compile(r"^\s*(?:jelaskan|jelasin|terangkan|definisi|pengertian|apa (?:itu|sih|yang dimaksud)|what is)\b", re.I)
+
+
+def arah_model_kuant(brief, teks, simbol):
+    """Peluang arah ~12 minggu (model_kuant, lolos walk-forward) DITEMPEL ke blok proyeksi
+    untuk pertanyaan BTC berhorizon 2-4 bulan. Uji 16 Okt 2026: untuk "btc 3 bulan ke depan"
+    model bahasa membaca blok proyeksi (kisaran tanpa arah) dan sekali MENGABAIKAN peluang
+    yang ada jauh di blok JAM. Angkanya diambil dari brief itu sendiri — tanpa hitung ulang."""
+    if (simbol or "").upper() != "BTC":
+        return ""
+    if not any(56 <= h <= 120 for h in horizon_prediksi(teks)):
+        return ""
+    m = re.search(r'"peluang_btc_naik_persen":\s*(\d+),\s*"laju_dasar_naik_persen":\s*(\d+)',
+                  brief or "")
+    if not m:
+        return ""
+    return ("\n\n### ARAH ~12 MINGGU (model kuant, lolos uji walk-forward 2019-2026)\n"
+            f"Peluang BTC naik {m.group(1)}% vs laju dasar {m.group(2)}%. WAJIB disebut untuk "
+            "horizon ini — kisaran di atas sengaja tanpa arah; angka ini arahnya.")
 
 
 def data_jam():
@@ -4687,6 +4710,7 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
                 # horizonnya tetap dibaca dari pesan BARU.
                 if minta_proyeksi:
                     brief += "\n\n" + data_proyeksi(text, jenis_chat, simbol_chat)
+                    brief += arah_model_kuant(brief, text, simbol_chat)
                 # Pertanyaan SEBAB butuh pemisahan berlapis: berapa bagian gerakan ini
                 # milik seluruh pasar, berapa milik selera risiko yang lebih luas, dan
                 # berapa yang benar-benar khas aset ini.

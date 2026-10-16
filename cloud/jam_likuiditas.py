@@ -472,16 +472,13 @@ def _terakhir_isi(deret):
     return None
 
 
-def _bagian_adopsi(jumat, hasil):
+def _bagian_adopsi(jumat, hasil, harga):
     """Isi hasil["adopsi_struktural"] & ["gelombang"]. Return (struktural, gelombang)."""
     import adopsi
     import gelombang as gl
     struk = gel = None
-    try:
-        harga = harga_yahoo("BTC-USD")
-    except Exception as e:
-        harga = {}
-        hasil["adopsi_struktural"] = {"tidak_tersedia": f"harga BTC gagal ({type(e).__name__})"}
+    if not harga:
+        hasil["adopsi_struktural"] = {"tidak_tersedia": "harga BTC gagal diambil"}
     arus, sumber, err = adopsi.arus_etf(perbarui=True)
     if harga and not arus:
         hasil["adopsi_struktural"] = {"tidak_tersedia": err}
@@ -599,7 +596,21 @@ def analisa(hari_ini=None):
     if (jumat[-1] - jumat[i]).days > 7:
         hasil["peringatan_sinyal"] = (f"sinyal lengkap terakhir bertanggal {jumat[i]}; "
                                       "sebutkan tanggalnya")
-    struk, gel = _bagian_adopsi(jumat, hasil)
+    try:
+        harga = harga_yahoo("BTC-USD")
+    except Exception:
+        harga = {}
+    # Peluang TERKALIBRASI dari model kuant (uji_model_kuant.py, walk-forward 2019-2026):
+    # angka ini yang menggantikan penimbangan naratif untuk arah ~12 minggu.
+    if harga:
+        try:
+            import model_kuant
+            pk = model_kuant.peluang_likuiditas(jumat, liq, harga, i)
+            if pk:
+                hasil["peluang_model_kuant"] = pk
+        except Exception as e:
+            hasil["peluang_model_kuant"] = {"tidak_tersedia": type(e).__name__}
+    struk, gel = _bagian_adopsi(jumat, hasil, harga)
     e = eksposur(liq[i], struk, L["resesi"][i], gel)
     hasil["target_eksposur_btc_persen"] = round(e * 100)
     hasil["dasar_eksposur"] = (
@@ -640,6 +651,10 @@ def pesan(h):
     if "skor" in g:
         baris.append(f"Gelombang {g['skor']:+.2f} (funding {g['W1_funding_persen_per_8jam']}%"
                      f"/8j, F&G {g['W2_fear_greed_7hari']}) — aturan potong ditolak data")
+    pk = h.get("peluang_model_kuant") or {}
+    if "peluang_btc_naik_persen" in pk:
+        baris.append(f"Model kuant: peluang BTC naik 12 mg {pk['peluang_btc_naik_persen']}% "
+                     f"(laju dasar {pk['laju_dasar_naik_persen']}%, lolos uji walk-forward)")
     baris += ["",
               f"Target eksposur BTC (rancangan): {h['target_eksposur_btc_persen']}%",
               f"Komponen teruji saja: {h['eksposur_komponen_teruji_saja_persen']}%",
@@ -671,6 +686,13 @@ def ringkas(h):
             d[kunci] = teks
     for d in (h.get("jejak_basis_trade_cftc") or {},):
         d.pop("arti", None)
+    pk = h.get("peluang_model_kuant") or {}
+    if isinstance(pk.get("keandalan_oos"), dict):
+        # Angka sama, format padat: "ramalan->terjadi naik: <45%:33%/48 ..." (N = minggu).
+        k = pk["keandalan_oos"]
+        pk["keandalan_oos"] = "ramalan->terjadi naik: " + " ".join(
+            f"{b}:{k[b].split()[1]}/{k[b].split('N=')[-1].rstrip(')')}"
+            for b in ("<45%", "45-55%", "55-65%", ">=65%") if b in k)
     return h
 
 

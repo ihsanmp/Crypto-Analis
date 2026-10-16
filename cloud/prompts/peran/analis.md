@@ -52,6 +52,11 @@ Fear & Greed) terbalik dari teori: tinggi = momentum, bukan tanda puncak — jan
 sebagai alasan mengurangi posisi. Arus ETF berkorelasi +0,48 dengan penambahan short
 leveraged funds CFTC: sebagian arus itu basis trade netral arah (`jejak_basis_trade_cftc`). Target eksposur = filter rezim long-only, bukan sinyal entry; sebut juga
 `eksposur_komponen_teruji_saja_persen` bila beda >= 10 pp.
+
+**Arah ~12 minggu BTC = `peluang_model_kuant`** (dihitung kode, lolos uji walk-forward
+2019-2026). Jelaskan angka itu terhadap laju dasarnya; jangan diganti penimbangan naratif.
+Gabungan momentum/tren/RSI/sentimen/basis GAGAL di data yang belum dilihat, jadi konfluensi
+teknikal tidak boleh membantahnya — sebut saja bila bertentangan. 4 minggu: tidak ada model.
 <!-- /BLOK -->
 
 <!-- BLOK: analis-forex | pemicu: forex -->

@@ -248,3 +248,47 @@ Keduanya sudah diperbaiki:
 - "etf" terbaca sebagai token ETF, misalnya pada "arus masuk etf ethereum" (seharusnya ETH) dan "masih beli etf?".
 
 Semua 164 frasa dikunci di `tests/_frasa_jam.py` dan diuji oleh `test_matriks_pemicu_jam_tanpa_aset`.
+
+## Model kuant penggabung sinyal (`model_kuant.py`, `uji_model_kuant.py`, 16 Okt 2026)
+
+Model ini memindahkan kesimpulan arah dari penimbangan naratif ke hitungan kode. Rancangan dan kriteria lolosnya ditulis di docstring `uji_model_kuant.py` sebelum uji dijalankan.
+
+### Rancangan
+
+- **Fitur:** 12 fitur mingguan point-in-time, masing-masing dinormalkan dengan z-score bergulir 104 minggu.
+- **Bobot:** IC Spearman tiap fitur di data latih.
+- **Peluang:** skor gabungan diubah menjadi peluang lewat regresi logistik.
+- **Pengujian:** walk-forward per tahun 2019–2026. Model dilatih ulang tiap tahun hanya dengan target yang sudah terwujud, dengan jeda selebar horizon.
+
+### Hasil out-of-sample
+
+| Horizon | Versi | IC | p | Brier skill | Tahun positif |
+| --- | --- | --- | --- | --- | --- |
+| 12 minggu | Gabungan 12 sinyal | +0,110 | 0,26 | −0,014 | 3/8 |
+| 12 minggu | **Liquidity saja** | **+0,312** | **0,006** | **+0,111** | **5/8** |
+| 4 minggu | Gabungan 12 sinyal | +0,087 | 0,19 | −0,012 | 2/8 |
+| 4 minggu | Liquidity saja | +0,015 | 0,38 | −0,003 | 3/8 |
+
+**Vonis:**
+
+- **12 minggu:** model yang dipakai adalah Liquidity saja.
+- **4 minggu:** tidak ada model yang lolos, jadi horizon ini tidak diberi peluang.
+
+**Gabungan gagal karena overfitting.** Di data latih, bobot momentum dan teknikal tinggi: mom_26 +0,32, tren MA200 +0,31, jarak puncak +0,30. Bobot itu ditarik oleh beberapa bull run besar dan berbalik di tahun uji (2019 −0,61, 2026 −0,57).
+
+**Keandalan Liquidity saja.** Ramalan peluang naik dibandingkan dengan frekuensi naik yang benar-benar terjadi:
+
+| Ramalan peluang naik | Terjadi naik | N minggu |
+| --- | --- | --- |
+| < 45% | 33% | 48 |
+| 45–55% | 49% | 82 |
+| 55–65% | 54% | 89 |
+| ≥ 65% | 70% | 175 |
+
+**Pembacaan per 16 Okt 2026:** peluang BTC naik 12 minggu **38%**, dengan laju dasar 58%.
+
+**Belum dicoba, dan harus didaftarkan ulang sebelum diuji:**
+
+- Gabungan yang lebih sempit, misalnya Liquidity + satu faktor momentum.
+- Model untuk ETH dan SOL.
+- Pengujian dengan biaya transaksi.
