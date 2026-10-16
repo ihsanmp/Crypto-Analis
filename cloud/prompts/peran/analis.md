@@ -60,6 +60,9 @@ teknikal tidak boleh membantahnya — sebut saja bila bertentangan. 4 minggu: ti
 Sinyal teknikal dipakai sebagai alasan HANYA bila vonis UJI BALIK-nya BERTAHAN (setelah
 biaya, kedua paruh waktu). RSI>70 BUKAN alasan menghindar di BTC/ETH/SOL: diuji 2014-2026,
 sesudahnya return justru di atas rata-rata (momentum).
+Jangan sarankan mengecilkan posisi HANYA karena volatilitas tinggi: diuji 2015-2026 pada
+BTC, eksposur berbasis volatilitas menurunkan Sharpe (1,17 -> 1,09) — pemulihan sering
+datang tepat sesudah volatilitas memuncak.
 <!-- /BLOK -->
 
 <!-- BLOK: analis-forex | pemicu: forex -->

@@ -1,0 +1,122 @@
+{
+ "diuji_utc": "2026-10-16T07:52:58+00:00",
+ "varian": {
+  "A_likuiditas": {
+   "penuh": {
+    "cagr": 39.8,
+    "maxdd": -48.3,
+    "sharpe": 1.167,
+    "ubah": 133,
+    "biaya_persen": 2.8
+   },
+   "paruh_1": {
+    "cagr": 70.3,
+    "maxdd": -48.3,
+    "sharpe": 1.565,
+    "ubah": 73,
+    "biaya_persen": 1.6
+   },
+   "paruh_2": {
+    "cagr": 13.4,
+    "maxdd": -40.3,
+    "sharpe": 0.611,
+    "ubah": 58,
+    "biaya_persen": 1.3
+   }
+  },
+  "B_volatilitas": {
+   "penuh": {
+    "cagr": 33.8,
+    "maxdd": -54.5,
+    "sharpe": 0.97,
+    "ubah": 151,
+    "biaya_persen": 4.5
+   },
+   "paruh_1": {
+    "cagr": 62.4,
+    "maxdd": -51.1,
+    "sharpe": 1.445,
+    "ubah": 75,
+    "biaya_persen": 2.4
+   },
+   "paruh_2": {
+    "cagr": 9.9,
+    "maxdd": -54.5,
+    "sharpe": 0.45,
+    "ubah": 74,
+    "biaya_persen": 2.1
+   }
+  },
+  "C_gabungan": {
+   "penuh": {
+    "cagr": 38.4,
+    "maxdd": -47.0,
+    "sharpe": 1.091,
+    "ubah": 187,
+    "biaya_persen": 5.4
+   },
+   "paruh_1": {
+    "cagr": 68.6,
+    "maxdd": -47.0,
+    "sharpe": 1.573,
+    "ubah": 94,
+    "biaya_persen": 2.9
+   },
+   "paruh_2": {
+    "cagr": 12.2,
+    "maxdd": -45.7,
+    "sharpe": 0.522,
+    "ubah": 93,
+    "biaya_persen": 2.6
+   }
+  },
+  "beli_tahan": {
+   "penuh": {
+    "cagr": 61.8,
+    "maxdd": -83.4,
+    "sharpe": 1.04,
+    "ubah": 0,
+    "biaya_persen": 0.1
+   },
+   "paruh_1": {
+    "cagr": 119.7,
+    "maxdd": -83.4,
+    "sharpe": 1.394,
+    "ubah": 0,
+    "biaya_persen": 0.1
+   },
+   "paruh_2": {
+    "cagr": 16.9,
+    "maxdd": -74.5,
+    "sharpe": 0.559,
+    "ubah": 0,
+    "biaya_persen": 0.1
+   }
+  },
+  "tetap_50": {
+   "penuh": {
+    "cagr": 35.0,
+    "maxdd": -54.0,
+    "sharpe": 1.04,
+    "ubah": 0,
+    "biaya_persen": 0.1
+   },
+   "paruh_1": {
+    "cagr": 60.2,
+    "maxdd": -54.0,
+    "sharpe": 1.394,
+    "ubah": 0,
+    "biaya_persen": 0.1
+   },
+   "paruh_2": {
+    "cagr": 12.6,
+    "maxdd": -46.3,
+    "sharpe": 0.559,
+    "ubah": 0,
+    "biaya_persen": 0.1
+   }
+  }
+ },
+ "diadopsi": false,
+ "vonis": "TIDAK LOLOS: pengali volatilitas TIDAK dipakai"
+}

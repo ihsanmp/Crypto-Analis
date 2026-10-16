@@ -353,3 +353,28 @@ Angka dalam kurung adalah keunggulan dibanding masuk acak, dalam poin persen per
 
 - **Hanya RSI > 70 yang konsisten, dan arahnya terbalik.** Sesudah RSI > 70, return justru lebih tinggi dari rata-rata (momentum). Panduan prompt yang mengajarkan "overbought = hati-hati" untuk kripto sudah diganti.
 - **Vonis BERTAHAN lainnya tidak konsisten antar aset.** Dengan 5 sinyal diuji sekaligus, kemungkinan besar itu kebetulan.
+
+## Langkah 4: ukuran posisi berbasis volatilitas (`uji_ukuran_posisi.py`, 16 Okt 2026)
+
+Rancangan dan kriteria lolosnya ditulis di docstring sebelum uji dijalankan:
+
+- **Target volatilitas:** median volatilitas 30 hari dari seluruh riwayat sebelum minggu itu.
+- **Pengali:** target ÷ volatilitas sekarang, dibatasi 0–2.
+- **Kondisi uji:** semua varian dinilai setelah biaya, pada minggu yang sama.
+
+| Varian | Penuh: CAGR / maxDD / Sharpe | 2015–20: Sharpe | 2021–26: Sharpe / maxDD |
+| --- | --- | --- | --- |
+| A. Liquidity saja | 39,8% / −48% / **1,167** | 1,565 | **0,611** / −40% |
+| B. Volatilitas saja | 33,8% / −55% / 0,970 | 1,445 | 0,450 / −55% |
+| C. Liquidity × volatilitas | 38,4% / −47% / 1,091 | 1,573 | 0,522 / −46% |
+| Eksposur tetap 50% | 35,0% / −54% / 1,040 | 1,394 | 0,559 / −46% |
+| Beli-tahan | 61,8% / −83% / 1,040 | 1,394 | 0,559 / −75% |
+
+**Vonis: TIDAK LOLOS.** C kalah dari A di periode penuh dan di paruh 2021–2026, baik Sharpe maupun drawdown. Pengali volatilitas tidak dipakai, dan target eksposur tetap memakai Liquidity saja.
+
+Penjelasan yang paling mungkin:
+
+- **Waktu pemangkasan buruk.** Volatilitas BTC memuncak saat crash, sehingga pengali memangkas eksposur tepat sebelum pemulihan.
+- **Biaya transaksi naik.** Perubahan eksposur bertambah dari 133 menjadi 187 kali, dan biaya naik dari 2,8% menjadi 5,4%.
+
+Volatilitas saja bahkan kalah dari eksposur tetap 50%.
