@@ -4108,6 +4108,30 @@ PETUNJUK_MCP = (
     "JANGAN menjelajah dengan kata kunci berulang — tiap ToolSearch memakan satu putaran.)\n")
 
 
+# System prompt bawaan Claude Code adalah instruksi AGEN PEMROGRAMAN (gaya kode, git, alur
+# edit berkas, info lingkungan & status git repo) — tidak satu pun dipakai bot pasar, tapi
+# dibayar di SETIAP panggilan. Diukur 16 Okt 2026 (claude 2.1.299, alat WebSearch+WebFetch,
+# prompt sepele): bawaan 12.023 token masuk, diganti 3.310 — sisa itu definisi alat yang
+# memang perlu. Seluruh instruksi bot ada di prompt pengguna (chat.md, seed peran, brief),
+# jadi tidak ada yang hilang. BOT_SYSTEM_BAWAAN=1 mengembalikan perilaku lama.
+SYSTEM_PROMPT_BOT = (
+    "Kamu adalah bot analisa pasar berbahasa Indonesia yang menjawab lewat Telegram. "
+    "Seluruh instruksi, data, dan pertanyaan ada di pesan pengguna — ikuti itu persis. "
+    "Pakai alat hanya bila instruksi atau pertanyaannya memerlukan; jawaban akhirmu adalah "
+    "teks yang langsung dikirim ke pengguna. Ringkas: patuhi anggaran panjang di instruksi, "
+    "tanpa basa-basi, tanpa mengulang data yang sudah disebut, dan jangan pernah menyalin "
+    "kalimat instruksi ke jawaban.")
+# Kalimat "Ringkas: ..." ditambahkan sesudah uji A/B 16 Okt: tanpa itu jawaban 13-35% lebih
+# panjang (system prompt bawaan memuat perintah ringkas), dan satu jawaban menyalin
+# instruksi brief ("sebut dua-duanya, jangan pilih satu") ke pengguna.
+
+
+def _arg_system_prompt():
+    if os.environ.get("BOT_SYSTEM_BAWAAN", "").strip() == "1":
+        return []
+    return ["--system-prompt", SYSTEM_PROMPT_BOT]
+
+
 def run_claude(prompt, timeout, max_turns, model=None, with_tools=True, tools_override=None):
     claude = shutil.which("claude")
     if not claude:
@@ -4149,6 +4173,7 @@ def run_claude(prompt, timeout, max_turns, model=None, with_tools=True, tools_ov
         cmd[2] = prompt + PETUNJUK_MCP
     if model:
         cmd += ["--model", model]
+    cmd += _arg_system_prompt()
     try:
         result = subprocess.run(
             cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",

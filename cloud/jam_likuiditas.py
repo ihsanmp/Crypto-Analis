@@ -119,6 +119,16 @@ def konteks_momentum(liq, i, k=K_MINGGU):
     return keluar
 
 
+def tandai_perbatasan(j):
+    """Momentum lemah -> LABEL fase ikut menyatakannya. Catatan terpisah saja tidak cukup:
+    uji 16 Okt 2026 di jalur koin (brief ~60 rb token) model tetap menulis "fase KETAT &
+    MAKIN KETAT" walau catatan_momentum ada — labelnya yang dibaca, bukan catatannya."""
+    if j and j.get("catatan_momentum") and j.get("fase"):
+        posisi = j["fase"].split(" ")[0].rstrip(",")
+        j["fase"] = f"{posisi}, MOMENTUM DATAR (perbatasan kuadran {j['fase']})"
+    return j
+
+
 # Hasil uji_jam_likuiditas.py — return BTC 12 minggu sesudah sinyal, 2015-2026. Sumber
 # KEBENARAN untuk arti kuadran; teks rancangan disimpan hanya untuk dibandingkan.
 TERUKUR_KUADRAN_12MG = {
@@ -576,8 +586,8 @@ def analisa(hari_ini=None):
         "sinyal_jumat": jumat[i].isoformat(),
         "skor_likuiditas": round(liq[i], 3),
         "komponen": {k: round(v[i], 3) for k, v in L["komponen"].items()},
-        "jam_likuiditas": {**(jarum(liq[i], mom, terukur=True) or {}),
-                           **konteks_momentum(liq, i)},
+        "jam_likuiditas": tandai_perbatasan({**(jarum(liq[i], mom, terukur=True) or {}),
+                                             **konteks_momentum(liq, i)}),
         "filter_resesi_L5": {"aktif": bool(L["resesi"][i]),
                              "sahm_realtime": L["mentah"]["SAHMREALTIME"][i]},
         "likuiditas_bersih_miliar_usd": round(L["likuiditas_bersih_miliar"][i], 1),

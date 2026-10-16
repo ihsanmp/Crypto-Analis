@@ -272,3 +272,26 @@ def test_etf_bukan_koin():
     import bot_oneshot as bot
     assert bot.aset_dari_pesan("arus masuk etf ethereum", dalam=True)[1] == "ETH"
     assert bot.aset_dari_pesan("fund manager masih beli etf?", dalam=True)[1] != "ETF"
+
+
+def test_label_fase_menyatakan_momentum_datar():
+    j = jl.tandai_perbatasan({"fase": "KETAT & MAKIN KETAT", "catatan_momentum": "LEMAH"})
+    assert j["fase"].startswith("KETAT, MOMENTUM DATAR") and "MAKIN KETAT)" in j["fase"]
+    tegas = jl.tandai_perbatasan({"fase": "LONGGAR & MAKIN LONGGAR"})
+    assert tegas["fase"] == "LONGGAR & MAKIN LONGGAR"
+
+
+def test_run_claude_memakai_system_prompt_bot_dan_bisa_dikembalikan(monkeypatch):
+    """System prompt bawaan Claude Code (agen pemrograman) ±8,4 rb token per panggilan."""
+    import bot_oneshot as bot
+    dapat = {}
+    monkeypatch.setattr(bot.shutil, "which", lambda n: "/usr/bin/claude")
+    monkeypatch.setattr(bot.subprocess, "run", lambda cmd, **k: (
+        dapat.__setitem__("cmd", cmd), (_ for _ in ()).throw(bot.subprocess.TimeoutExpired(cmd, 1)))[1])
+    monkeypatch.delenv("BOT_SYSTEM_BAWAAN", raising=False)
+    bot.run_claude("halo", 5, 1)
+    i = dapat["cmd"].index("--system-prompt")
+    assert dapat["cmd"][i + 1] == bot.SYSTEM_PROMPT_BOT and "Ringkas" in bot.SYSTEM_PROMPT_BOT
+    monkeypatch.setenv("BOT_SYSTEM_BAWAAN", "1")
+    bot.run_claude("halo", 5, 1)
+    assert "--system-prompt" not in dapat["cmd"]
