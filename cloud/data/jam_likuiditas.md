@@ -316,3 +316,40 @@ Selama belum terkalibrasi, brief memuat larangan menyajikan skor sebagai peluang
 Prediksi pertama dicatat Jumat 16 Okt 2026: peluang BTC naik 12 minggu 38%, laju dasar 58%. Prediksi ini akan dinilai sesudah 9 Jan 2027.
 
 Penilaiannya memakai skor Brier, dibandingkan dengan laju dasar. Karena prediksi 12 minggu saling tumpang tindih, jumlah prediksi yang benar-benar independen hanya sekitar 4 per tahun. Butuh beberapa tahun sebelum uji maju ini bisa memberi vonis yang kuat.
+
+## Langkah 3: biaya transaksi dan walk-forward (16 Okt 2026)
+
+### Strategi eksposur Jam Likuiditas (`uji_jam_likuiditas.py`)
+
+Biaya 0,15% per sisi dikenakan pada setiap perubahan eksposur. Beli-tahan membayar satu kali biaya masuk.
+
+| 2015–2026, setelah biaya | CAGR | MaxDD | Sharpe |
+| --- | --- | --- | --- |
+| Strategi Liquidity | 39,8% (tanpa biaya 40,1%) | −48% | 1,17 |
+| **Pembanding adil: eksposur tetap 50%** | 34,9% | −54% | 1,04 |
+| Beli-tahan | 61,8% | −83% | 1,04 |
+
+- **Biaya kecil:** total 2,8% modal dalam 11,7 tahun, karena eksposur hanya berubah 133 kali.
+- **Timing menambah nilai:** strategi unggul atas eksposur tetap dengan rata-rata yang sama di ketiga ukuran. Keunggulannya bukan sekadar karena setengah investasi.
+- **Pola per tahun:** strategi tertinggal dari beli-tahan di setiap tahun bull, dan unggul di 2018, 2022, 2025, dan 2026. Ini filter risiko, bukan pengungguli return.
+
+### Uji balik sinyal teknikal (`backtest.py`)
+
+Pengaturan uji:
+
+- Riwayat panjang dari Yahoo, setelah biaya pulang-pergi, horizon 20 hari.
+- Pembanding: return masuk kapan saja.
+- Sinyal hanya divonis BERTAHAN bila keunggulannya melampaui biaya di kedua paruh waktu.
+
+| Sinyal | BTC (2014–) | ETH (2017–) | SOL (2020–) |
+| --- | --- | --- | --- |
+| Golden cross 13×21 | tidak bertahan (+0,54) | **bertahan** (+6,0) | tidak bertahan (−4,9) |
+| Death cross (hindari) | **bertahan** (+2,8) | tidak bertahan (+2,8) | **bertahan** (+11,9) |
+| RSI < 30 | tidak bertahan (+1,7) | tidak bertahan (−9,6) | sampel kecil |
+| RSI > 70 (hindari) | **terbalik** (−6,2) | tidak bertahan (−1,3) | **terbalik** (−20,9) |
+| Pullback EMA21 | tidak bertahan (+0,1) | **bertahan** (+5,8) | tidak bertahan (+2,3) |
+
+Angka dalam kurung adalah keunggulan dibanding masuk acak, dalam poin persen per 20 hari.
+
+- **Hanya RSI > 70 yang konsisten, dan arahnya terbalik.** Sesudah RSI > 70, return justru lebih tinggi dari rata-rata (momentum). Panduan prompt yang mengajarkan "overbought = hati-hati" untuk kripto sudah diganti.
+- **Vonis BERTAHAN lainnya tidak konsisten antar aset.** Dengan 5 sinyal diuji sekaligus, kemungkinan besar itu kebetulan.

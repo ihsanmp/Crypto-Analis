@@ -17,7 +17,9 @@ Dua jenis uji:
 BATASAN YANG WAJIB DISAMPAIKAN — ini bukan bukti, hanya konteks:
   - Riwayat terbatas (ratusan candle). Jumlah kejadian sering kecil; di bawah 10 kejadian
     angkanya TIDAK bermakna secara statistik dan ditandai sebagai sampel kecil.
-  - TANPA biaya transaksi, spread, slippage, maupun pajak.
+  - Biaya pulang-pergi per kelas aset SUDAH dikurangi (BIAYA_PULANG_PERGI); pajak belum.
+  - Keunggulan dibandingkan dengan 'masuk kapan saja' dan diuji per paruh waktu: sinyal
+    hanya divonis BERTAHAN bila unggul (setelah biaya) di kedua paruh.
   - Masa lalu BUKAN jaminan masa depan. Rezim pasar berubah.
   - Hanya menguji sinyal tunggal, bukan keseluruhan metodologi berskor.
 
@@ -57,7 +59,39 @@ def ambil_candle(simbol, pasar, tf="1d"):
         return c, s, err
     from indicators import fetch_base, resolve_cg_id
     c, sumber, _, err = fetch_base(simbol, resolve_cg_id(simbol), tf)
+    if tf == "1d" and c and not err:
+        panjang = _yahoo_panjang(simbol, c[-1][4])
+        if panjang and len(panjang) > len(c):
+            return panjang, f"{simbol} (Yahoo {simbol}-USD, riwayat panjang)", None
     return c, simbol, err
+
+
+# Riwayat harian sumber analisa (CoinGecko) cuma ~1 tahun dan TANPA high/low asli: BTC 350
+# candle -> tiap sinyal 3-22 kejadian, terlalu sedikit untuk uji paruh waktu (16 Okt 2026).
+# Yahoo <SIMBOL>-USD punya OHLC asli bertahun-tahun (BTC sejak 2014). Ticker Yahoo bisa
+# milik koin LAIN dengan simbol sama, jadi dipakai HANYA bila harga terakhirnya cocok
+# dengan sumber analisa (selisih <= 3%); selain itu kembali ke riwayat pendek.
+COCOK_HARGA = 0.03
+
+
+def _yahoo_panjang(simbol, harga_acuan):
+    import time
+    import urllib.request
+    try:
+        import makro
+        url = (makro.YAHOO + f"{simbol}-USD?period1=0&period2={int(time.time())}&interval=1d")
+        req = urllib.request.Request(url, headers=makro.UA)
+        with urllib.request.urlopen(req, timeout=30) as r:
+            d = json.loads(r.read().decode())["chart"]["result"][0]
+        q = d["indicators"]["quote"][0]
+        c = [[t * 1000, o, h, lo, cl, v or 0] for t, o, h, lo, cl, v in
+             zip(d["timestamp"], q["open"], q["high"], q["low"], q["close"], q["volume"])
+             if None not in (o, h, lo, cl)]
+    except Exception:
+        return None
+    if not c or not harga_acuan or abs(c[-1][4] / harga_acuan - 1) > COCOK_HARGA:
+        return None
+    return c
 
 
 def ringkas(hasil_depan):
@@ -92,6 +126,85 @@ def ringkas(hasil_depan):
         r["peringatan"] = (f"SAMPEL KECIL ({n} kejadian) — angka ini TIDAK bermakna secara "
                            "statistik. Sebut sebagai catatan, jangan sebagai bukti.")
     return r
+
+
+# Biaya PULANG-PERGI (beli + jual) dalam persen: komisi taker kedua sisi + spread/slippage.
+# Asumsi konservatif untuk spot ritel, ditulis terang supaya bisa ditimpa (--biaya):
+#   kripto besar 0,10% x2 + slippage 0,05% x2 = 0,30% ; kripto kecil spread lebih lebar 0,60%
+#   saham AS 0,10% ; forex/komoditas (spread) 0,05%.
+BIAYA_PULANG_PERGI = {"kripto_besar": 0.30, "kripto_kecil": 0.60, "saham": 0.10,
+                      "forex_komoditas": 0.05}
+KRIPTO_BESAR = {"BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "TRX", "AVAX", "LINK",
+                "DOT", "LTC", "BCH", "TON", "SUI"}
+# Sinyal yang dibaca sebagai HINDARI/KURANGI (bot spot-only): keunggulannya adalah bila
+# return SESUDAHNYA lebih buruk dari acak. Membaca death cross sebagai "beli" dan menilainya
+# kalah adalah salah arah.
+ARAH_SINYAL = {"golden_cross_13x21": "beli", "pullback_ke_ema21_saat_uptrend": "beli",
+               "pullback_ke_ema21_PROKSI_CLOSE": "beli", "rsi_turun_bawah_30": "beli",
+               "death_cross_13x21": "hindari", "rsi_naik_atas_70": "hindari"}
+KEJADIAN_MINIMUM_PARUH = 10
+
+
+def biaya_untuk(simbol, pasar):
+    if pasar:
+        return BIAYA_PULANG_PERGI["forex_komoditas" if "=" in simbol or len(simbol) == 6
+                                  and simbol.isalpha() and simbol.endswith("USD")
+                                  else "saham"]
+    return BIAYA_PULANG_PERGI["kripto_besar" if simbol in KRIPTO_BESAR else "kripto_kecil"]
+
+
+def return_acak(candles, n_depan):
+    """Return n_depan candle dari SETIAP candle — pembanding 'masuk kapan saja'."""
+    c = [x[4] for x in candles]
+    return [(c[i + n_depan] - c[i]) / c[i] * 100 for i in range(len(c) - n_depan) if c[i]]
+
+
+def nilai_oos(kejadian, acak_per_tanggal, arah, biaya):
+    """Keunggulan bersih vs acak, di keseluruhan dan per PARUH WAKTU (awal/akhir).
+
+    Pembanding = rata-rata return 'masuk kapan saja' di SELURUH hari paruh yang sama (versi
+    pertama membandingkan dengan return di tanggal sinyal itu sendiri — selalu nol).
+    Paruh dibagi menurut WAKTU (tengah rentang tanggal), walk-forward paling sederhana yang
+    jujur: sinyal yang hanya bekerja di satu rezim tidak layak disebut keunggulan."""
+    if not kejadian or not acak_per_tanggal:
+        return None
+    tanda = 1 if arah == "beli" else -1
+    tanggal = sorted(acak_per_tanggal)
+    tengah = tanggal[len(tanggal) // 2]
+
+    def kel(ev, hari):
+        if not ev:
+            return None
+        rata = sum(e["return_persen"] for e in ev) / len(ev)
+        dasar = [acak_per_tanggal[t] for t in hari]
+        return {"n": len(ev), "keunggulan": round(tanda * (rata - sum(dasar) / len(dasar)), 2)}
+
+    awal = kel([e for e in kejadian if e["tanggal"] < tengah],
+               [t for t in tanggal if t < tengah])
+    akhir = kel([e for e in kejadian if e["tanggal"] >= tengah],
+                [t for t in tanggal if t >= tengah])
+    total = kel(kejadian, tanggal)
+    bersih = [e["return_persen"] - biaya for e in kejadian]
+    keluar = {
+        "arah": arah,
+        "expectancy_bersih_persen": round(sum(bersih) / len(bersih), 2),
+        "menang_bersih_persen": round(sum(1 for b in bersih if b > 0) / len(bersih) * 100, 1),
+        "keunggulan_vs_acak_persen": total["keunggulan"],
+        "paruh_awal_akhir": [awal and awal["keunggulan"], akhir and akhir["keunggulan"]],
+        "paruh_dibelah": tengah,
+    }
+    if awal and akhir and min(awal["n"], akhir["n"]) >= KEJADIAN_MINIMUM_PARUH:
+        # 'beli': keunggulan harus melampaui BIAYA di kedua paruh — unggul 0,1% pada sinyal
+        # yang membayar 0,3% per transaksi adalah kerugian. 'hindari': menghindar tidak
+        # membayar biaya tambahan, cukup positif di kedua paruh.
+        ambang = biaya if arah == "beli" else 0.0
+        bertahan = awal["keunggulan"] > ambang and akhir["keunggulan"] > ambang
+        keluar["vonis"] = ("BERTAHAN (unggul di kedua paruh setelah biaya)" if bertahan
+                           else "TIDAK BERTAHAN — jangan dipakai sebagai alasan")
+    else:
+        keluar["vonis"] = (f"SAMPEL KECIL (< {KEJADIAN_MINIMUM_PARUH} kejadian per paruh) — "
+                           "hanya catatan")
+    return keluar
 
 
 def uji_sinyal(candles, pemicu, n_depan=20):
@@ -353,6 +466,8 @@ def main():
                     help="timeframe candle. 4h punya high/low asli (crypto), 1d tidak")
     ap.add_argument("--ringkas", action="store_true",
                     help="buang panduan statis (hemat token saat dipakai bot)")
+    ap.add_argument("--biaya", type=float, default=None,
+                    help="biaya pulang-pergi %% (bawaan per kelas aset)")
     args = ap.parse_args()
     simbol = args.simbol.upper().replace("$", "")
 
@@ -369,7 +484,8 @@ def main():
         "horizon_setara": _setara(args.tf, args.depan),
         "peringatan": [
             "BUKAN bukti, hanya konteks. Masa lalu tidak menjamin masa depan.",
-            "TANPA biaya transaksi, spread, slippage, atau pajak.",
+            "SUDAH dikurangi biaya pulang-pergi (lihat biaya_pulang_pergi_persen); "
+            "belum termasuk pajak.",
             "Kejadian di bawah 10 kali TIDAK bermakna secara statistik.",
             "Menguji sinyal TUNGGAL, bukan keseluruhan metodologi berskor.",
         ],
@@ -408,12 +524,38 @@ def main():
 
     hasil["metrik_risiko"] = metrik_risiko(candles, 252 if args.pasar else 365)
 
+    biaya = args.biaya if args.biaya is not None else biaya_untuk(simbol, args.pasar)
+    hasil["biaya_pulang_pergi_persen"] = biaya
+    acak = return_acak(candles, args.depan)
+    acak_per_tanggal = {
+        datetime.fromtimestamp(candles[i][0] / 1000, tz=timezone.utc).strftime("%Y-%m-%d"): r
+        for i, r in enumerate(acak)}
+    hasil["tolok_ukur"]["return_acak_rata2_persen"] = (
+        round(sum(acak) / len(acak), 2) if acak else None)
     pemicu = cari_pemicu(candles)
     uji = {}
     for nama, idx in pemicu.items():
-        r = ringkas(uji_sinyal(candles, idx, args.depan))
-        uji[nama] = r if r else {"kejadian": 0, "catatan": "tidak pernah terjadi di rentang ini"}
+        kejadian = uji_sinyal(candles, idx, args.depan)
+        r = ringkas(kejadian)
+        if not r:
+            uji[nama] = {"kejadian": 0, "catatan": "tidak pernah terjadi di rentang ini"}
+            continue
+        r.update(nilai_oos(kejadian, acak_per_tanggal, ARAH_SINYAL.get(nama, "beli"), biaya))
+        if args.ringkas:
+            # Brief: yang menentukan keputusan saja. Rincian kotor tetap ada tanpa --ringkas.
+            r = {k: r[k] for k in ("kejadian", "arah", "menang_bersih_persen",
+                                   "expectancy_bersih_persen", "keunggulan_vs_acak_persen",
+                                   "paruh_awal_akhir", "nyeri_maks_rata2_persen", "vonis")
+                 if k in r}
+        uji[nama] = r
     hasil["uji_teknikal"] = uji
+    hasil["cara_baca_vonis"] = (
+        "Pakai sinyal sebagai alasan HANYA bila vonisnya BERTAHAN. keunggulan_vs_acak = "
+        "selisih return sesudah sinyal dengan return masuk kapan saja (untuk 'hindari': "
+        "positif = sesudahnya memang lebih buruk). Semua sudah setelah biaya. Lima sinyal "
+        "diuji sekaligus, jadi satu BERTAHAN bisa kebetulan — lebih kuat bila sinyal yang "
+        "sama juga bertahan di aset lain. Uji 16 Okt 2026 (BTC/ETH/SOL): RSI>70 sebagai "
+        "'hindari' TERBALIK di ketiganya — sesudahnya return justru lebih tinggi (momentum).")
 
     if args.makro:
         hasil["uji_makro"] = uji_makro(candles)

@@ -57,6 +57,9 @@ leveraged funds CFTC: sebagian arus itu basis trade netral arah (`jejak_basis_tr
 2019-2026). Jelaskan angka itu terhadap laju dasarnya; jangan diganti penimbangan naratif.
 Gabungan momentum/tren/RSI/sentimen/basis GAGAL di data yang belum dilihat, jadi konfluensi
 teknikal tidak boleh membantahnya — sebut saja bila bertentangan. 4 minggu: tidak ada model.
+Sinyal teknikal dipakai sebagai alasan HANYA bila vonis UJI BALIK-nya BERTAHAN (setelah
+biaya, kedua paruh waktu). RSI>70 BUKAN alasan menghindar di BTC/ETH/SOL: diuji 2014-2026,
+sesudahnya return justru di atas rata-rata (momentum).
 <!-- /BLOK -->
 
 <!-- BLOK: analis-forex | pemicu: forex -->

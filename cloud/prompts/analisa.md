@@ -495,7 +495,7 @@ muncul setelah 40 baris skor dan indikator sama saja dengan tidak ada.
 **Blok TLDR WAJIB jadi yang pertama**, 2-3 kalimat, dan harus MENJAWAB pertanyaannya —
 bukan meringkas data yang ada di bawahnya. "BTC berada di $79.718 dengan RSI 80,9" itu
 ringkasan data. "BTC naik 25% sepekan terutama karena arus ETF dan short squeeze; relinya
-kuat tapi sudah overbought" itu jawaban.
+kuat, dan arus ETF masih masuk" itu jawaban.
 
 Aturannya: setiap angka di TLDR harus muncul lagi di badan jawaban dengan sumbernya.
 TLDR tidak boleh memuat klaim yang tidak didukung bagian bawah.
