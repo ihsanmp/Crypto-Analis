@@ -232,5 +232,258 @@
     "vonis": "TIDAK LOLOS"
    }
   }
+ },
+ "gabungan_sempit": {
+  "diuji_utc": "2026-10-16T14:59:00+00:00",
+  "p_maks": 0.0083,
+  "horizon": {
+   "12": {
+    "likuiditas_saja": {
+     "ic_oos": 0.312,
+     "p_placebo": 0.0045,
+     "brier": 0.2232,
+     "brier_laju_dasar": 0.2511,
+     "brier_skill": 0.111,
+     "ic_per_tahun": {
+      "2019": 0.334,
+      "2020": -0.305,
+      "2021": -0.049,
+      "2022": 0.434,
+      "2023": 0.115,
+      "2024": 0.275,
+      "2025": 0.443,
+      "2026": -0.396
+     },
+     "tahun_positif": "5/8",
+     "n_minggu_oos": 394,
+     "keandalan": {
+      "45-55%": "terjadi 49% (N=82)",
+      "55-65%": "terjadi 54% (N=89)",
+      "<45%": "terjadi 33% (N=48)",
+      ">=65%": "terjadi 70% (N=175)"
+     }
+    },
+    "kandidat": {
+     "mom_52": {
+      "ic_oos": 0.271,
+      "p_placebo": 0.1394,
+      "brier": 0.2305,
+      "brier_laju_dasar": 0.2511,
+      "brier_skill": 0.082,
+      "ic_per_tahun": {
+       "2019": -0.391,
+       "2020": -0.013,
+       "2021": -0.137,
+       "2022": 0.445,
+       "2023": 0.322,
+       "2024": 0.172,
+       "2025": 0.347,
+       "2026": -0.509
+      },
+      "tahun_positif": "4/8",
+      "n_minggu_oos": 394,
+      "keandalan": {
+       "45-55%": "terjadi 51% (N=57)",
+       "55-65%": "terjadi 60% (N=100)",
+       "<45%": "terjadi 39% (N=94)",
+       ">=65%": "terjadi 71% (N=143)"
+      },
+      "tahun_unggul_atas_likuiditas": "3/8",
+      "rata_bobot": {
+       "likuiditas": 0.363,
+       "mom_52": 0.248
+      },
+      "lolos": false
+     },
+     "tren_200h": {
+      "ic_oos": 0.2,
+      "p_placebo": 0.0555,
+      "brier": 0.2412,
+      "brier_laju_dasar": 0.2511,
+      "brier_skill": 0.039,
+      "ic_per_tahun": {
+       "2019": -0.325,
+       "2020": 0.094,
+       "2021": -0.296,
+       "2022": 0.403,
+       "2023": -0.236,
+       "2024": -0.279,
+       "2025": 0.283,
+       "2026": -0.481
+      },
+      "tahun_positif": "3/8",
+      "n_minggu_oos": 394,
+      "keandalan": {
+       "45-55%": "terjadi 61% (N=79)",
+       "55-65%": "terjadi 61% (N=100)",
+       "<45%": "terjadi 33% (N=60)",
+       ">=65%": "terjadi 63% (N=155)"
+      },
+      "tahun_unggul_atas_likuiditas": "1/8",
+      "rata_bobot": {
+       "likuiditas": 0.363,
+       "tren_200h": 0.307
+      },
+      "lolos": false
+     },
+     "fear_greed": {
+      "ic_oos": 0.295,
+      "p_placebo": 0.02,
+      "brier": 0.2349,
+      "brier_laju_dasar": 0.2511,
+      "brier_skill": 0.064,
+      "ic_per_tahun": {
+       "2019": 0.334,
+       "2020": 0.134,
+       "2021": -0.137,
+       "2022": 0.336,
+       "2023": -0.152,
+       "2024": -0.298,
+       "2025": 0.287,
+       "2026": -0.499
+      },
+      "tahun_positif": "4/8",
+      "n_minggu_oos": 394,
+      "keandalan": {
+       "45-55%": "terjadi 56% (N=62)",
+       "55-65%": "terjadi 62% (N=73)",
+       "<45%": "terjadi 41% (N=75)",
+       ">=65%": "terjadi 63% (N=184)"
+      },
+      "tahun_unggul_atas_likuiditas": "1/8",
+      "rata_bobot": {
+       "likuiditas": 0.363,
+       "fear_greed": 0.222
+      },
+      "lolos": false
+     }
+    },
+    "dipilih": null,
+    "vonis": "TIDAK ADA kandidat yang lolos — model tetap"
+   },
+   "4": {
+    "likuiditas_saja": {
+     "ic_oos": 0.015,
+     "p_placebo": 0.4103,
+     "brier": 0.2488,
+     "brier_laju_dasar": 0.248,
+     "brier_skill": -0.003,
+     "ic_per_tahun": {
+      "2019": 0.05,
+      "2020": -0.31,
+      "2021": -0.087,
+      "2022": 0.073,
+      "2023": -0.412,
+      "2024": -0.241,
+      "2025": 0.33,
+      "2026": -0.516
+     },
+     "tahun_positif": "3/8",
+     "n_minggu_oos": 402,
+     "keandalan": {
+      "45-55%": "terjadi 55% (N=78)",
+      "55-65%": "terjadi 54% (N=250)",
+      "<45%": "terjadi 83% (N=6)",
+      ">=65%": "terjadi 65% (N=68)"
+     }
+    },
+    "kandidat": {
+     "mom_52": {
+      "ic_oos": 0.115,
+      "p_placebo": 0.2289,
+      "brier": 0.2509,
+      "brier_laju_dasar": 0.248,
+      "brier_skill": -0.012,
+      "ic_per_tahun": {
+       "2019": -0.351,
+       "2020": -0.009,
+       "2021": 0.085,
+       "2022": 0.064,
+       "2023": -0.107,
+       "2024": -0.224,
+       "2025": -0.156,
+       "2026": -0.251
+      },
+      "tahun_positif": "2/8",
+      "n_minggu_oos": 402,
+      "keandalan": {
+       "45-55%": "terjadi 51% (N=146)",
+       "55-65%": "terjadi 56% (N=163)",
+       "<45%": "terjadi 89% (N=18)",
+       ">=65%": "terjadi 59% (N=75)"
+      },
+      "tahun_unggul_atas_likuiditas": "5/8",
+      "rata_bobot": {
+       "likuiditas": 0.132,
+       "mom_52": 0.191
+      },
+      "lolos": false
+     },
+     "tren_200h": {
+      "ic_oos": 0.102,
+      "p_placebo": 0.1329,
+      "brier": 0.249,
+      "brier_laju_dasar": 0.248,
+      "brier_skill": -0.004,
+      "ic_per_tahun": {
+       "2019": -0.064,
+       "2020": -0.161,
+       "2021": 0.022,
+       "2022": -0.033,
+       "2023": -0.44,
+       "2024": -0.192,
+       "2025": -0.101,
+       "2026": -0.105
+      },
+      "tahun_positif": "1/8",
+      "n_minggu_oos": 402,
+      "keandalan": {
+       "45-55%": "terjadi 57% (N=106)",
+       "55-65%": "terjadi 53% (N=227)",
+       ">=65%": "terjadi 67% (N=69)"
+      },
+      "tahun_unggul_atas_likuiditas": "4/8",
+      "rata_bobot": {
+       "likuiditas": 0.132,
+       "tren_200h": 0.189
+      },
+      "lolos": false
+     },
+     "fear_greed": {
+      "ic_oos": 0.092,
+      "p_placebo": 0.1454,
+      "brier": 0.2509,
+      "brier_laju_dasar": 0.248,
+      "brier_skill": -0.012,
+      "ic_per_tahun": {
+       "2019": 0.05,
+       "2020": -0.15,
+       "2021": 0.077,
+       "2022": 0.055,
+       "2023": -0.424,
+       "2024": -0.199,
+       "2025": 0.047,
+       "2026": -0.205
+      },
+      "tahun_positif": "4/8",
+      "n_minggu_oos": 402,
+      "keandalan": {
+       "45-55%": "terjadi 50% (N=125)",
+       "55-65%": "terjadi 57% (N=182)",
+       "<45%": "terjadi 100% (N=5)",
+       ">=65%": "terjadi 62% (N=90)"
+      },
+      "tahun_unggul_atas_likuiditas": "4/8",
+      "rata_bobot": {
+       "likuiditas": 0.132,
+       "fear_greed": 0.15
+      },
+      "lolos": false
+     }
+    },
+    "dipilih": null,
+    "vonis": "TIDAK ADA kandidat yang lolos — model tetap"
+   }
+  }
  }
 }

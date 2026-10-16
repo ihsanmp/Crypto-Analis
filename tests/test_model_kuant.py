@@ -111,3 +111,13 @@ def test_arah_eth_berperingatan_dan_sol_tidak_pernah():
     eth = bot.arah_model_kuant(br, "eth 3 bulan ke depan", "ETH")
     assert "37%" in eth and "JANGAN" in eth
     assert bot.arah_model_kuant(br, "sol 3 bulan ke depan", "SOL") == ""
+
+
+def test_gabungan_sempit_tidak_ada_yang_lolos_model_tetap():
+    """Uji pra-registrasi 16 Okt: Liquidity + {mom_52, tren_200h, fear_greed} semuanya
+    lebih buruk dari Liquidity saja di data yang belum dilihat."""
+    d = mk._muat_status()["gabungan_sempit"]["horizon"]
+    assert d["12"]["dipilih"] is None and d["4"]["dipilih"] is None
+    for k, g in d["12"]["kandidat"].items():
+        assert g["brier_skill"] < d["12"]["likuiditas_saja"]["brier_skill"], k
+    assert mk.status_aset("BTC")["versi"] == "likuiditas_saja"

@@ -407,3 +407,22 @@ Rancangan dan kriteria lolosnya ditulis di docstring sebelum uji dijalankan:
   - ETH 37% dengan laju dasar 52%. Angka ini jatuh di keranjang terbalik, jadi bukan arah.
   - BTC 38% dengan laju dasar 58%. Keranjang <45% BTC searah (nyatanya naik 33%), jadi angka ini tetap arah.
 - **SOL** tidak ditampilkan. Riwayatnya baru 4 tahun uji, dan IC-nya positif hanya di 2 tahun.
+
+## Gabungan sempit: Liquidity + satu faktor (`uji_model_kuant_sempit.py`, 16 Okt 2026)
+
+Rancangan pra-registrasi:
+
+- **Kandidat:** dipilih dari literatur, bukan dari bobot langkah 1. Momentum deret waktu 12 bulan (Moskowitz-Ooi-Pedersen 2012), jarak ke rata-rata 200 hari, dan Fear & Greed.
+- **Koreksi uji berganda:** 3 kandidat × 2 horizon, jadi ambang p diturunkan menjadi 0,0083.
+- **Syarat lolos 12 minggu:** gabungan harus mengalahkan Liquidity saja dalam Brier skill, dan IC tahunannya lebih tinggi di ≥6 dari 8 tahun.
+
+| 12 minggu, OOS 2019–2026 | IC | p | Brier skill | Tahun positif | Tahun unggul atas Liquidity |
+| --- | --- | --- | --- | --- | --- |
+| **Liquidity saja** | **+0,312** | 0,005 | **+0,111** | 5/8 | — |
+| + momentum 12 bulan | +0,271 | 0,139 | +0,082 | 4/8 | 3/8 |
+| + Fear & Greed | +0,295 | 0,020 | +0,064 | 4/8 | 1/8 |
+| + tren MA200 | +0,200 | 0,056 | +0,039 | 3/8 | 1/8 |
+
+Pada horizon 4 minggu, keempat versi punya Brier skill negatif (−0,003 sampai −0,012), jadi tidak ada yang lolos.
+
+**Vonis:** model tetap memakai Liquidity saja. Di data latih, bobot faktor tambahan tampak besar (0,22–0,31), tetapi di tahun yang belum dilihat setiap tambahan memperburuk peluang yang terkalibrasi. Gabungan sempit ini mengulang pelajaran dari gabungan 12 sinyal.
