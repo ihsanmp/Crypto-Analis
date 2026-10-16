@@ -607,6 +607,11 @@ def analisa(hari_ini=None):
             import model_kuant
             pk = model_kuant.peluang_likuiditas(jumat, liq, harga, i)
             if pk:
+                rm = model_kuant.ringkas_maju()
+                if rm.get("dicatat"):
+                    pk["uji_maju"] = (f"{rm['dinilai']}/{rm['dicatat']} prediksi jatuh tempo"
+                                      + (f", Brier skill {rm['brier_skill']:+.3f}"
+                                         if rm.get("brier_skill") is not None else ""))
                 hasil["peluang_model_kuant"] = pk
         except Exception as e:
             hasil["peluang_model_kuant"] = {"tidak_tersedia": type(e).__name__}
@@ -654,7 +659,8 @@ def pesan(h):
     pk = h.get("peluang_model_kuant") or {}
     if "peluang_btc_naik_persen" in pk:
         baris.append(f"Model kuant: peluang BTC naik 12 mg {pk['peluang_btc_naik_persen']}% "
-                     f"(laju dasar {pk['laju_dasar_naik_persen']}%, lolos uji walk-forward)")
+                     f"(laju dasar {pk['laju_dasar_naik_persen']}%, lolos uji walk-forward"
+                     + (f"; uji maju {pk['uji_maju']}" if pk.get("uji_maju") else "") + ")")
     baris += ["",
               f"Target eksposur BTC (rancangan): {h['target_eksposur_btc_persen']}%",
               f"Komponen teruji saja: {h['eksposur_komponen_teruji_saja_persen']}%",

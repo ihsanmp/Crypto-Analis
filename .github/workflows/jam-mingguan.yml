@@ -64,6 +64,12 @@ jobs:
         timeout-minutes: 40
         run: python cloud/etf_13f.py
 
+      # Uji MAJU model kuant: catat prediksi minggu ini SEBELUM hasilnya ada, nilai yang
+      # sudah jatuh tempo (12 minggu). Gagal di sini tidak boleh membatalkan skor mingguan.
+      - name: Uji maju model kuant
+        continue-on-error: true
+        run: python cloud/model_kuant.py --maju
+
       - name: Hitung skor
         run: python cloud/jam_likuiditas.py > jam.json && head -c 3000 jam.json
 
@@ -72,7 +78,8 @@ jobs:
           ADA=""
           for f in cloud/data/etf_arus_farside.json cloud/data/treasury_arsip.jsonl \
                    cloud/data/etf_13f.json cloud/data/funding_btcusdt_harian.json \
-                   cloud/data/spot_btc_jam_cme.json cloud/data/fred_jam_likuiditas.json; do
+                   cloud/data/spot_btc_jam_cme.json cloud/data/fred_jam_likuiditas.json \
+                   cloud/data/kuant_maju.jsonl; do
             [ -f "$f" ] && ADA="$ADA $f"
           done
           if [ -z "$(git status --porcelain $ADA)" ]; then

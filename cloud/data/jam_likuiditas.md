@@ -292,3 +292,27 @@ Model ini memindahkan kesimpulan arah dari penimbangan naratif ke hitungan kode.
 - Gabungan yang lebih sempit, misalnya Liquidity + satu faktor momentum.
 - Model untuk ETH dan SOL.
 - Pengujian dengan biaya transaksi.
+
+## Langkah 2: kalibrasi skor bot dan uji maju (16 Okt 2026)
+
+### Skor 0–100 panggilan bot (`kalibrasi_skor.py`)
+
+| | |
+| --- | --- |
+| Panggilan tercatat | 19 |
+| Episode independen | 15 |
+| Episode yang sudah dinilai | 10 |
+| Korelasi skor dengan hasil | +0,04 (p permutasi 0,46) |
+| Benar, skor 41–60 | 75% (selang 95%: 41–93%, 8 episode) |
+| Rentang skor teramati | 43–65 |
+| Status | **BELUM TERKALIBRASI**. Laju ±6,8 episode/bulan, jadi butuh ±7 bulan lagi untuk mencapai 60 |
+
+Panggilan aset yang sama dalam 72 jam digabung menjadi satu episode. Pada 9 Agu, NVDA dianalisa tiga kali di harga yang sama. Pada 30 Sep, SOL dianalisa dua kali dalam 13 menit.
+
+Selama belum terkalibrasi, brief memuat larangan menyajikan skor sebagai peluang. Ambang di `analisa.md` tetap keputusan manusia.
+
+### Uji maju model kuant (`model_kuant.py --maju`)
+
+Prediksi pertama dicatat Jumat 16 Okt 2026: peluang BTC naik 12 minggu 38%, laju dasar 58%. Prediksi ini akan dinilai sesudah 9 Jan 2027.
+
+Penilaiannya memakai skor Brier, dibandingkan dengan laju dasar. Karena prediksi 12 minggu saling tumpang tindih, jumlah prediksi yang benar-benar independen hanya sekitar 4 per tahun. Butuh beberapa tahun sebelum uji maju ini bisa memberi vonis yang kuat.

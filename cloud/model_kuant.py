@@ -314,10 +314,91 @@ WAJIB_DIBACA = (
     "Horizon dalam minggu, bukan arah besok. Horizon 4 minggu: tidak ada model yang lolos.")
 
 
+# ------------------------------------------------------------------ uji MAJU
+# Walk-forward 2019-2026 masih riwayat. Uji maju mencatat prediksi SEBELUM hasilnya ada,
+# lalu menilainya sesudah h minggu: satu-satunya bukti yang tidak mungkin bocor.
+MAJU_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "kuant_maju.jsonl")
+
+
+def _muat_maju():
+    try:
+        with open(MAJU_PATH, encoding="utf-8") as f:
+            return [json.loads(x) for x in f if x.strip()]
+    except OSError:
+        return []
+
+
+def _tulis_maju(baris):
+    with open(MAJU_PATH, "w", encoding="utf-8", newline="\n") as f:
+        for b in baris:
+            f.write(json.dumps(b, ensure_ascii=False) + "\n")
+
+
+def catat_maju(jumat, peluang, laju_dasar, h=12):
+    """Satu prediksi per Jumat per horizon; tidak menimpa yang sudah ada."""
+    baris = _muat_maju()
+    if any(b["jumat"] == jumat and b["horizon_minggu"] == h for b in baris):
+        return False
+    baris.append({"jumat": jumat, "horizon_minggu": h, "peluang_naik_persen": peluang,
+                  "laju_dasar_persen": laju_dasar,
+                  "dicatat_utc": datetime.now(timezone.utc).isoformat(timespec="seconds")})
+    _tulis_maju(baris)
+    return True
+
+
+def nilai_maju(harga, hari_ini=None):
+    """Isi hasil untuk prediksi yang jendelanya sudah lewat. Return jumlah yang baru dinilai."""
+    hari_ini = hari_ini or datetime.now(timezone.utc).date()
+    baris, baru = _muat_maju(), 0
+    for b in baris:
+        if "naik" in b:
+            continue
+        f = date.fromisoformat(b["jumat"])
+        akhir = f + timedelta(days=1 + 7 * b["horizon_minggu"])
+        if akhir >= hari_ini:
+            continue
+        r = target([f], harga, b["horizon_minggu"])[0]
+        if r is not None:
+            b["naik"] = r > 0
+            b["return_persen"] = round((math.exp(r) - 1) * 100, 2)
+            baru += 1
+    if baru:
+        _tulis_maju(baris)
+    return baru
+
+
+def ringkas_maju():
+    """Brier model vs laju dasar pada prediksi maju yang sudah dinilai."""
+    dinilai = [b for b in _muat_maju() if "naik" in b]
+    total = len(_muat_maju())
+    if not dinilai:
+        return {"dicatat": total, "dinilai": 0,
+                "catatan": "belum ada prediksi maju yang jatuh tempo (horizon 12 minggu)"}
+    o = [1 if b["naik"] else 0 for b in dinilai]
+    bs = sum((b["peluang_naik_persen"] / 100 - y) ** 2 for b, y in zip(dinilai, o)) / len(o)
+    bs0 = sum((b["laju_dasar_persen"] / 100 - y) ** 2 for b, y in zip(dinilai, o)) / len(o)
+    return {"dicatat": total, "dinilai": len(dinilai), "brier": round(bs, 4),
+            "brier_laju_dasar": round(bs0, 4), "brier_skill": round(1 - bs / bs0, 3) if bs0 else None,
+            "catatan": ("sampel kecil — prediksi 12 minggu tumpang tindih, ~4 prediksi "
+                        "independen per tahun" if len(dinilai) < 26 else "")}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ringkas", action="store_true")
+    ap.add_argument("--maju", action="store_true",
+                    help="catat prediksi minggu ini + nilai yang jatuh tempo (workflow mingguan)")
     a = ap.parse_args()
+    if a.maju:
+        h = analisa()
+        harga = jl.harga_yahoo("BTC-USD")
+        for p in h["per_horizon"]:
+            if p and "peluang_btc_naik_persen" in p:
+                catat_maju(h["sinyal_jumat"], p["peluang_btc_naik_persen"],
+                           p["laju_dasar_naik_persen"], p["horizon_minggu"])
+        print("baru dinilai:", nilai_maju(harga), "·", json.dumps(ringkas_maju(),
+                                                                ensure_ascii=False))
+        return
     try:
         h = analisa()
     except Exception as e:

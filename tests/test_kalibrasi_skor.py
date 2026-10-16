@@ -1,0 +1,64 @@
+import json
+import os
+import sys
+from datetime import date, datetime, timedelta, timezone
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "cloud"))
+import kalibrasi_skor as ks  # noqa: E402
+import model_kuant as mk  # noqa: E402
+
+
+def _e(aset, tgl, skor, status, bias="TAHAN"):
+    return {"aset": aset, "jenis": "crypto", "tanggal_utc": tgl, "skor": skor,
+            "status": status, "bias": bias}
+
+
+def test_episode_menggabungkan_analisa_ulang_dalam_72_jam():
+    """9 Agu 2026: NVDA dianalisa tiga kali di harga sama — satu episode, bukan tiga."""
+    entri = [_e("NVDA", "2026-08-09 10:46", 72, "MASIH_TERBUKA"),
+             _e("NVDA", "2026-08-09 16:08", 66, "TARGET_KENA"),
+             _e("NVDA", "2026-08-15 09:00", 60, "TARGET_KENA"),
+             _e("SOL", "2026-08-09 11:00", 50, "INVALID_KENA")]
+    eps = ks.episode(entri)
+    assert sorted(len(e) for e in eps) == [1, 1, 2]
+    nvda = [e for e in eps if e[0]["aset"] == "NVDA" and len(e) == 2][0]
+    assert nvda[0]["skor"] == 72                       # wakil = panggilan PERTAMA
+
+
+def test_wilson_lebar_pada_sampel_kecil():
+    lo, hi = ks.wilson(6, 8)
+    assert lo < 50 < hi
+    assert ks.wilson(0, 0) is None
+
+
+def test_belum_terkalibrasi_di_bawah_ambang_episode():
+    t0 = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    entri = [_e(f"K{i}", (t0 + timedelta(days=i)).strftime("%Y-%m-%d %H:%M"),
+                40 + i, "TARGET_KENA" if i % 3 else "INVALID_KENA") for i in range(20)]
+    k = ks.kalibrasi(entri, sekarang=t0 + timedelta(days=60))
+    assert k["status"] == "BELUM TERKALIBRASI" and k["episode_dinilai"] == 20
+    assert k["perkiraan_bulan_lagi"] > 0
+    assert "BELUM TERKALIBRASI" in ks.catatan_brief(entri)
+
+
+def test_terkalibrasi_bila_skor_memang_memisahkan_hasil():
+    t0 = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    entri = [_e(f"K{i}", (t0 + timedelta(days=i)).strftime("%Y-%m-%d %H:%M"),
+                30 + i % 60, "TARGET_KENA" if (30 + i % 60) > 60 else "INVALID_KENA")
+             for i in range(80)]
+    k = ks.kalibrasi(entri)
+    assert k["status"] == "TERKALIBRASI"
+    assert k["peta_peluang_benar"]["90"] > k["peta_peluang_benar"]["30"]
+
+
+def test_uji_maju_dicatat_sekali_lalu_dinilai_sesudah_jatuh_tempo(tmp_path, monkeypatch):
+    monkeypatch.setattr(mk, "MAJU_PATH", str(tmp_path / "maju.jsonl"))
+    assert mk.catat_maju("2026-01-02", 38, 58) is True
+    assert mk.catat_maju("2026-01-02", 40, 58) is False          # tidak menimpa
+    harga = {(date(2026, 1, 3) + timedelta(days=d)).isoformat(): 100.0 + d for d in range(120)}
+    assert mk.nilai_maju(harga, hari_ini=date(2026, 3, 1)) == 0  # belum jatuh tempo
+    assert mk.nilai_maju(harga, hari_ini=date(2026, 4, 30)) == 1
+    r = mk.ringkas_maju()
+    assert r["dinilai"] == 1 and r["brier"] == round((0.38 - 1) ** 2, 4)
+    baris = [json.loads(x) for x in open(mk.MAJU_PATH, encoding="utf-8")]
+    assert baris[0]["naik"] is True and baris[0]["peluang_naik_persen"] == 38

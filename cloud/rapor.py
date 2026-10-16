@@ -571,6 +571,14 @@ def catatan_untuk_brief():
         return None                      # terlalu sedikit untuk disimpulkan apa pun
     h = _hitung(entri)
     baris = []
+    # Status kalibrasi skor SELALU disebut sampai terkalibrasi: tanpa itu model menyajikan
+    # "skor 72/100" seolah tingkat keyakinan terukur, padahal korelasi skor-hasil di 10
+    # episode pertama +0,04 (p 0,46) — kalibrasi_skor.py.
+    try:
+        import kalibrasi_skor
+        baris.append(kalibrasi_skor.catatan_brief(entri))
+    except Exception:
+        pass
     if h.get("peringatan_rasio"):
         baris.append(h["peringatan_rasio"])
     if h.get("peringatan_terbuka"):
@@ -581,6 +589,8 @@ def catatan_untuk_brief():
         baris.append(h["peringatan_alpha"])
     if not baris:
         return None
+    if len(baris) == 1 and baris[0].startswith("SKOR 0-100"):
+        return "JEJAK REKAM SENDIRI: " + baris[0]
     return ("JEJAK REKAM SENDIRI (" + str(h["panggilan"]) + " panggilan, dihitung dari "
             "rapor.jsonl — ini tentang panggilanmu sendiri, bukan tentang asetnya):"
             + chr(10) + chr(10).join("- " + b for b in baris) + chr(10)
@@ -625,6 +635,11 @@ def perintah_ringkas(hari):
     for e in dipakai:
         kel.setdefault(_kelompok_skor(e.get("skor")), []).append(e)
     keluar["per_rentang_skor"] = {k: _hitung(v) for k, v in sorted(kel.items())}
+    try:
+        import kalibrasi_skor
+        keluar["kalibrasi_skor"] = kalibrasi_skor.kalibrasi(dipakai)
+    except Exception as e:
+        keluar["kalibrasi_skor"] = {"gagal": type(e).__name__}
     keluar["cara_baca"] = [
         "Bandingkan menang_persen antar rentang skor. Kalau 61-80 TIDAK lebih baik daripada "
         "41-60, sistem skornya belum bermakna dan ambangnya perlu dikalibrasi.",
