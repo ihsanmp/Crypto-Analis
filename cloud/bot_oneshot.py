@@ -4707,7 +4707,10 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
         # angka minggu ini.
         if (_MINTA_JAM.search(text or "") and not _KONSEP_RE.search(text or "")
                 and not _KONSEP_JAM.search(text or "")
-                and '"skor_likuiditas"' not in (brief or "")):
+                # Label blok, bukan isinya: kalau blok di jalur koin GAGAL (mis. timeout),
+                # brief memuat "[JAM LIKUIDITAS ...] GAGAL DIAMBIL" tanpa skor — dan cek isi
+                # akan menjalankan script yang sama sekali lagi (hingga 300 dtk lagi).
+                and "[JAM LIKUIDITAS (jam_likuiditas.py)]" not in (brief or "")):
             jam = data_jam()
             if jam:
                 brief = (brief + chr(10) * 2 if brief else "") + jam

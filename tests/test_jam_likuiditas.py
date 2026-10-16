@@ -208,7 +208,8 @@ def test_pemicu_jam_tanpa_aset_dan_jam_bukan_koin():
     bot._jalankan_terukur = lambda lb, args, min_kar=0: (
         label.append(lb), ('{"skor_likuiditas":-0.4}', None))[1]
     bot.data_mentah_crypto = lambda c, *a, **k: (
-        label.append("JAM LIKUIDITAS (jam_likuiditas.py)"), '[JAM]\n{"skor_likuiditas":-0.4}')[1]
+        label.append("JAM LIKUIDITAS (jam_likuiditas.py)"),
+        '[JAM LIKUIDITAS (jam_likuiditas.py)]\n{"skor_likuiditas":-0.4}')[1]
     bot.run_claude = lambda p, *a, **k: ("ok", None)
     try:
         for teks, harus in (("likuiditas fed lagi gimana?", 1),
@@ -295,3 +296,27 @@ def test_run_claude_memakai_system_prompt_bot_dan_bisa_dikembalikan(monkeypatch)
     monkeypatch.setenv("BOT_SYSTEM_BAWAAN", "1")
     bot.run_claude("halo", 5, 1)
     assert "--system-prompt" not in dapat["cmd"]
+
+
+def test_jam_tidak_dijalankan_dua_kali_saat_blok_koin_gagal():
+    """Blok JAM di jalur koin gagal -> brief memuat label tanpa skor. Jalur berdiri sendiri
+    tidak boleh menjalankan script yang sama lagi."""
+    import tempfile
+    import bot_oneshot as bot
+    asli = (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.belajar_dari,
+            bot._jalankan_terukur, bot.run_claude, bot.data_mentah_crypto)
+    label = []
+    bot.JEJAK_PATH = os.path.join(tempfile.mkdtemp(), "j.json")
+    bot.simpan_riwayat = lambda *a, **k: None
+    bot.send_message = lambda *a, **k: True
+    bot.belajar_dari = lambda *a, **k: []
+    bot._jalankan_terukur = lambda lb, args, min_kar=0: (label.append(lb), ("{}", None))[1]
+    bot.data_mentah_crypto = lambda c, *a, **k: (
+        "[JAM LIKUIDITAS (jam_likuiditas.py)]\nGAGAL DIAMBIL — TimeoutError")
+    bot.run_claude = lambda p, *a, **k: ("ok", None)
+    try:
+        bot.process("tok", "9", "btc gimana kalau dolar menguat?")
+        assert not any("JAM LIKUIDITAS" in x for x in label), label
+    finally:
+        (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.belajar_dari,
+         bot._jalankan_terukur, bot.run_claude, bot.data_mentah_crypto) = asli

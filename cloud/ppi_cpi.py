@@ -37,13 +37,10 @@ Pemakaian:
 """
 
 import argparse
-import csv
-import io
 import json
 import os
 import random
 import statistics as st
-import subprocess
 import sys
 from datetime import datetime, timezone
 
