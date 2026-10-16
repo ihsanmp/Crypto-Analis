@@ -1,0 +1,21 @@
+# Diagnostik manual: kenapa FRED TimeoutError dari runner (jam_likuiditas.py). Hanya mencetak
+# status, ukuran, dan durasi per seri — tidak ada kunci, tidak ada yang dikirim ke Telegram.
+name: Periksa FRED
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  periksa:
+    runs-on: ubuntu-latest
+    env:
+      FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - run: python cloud/periksa_fred.py
