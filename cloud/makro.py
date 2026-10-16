@@ -82,26 +82,14 @@ ARAH_EMAS = {
 
 
 def ambil(kode):
-    """Return list (tanggal, nilai) terurut lama->baru, atau (None, error)."""
-    try:
-        req = urllib.request.Request(FRED + kode, headers=UA)
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
-            baris = r.read().decode().strip().split("\n")
-    except urllib.error.HTTPError as e:
-        return None, f"HTTP {e.code}"
-    except Exception as e:
-        return None, type(e).__name__
+    """Return list (tanggal, nilai) terurut lama->baru, atau (None, error).
 
-    keluar = []
-    for b in baris[1:]:
-        bagian = b.split(",")
-        if len(bagian) < 2 or bagian[1].strip() in (".", ""):
-            continue        # FRED menandai data kosong dengan titik — jangan ditambal
-        try:
-            keluar.append((bagian[0].strip(), float(bagian[1])))
-        except ValueError:
-            continue
-    return (keluar, None) if keluar else (None, "tidak ada data terbaca")
+    Lewat fred.py: fredgraph.csv diblokir dari runner GitHub (16 Okt 2026), jadi API resmi
+    dipakai bila FRED_API_KEY ada. `kode` boleh memuat "&cosd=YYYY-MM-DD" (awal riwayat)."""
+    import fred
+    kode, _, mulai = kode.partition("&cosd=")
+    fred.TIMEOUT = max(fred.TIMEOUT, TIMEOUT)
+    return fred.seri(kode, mulai or None)
 
 
 def tumbuh(baru, lama):

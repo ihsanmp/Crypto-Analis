@@ -22,7 +22,8 @@ konservatif, lihat JEDA_RILIS), lalu sinyal Jumat hanya memakai titik yang sudah
 Revisi data (ALFRED) tidak dipakai: ALFRED tidak terjangkau dari jaringan pengembang, dan
 WALCL/WDTGAL/RRP/DGS2 praktis tidak direvisi — NFCI direvisi tiap minggu, itu batasnya.
 
-Sumber FRED lewat makro.ambil (fredgraph.csv publik, TANPA API key). Arus ETF lewat
+Sumber FRED lewat makro.ambil -> fred.py: API resmi bila FRED_API_KEY ada (fredgraph.csv
+publik diblokir dari runner GitHub), salinan cadangan bila keduanya gagal. Arus ETF lewat
 sosovalue.historis_etf (~300 hari bursa terakhir; cukup untuk adopsi, tidak untuk uji).
 
 STATUS BUKTI dicatat di STATUS_BUKTI — diisi dari uji_jam_likuiditas.py, bukan dari teori.

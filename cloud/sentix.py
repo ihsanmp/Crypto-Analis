@@ -345,21 +345,18 @@ def ambil(paksa=False):
 
 
 def _harga_btc():
-    """Harga BTC harian dari FRED (CBBTCUSD). Return {date: close}."""
-    try:
-        p = subprocess.run(["curl", "-s", "--max-time", "45", "-A", "riset-koin/1.0",
-                            "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CBBTCUSD"],
-                           capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
-        keluar = {}
-        for r in list(csv.reader(io.StringIO(p.stdout)))[1:]:
-            if len(r) >= 2 and r[1] not in (".", ""):
-                try:
-                    keluar[date.fromisoformat(r[0])] = float(r[1])
-                except ValueError:
-                    continue
-        return keluar
-    except Exception:
-        return {}
+    """Harga BTC harian dari FRED (CBBTCUSD). Return {date: close}.
+
+    Lewat fred.py: fredgraph diblokir dari runner GitHub (16 Okt 2026)."""
+    import fred
+    data, _ = fred.seri("CBBTCUSD")
+    keluar = {}
+    for t, v in data or []:
+        try:
+            keluar[date.fromisoformat(t)] = v
+        except ValueError:
+            continue
+    return keluar
 
 
 def uji_kontrarian(deret, harga, maju_hari=28):

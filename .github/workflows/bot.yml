@@ -75,6 +75,7 @@ jobs:
       # berkas seperti riwayat konsensus yang bulanan — harus ditarik saat analisa. Kosong
       # = bagian arus ETF dilaporkan tidak tersedia dan analisa crypto tetap jalan.
       SOSOVALUE_API_KEY: ${{ secrets.SOSOVALUE_API_KEY }}
+      FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
       SUBSCRIPTION_LEVEL: Basic
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
       # Isi hanya saat dipicu webhook; kosong saat dijalankan manual.

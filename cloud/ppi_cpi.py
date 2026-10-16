@@ -69,26 +69,16 @@ def _unduh(seri):
     Memakai curl, bukan urllib: di sebagian jaringan urllib kena proxy yang membuat
     pembacaannya menggantung sampai timeout, sedangkan curl lewat.
     """
-    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={seri}"
-    try:
-        p = subprocess.run(["curl", "-s", "--max-time", "45", "-A", "riset-koin/1.0", url],
-                           capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
-        if p.returncode != 0 or not p.stdout.strip():
-            return {}
-        keluar = {}
-        for r in list(csv.reader(io.StringIO(p.stdout)))[1:]:
-            if len(r) < 2 or r[1] in (".", ""):
-                continue
-            bagian = r[0].split("-")
-            if len(bagian) < 2:
-                continue
-            try:
-                keluar[f"{int(bagian[0])}-{int(bagian[1])}"] = float(r[1])
-            except ValueError:
-                continue
-        return keluar
-    except Exception:
-        return {}
+    # Lewat fred.py: fredgraph diblokir dari runner GitHub; API resmi dipakai bila
+    # FRED_API_KEY ada (16 Okt 2026).
+    import fred
+    data, _ = fred.seri(seri)
+    keluar = {}
+    for t, v in data or []:
+        bagian = t.split("-")
+        if len(bagian) >= 2:
+            keluar[f"{int(bagian[0])}-{int(bagian[1])}"] = v
+    return keluar
 
 
 def ambil_ppi(paksa=False):
