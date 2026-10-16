@@ -48,7 +48,31 @@ ALTERNATIF = (
 )
 
 
+MODUL = (("makro.py", ["cloud/makro.py", "--ringkas"]),
+         ("ppi_cpi.py", ["cloud/ppi_cpi.py", "--json", "--paksa"]),
+         ("sentix.py --uji", ["cloud/sentix.py", "--uji"]),
+         ("jam_likuiditas.py", ["cloud/jam_likuiditas.py", "--ringkas"]))
+TANDA_GAGAL = ("fredgraph", "FRED_API_KEY kosong", "FRED gagal", "memakai salinan", "API HTTP")
+
+
+def uji_modul():
+    """Jalankan tiap pemakai FRED SUNGGUHAN dan laporkan status — tanpa isi keluarannya."""
+    import subprocess
+    for nama, args in MODUL:
+        t0 = time.time()
+        p = subprocess.run([sys.executable] + args, capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=300)
+        teks = (p.stdout or "") + (p.stderr or "")
+        tanda = [t for t in TANDA_GAGAL if t in teks]
+        print(f"  {nama:<18} kode {p.returncode}  {time.time() - t0:5.1f}s  "
+              f"{len(p.stdout or '')} kar  {'TANDA GAGAL: ' + ', '.join(tanda) if tanda else 'bersih'}",
+              flush=True)
+
+
 def main():
+    if "--modul" in sys.argv:
+        uji_modul()
+        return
     if "--kunci" in sys.argv:
         kunci = os.environ.get("FRED_API_KEY", "").strip()
         print("== api.stlouisfed.org dengan FRED_API_KEY ==", flush=True)
