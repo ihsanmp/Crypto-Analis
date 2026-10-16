@@ -426,3 +426,22 @@ Rancangan pra-registrasi:
 Pada horizon 4 minggu, keempat versi punya Brier skill negatif (−0,003 sampai −0,012), jadi tidak ada yang lolos.
 
 **Vonis:** model tetap memakai Liquidity saja. Di data latih, bobot faktor tambahan tampak besar (0,22–0,31), tetapi di tahun yang belum dilihat setiap tambahan memperburuk peluang yang terkalibrasi. Gabungan sempit ini mengulang pelajaran dari gabungan 12 sinyal.
+
+## Skor Liquidity pada aset lain (`uji_likuiditas_aset_lain.py`, 16 Okt 2026)
+
+Rancangan pra-registrasi:
+
+- **Model:** Liquidity saja, dengan kriteria yang sama seperti ETH/SOL. Koreksi uji berganda untuk 3 aset, jadi ambang p diturunkan menjadi 0,0167.
+- **Masuk posisi:** penutupan hari bursa pertama sesudah Jumat sinyal.
+
+| Aset | IC OOS 2017–26 | p | Brier skill | Tahun positif | Vonis |
+| --- | --- | --- | --- | --- | --- |
+| S&P 500 | +0,151 | 0,100 | +0,002 | 5/10 | TIDAK LOLOS |
+| Nasdaq-100 | +0,227 | 0,017 | −0,009 | 5/10 | TIDAK LOLOS |
+| Emas | +0,127 | 0,135 | +0,029 | 4/10 | TIDAK LOLOS |
+
+- **Arah sesuai hipotesis, tetapi tidak konsisten.** IC positif di ketiga aset, tetapi hanya di separuh tahun uji.
+- **Saham tidak terkalibrasi.** Laju dasar naik 12 minggu sekitar 74%, sehingga hampir semua ramalan ≥65% dan skor tidak memisahkan hasil.
+- **BTC jauh lebih peka terhadap likuiditas.** Sebagai pembanding, BTC punya IC +0,31, Brier skill +0,11, dan positif di 5 dari 8 tahun.
+- **Koreksi rancangan.** Perkiraan "skor sejak ~2008" keliru. Reverse repo (RRPONTSYD) nyaris kosong sebelum 2013, sehingga skor baru tersedia sejak Okt 2014. Kriteria uji tidak diubah.
+- **Varian yang belum diuji.** Kemungkinan lanjutan adalah varian yang mengisi RRP = 0 sebelum 2013 agar sampel mulai 2008. Varian ini harus didaftarkan sebagai uji baru, karena keputusan membuatnya diambil sesudah melihat hasil.

@@ -485,5 +485,100 @@
     "vonis": "TIDAK ADA kandidat yang lolos — model tetap"
    }
   }
+ },
+ "aset_lain": {
+  "SPX": {
+   "12": {
+    "simbol_yahoo": "^GSPC",
+    "versi": null,
+    "diadopsi": false,
+    "ic_oos": 0.151,
+    "p_placebo": 0.0995,
+    "brier_skill": 0.002,
+    "tahun_positif": "5/10",
+    "ic_per_tahun": {
+     "2017": -0.256,
+     "2018": -0.185,
+     "2019": 0.126,
+     "2020": -0.069,
+     "2021": 0.561,
+     "2022": 0.031,
+     "2023": -0.072,
+     "2024": 0.346,
+     "2025": 0.261,
+     "2026": -0.445
+    },
+    "keandalan": {
+     "45-55%": "terjadi 100% (N=4)",
+     "55-65%": "terjadi 98% (N=56)",
+     ">=65%": "terjadi 74% (N=438)"
+    },
+    "n_minggu_oos": 498,
+    "tahun_uji": "2017-2026",
+    "vonis": "TIDAK LOLOS"
+   }
+  },
+  "NDX": {
+   "12": {
+    "simbol_yahoo": "^NDX",
+    "versi": null,
+    "diadopsi": false,
+    "ic_oos": 0.227,
+    "p_placebo": 0.017,
+    "brier_skill": -0.009,
+    "tahun_positif": "5/10",
+    "ic_per_tahun": {
+     "2017": -0.318,
+     "2018": -0.227,
+     "2019": 0.252,
+     "2020": -0.057,
+     "2021": 0.529,
+     "2022": 0.232,
+     "2023": -0.129,
+     "2024": 0.247,
+     "2025": 0.292,
+     "2026": -0.4
+    },
+    "keandalan": {
+     "55-65%": "terjadi 83% (N=6)",
+     ">=65%": "terjadi 74% (N=492)"
+    },
+    "n_minggu_oos": 498,
+    "tahun_uji": "2017-2026",
+    "vonis": "TIDAK LOLOS"
+   }
+  },
+  "EMAS": {
+   "12": {
+    "simbol_yahoo": "GC=F",
+    "versi": null,
+    "diadopsi": false,
+    "ic_oos": 0.127,
+    "p_placebo": 0.1354,
+    "brier_skill": 0.029,
+    "tahun_positif": "4/10",
+    "ic_per_tahun": {
+     "2017": -0.235,
+     "2018": -0.0,
+     "2019": -0.058,
+     "2020": 0.413,
+     "2021": -0.179,
+     "2022": 0.098,
+     "2023": -0.031,
+     "2024": 0.09,
+     "2025": -0.225,
+     "2026": 0.028
+    },
+    "keandalan": {
+     "45-55%": "terjadi 63% (N=172)",
+     "55-65%": "terjadi 67% (N=227)",
+     "<45%": "terjadi 68% (N=59)",
+     ">=65%": "terjadi 80% (N=40)"
+    },
+    "n_minggu_oos": 498,
+    "tahun_uji": "2017-2026",
+    "vonis": "TIDAK LOLOS"
+   }
+  }
  }
 }

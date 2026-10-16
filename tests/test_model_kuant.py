@@ -121,3 +121,16 @@ def test_gabungan_sempit_tidak_ada_yang_lolos_model_tetap():
     for k, g in d["12"]["kandidat"].items():
         assert g["brier_skill"] < d["12"]["likuiditas_saja"]["brier_skill"], k
     assert mk.status_aset("BTC")["versi"] == "likuiditas_saja"
+
+
+def test_aset_lain_tidak_lolos_dan_tidak_ditampilkan():
+    """S&P 500, Nasdaq-100, emas (OOS 2017-2026): arah positif tapi tidak konsisten dan
+    tidak terkalibrasi — tidak boleh muncul sebagai peluang di bot."""
+    d = mk._muat_status()["aset_lain"]
+    for nama in ("SPX", "NDX", "EMAS"):
+        assert d[nama]["12"]["diadopsi"] is False, nama
+    import uji_likuiditas_aset_lain as ula
+    from datetime import date
+    harga = {"2026-01-05": 100.0, "2026-03-30": 110.0}     # Senin sesudah Jumat 2 Jan
+    y = ula.target_pasar([date(2026, 1, 2)], harga, 12)
+    assert abs(y[0] - __import__("math").log(1.1)) < 1e-12  # masuk hari bursa pertama
