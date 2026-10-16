@@ -83,3 +83,31 @@ def test_laju_dasar_sampel_pendek_ditandai():
     teks = proyeksi.prediksi_harga(k, [90], "BTC")["per_horizon"][0][
         "riwayat_aset_ini_ditutup_lebih_tinggi"]
     assert "SAMPEL PENDEK" in teks and "1.1 tahun" in teks
+
+
+def test_penjaga_keranjang_terbalik():
+    """ETH: ramalan <45% nyatanya naik 63% dari 126 minggu — tidak boleh dibaca sebagai arah."""
+    uji = {"keandalan": {"<45%": "terjadi 63% (N=126)", ">=65%": "terjadi 82% (N=33)",
+                         "45-55%": "terjadi 48% (N=20)"}}
+    assert "TIDAK TERKALIBRASI" in mk.peringatan_keranjang(uji, 0.37)
+    assert mk.peringatan_keranjang(uji, 0.70) is None             # searah
+    assert mk.peringatan_keranjang(uji, 0.52) is None             # N < 30
+    btc = {"keandalan": {"<45%": "terjadi 33% (N=48)"}}
+    assert mk.peringatan_keranjang(btc, 0.38) is None
+
+
+def test_status_eth_lolos_sol_tidak():
+    assert mk.status_aset("ETH").get("diadopsi") is True
+    assert mk.status_aset("SOL").get("diadopsi") is False
+    assert mk.status_aset("BTC").get("versi") == "likuiditas_saja"
+
+
+def test_arah_eth_berperingatan_dan_sol_tidak_pernah():
+    import bot_oneshot as bot
+    br = ('{"peluang_model_kuant":{"peluang_btc_naik_persen":38,"laju_dasar_naik_persen":58,'
+          '"cara_pakai":"x"},"peluang_model_kuant_eth":{"peluang_eth_naik_persen":37,'
+          '"laju_dasar_naik_persen":52,"cara_pakai":"y","peringatan_kalibrasi":"TIDAK"}}')
+    assert "arahnya" in bot.arah_model_kuant(br, "btc 3 bulan ke depan", "BTC")
+    eth = bot.arah_model_kuant(br, "eth 3 bulan ke depan", "ETH")
+    assert "37%" in eth and "JANGAN" in eth
+    assert bot.arah_model_kuant(br, "sol 3 bulan ke depan", "SOL") == ""

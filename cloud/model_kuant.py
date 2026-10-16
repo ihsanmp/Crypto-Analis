@@ -248,11 +248,41 @@ def status_horizon(h):
     return ((_muat_status().get("horizon") or {}).get(str(h))) or {}
 
 
-def peluang_likuiditas(jumat, liq, harga, i, h=12):
-    """Versi 'likuiditas_saja' (yang lolos uji walk-forward 12 minggu): logistik skor
-    Liquidity -> P(BTC naik h minggu), dilatih HANYA pada minggu yang targetnya sudah
-    terwujud sebelum Jumat ke-i. None bila versi itu tidak diadopsi untuk horizon h."""
-    uji = status_horizon(h)
+def status_aset(aset, h=12):
+    """BTC dari 'horizon' (uji_model_kuant.py); ETH/SOL dari 'aset' (uji_model_kuant_altcoin.py)."""
+    st = _muat_status()
+    if aset == "BTC":
+        return (st.get("horizon") or {}).get(str(h)) or {}
+    return ((st.get("aset") or {}).get(aset) or {}).get(str(h)) or {}
+
+
+def _keranjang(p):
+    return "<45%" if p < .45 else "45-55%" if p < .55 else "55-65%" if p < .65 else ">=65%"
+
+
+def peringatan_keranjang(uji, p):
+    """Penjaga PENYAJIAN (ditambahkan sesudah melihat uji ETH, 16 Okt 2026 — dicatat terbuka):
+    bila keranjang ramalan saat ini terbukti TERBALIK di data uji (>= 30 minggu), angkanya
+    tidak boleh dibaca sebagai arah. ETH: ramalan <45% -> nyatanya naik 63% dari 126 minggu."""
+    k = (uji.get("keandalan") or {}).get(_keranjang(p))
+    if not k:
+        return None
+    try:
+        terjadi = float(k.split()[1].rstrip("%")) / 100
+        n = int(k.split("N=")[-1].rstrip(")"))
+    except (IndexError, ValueError):
+        return None
+    if n >= 30 and (p - 0.5) * (terjadi - 0.5) < 0:
+        return (f"TIDAK TERKALIBRASI di rentang ini: ramalan {_keranjang(p)} di data uji "
+                f"nyatanya naik {terjadi * 100:.0f}% ({n} minggu) — JANGAN dipakai sebagai arah")
+    return None
+
+
+def peluang_aset(jumat, liq, harga, i, aset="BTC", h=12):
+    """Versi 'likuiditas_saja' yang lolos uji walk-forward untuk aset itu: logistik skor
+    Liquidity -> P(aset naik h minggu), dilatih HANYA pada minggu yang targetnya sudah
+    terwujud sebelum Jumat ke-i. None bila versi itu tidak diadopsi untuk aset/horizon ini."""
+    uji = status_aset(aset, h)
     if uji.get("versi") != "likuiditas_saja" or liq[i] is None:
         return None
     y = target(jumat, harga, h)
@@ -261,18 +291,33 @@ def peluang_likuiditas(jumat, liq, harga, i, h=12):
     if len(pas) < 100:
         return None
     a, b = logistik(*zip(*pas))
-    return {"horizon_minggu": h,
-            "peluang_btc_naik_persen": round(sigmoid(a + b * liq[i]) * 100),
-            "laju_dasar_naik_persen": round(sum(p[1] for p in pas) / len(pas) * 100),
-            "uji_walk_forward": (f"OOS 2019-26 IC {uji['ic_oos']:+.2f} p {uji['p_placebo']} "
-                                 f"BrierSkill {uji['brier_skill']:+.3f} thn+ "
-                                 f"{uji['tahun_positif']}; gabungan 12 sinyal GAGAL "
-                                 f"(IC {uji.get('ic_oos_gabungan', 0):+.2f})"),
-            "keandalan_oos": uji.get("keandalan"),
-            # Menempel pada angkanya: uji jawaban 16 Okt menyebut "weekly uptrend vs peluang
-            # 38% — dua kategori berlawanan, tidak ada arah", padahal tren itulah yang gagal.
-            "cara_pakai": ("Arah 12 mg MENGIKUTI angka ini. Tren/momentum/RSI gagal uji OOS: "
-                           "sebut sebagai kondisi, BUKAN penyeimbang setara.")}
+    p = sigmoid(a + b * liq[i])
+    tahun = uji.get("tahun_uji") or "2019-26"
+    hasil = {"horizon_minggu": h,
+             f"peluang_{aset.lower()}_naik_persen": round(p * 100),
+             "laju_dasar_naik_persen": round(sum(x[1] for x in pas) / len(pas) * 100),
+             "uji_walk_forward": (f"OOS {tahun} IC {uji['ic_oos']:+.2f} p {uji['p_placebo']} "
+                                  f"BrierSkill {uji['brier_skill']:+.3f} thn+ "
+                                  f"{uji['tahun_positif']}"
+                                  + (f"; gabungan 12 sinyal GAGAL (IC "
+                                     f"{uji['ic_oos_gabungan']:+.2f})"
+                                     if "ic_oos_gabungan" in uji else "")),
+             "keandalan_oos": uji.get("keandalan"),
+             # Menempel pada angkanya: uji jawaban 16 Okt menyebut "weekly uptrend vs peluang
+             # 38% — dua kategori berlawanan, tidak ada arah", padahal tren itulah yang gagal.
+             "cara_pakai": ("Arah 12 mg MENGIKUTI angka ini. Tren/momentum/RSI gagal uji OOS: "
+                            "sebut sebagai kondisi, BUKAN penyeimbang setara.")}
+    w = peringatan_keranjang(uji, p)
+    if w:
+        hasil["peringatan_kalibrasi"] = w
+        hasil["cara_pakai"] = ("Sebut angkanya bersama peringatan_kalibrasi; JANGAN jadikan "
+                               "arah. Arah 12 mg untuk aset ini: tidak ada yang terkalibrasi.")
+    return hasil
+
+
+def peluang_likuiditas(jumat, liq, harga, i, h=12):
+    """BTC — dipertahankan untuk pemanggil lama."""
+    return peluang_aset(jumat, liq, harga, i, "BTC", h)
 
 
 def analisa(hari_ini=None):

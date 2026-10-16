@@ -177,5 +177,60 @@
    "versi": null,
    "vonis": "TIDAK LOLOS: horizon ini tidak memberi peluang"
   }
+ },
+ "aset": {
+  "ETH": {
+   "12": {
+    "versi": "likuiditas_saja",
+    "diadopsi": true,
+    "ic_oos": 0.298,
+    "p_placebo": 0.016,
+    "brier_skill": 0.07,
+    "tahun_positif": "5/7",
+    "ic_per_tahun": {
+     "2020": -0.089,
+     "2021": 0.296,
+     "2022": 0.358,
+     "2023": 0.136,
+     "2024": 0.296,
+     "2025": 0.428,
+     "2026": -0.227
+    },
+    "keandalan": {
+     "45-55%": "terjadi 48% (N=102)",
+     "55-65%": "terjadi 53% (N=81)",
+     "<45%": "terjadi 63% (N=126)",
+     ">=65%": "terjadi 82% (N=33)"
+    },
+    "n_minggu_oos": 342,
+    "tahun_uji": "2020-2026",
+    "vonis": "LOLOS"
+   }
+  },
+  "SOL": {
+   "12": {
+    "versi": null,
+    "diadopsi": false,
+    "ic_oos": 0.238,
+    "p_placebo": 0.0005,
+    "brier_skill": 0.039,
+    "tahun_positif": "2/4",
+    "ic_per_tahun": {
+     "2023": -0.166,
+     "2024": 0.276,
+     "2025": 0.556,
+     "2026": -0.293
+    },
+    "keandalan": {
+     "45-55%": "terjadi 50% (N=36)",
+     "55-65%": "terjadi 51% (N=65)",
+     "<45%": "terjadi 44% (N=18)",
+     ">=65%": "terjadi 65% (N=66)"
+    },
+    "n_minggu_oos": 185,
+    "tahun_uji": "2023-2026",
+    "vonis": "TIDAK LOLOS"
+   }
+  }
  }
 }

@@ -1793,17 +1793,28 @@ def arah_model_kuant(brief, teks, simbol):
     untuk pertanyaan BTC berhorizon 2-4 bulan. Uji 16 Okt 2026: untuk "btc 3 bulan ke depan"
     model bahasa membaca blok proyeksi (kisaran tanpa arah) dan sekali MENGABAIKAN peluang
     yang ada jauh di blok JAM. Angkanya diambil dari brief itu sendiri — tanpa hitung ulang."""
-    if (simbol or "").upper() != "BTC":
+    simbol = (simbol or "").upper()
+    if simbol not in ("BTC", "ETH"):              # SOL tidak lolos uji_model_kuant_altcoin
         return ""
     if not any(56 <= h <= 120 for h in horizon_prediksi(teks)):
         return ""
-    m = re.search(r'"peluang_btc_naik_persen":\s*(\d+),\s*"laju_dasar_naik_persen":\s*(\d+)',
-                  brief or "")
+    brief = brief or ""
+    m = re.search(r'"peluang_' + simbol.lower() + r'_naik_persen":\s*(\d+),\s*'
+                  r'"laju_dasar_naik_persen":\s*(\d+)', brief)
     if not m:
         return ""
-    return ("\n\n### ARAH ~12 MINGGU (model kuant, lolos uji walk-forward 2019-2026)\n"
-            f"Peluang BTC naik {m.group(1)}% vs laju dasar {m.group(2)}%. WAJIB disebut untuk "
-            "horizon ini — kisaran di atas sengaja tanpa arah; angka ini arahnya.")
+    # Peringatan kalibrasi (bila ada) terletak sesudah "cara_pakai" di objek yang SAMA —
+    # dibatasi sampai kurung tutup objek itu supaya peringatan ETH tidak terbaca untuk BTC.
+    i_cara = brief.find('"cara_pakai"', m.start())
+    akhir = brief.find("}", i_cara) if i_cara >= 0 else -1
+    if akhir >= 0 and '"peringatan_kalibrasi"' in brief[m.start():akhir]:
+        return ("\n\n### ARAH ~12 MINGGU (model kuant)\n"
+                f"Peluang {simbol} naik {m.group(1)}% vs laju dasar {m.group(2)}% — TIDAK "
+                "terkalibrasi di rentang ini (lihat peringatan_kalibrasi): sebut, tapi JANGAN "
+                "jadikan arah.")
+    return ("\n\n### ARAH ~12 MINGGU (model kuant, lolos uji walk-forward)\n"
+            f"Peluang {simbol} naik {m.group(1)}% vs laju dasar {m.group(2)}%. WAJIB disebut "
+            "untuk horizon ini — kisaran di atas sengaja tanpa arah; angka ini arahnya.")
 
 
 def data_jam():

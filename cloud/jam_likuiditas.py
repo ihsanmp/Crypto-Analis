@@ -615,6 +615,16 @@ def analisa(hari_ini=None):
                 hasil["peluang_model_kuant"] = pk
         except Exception as e:
             hasil["peluang_model_kuant"] = {"tidak_tersedia": type(e).__name__}
+    # ETH: lolos uji_model_kuant_altcoin.py (SOL TIDAK — tidak ditampilkan). Dihitung di sini
+    # karena blok JAM sama untuk semua koin; peluang_aset mengembalikan None bila tak diadopsi.
+    try:
+        import model_kuant
+        if model_kuant.status_aset("ETH").get("diadopsi"):
+            pe = model_kuant.peluang_aset(jumat, liq, harga_yahoo("ETH-USD"), i, "ETH")
+            if pe:
+                hasil["peluang_model_kuant_eth"] = pe
+    except Exception as e:
+        hasil["peluang_model_kuant_eth"] = {"tidak_tersedia": type(e).__name__}
     struk, gel = _bagian_adopsi(jumat, hasil, harga)
     e = eksposur(liq[i], struk, L["resesi"][i], gel)
     hasil["target_eksposur_btc_persen"] = round(e * 100)
@@ -661,6 +671,12 @@ def pesan(h):
         baris.append(f"Model kuant: peluang BTC naik 12 mg {pk['peluang_btc_naik_persen']}% "
                      f"(laju dasar {pk['laju_dasar_naik_persen']}%, lolos uji walk-forward"
                      + (f"; uji maju {pk['uji_maju']}" if pk.get("uji_maju") else "") + ")")
+    pe = h.get("peluang_model_kuant_eth") or {}
+    if "peluang_eth_naik_persen" in pe:
+        baris.append(f"Model kuant: peluang ETH naik 12 mg {pe['peluang_eth_naik_persen']}% "
+                     f"(laju dasar {pe['laju_dasar_naik_persen']}%)"
+                     + (" — TIDAK terkalibrasi di rentang ini, bukan arah"
+                        if pe.get("peringatan_kalibrasi") else ""))
     baris += ["",
               f"Target eksposur BTC (rancangan): {h['target_eksposur_btc_persen']}%",
               f"Komponen teruji saja: {h['eksposur_komponen_teruji_saja_persen']}%",
@@ -692,13 +708,19 @@ def ringkas(h):
             d[kunci] = teks
     for d in (h.get("jejak_basis_trade_cftc") or {},):
         d.pop("arti", None)
-    pk = h.get("peluang_model_kuant") or {}
-    if isinstance(pk.get("keandalan_oos"), dict):
-        # Angka sama, format padat: "ramalan->terjadi naik: <45%:33%/48 ..." (N = minggu).
-        k = pk["keandalan_oos"]
-        pk["keandalan_oos"] = "ramalan->terjadi naik: " + " ".join(
-            f"{b}:{k[b].split()[1]}/{k[b].split('N=')[-1].rstrip(')')}"
-            for b in ("<45%", "45-55%", "55-65%", ">=65%") if b in k)
+    for kunci in ("peluang_model_kuant", "peluang_model_kuant_eth"):
+        pk = h.get(kunci) or {}
+        if pk.get("peringatan_kalibrasi"):
+            # Kalimat peringatan sudah memuat angka keranjang yang relevan; tabel lengkapnya
+            # tidak menambah informasi untuk jawaban (hemat ~200 karakter per brief).
+            pk.pop("keandalan_oos", None)
+            pk["cara_pakai"] = "Sebut bersama peringatan_kalibrasi; BUKAN arah."
+        if isinstance(pk.get("keandalan_oos"), dict):
+            # Angka sama, format padat: "ramalan->terjadi naik: <45%:33%/48 ..." (N = minggu).
+            k = pk["keandalan_oos"]
+            pk["keandalan_oos"] = "ramalan->terjadi naik: " + " ".join(
+                f"{b}:{k[b].split()[1]}/{k[b].split('N=')[-1].rstrip(')')}"
+                for b in ("<45%", "45-55%", "55-65%", ">=65%") if b in k)
     return h
 
 

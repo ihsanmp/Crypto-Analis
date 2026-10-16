@@ -378,3 +378,32 @@ Penjelasan yang paling mungkin:
 - **Biaya transaksi naik.** Perubahan eksposur bertambah dari 133 menjadi 187 kali, dan biaya naik dari 2,8% menjadi 5,4%.
 
 Volatilitas saja bahkan kalah dari eksposur tetap 50%.
+
+## Model kuant ETH & SOL (`uji_model_kuant_altcoin.py`, 16 Okt 2026)
+
+Rancangan dan kriteria lolosnya ditulis di docstring sebelum uji dijalankan:
+
+- **Versi yang diuji:** hanya Liquidity saja. Versi gabungan sudah gagal di BTC, jadi tidak diuji ulang.
+- **Walk-forward:** model dilatih ulang tiap tahun, mulai tahun pertama yang punya ≥100 minggu data latih.
+- **Kriteria lolos:** IC > 0 dengan p < 0,025, Brier skill > 0, dan IC positif di ≥60% tahun uji.
+
+| Aset | Tahun uji | IC OOS | p | Brier skill | Tahun positif | Vonis |
+| --- | --- | --- | --- | --- | --- | --- |
+| ETH | 2020–2026 | +0,298 | 0,016 | +0,070 | 5/7 | **LOLOS** |
+| SOL | 2023–2026 | +0,238 | 0,0005 | +0,039 | 2/4 | **TIDAK LOLOS** |
+
+### Keandalan ETH
+
+| Ramalan peluang naik | Terjadi naik | N minggu |
+| --- | --- | --- |
+| < 45% | **63%** | 126 |
+| 45–55% | 48% | 102 |
+| 55–65% | 53% | 81 |
+| ≥ 65% | 82% | 33 |
+
+- **Masalah yang tidak tertangkap kriteria.** Ramalan rendah untuk ETH justru terbalik. ETH tetap diadopsi karena lolos semua kriteria pra-registrasi.
+- **Penjaga penyajian (dibuat sesudah melihat hasil, dicatat terbuka).** Bila keranjang ramalan saat ini terbalik di data uji dengan ≥30 minggu, angkanya tampil berlabel "TIDAK TERKALIBRASI di rentang ini" dan tidak dipakai sebagai arah. Penjaga ini tidak mengubah vonis.
+- **Pembacaan 16 Okt 2026:**
+  - ETH 37% dengan laju dasar 52%. Angka ini jatuh di keranjang terbalik, jadi bukan arah.
+  - BTC 38% dengan laju dasar 58%. Keranjang <45% BTC searah (nyatanya naik 33%), jadi angka ini tetap arah.
+- **SOL** tidak ditampilkan. Riwayatnya baru 4 tahun uji, dan IC-nya positif hanya di 2 tahun.
