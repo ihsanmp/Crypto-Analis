@@ -12,6 +12,10 @@ def test_biaya_per_kelas_aset():
     assert backtest.biaya_untuk("PEPE", False) == 0.60
     assert backtest.biaya_untuk("NVDA", True) == 0.10
     assert backtest.biaya_untuk("GC=F", True) == 0.05
+    # Versi pertama: forex hanya dikenali dari akhiran USD -> USDJPY/GBPJPY jadi "saham".
+    for fx in ("USDJPY", "GBPJPY", "EURUSD", "XAUUSD"):
+        assert backtest.biaya_untuk(fx, True) == 0.05, fx
+    assert backtest.biaya_untuk("AAPL", True) == 0.10
 
 
 def _hari(n, mulai=date(2020, 1, 1)):

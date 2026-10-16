@@ -145,11 +145,17 @@ ARAH_SINYAL = {"golden_cross_13x21": "beli", "pullback_ke_ema21_saat_uptrend": "
 KEJADIAN_MINIMUM_PARUH = 10
 
 
+MATA_UANG = {"USD", "EUR", "JPY", "GBP", "AUD", "NZD", "CAD", "CHF", "XAU", "XAG", "SGD",
+             "HKD", "CNH", "CNY", "IDR", "MXN", "ZAR", "TRY", "SEK", "NOK"}
+
+
 def biaya_untuk(simbol, pasar):
+    """simbol = yang DIPAKAI (GC=F, USDJPY), bukan masukan mentah (GOLD/EMAS).
+    Versi pertama mengenali forex hanya dari akhiran USD -> USDJPY/GBPJPY tergolong saham."""
     if pasar:
-        return BIAYA_PULANG_PERGI["forex_komoditas" if "=" in simbol or len(simbol) == 6
-                                  and simbol.isalpha() and simbol.endswith("USD")
-                                  else "saham"]
+        s = (simbol or "").upper()
+        forex = (len(s) == 6 and s.isalpha() and s[:3] in MATA_UANG and s[3:] in MATA_UANG)
+        return BIAYA_PULANG_PERGI["forex_komoditas" if "=" in s or forex else "saham"]
     return BIAYA_PULANG_PERGI["kripto_besar" if simbol in KRIPTO_BESAR else "kripto_kecil"]
 
 
@@ -524,7 +530,8 @@ def main():
 
     hasil["metrik_risiko"] = metrik_risiko(candles, 252 if args.pasar else 365)
 
-    biaya = args.biaya if args.biaya is not None else biaya_untuk(simbol, args.pasar)
+    biaya = (args.biaya if args.biaya is not None
+             else biaya_untuk(dipakai if args.pasar else simbol, args.pasar))
     hasil["biaya_pulang_pergi_persen"] = biaya
     acak = return_acak(candles, args.depan)
     acak_per_tanggal = {
