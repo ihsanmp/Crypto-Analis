@@ -3851,6 +3851,11 @@ def data_banding(aset):
             + (keluar if not err else f"tidak tersedia: {err}"))
 
 
+def _minyak(simbol):
+    """Minyak mentah WTI (kontrak berjangka CL=F)."""
+    return (simbol or "").upper() == "CL=F"
+
+
 def data_mentah_pasar(simbol, jenis, proyeksi=True):
     """Kumpulkan data deterministik saham/forex dengan KODE, bukan lewat model.
 
@@ -3950,12 +3955,18 @@ def data_mentah_pasar(simbol, jenis, proyeksi=True):
         else:
             bagian.append(f"[{label}]\n{keluar}")
 
-    if emas:
+    # Acuan penggerak per komoditas. Minyak punya acuannya sendiri: tanpa itu model hanya
+    # melihat makro.py, yang field-nya "arah_emas_bila_naik" — logika emas yang TERBALIK
+    # untuk minyak (data kuat = permintaan naik = minyak bisa naik).
+    for berlaku, berkas, judul in ((emas, "gold_drivers.md", "EMAS"),
+                                   (_minyak(simbol), "minyak_drivers.md", "MINYAK")):
+        if not berlaku:
+            continue
         try:
-            with open(os.path.join(BASE_DIR, "data", "gold_drivers.md"), encoding="utf-8") as f:
-                bagian.append("[ACUAN PENGGERAK EMAS]\n" + f.read())
+            with open(os.path.join(BASE_DIR, "data", berkas), encoding="utf-8") as f:
+                bagian.append(f"[ACUAN PENGGERAK {judul}]\n" + f.read())
         except OSError as e:
-            gagal.append(f"gold_drivers.md: {e}")
+            gagal.append(f"{berkas}: {e}")
 
     bagian.append(_blok_kelengkapan(len(tugas), gagal, bagian))
     _sisipkan_jejak(bagian)
@@ -3988,6 +3999,7 @@ def build_gather_pasar(simbol, jenis):
         f"2. Sebutkan rilis besar yang AKAN datang beserta tanggalnya, kalau ada.\n"
         f"3. DILARANG mengarang angka konsensus/forecast. Kalau tidak ketemu, tulis persis: konsensus tidak tersedia.\n"
         + (f"4. Emas: cari juga arah imbal hasil riil, dolar, dan aliran dana ETF emas terbaru.\n" if emas else "")
+        + (f"4. Minyak: penggeraknya pasokan-permintaan, bukan suku bunga. Cari: laporan stok mingguan EIA terbaru (perubahan stok minyak mentah vs perkiraan, stok Cushing) dan tanggal rilis berikutnya; keputusan OPEC+ terakhir dan tanggal pertemuan berikutnya; gangguan pasokan geopolitik yang SEDANG berjalan; rig count Baker Hughes terbaru.\n" if _minyak(simbol) else "")
         + f"\nOUTPUT: satu bagian berlabel [KATALIS] berisi temuan apa adanya (judul, media, tanggal, angka). Kalau tidak menemukan apa pun, tulis: [KATALIS] tidak ada berita relevan yang ditemukan. Tanpa interpretasi."
     )
 

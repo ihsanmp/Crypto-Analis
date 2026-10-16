@@ -418,6 +418,8 @@ def main():
         "Bandingkan angka AKTUAL di sini dengan KONSENSUS dari user untuk menilai arah reaksi.",
         "arah_emas_bila_naik sudah mengikuti gold_drivers.md — perhatikan DUA pengecualian "
         "(pengangguran & klaim: naik = emas NAIK).",
+        "arah_emas_bila_naik HANYA untuk emas/perak. JANGAN dipakai untuk minyak atau aset "
+        "lain: data ekonomi kuat bisa MENAIKKAN minyak lewat permintaan — kebalikan emas.",
         "Selalu sebut tanggal_data dan umur_hari saat mengutip angka.",
         "Yield 2 tahun adalah validasi silang yang disarankan acuan gold: kalau yield naik "
         "bersamaan dengan dugaan hawkish, reaksi emas biasanya bertahan.",

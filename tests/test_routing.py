@@ -9008,3 +9008,49 @@ def test_kejutan_membuang_return_dari_harga_negatif(monkeypatch):
     assert [c["tanggal"] for c in catatan] == ["2020-04-16"]
     assert sorted(catatan[0]["ret"]) == [0, 5]
     assert meta["return_dibuang_harga_tidak_positif"] == 4, meta
+
+
+# ------------------------------------- minyak: bingkai analisa sendiri, bukan bingkai emas
+
+def test_gather_minyak_mencari_katalis_pasokan():
+    """Prompt pencari berita untuk CL=F dulu hanya meminta data AS & dolar/yield —
+    bingkai emas. Penggerak minyak (stok EIA, OPEC+) tidak pernah dicari."""
+    p = bot.build_gather_pasar("CL=F", "forex")
+    for kata in ("EIA", "OPEC+", "Cushing", "Baker Hughes"):
+        assert kata in p, kata
+    assert "ETF emas" not in p
+    emas = bot.build_gather_pasar("GC=F", "forex")
+    assert "ETF emas" in emas and "OPEC+" not in emas
+
+
+def test_acuan_penggerak_hanya_untuk_komoditasnya(monkeypatch):
+    """minyak_drivers.md menempel ke brief CL=F saja; gold_drivers.md ke emas saja.
+    Script dijalankan palsu — yang diuji pemilihan acuannya, bukan jaringannya."""
+    monkeypatch.setattr(bot, "_jalankan_terukur", lambda label, args: ("{}", None))
+    monkeypatch.setattr(bot, "_sisipkan_jejak", lambda bagian: None)
+    monkeypatch.setattr(bot, "_sisipkan_pantau", lambda bagian, teks: None)
+    minyak = bot.data_mentah_pasar("CL=F", "forex", proyeksi=False)
+    assert "[ACUAN PENGGERAK MINYAK]" in minyak
+    assert "[ACUAN PENGGERAK EMAS]" not in minyak
+    assert "GAGAL" not in minyak
+    emas = bot.data_mentah_pasar("GC=F", "forex", proyeksi=False)
+    assert "[ACUAN PENGGERAK EMAS]" in emas and "[ACUAN PENGGERAK MINYAK]" not in emas
+    eur = bot.data_mentah_pasar("EURUSD", "forex", proyeksi=False)
+    assert "[ACUAN PENGGERAK" not in eur
+
+
+def test_arah_emas_tidak_disalin_ke_minyak():
+    """makro.py memberi arah_emas_bila_naik. Untuk minyak arahnya bisa TERBALIK (data kuat
+    = permintaan naik), jadi ketiga tempat yang dibaca model harus menyatakannya."""
+    acuan = open(os.path.join(AKAR, "cloud", "data", "minyak_drivers.md"),
+                 encoding="utf-8").read()
+    pasar = open(os.path.join(AKAR, "cloud", "prompts", "analisa_pasar.md"),
+                 encoding="utf-8").read()
+    makro = open(os.path.join(AKAR, "cloud", "makro.py"), encoding="utf-8").read()
+    for teks in (acuan, pasar):
+        assert re.search(r"arah_emas_bila_naik.{0,40}TIDAK berlaku", teks, re.S), teks[:80]
+    assert "arah_emas_bila_naik HANYA untuk emas/perak" in makro
+    # Arah yang belum diuji harus berlabel begitu — jangan tampil seperti temuan.
+    assert "BELUM diuji" in acuan and "BELUM diuji" in pasar
+    assert "minyak_drivers.md" in pasar
+    assert "komoditas: nama" in pasar          # header kartu punya varian komoditas
