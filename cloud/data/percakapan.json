@@ -448,5 +448,17 @@
   "angka_kunci": [
    "harga=5.868,6"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1792162205.6879523,
+  "waktu_utc": "2026-10-16 14:50",
+  "pesan": "eth 3 bulan ke depan gimana?",
+  "balasan": "ETH 3 bulan ke depan: belum ada setup arah yang jelas — sinyalnya bentrok antar timeframe dan antar kategori, jadi proyeksi paling jujur adalah rentang statistik lebar, bukan satu angka target. Data per 16 Okt 2026 ~14:49 UTC, harga $2.471.\n\n• Teknik\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+1 lainnya)",
+  "angka_kunci": [
+   "harga=2.471",
+   "ema21=2.551",
+   "ema21=2.310"
+  ]
  }
 ]
