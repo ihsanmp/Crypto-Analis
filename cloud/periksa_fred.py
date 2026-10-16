@@ -49,6 +49,15 @@ ALTERNATIF = (
 
 
 def main():
+    if "--kunci" in sys.argv:
+        kunci = os.environ.get("FRED_API_KEY", "").strip()
+        print("== api.stlouisfed.org dengan FRED_API_KEY ==", flush=True)
+        if not kunci:
+            print("  FRED_API_KEY kosong — secret belum terbaca oleh workflow")
+            return
+        for k in KODE:
+            print(f"  {k:<13} {satu(API.format(k, kunci, '2012-01-01'))}", flush=True)
+        return
     print("== host alternatif ==", flush=True)
     for nama, url in ALTERNATIF:
         print(f"  {nama:<24} {satu(url, 20)}", flush=True)
