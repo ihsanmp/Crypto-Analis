@@ -53,7 +53,8 @@ def ambil_candle(simbol, pasar, tf="1d"):
     if pasar:
         from market import tarik
         KOM = {"GOLD": "GC=F", "EMAS": "GC=F", "XAUUSD": "GC=F", "SILVER": "SI=F",
-               "PERAK": "SI=F", "XAGUSD": "SI=F", "OIL": "CL=F", "WTI": "CL=F"}
+               "PERAK": "SI=F", "XAGUSD": "SI=F", "OIL": "CL=F", "WTI": "CL=F",
+               "MINYAK": "CL=F", "CRUDE": "CL=F", "USOIL": "CL=F"}
         s = KOM.get(simbol, simbol)
         c, _, err = tarik(s, "2y", tf)
         return c, s, err

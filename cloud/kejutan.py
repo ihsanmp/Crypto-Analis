@@ -447,7 +447,8 @@ def reaksi_harga(simbol, riwayat, pasar, rentang="15y", catatan=None, meta=None,
         LABEL_SISI[sisi][0]: bungkus(panas),
         LABEL_SISI[sisi][1]: bungkus(dingin),
     }
-    for k in ("di_luar_jangkauan_harga", "tanpa_hari_perdagangan"):
+    for k in ("di_luar_jangkauan_harga", "tanpa_hari_perdagangan",
+              "return_dibuang_harga_tidak_positif"):
         if meta.get(k):
             hasil[k] = meta[k]
     if meta.get("kualitas") == "approx_close_only":
@@ -521,7 +522,7 @@ def _per_rilis(simbol, riwayat, pasar, rentang="15y"):
         return None, {"tidak_tersedia": "candle kosong"}
 
     awal, akhir = urut[0], urut[-1]
-    catatan, di_luar, tanpa_padanan = [], 0, 0
+    catatan, di_luar, tanpa_padanan, tidak_positif = [], 0, 0, 0
     for r in riwayat:
         tgl = r["tanggal_rilis"]
         if tgl < awal or tgl > akhir:
@@ -541,13 +542,20 @@ def _per_rilis(simbol, riwayat, pasar, rentang="15y"):
                 continue
             buka = candles[i][1] if h == 0 else candles[i][4]
             tutup = candles[j][4]
-            if buka and tutup:
+            # Harga <= 0 membuat return persen tak bermakna. Bukan teori: kontrak WTI
+            # (CL=F) ditutup -37,63 pada 20 Apr 2020, dan CPI H+5 minyak sempat
+            # menampilkan "terburuk -267,92%" (16 Okt 2026).
+            if buka and tutup and (buka <= 0 or tutup <= 0):
+                tidak_positif += 1
+            elif buka and tutup:
                 ret[h] = (tutup - buka) / buka * 100
         if ret:
             catatan.append({"tanggal": tgl, "kejutan_pp": r["kejutan_pp"],
                             "aktual": r.get("aktual_mom_persen"), "ret": ret})
     meta = {"simbol": s, "jendela_harga": f"{awal} s/d {akhir}", "kualitas": kualitas,
             "di_luar_jangkauan_harga": di_luar, "tanpa_hari_perdagangan": tanpa_padanan}
+    if tidak_positif:
+        meta["return_dibuang_harga_tidak_positif"] = tidak_positif
     return catatan, meta
 
 

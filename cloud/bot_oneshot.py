@@ -401,8 +401,31 @@ _PASANGAN_FX = re.compile(
 # Emas & perak dipetakan ke kontrak berjangka COMEX — "XAUUSD=X" TIDAK ADA di Yahoo (404).
 # JEBAKAN PENTING: ticker "GOLD" di NYSE adalah Barrick Gold Corp (perusahaan TAMBANG),
 # bukan logamnya. Tanpa pemetaan ini, "analisa gold" bisa menganalisa saham yang salah.
+# Minyak WTI juga ke kontrak berjangkanya (CL=F, NYMEX). Tanpa ini "analisa minyak" jatuh
+# ke default crypto dan menganalisa koin "MINYAK"/"OIL" (16 Okt 2026). Jenisnya "forex"
+# karena itulah jalur data_mentah_pasar — Yahoo, makro FRED, kejutan rilis — yang berlaku
+# untuk komoditas; market.py sendiri menggolongkan akhiran =F sebagai komoditas.
 _ALIAS_FX = {"GOLD": "GC=F", "EMAS": "GC=F", "XAUUSD": "GC=F", "XAU": "GC=F",
-             "SILVER": "SI=F", "PERAK": "SI=F", "XAGUSD": "SI=F", "XAG": "SI=F"}
+             "SILVER": "SI=F", "PERAK": "SI=F", "XAGUSD": "SI=F", "XAG": "SI=F",
+             "OIL": "CL=F", "MINYAK": "CL=F", "WTI": "CL=F", "USOIL": "CL=F"}
+# Hanya untuk perintah "analisa <aset>", TIDAK untuk kalimat bebas: "crude" juga kata sifat
+# Inggris biasa ("a crude estimate"). "crude oil" di kalimat bebas tetap tertangkap lewat "oil".
+_ALIAS_PERINTAH = {**_ALIAS_FX, "CRUDE": "CL=F"}
+# Frasa minyak yang BUKAN minyak mentah. "snake oil" lazim di obrolan kripto ("koin ini
+# snake oil") dan akan menambah aset palsu ke pesan yang menyebut koin, sehingga brief-nya
+# batal; "minyak goreng"/"sawit"/"olive oil" komoditas lain. Dibuang dulu sebelum alias
+# dicocokkan ke kalimat bebas.
+_BUKAN_MINYAK_MENTAH = re.compile(
+    r"\b(?:snake|midnight|olive|essential|palm|coconut|cooking|motor|engine|castor|"
+    r"baby|hair|fish)\s+oil\b"
+    r"|\bminyak\s+(?:goreng|sawit|kelapa|wangi|zaitun|telon|angin|rambut|tanah|atsiri|"
+    r"ikan|kayu)\b")
+
+
+def _alias_fx_di(teks):
+    """Pasangan (alias, simbol) _ALIAS_FX yang disebut sebagai kata utuh di kalimat bebas."""
+    low = _BUKAN_MINYAK_MENTAH.sub(" ", (teks or "").lower())
+    return [(a, s) for a, s in _ALIAS_FX.items() if re.search(r"\b" + a.lower() + r"\b", low)]
 
 
 # Kata pengantar yang lazim diketik sebelum nama aset ("analisa KOIN pump"). Bukan nama
@@ -448,10 +471,10 @@ def jenis_aset(sisa):
         return "saham", kata[1].upper().replace("$", "")
     if depan in ("forex", "fx", "mata") and len(kata) > 1:
         s = kata[1].upper().replace("$", "")
-        return "forex", _ALIAS_FX.get(s, s)
+        return "forex", _ALIAS_PERINTAH.get(s, s)
     simbol = kata[0].upper().replace("$", "")
-    if simbol in _ALIAS_FX:
-        return "forex", _ALIAS_FX[simbol]
+    if simbol in _ALIAS_PERINTAH:
+        return "forex", _ALIAS_PERINTAH[simbol]
     if _PASANGAN_FX.match(simbol):
         return "forex", simbol
     return "crypto", simbol
@@ -2041,9 +2064,8 @@ def _semua_aset(teks):
     low = (teks or "").lower()
     kata = re.findall(r"[A-Za-z]{2,6}", teks or "")
     ketemu = set()
-    for alias, simbol in _ALIAS_FX.items():
-        if re.search(r"\b" + alias.lower() + r"\b", low):
-            ketemu.add(simbol)
+    for _, simbol in _alias_fx_di(teks):
+        ketemu.add(simbol)
     for nama, tik in _ALIAS_KOIN.items():
         if re.search(r"\b" + re.escape(nama) + r"\b", low):
             ketemu.add(tik)
@@ -2170,9 +2192,8 @@ def aset_dari_pesan(teks, dalam=False):
         return None, None
 
     # 1. Emas/perak & pasangan mata uang — paling jelas, dicek lebih dulu.
-    for alias, simbol in _ALIAS_FX.items():
-        if re.search(r"\b" + alias.lower() + r"\b", low):
-            return "forex", simbol
+    for _, simbol in _alias_fx_di(teks):
+        return "forex", simbol
     for k in kata:
         if _PASANGAN_FX.match(k.upper()):
             return "forex", k.upper()
@@ -4552,9 +4573,11 @@ def process(token, chat_id, text, photo_file_id=None, balas=None, dokumen=None):
         if simbol and jenis != "crypto":
             # SAHAM / FOREX: jalur terpisah. Script crypto (DefiLlama, holder Ethereum,
             # whale) tidak berlaku dan hanya menghasilkan error atau angka tak nyambung.
-            label = "saham" if jenis == "saham" else "forex"
+            label = ("saham" if jenis == "saham"
+                     else "komoditas" if simbol.endswith("=F") else "forex")
             send_message(token, chat_id,
-                         f"⏳ Oke, riset {label} {simbol}. Tahap 1: kumpulkan data...")
+                         f"⏳ Oke, riset {label} {_NAMA_TAMPIL.get(simbol, simbol)}. "
+                         f"Tahap 1: kumpulkan data...")
             # Data deterministik dikumpulkan KODE (tidak bisa dilewatkan model), berita
             # dicari model karena butuh penilaian. Kalau berita gagal, analisa TETAP jalan
             # dengan data angkanya — sebelumnya satu kegagalan model mengosongkan semuanya.
@@ -5880,9 +5903,8 @@ def _disebut_di_pesan(teks, simbol):
     # menyebut asetnya — simbolnya GC=F dan kata "emas" tidak ada di peta crypto — sehingga
     # judul "aset itu yang aku baca dari pesanmu" menyala untuk SETIAP pertanyaan emas dan
     # perak yang user sebut sendiri dengan jelas.
-    for nama, tik in _ALIAS_FX.items():
-        if tik == simbol and re.search(r"\b" + re.escape(nama) + r"\b", teks, re.I):
-            return True
+    if any(tik == simbol for _, tik in _alias_fx_di(teks)):
+        return True
     if not re.search(r"\b" + re.escape(simbol) + r"\b", teks, re.I):
         return False
     # Kata itu ADA di pesan — tapi kalau ia juga kata biasa, keberadaannya bukan bukti
@@ -5895,7 +5917,7 @@ def _disebut_di_pesan(teks, simbol):
 
 
 # Nama yang ditampilkan ke user untuk simbol yang kodenya tidak terbaca manusia.
-_NAMA_TAMPIL = {"GC=F": "emas (XAU/USD)", "SI=F": "perak (XAG/USD)"}
+_NAMA_TAMPIL = {"GC=F": "emas (XAU/USD)", "SI=F": "perak (XAG/USD)", "CL=F": "minyak WTI"}
 
 
 def judul_aset(simbol, teks, chat_id, asal=None):

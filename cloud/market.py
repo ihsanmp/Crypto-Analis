@@ -140,9 +140,17 @@ def main():
             "4H dibangun dari candle 1 jam (Yahoo tidak menyediakan 4H).",
         ],
     }
-    if jenis in ("forex", "komoditas"):
+    if jenis == "forex":
         hasil["peringatan"].append(
             "Volume forex dari Yahoo umumnya nol — JANGAN menilai breakout dari volume.")
+    elif jenis == "komoditas":
+        # Kontrak berjangka PUNYA volume sungguhan (CL=F ~200 rb kontrak/hari), jadi
+        # peringatan "volume nol" milik forex salah di sini. Jebakannya lain: pergantian
+        # kontrak front-month.
+        hasil["peringatan"].append(
+            "Volume = kontrak berjangka front-month: bermakna, tapi melonjak/anjlok di "
+            "sekitar pergantian kontrak (roll) — jangan baca lonjakan di hari roll sebagai "
+            "breakout.")
 
     # Harian: 2 tahun supaya EMA200 terisi. Weekly dibangun dari harian (identik weekly asli).
     harian, meta, err = tarik(simbol, "2y", "1d")

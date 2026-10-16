@@ -73,6 +73,10 @@ def test_ejaan_analisa_dan_analisis_setara():
     ("gold", "forex", "GC=F"), ("emas", "forex", "GC=F"), ("xauusd", "forex", "GC=F"),
     ("xau", "forex", "GC=F"),
     ("silver", "forex", "SI=F"), ("perak", "forex", "SI=F"), ("xagusd", "forex", "SI=F"),
+    # minyak WTI — dulu jatuh ke crypto: koin "MINYAK"/"OIL" (16 Okt 2026)
+    ("minyak", "forex", "CL=F"), ("oil", "forex", "CL=F"), ("wti", "forex", "CL=F"),
+    ("crude", "forex", "CL=F"), ("crude oil", "forex", "CL=F"),
+    ("oil gimana", "forex", "CL=F"), ("forex minyak", "forex", "CL=F"),
     # pasangan mata uang
     ("eurusd", "forex", "EURUSD"), ("gbpusd", "forex", "GBPUSD"),
     ("usdjpy", "forex", "USDJPY"),
@@ -287,6 +291,10 @@ def test_bobot_chat(pesan, ada_konteks, tingkat):
     ("rsi eth di daily berapa?", "crypto", "ETH"),
     ("apa dampaknya ke harga gold?", "forex", "GC=F"),
     ("emas lagi naik ya", "forex", "GC=F"),
+    ("oil gimana", "forex", "CL=F"),
+    ("minyak mentah turun terus", "forex", "CL=F"),
+    ("how is oil doing today", "forex", "CL=F"),
+    ("perak masih layak dibeli?", "forex", "SI=F"),
     ("gimana eurusd sekarang", "forex", "EURUSD"),
     ("prospek saham nvda gimana", "saham", "NVDA"),
     ("$ADA gimana", "crypto", "ADA"),
@@ -8895,3 +8903,108 @@ def test_lanjutan_tanpa_riwayat_tidak_mengarang_aset():
         assert bot.lanjutan_pasar("kalo dalam jangka waktu seminggu?", "9") is None
     finally:
         bot._muat_riwayat = asli
+
+
+# ------------------------------------------- minyak WTI (CL=F) — bug routing 16 Okt 2026
+# "analisa minyak" -> ('crypto', 'MINYAK') dan "analisa oil" -> ('crypto', 'OIL'): bot
+# menganalisa koin yang tidak ada, padahal backtest.py sudah lama memetakan OIL -> CL=F.
+
+@pytest.mark.parametrize("pesan,simbol", [
+    ("analisa minyak", "CL=F"), ("analisa oil", "CL=F"), ("analisa wti", "CL=F"),
+    ("analisa crude oil", "CL=F"), ("analisis minyak", "CL=F"),
+    ("analisa perak", "SI=F"), ("analisa silver", "SI=F"),
+    # penjaga regresi: emas TETAP kontrak COMEX, bukan saham Barrick
+    ("analisa emas", "GC=F"), ("analisa gold", "GC=F"),
+])
+def test_perintah_analisa_komoditas(pesan, simbol):
+    """Dari teks mentah, lewat jalur yang sama dengan process(): classify ->
+    normal_perintah_analisa -> jenis_aset."""
+    assert bot.classify(pesan) == "analisa"
+    kata = bot.normal_perintah_analisa(pesan).strip().lower().split()
+    assert bot.jenis_aset(" ".join(kata[1:])) == ("forex", simbol)
+
+
+@pytest.mark.parametrize("pesan", [
+    # "crude" kata sifat Inggris biasa; hanya perintah "analisa crude" yang dipetakan
+    "this is a crude estimate",
+    # minyak/oil yang BUKAN minyak mentah
+    "minyak goreng naik lagi", "harga minyak sawit", "olive oil prices",
+    # kata yang MEMUAT "oil" tanpa batas kata
+    "the boiling point", "soil and toil", "oily chart",
+])
+def test_minyak_tidak_salah_tangkap(pesan):
+    assert bot.aset_dari_pesan(pesan) == (None, None)
+    assert "CL=F" not in bot._semua_aset(pesan)
+
+
+@pytest.mark.parametrize("pesan,simbol", [
+    # "snake oil" lazim di obrolan kripto. Kalau ikut dihitung CL=F, pesan ini terbaca
+    # MULTI-ASET dan brief BTC batal dikumpulkan.
+    ("koin ini snake oil, btc lebih aman", "BTC"),
+    ("burning the midnight oil on sol", "SOL"),
+])
+def test_ungkapan_oil_tidak_membatalkan_brief_koin(pesan, simbol):
+    assert bot.aset_dari_pesan(pesan) == ("crypto", simbol)
+
+
+@pytest.mark.parametrize("pesan", ["oil vs btc", "emas vs minyak", "crude oil dan gold"])
+def test_minyak_dalam_perbandingan_tetap_multi_aset(pesan):
+    assert bot.aset_dari_pesan(pesan) == (None, None)
+    assert "CL=F" in bot._semua_aset(pesan)
+
+
+def test_minyak_disebut_sendiri_tanpa_judul_aset():
+    """User yang mengetik "minyak" sudah menyebut asetnya — judul tidak perlu menyala;
+    kalau menyala, namanya terbaca manusia, bukan kode Yahoo."""
+    assert bot._disebut_di_pesan("minyak gimana", "CL=F")
+    assert bot._disebut_di_pesan("oil gimana", "CL=F")
+    assert not bot._disebut_di_pesan("minyak goreng gimana", "CL=F")
+    assert bot._jenis_ticker("CL=F") == "forex"
+    assert "minyak WTI" in bot.judul_aset("CL=F", "btc gimana", "9")
+
+
+def test_analisa_minyak_sampai_ke_data_mentah_pasar():
+    """Jalur process() SUNGGUHAN: "analisa minyak" harus memanggil data_mentah_pasar
+    dengan CL=F, bukan data_mentah_crypto dengan koin "MINYAK"."""
+    import tempfile as _tf
+    asli = (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.run_claude,
+            bot.data_mentah_pasar, bot.data_mentah_crypto)
+    bot.JEJAK_PATH = os.path.join(_tf.mkdtemp(), "d.json")
+    bot.simpan_riwayat = lambda *a, **k: None
+    pesan_keluar, dipanggil = [], {}
+    bot.send_message = lambda tok, chat, teks, *a, **k: (pesan_keluar.append(teks), True)[1]
+    bot.data_mentah_pasar = lambda s, j, *a, **k: (dipanggil.__setitem__("pasar", (s, j)),
+                                                   "### DATA")[1]
+    bot.data_mentah_crypto = lambda s, *a, **k: (dipanggil.__setitem__("crypto", s),
+                                                 "### DATA")[1]
+    bot.run_claude = lambda p, *a, **k: ("ok", None)
+    try:
+        for teks, simbol in [("analisa minyak", "CL=F"), ("analisa oil", "CL=F"),
+                             ("analisa perak", "SI=F"), ("analisa emas", "GC=F")]:
+            dipanggil.clear(); pesan_keluar.clear()
+            bot.process("tok", "9", teks)
+            assert dipanggil.get("pasar") == (simbol, "forex"), (teks, dipanggil)
+            assert "crypto" not in dipanggil, (teks, dipanggil)
+        assert any("riset komoditas emas" in p for p in pesan_keluar), pesan_keluar
+    finally:
+        (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.run_claude,
+         bot.data_mentah_pasar, bot.data_mentah_crypto) = asli
+
+
+def test_kejutan_membuang_return_dari_harga_negatif(monkeypatch):
+    """CL=F ditutup -37,63 pada 20 Apr 2020. Return persen dari harga <= 0 tak bermakna —
+    reaksi CPI H+5 minyak sempat menampilkan "terburuk -267,92%"."""
+    import market
+    hari = 86400 * 1000
+    t0 = 1586736000 * 1000          # 2020-04-13
+    harga = [20, 19, 18, 10, -37.63, 10, 15, 17, 18, 19, 20, 21]
+    candles = [[t0 + i * hari, h, h, h, h, 0] for i, h in enumerate(harga)]
+    monkeypatch.setattr(market, "tarik", lambda *a, **k: (candles, {}, None))
+    # 16 Apr: H+1 mendarat di candle negatif (dibuang), H+0 & H+5 sah.
+    # 17 Apr: candle rilisnya sendiri negatif -> H+0, H+1, H+5 semua dibuang.
+    riwayat = [{"tanggal_rilis": "2020-04-16", "kejutan_pp": 0.1},
+               {"tanggal_rilis": "2020-04-17", "kejutan_pp": -0.1}]
+    catatan, meta = _kejutan._per_rilis("CL=F", riwayat, True)
+    assert [c["tanggal"] for c in catatan] == ["2020-04-16"]
+    assert sorted(catatan[0]["ret"]) == [0, 5]
+    assert meta["return_dibuang_harga_tidak_positif"] == 4, meta
