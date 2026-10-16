@@ -320,3 +320,14 @@ def test_jam_tidak_dijalankan_dua_kali_saat_blok_koin_gagal():
     finally:
         (bot.JEJAK_PATH, bot.simpan_riwayat, bot.send_message, bot.belajar_dari,
          bot._jalankan_terukur, bot.run_claude, bot.data_mentah_crypto) = asli
+
+
+def test_ringkas_membuang_teori_rancangan_bila_angka_uji_ada():
+    """Produksi 16 Okt: "(defensif)" dikutip dari menurut_rancangan padahal riwayatnya netral."""
+    h = {"jam_likuiditas": {"fase": "KETAT, MOMENTUM DATAR", "menurut_rancangan": "defensif",
+                            "riwayat_btc_12mg_kuadran_ini": "median -0,2%"},
+         "fase_adopsi": {"fase": "EUFORIA TERDUKUNG", "menurut_rancangan": "rawan koreksi",
+                         "status_bukti": "BELUM TERBUKTI"}}
+    r = jl.ringkas(h)
+    assert "menurut_rancangan" not in r["jam_likuiditas"]
+    assert "menurut_rancangan" not in r["fase_adopsi"] and r["fase_adopsi"]["status_bukti"]

@@ -708,6 +708,13 @@ def ringkas(h):
             d[kunci] = teks
     for d in (h.get("jejak_basis_trade_cftc") or {},):
         d.pop("arti", None)
+    # Teks TEORI rancangan dibuang bila angka uji ada: jawaban produksi 16 Okt menulis fase
+    # "ketat, momentum datar (defensif)" — "defensif" dari menurut_rancangan, padahal riwayat
+    # fase itu netral (median -0,2%). fase_adopsi idem: sumbu Gelombang-nya ditolak data.
+    jl_ = h.get("jam_likuiditas") or {}
+    if jl_.get("riwayat_btc_12mg_kuadran_ini"):
+        jl_.pop("menurut_rancangan", None)
+    (h.get("fase_adopsi") or {}).pop("menurut_rancangan", None)
     for kunci in ("peluang_model_kuant", "peluang_model_kuant_eth"):
         pk = h.get(kunci) or {}
         if pk.get("peringatan_kalibrasi"):
