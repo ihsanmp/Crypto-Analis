@@ -9054,3 +9054,7 @@ def test_arah_emas_tidak_disalin_ke_minyak():
     assert "BELUM diuji" in acuan and "BELUM diuji" in pasar
     assert "minyak_drivers.md" in pasar
     assert "komoditas: nama" in pasar          # header kartu punya varian komoditas
+    # Bagian khusus minyak tinggal di acuan (hanya ikut brief CL=F), bukan di prompt yang
+    # dibaca SETIAP analisa saham/forex/emas — jangan bayar token minyak di analisa NVDA.
+    assert "OPEC+ terakhir & berikutnya" in acuan and "OPEC+ terakhir" not in pasar
+    assert "**Minyak:**" not in pasar

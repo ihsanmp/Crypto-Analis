@@ -66,3 +66,13 @@ fisik pasokan-permintaan, dan jalur suku bunga hanya tidak langsung.
 
 Keputusan OPEC+ > laporan stok EIA (mingguan) > FOMC/CPI/NFP (lewat permintaan & dolar)
 > rig count. Sebut jadwal terdekat di bagian RISIKO.
+
+## Skor & kartu (pengganti bagian forex/gold di analisa_pasar.md)
+
+- Bobot skor: pasokan-permintaan (OPEC+, stok EIA, geopolitik) & makro 60% + teknikal 40%.
+- Aturan "kedua kaki" & divergensi bank sentral hanya untuk pasangan mata uang — bukan minyak.
+- Header kartu: `$CL=F — minyak WTI (CL=F)`.
+- Ganti dua baris pertama blok makro forex/gold dengan:
+  • Pasokan: <OPEC+ terakhir & berikutnya> · <stok EIA terakhir vs perkiraan, tanggal>
+  • Permintaan & makro: <arah, dasarnya — BUKAN arah emas>
+- RISIKO: sebut stok EIA Rabu & pertemuan OPEC+ terdekat.

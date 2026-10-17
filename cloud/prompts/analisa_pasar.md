@@ -125,15 +125,9 @@ dengan teknikal + makro, yang menang teknikal + makro.
 **Untuk pasangan mata uang lain:** bandingkan arah kebijakan kedua bank sentralnya.
 Mata uang dengan bank sentral lebih hawkish cenderung menguat terhadap yang lebih dovish.
 
-**Untuk MINYAK (CL=F, WTI), acuannya `cloud/data/minyak_drivers.md`** (ditempel di brief).
-Minyak BUKAN emas dan bukan pasangan mata uang:
-- Penggeraknya PASOKAN & PERMINTAAN: OPEC+, stok mingguan EIA (Rabu), produksi & rig
-  count AS, permintaan global, geopolitik pasokan. Suku bunga hanya jalur tidak langsung.
-- **`arah_emas_bila_naik` di makro.py TIDAK berlaku.** Data ekonomi kuat bisa MENAIKKAN
-  minyak lewat permintaan. Jangan pernah menyalin arah emas ke minyak.
-- Arah di acuan itu kecenderungan umum yang BELUM diuji di repo ini — sebut begitu. Yang
-  terukur hanya `kejutan.py` dan `backtest.py`; vonis keduanya menang.
-- Aturan "kedua kaki" & divergensi bank sentral hanya untuk pasangan mata uang.
+**Untuk MINYAK (CL=F, WTI): ikuti [ACUAN PENGGERAK MINYAK] di brief** (`minyak_drivers.md`)
+— penggerak, bobot skor, dan baris kartunya ada di sana. `arah_emas_bila_naik` TIDAK berlaku;
+arah di acuan itu BELUM diuji.
 
 **Volume:** forex dari sumber kita umumnya nol — DILARANG menilai breakout dari volume.
 Kontrak berjangka (GC=F, SI=F, CL=F) punya volume sungguhan, tapi melonjak/anjlok di hari
@@ -223,7 +217,6 @@ datanya tidak ada.
 
 **Saham:** fundamental 50% (pertumbuhan revenue, margin, valuasi, arus kas) + teknikal 50%.
 **Forex/Gold:** makro & ekspektasi suku bunga 60% + teknikal 40%. Tidak ada valuasi.
-**Minyak:** pasokan-permintaan (OPEC+, stok EIA, geopolitik) & makro 60% + teknikal 40%.
 
 Kalau sebuah komponen datanya TIDAK ADA, keluarkan dari perhitungan dan **sebutkan** —
 jangan diberi nilai tengah diam-diam.
@@ -262,7 +255,7 @@ Ini soal TAMPILAN, bukan bobot — EMA & SuperTrend tetap dipakai penuh saat men
 🕒 Data per <tgl> <jam> WIB · sumber <bursa> (<quality>)
 
 ━━━━━━━━━━━━━━━━━━━━
-$SIMBOL — <saham: nama emiten & sektor | forex: pasangan | komoditas: nama, mis. minyak WTI (CL=F)>
+$SIMBOL — <saham: nama emiten & sektor | forex: pasangan | komoditas: nama>
 ━━━━━━━━━━━━━━━━━━━━
 
 🧮 SKOR xx/100 → <LABEL>
@@ -278,9 +271,6 @@ forex/gold:
 • Suku bunga & arah Fed: <hawkish/dovish/netral> — <dasarnya>
 • Rilis terakhir yang menggerakkan: <data, tanggal, actual vs forecast bila ada>
 • Rilis besar berikutnya: <nama + tanggal, kalau diketahui>
-minyak (ganti dua baris pertama forex/gold):
-• Pasokan: <OPEC+ terakhir & berikutnya> · <stok EIA terakhir vs perkiraan, tanggal>
-• Permintaan & makro: <arah, dasarnya — BUKAN arah emas>
 
 ⚡ TLDR
 <2-3 kalimat. Jawab PERTANYAANNYA, bukan ringkasan datanya. Sertakan angka kunci dan
@@ -321,7 +311,7 @@ Pembatal pandangan: <satu hal konkret + level ATAU tanggalnya>
 
 ⚠️ RISIKO
 • <poin singkat — untuk saham sebut earnings berikutnya bila dekat; untuk forex sebut
-  rilis data besar yang akan datang; untuk minyak sebut stok EIA Rabu & OPEC+ terdekat>
+  rilis data besar yang akan datang>
 
 ✅ KESIMPULAN
 Belum punya : <MASUK SEKARANG / MASUK BERTAHAP DI ZONA $x–$x / TUNGGU DULU / LEWATI>
