@@ -446,5 +446,18 @@
    "ema21=82.722",
    "ema21=75.634"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1792224173.6718535,
+  "waktu_utc": "2026-10-17 08:02",
+  "pesan": "bila dilihat dari timeframe daily dan H4 bagaimana menurutmu?",
+  "balasan": "📌 Masih tentang BTC — dilanjutkan dari obrolan sebelumnya, karena pesanmu tidak menyebut aset lain.\n\n🕒 Data per 17 Oktober 2026, 15:02 WIB\n\nAmbil data per candle tutup terbaru: daily 16 Okt 00:00 UTC (close $81.500,8), H4 17 Okt 04:00 UTC (close $81.\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+1 lainnya)",
+  "angka_kunci": [
+   "harga=81.625",
+   "ema21=82.722",
+   "ema21=82.004",
+   "rsi=46,5"
+  ]
  }
 ]
