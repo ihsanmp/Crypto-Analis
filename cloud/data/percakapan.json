@@ -459,5 +459,21 @@
    "ema21=82.004",
    "rsi=46,5"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1792224597.3450186,
+  "waktu_utc": "2026-10-17 08:09",
+  "pesan": "analisis koin xlm",
+  "balasan": "🕒 Data per 17 Okt 2026, 15:05 WIB · harga Kraken (native) · candle weekly terakhir tutup 5 Okt\n\n📊 PASAR\nBTC $81.638 (24j −0,78% · 7h −1,29% · 30h +6,79%) · Dominasi BTC 59,33%, naik +0,36 pp (10→17 Okt) · Fear & Greed 55 netral (kemarin 63, turun) ·\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+6 lainnya)",
+  "angka_kunci": [
+   "harga=0,1793",
+   "invalid=0,1340",
+   "invalid=0,2058",
+   "invalid=17.7",
+   "ema21=0,1979",
+   "rsi=38,2",
+   "skor=42"
+  ]
  }
 ]
