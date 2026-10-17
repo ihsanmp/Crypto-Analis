@@ -285,6 +285,13 @@ def peluang_aset(jumat, liq, harga, i, aset="BTC", h=12):
     uji = status_aset(aset, h)
     if uji.get("versi") != "likuiditas_saja" or liq[i] is None:
         return None
+    maju = teks_maju(aset) if h == 12 else ""
+    if maju.endswith("vonis GAGAL"):
+        # Aturan uji maju yang didaftarkan 17 Okt 2026: angka tidak ditampilkan lagi.
+        return {"horizon_minggu": h, "gagal_uji_maju": maju,
+                "cara_pakai": (f"Model peluang {aset} GAGAL uji maju (lebih buruk dari laju "
+                               "dasar pada prediksi yang dicatat sebelum hasilnya ada). Tidak "
+                               "ada peluang terkalibrasi untuk arah 12 mg aset ini.")}
     y = target(jumat, harga, h)
     pas = [(liq[j], 1 if y[j] > 0 else 0) for j in indeks_latih(jumat, y, jumat[i], h)
            if liq[j] is not None]
@@ -307,6 +314,8 @@ def peluang_aset(jumat, liq, harga, i, aset="BTC", h=12):
              # 38% — dua kategori berlawanan, tidak ada arah", padahal tren itulah yang gagal.
              "cara_pakai": ("Arah 12 mg MENGIKUTI angka ini. Tren/momentum/RSI gagal uji OOS: "
                             "sebut sebagai kondisi, BUKAN penyeimbang setara.")}
+    if maju:
+        hasil["uji_maju"] = maju
     w = peringatan_keranjang(uji, p)
     if w:
         hasil["peringatan_kalibrasi"] = w
@@ -362,7 +371,20 @@ WAJIB_DIBACA = (
 # ------------------------------------------------------------------ uji MAJU
 # Walk-forward 2019-2026 masih riwayat. Uji maju mencatat prediksi SEBELUM hasilnya ada,
 # lalu menilainya sesudah h minggu: satu-satunya bukti yang tidak mungkin bocor.
+#
+# ATURAN VONIS — DIDAFTARKAN 17 Okt 2026, SEBELUM satu pun prediksi jatuh tempo (yang
+# pertama baru Jan 2027). Per aset, horizon 12 minggu, Brier model vs laju dasar yang
+# dicatat bersama prediksinya:
+#   dinilai <  26                        -> BELUM (angka tetap tampil, berlabel sampel kecil)
+#   dinilai >= 26 dan Brier skill < -0,05 -> GAGAL (stop dini: jelas lebih buruk dari laju dasar)
+#   dinilai >= 52 dan Brier skill <= 0    -> GAGAL
+#   dinilai >= 52 dan Brier skill >  0    -> BERTAHAN
+# GAGAL -> peluang_aset TIDAK lagi menampilkan angkanya (bot & Telegram), tanpa campur tangan.
+# Prediksi mingguan 12 minggu tumpang tindih: 52 prediksi ~ 13 pengamatan independen, jadi
+# BERTAHAN berarti "belum terbantah", bukan "terbukti". Ambang tidak boleh diubah sesudah
+# hasil terlihat.
 MAJU_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "kuant_maju.jsonl")
+MAJU_STOP_DINI, MAJU_VONIS, MAJU_BATAS_DINI = 26, 52, -0.05
 
 
 def _muat_maju():
@@ -379,30 +401,39 @@ def _tulis_maju(baris):
             f.write(json.dumps(b, ensure_ascii=False) + "\n")
 
 
-def catat_maju(jumat, peluang, laju_dasar, h=12):
-    """Satu prediksi per Jumat per horizon; tidak menimpa yang sudah ada."""
+def _aset_baris(b):
+    return b.get("aset", "BTC")          # baris lama (sebelum ETH ikut) semuanya BTC
+
+
+def catat_maju(jumat, peluang, laju_dasar, h=12, aset="BTC"):
+    """Satu prediksi per Jumat per horizon per aset; tidak menimpa yang sudah ada."""
     baris = _muat_maju()
-    if any(b["jumat"] == jumat and b["horizon_minggu"] == h for b in baris):
+    if any(b["jumat"] == jumat and b["horizon_minggu"] == h and _aset_baris(b) == aset
+           for b in baris):
         return False
-    baris.append({"jumat": jumat, "horizon_minggu": h, "peluang_naik_persen": peluang,
-                  "laju_dasar_persen": laju_dasar,
+    baris.append({"jumat": jumat, "aset": aset, "horizon_minggu": h,
+                  "peluang_naik_persen": peluang, "laju_dasar_persen": laju_dasar,
                   "dicatat_utc": datetime.now(timezone.utc).isoformat(timespec="seconds")})
     _tulis_maju(baris)
     return True
 
 
 def nilai_maju(harga, hari_ini=None):
-    """Isi hasil untuk prediksi yang jendelanya sudah lewat. Return jumlah yang baru dinilai."""
+    """Isi hasil untuk prediksi yang jendelanya sudah lewat. `harga`: {aset: {tgl: harga}}
+    (atau satu dict harga BTC, bentuk lama). Return jumlah yang baru dinilai."""
+    if harga and not isinstance(next(iter(harga.values())), dict):
+        harga = {"BTC": harga}
     hari_ini = hari_ini or datetime.now(timezone.utc).date()
     baris, baru = _muat_maju(), 0
     for b in baris:
-        if "naik" in b:
+        hg = harga.get(_aset_baris(b))
+        if "naik" in b or not hg:
             continue
         f = date.fromisoformat(b["jumat"])
         akhir = f + timedelta(days=1 + 7 * b["horizon_minggu"])
         if akhir >= hari_ini:
             continue
-        r = target([f], harga, b["horizon_minggu"])[0]
+        r = target([f], hg, b["horizon_minggu"])[0]
         if r is not None:
             b["naik"] = r > 0
             b["return_persen"] = round((math.exp(r) - 1) * 100, 2)
@@ -412,20 +443,42 @@ def nilai_maju(harga, hari_ini=None):
     return baru
 
 
-def ringkas_maju():
-    """Brier model vs laju dasar pada prediksi maju yang sudah dinilai."""
-    dinilai = [b for b in _muat_maju() if "naik" in b]
-    total = len(_muat_maju())
+def ringkas_maju(aset="BTC", h=12):
+    """Brier model vs laju dasar pada prediksi maju aset itu yang sudah dinilai + vonis."""
+    semua = [b for b in _muat_maju() if _aset_baris(b) == aset and b["horizon_minggu"] == h]
+    dinilai = [b for b in semua if "naik" in b]
     if not dinilai:
-        return {"dicatat": total, "dinilai": 0,
-                "catatan": "belum ada prediksi maju yang jatuh tempo (horizon 12 minggu)"}
+        return {"dicatat": len(semua), "dinilai": 0, "vonis": "BELUM",
+                "catatan": f"belum ada prediksi maju yang jatuh tempo (horizon {h} minggu)"}
     o = [1 if b["naik"] else 0 for b in dinilai]
     bs = sum((b["peluang_naik_persen"] / 100 - y) ** 2 for b, y in zip(dinilai, o)) / len(o)
     bs0 = sum((b["laju_dasar_persen"] / 100 - y) ** 2 for b, y in zip(dinilai, o)) / len(o)
-    return {"dicatat": total, "dinilai": len(dinilai), "brier": round(bs, 4),
-            "brier_laju_dasar": round(bs0, 4), "brier_skill": round(1 - bs / bs0, 3) if bs0 else None,
-            "catatan": ("sampel kecil — prediksi 12 minggu tumpang tindih, ~4 prediksi "
-                        "independen per tahun" if len(dinilai) < 26 else "")}
+    skill = round(1 - bs / bs0, 3) if bs0 else None
+    n = len(dinilai)
+    if skill is not None and (n >= MAJU_VONIS and skill <= 0
+                              or n >= MAJU_STOP_DINI and skill < MAJU_BATAS_DINI):
+        vonis = "GAGAL"
+    elif skill is not None and n >= MAJU_VONIS:
+        vonis = "BERTAHAN"
+    else:
+        vonis = "BELUM"
+    return {"dicatat": len(semua), "dinilai": n, "brier": round(bs, 4),
+            "brier_laju_dasar": round(bs0, 4), "brier_skill": skill, "vonis": vonis,
+            "catatan": (f"sampel kecil — vonis di {MAJU_VONIS} prediksi jatuh tempo; prediksi "
+                        "12 minggu tumpang tindih, ~4 independen per tahun"
+                        if vonis == "BELUM" else "")}
+
+
+def teks_maju(aset="BTC"):
+    """Satu baris status uji maju untuk brief & Telegram; '' bila belum ada catatan."""
+    rm = ringkas_maju(aset)
+    if not rm.get("dicatat"):
+        return ""
+    t = f"{rm['dinilai']}/{rm['dicatat']} prediksi jatuh tempo"
+    if rm.get("brier_skill") is not None:
+        t += f", Brier skill {rm['brier_skill']:+.3f}"
+    return t + (f" — vonis {rm['vonis']}" if rm["vonis"] != "BELUM"
+                else f" (vonis di {MAJU_VONIS})")
 
 
 def main():
@@ -436,13 +489,26 @@ def main():
     a = ap.parse_args()
     if a.maju:
         h = analisa()
-        harga = jl.harga_yahoo("BTC-USD")
+        harga = {"BTC": jl.harga_yahoo("BTC-USD")}
         for p in h["per_horizon"]:
             if p and "peluang_btc_naik_persen" in p:
                 catat_maju(h["sinyal_jumat"], p["peluang_btc_naik_persen"],
                            p["laju_dasar_naik_persen"], p["horizon_minggu"])
-        print("baru dinilai:", nilai_maju(harga), "·", json.dumps(ringkas_maju(),
-                                                                ensure_ascii=False))
+        # ETH ikut dicatat sejak 17 Okt 2026 — termasuk saat peringatan_kalibrasi aktif:
+        # yang dinilai modelnya, bukan hanya minggu-minggu yang tampak bagus.
+        if status_aset("ETH").get("diadopsi"):
+            try:
+                harga["ETH"] = jl.harga_yahoo("ETH-USD")
+                jumat, _, fit = muat_data()
+                i = max(k for k, f in enumerate(jumat) if fit["likuiditas"][k] is not None)
+                pe = peluang_aset(jumat, fit["likuiditas"], harga["ETH"], i, "ETH")
+                if pe and "peluang_eth_naik_persen" in pe:
+                    catat_maju(jumat[i].isoformat(), pe["peluang_eth_naik_persen"],
+                               pe["laju_dasar_naik_persen"], 12, "ETH")
+            except Exception as e:
+                print("ETH tidak dicatat:", type(e).__name__, file=sys.stderr)
+        print("baru dinilai:", nilai_maju(harga), "·",
+              json.dumps({k: ringkas_maju(k) for k in harga}, ensure_ascii=False))
         return
     try:
         h = analisa()

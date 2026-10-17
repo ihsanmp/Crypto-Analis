@@ -317,6 +317,17 @@ Prediksi pertama dicatat Jumat 16 Okt 2026: peluang BTC naik 12 minggu 38%, laju
 
 Penilaiannya memakai skor Brier, dibandingkan dengan laju dasar. Karena prediksi 12 minggu saling tumpang tindih, jumlah prediksi yang benar-benar independen hanya sekitar 4 per tahun. Butuh beberapa tahun sebelum uji maju ini bisa memberi vonis yang kuat.
 
+**Aturan vonis — didaftarkan 17 Okt 2026, sebelum satu pun prediksi jatuh tempo.** Berlaku per aset, horizon 12 minggu, Brier model dibanding laju dasar yang dicatat bersama prediksinya:
+
+| Prediksi jatuh tempo | Syarat | Vonis |
+|---|---|---|
+| < 26 | — | BELUM (angka tetap tampil, berlabel sampel kecil) |
+| ≥ 26 | Brier skill < −0,05 | GAGAL (stop dini) |
+| ≥ 52 | Brier skill ≤ 0 | GAGAL |
+| ≥ 52 | Brier skill > 0 | BERTAHAN = belum terbantah, bukan terbukti (52 prediksi ≈ 13 pengamatan independen) |
+
+GAGAL berlaku otomatis: `peluang_aset` berhenti menampilkan angkanya di bot dan Telegram, dan Telegram menyebut alasannya. Vonis paling cepat Jul 2027 (stop dini) atau Jan 2028 (52 prediksi). ETH ikut dicatat sejak 17 Okt 2026, termasuk minggu yang berlabel "tidak terkalibrasi", karena yang dinilai adalah modelnya.
+
 ## Langkah 3: biaya transaksi dan walk-forward (16 Okt 2026)
 
 ### Strategi eksposur Jam Likuiditas (`uji_jam_likuiditas.py`)
