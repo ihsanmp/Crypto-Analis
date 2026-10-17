@@ -8,6 +8,8 @@ Yang dihasilkan:
   - TVL: nilai sekarang, perubahan 30d/90d, tren bulanan
   - Volume DEX (kalau protokolnya DEX)
   - Rasio valuasi: MC/TVL, P/S dan P/F tahunan
+  - Holder revenue: bagian revenue yang sampai ke pemegang token (buyback/burn/staker),
+    porsinya dari revenue, yield-nya terhadap market cap
 
 CATATAN JUJUR soal active addresses: DefiLlama TIDAK menyediakannya lewat API publik
 (endpoint activeUsers mengembalikan 404). Data itu umumnya berbayar (Token Terminal,
@@ -203,12 +205,25 @@ def ringkas_deret(chart, label_sekarang):
 # ------------------------------------------------------------------ sumber
 
 def ambil_fees(kandidat, data_type):
-    """dataType: dailyRevenue atau dailyFees. Coba tiap slug sampai ada yang berisi."""
-    for slug in kandidat:
-        d = try_json(f"{BASE}/summary/fees/{slug}?dataType={data_type}")
-        if d and d.get("totalDataChart"):
-            return d, slug
-    return None, None
+    """dataType: dailyRevenue / dailyFees / dailyHoldersRevenue. Pilih slug ber-total 1 tahun
+    TERBESAR, bukan yang pertama berisi.
+
+    17 Okt 2026, PUMP: kandidat pertama "pumpswap" (DEX-nya) berisi tapi holder revenue NOL
+    dan revenue $123 jt, sedangkan "pump.fun" — protokol yang membeli balik PUMP — $285 jt
+    holder revenue dan $325 jt revenue. Berhenti di yang pertama berisi = laporan "holder
+    tidak dapat apa-apa" yang keliru. Induk (mis. "aave") tetap menang karena totalnya
+    mencakup semua versi."""
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        hasil = list(ex.map(lambda s: try_json(
+            f"{BASE}/summary/fees/{s}?dataType={data_type}"
+            "&excludeTotalDataChartBreakdown=true"), kandidat))
+    ada = [(d.get("total1y") or 0, -i, d, s) for i, (d, s) in enumerate(zip(hasil, kandidat))
+           if d and d.get("totalDataChart")]
+    if not ada:
+        return None, None
+    _, _, d, s = max(ada, key=lambda x: (x[0], x[1]))
+    return d, s
 
 
 def ambil_dex_volume(kandidat):
@@ -250,6 +265,55 @@ def ringkas_tvl(d):
         "perubahan_90d_persen": tumbuh(sekarang, nilai_x_hari_lalu(90)),
         "akhir_bulan_6_terakhir": [{"bulan": k, "usd": round(v, 2)}
                                    for k, v in list(bulanan.items())[-6:]],
+    }
+
+
+def ringkas_holder(d, slug, revenue, mcap, chain=False):
+    """Holders Revenue DefiLlama: bagian revenue yang benar-benar sampai ke PEMEGANG token
+    (buyback, burn, bagi hasil ke staker). Revenue protokol yang besar tidak berarti apa-apa
+    bagi holder bila semuanya masuk treasury — rasio inilah yang membedakannya.
+
+    Ringkas sengaja: blok revenue di atas sudah membawa deret 12 bulan."""
+    rev_ttm = (revenue or {}).get("ttm_usd")
+    if not d:
+        return {"tersedia": False,
+                "catatan": ("DefiLlama tidak mencatat holders revenue untuk protokol ini. "
+                            + ("Revenue-nya ADA, jadi kemungkinan revenue masuk treasury/tim "
+                               "dan TIDAK mengalir ke holder (token tata kelola saja) — atau "
+                               "mekanismenya belum dilacak DefiLlama. Cek dokumen tokenomics "
+                               "(buyback/fee switch/staking) sebelum menyimpulkan."
+                               if rev_ttm else
+                               "Revenue juga tidak tercatat: tidak ada dasar menilai arus kas "
+                               "ke holder."))}
+    r = ringkas_deret(d.get("totalDataChart"), "holder revenue") or {}
+    ttm = r.get("ttm_usd")
+    ttm_label = ttm if ttm is not None else d.get("total1y")
+    porsi = round(ttm_label / rev_ttm * 100, 1) if ttm_label is not None and rev_ttm else None
+    h30 = d.get("total30d")
+    run_rate = h30 * 12 if h30 is not None else None
+    # Run 17 Okt 2026: AAVE TTM $20 jt (yield 0,8%) padahal 30 hari terakhir NOL sejak Q3 —
+    # angka TTM saja menyajikan arus kas yang sudah berhenti sebagai arus kas berjalan.
+    henti = bool(ttm_label) and h30 == 0
+    return {
+        "tersedia": True, "slug": slug,
+        "total_30d_usd": d.get("total30d"),
+        "ttm_usd": ttm_label,
+        "pertumbuhan_persen": r.get("pertumbuhan_persen"),
+        "kuartalan_4_terakhir": (r.get("kuartalan_8_terakhir") or [])[-4:],
+        "porsi_dari_revenue_persen": porsi,
+        "yield_holder_ttm_persen": (round(ttm_label / mcap * 100, 2)
+                                    if mcap and ttm_label else None),
+        "yield_holder_run_rate_persen": (round(run_rate / mcap * 100, 2)
+                                         if mcap and run_rate is not None else None),
+        "p_holder_rev_ttm": round(mcap / ttm_label, 1) if mcap and ttm_label else None,
+        **({"peringatan": ("30 hari terakhir NOL padahal TTM positif: arus ke holder "
+                            "berhenti (buyback/fee switch dihentikan) ATAU data DefiLlama "
+                            "tertunda. Jangan sajikan yield TTM sebagai yield berjalan.")}
+           if henti else {}),
+        "catatan": ("Holders revenue = buyback + burn + distribusi ke staker (definisi "
+                    "DefiLlama). Distribusi ke staker hanya diterima yang MENGUNCI token; burn "
+                    "& buyback dirasakan semua holder lewat suplai."
+                    + (" Untuk chain, ini terutama fee yang DIBAKAR." if chain else "")),
     }
 
 
@@ -315,6 +379,9 @@ def main():
     else:
         hasil["fees"] = None
 
+    hld, slug_hld = (ambil_fees_chain(info["slug"], "dailyHoldersRevenue") if chain
+                     else ambil_fees(kandidat, "dailyHoldersRevenue"))
+
     tvl_raw, slug_tvl = ambil_tvl_chain(info["slug"]) if chain else ambil_tvl(kandidat)
     hasil["tvl"] = dict(ringkas_tvl(tvl_raw) or {}, slug=slug_tvl) if tvl_raw else None
 
@@ -337,6 +404,16 @@ def main():
         "pf_ttm": round(mcap / fee_ttm, 1) if mcap and fee_ttm else None,
         "catatan": "P/S memakai revenue protokol; P/F memakai total fees (dibayar user).",
     }
+
+    rev_sama = hasil["revenue"]
+    if hld and slug_hld != slug_rev:
+        r2, _ = ambil_fees([slug_hld], "dailyRevenue")
+        rev_sama = {"ttm_usd": r2.get("total1y")} if r2 else None
+    hasil["holder_revenue"] = ringkas_holder(hld, slug_hld, rev_sama, mcap, chain)
+    if hld and slug_hld != slug_rev:
+        hasil["holder_revenue"]["catatan"] += (f" Slug '{slug_hld}' berbeda dari blok revenue "
+                                               f"('{slug_rev}'); porsi dihitung dari revenue "
+                                               "slug yang sama.")
 
     hasil["active_addresses"] = None
     hasil["catatan"].append(

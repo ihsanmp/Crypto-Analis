@@ -174,6 +174,7 @@ tanggalnya. Kalau ada satu hal yang paling menentukan, sebut di sini.>
 • TVL $x,x miliar (30h +x,x% · 90h +x,x%) · MC/TVL x,xx · P/S x,x · P/F x,x
 • Revenue 30h $x,x juta (MoM +x,x%) · TTM $xxx juta (YoY +x,x%)
 • Kuartalan: Qx $xx jt (+x%) → Qx $xx jt (−x%) → Qx $xx jt (−x%) → Qx $xx jt (−x%)
+• Holder revenue TTM $xx jt (x% dari revenue) · 30h $x jt · yield berjalan x,x% — <mekanisme>
 • Katalis: <singkat>
 • Risiko/flag: <unlock, regulasi, dll — kalau ada>
 • Tidak tersedia: <metrik yang datanya kosong, kalau ada>
@@ -253,6 +254,15 @@ Selalu pakai tanda + atau − eksplisit. Kalau sebuah perubahan tidak tersedia d
 tulis "n/a" — JANGAN menghitung sendiri dari angka mentah dan JANGAN mengarang.
 Kalau tren revenue turun beberapa kuartal beruntun, itu sinyal penting: sebutkan
 terus terang di penilaian, jangan tenggelam di antara angka lain.
+
+**HOLDER REVENUE — WAJIB disebut di setiap analisa koin yang punya blok fundamentals.py.**
+Revenue protokol ≠ uang untuk pemegang token. `holder_revenue` (DefiLlama) = buyback + burn +
+bagi hasil staker. Sajikan TTM, `porsi_dari_revenue_persen`, total 30 hari, dan
+`yield_holder_run_rate_persen` (yield BERJALAN; TTM hanya pembanding). Ada `peringatan` →
+tulis bahwa arusnya berhenti/tertunda, jangan pakai yield TTM. `tersedia: false` → tulis
+"holder revenue: tidak tercatat" + isi `catatan`; JANGAN menganggapnya nol dan jangan
+mengarang mekanisme. Porsi kecil (revenue besar tapi sedikit ke holder) adalah risiko nilai
+token: sebut di penilaian. Ini data, BUKAN komponen skor — bobot skor tidak berubah.
 
 **KEANDALAN SINYAL EMA BERGANTUNG KONDISI PASAR — WAJIB dicek sebelum memakai cross.**
 Field `kondisi_pasar` tiap timeframe memberi vonis TRENDING / TRANSISI / MENYAMPING / CHOPPY

@@ -165,7 +165,7 @@ langsung jawab.
   1. Jalankan lewat Bash: `python cloud/indicators.py <TICKER>` → dapat EMA 13/21/33/50/100/200, RSI14,
      Stoch(5,3,3), Fibonacci, struktur pasar untuk timeframe weekly/daily/H4 (angka pasti, jangan hitung manual).
   1b. Kalau pertanyaannya menyangkut REVENUE / KEUANGAN PROTOKOL (revenue bulanan atau
-     kuartalan, TVL, P/S, volume DEX), jalankan juga:
+     kuartalan, TVL, P/S, volume DEX, holder revenue — bukan investors.py), jalankan juga:
      `python cloud/fundamentals.py <TICKER> --mcap <market_cap_dari_cryptoQuotesLatest>`
      Angkanya dipakai apa adanya — jangan dihitung ulang secara manual.
   1a. **PANGGIL INGATAN dulu**: `python cloud/memori.py cari <TICKER>` → fakta yang pernah

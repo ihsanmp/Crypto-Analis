@@ -76,3 +76,77 @@ def test_token_protokol_tetap_lewat_jalur_lama(monkeypatch, capsys):
 def test_slug_paksa_mengalahkan_deteksi_chain(monkeypatch, capsys):
     h = _jalankan(monkeypatch, capsys, ["SUI", "--slug", "sui-foundation"])
     assert h["protokol"]["slug"] == "sui-foundation"
+
+
+# ------------------------------------------------------------- holder revenue
+def _bulanan(nilai_per_bulan):
+    """Satu titik per bulan (tgl 15) mundur dari bulan lalu; bulan berjalan tidak diisi."""
+    from datetime import datetime, timezone
+    kini = datetime.now(timezone.utc)
+    keluar, th, bl = [], kini.year, kini.month
+    for v in reversed(nilai_per_bulan):
+        bl -= 1
+        if bl == 0:
+            th, bl = th - 1, 12
+        keluar.append([int(datetime(th, bl, 15, tzinfo=timezone.utc).timestamp()), v])
+    return sorted(keluar)
+
+
+def test_holder_revenue_porsi_dan_yield_berjalan():
+    d = {"totalDataChart": _bulanan([1e6] * 12), "total30d": 1e6, "total1y": 12e6}
+    h = fd.ringkas_holder(d, "x", {"ttm_usd": 48e6}, mcap=240e6)
+    assert h["tersedia"] and h["ttm_usd"] == 12e6
+    assert h["porsi_dari_revenue_persen"] == 25.0
+    assert h["yield_holder_run_rate_persen"] == 5.0 and h["p_holder_rev_ttm"] == 20.0
+    assert "peringatan" not in h
+
+
+def test_holder_revenue_yang_berhenti_diberi_peringatan():
+    """17 Okt 2026: AAVE TTM $20 jt tapi 30 hari terakhir NOL — yield TTM 0,8% menyesatkan."""
+    d = {"totalDataChart": _bulanan([2e6] * 9 + [0, 0, 0]), "total30d": 0, "total1y": 18e6}
+    h = fd.ringkas_holder(d, "aave", {"ttm_usd": 90e6}, mcap=2.4e9)
+    assert h["yield_holder_run_rate_persen"] == 0.0
+    assert "berhenti" in h["peringatan"]
+
+
+def test_holder_revenue_kosong_dibedakan_dari_nol():
+    ada_rev = fd.ringkas_holder(None, None, {"ttm_usd": 5e6}, mcap=1e8)
+    tanpa = fd.ringkas_holder(None, None, None, mcap=1e8)
+    assert ada_rev["tersedia"] is False and "treasury" in ada_rev["catatan"]
+    assert "tidak ada dasar" in tanpa["catatan"] and "ttm_usd" not in tanpa
+
+
+def test_holder_revenue_ikut_di_output_dan_chain_memakai_endpoint_chain(monkeypatch, capsys):
+    diminta = []
+
+    def palsu(url):
+        diminta.append(url)
+        return _palsu(url)
+    monkeypatch.setattr(fd, "try_json", palsu)
+    monkeypatch.setattr(fd, "http_json", palsu)
+    monkeypatch.setattr(sys, "argv", ["fundamentals.py", "SUI"])
+    fd.main()
+    h = json.loads(capsys.readouterr().out)
+    assert h["holder_revenue"]["tersedia"] is True
+    assert any("/overview/fees/sui?dataType=dailyHoldersRevenue" in u for u in diminta)
+    assert "DIBAKAR" in h["holder_revenue"]["catatan"]
+
+
+def test_prompt_mewajibkan_holder_revenue():
+    teks = open(os.path.join(AKAR, "cloud", "prompts", "analisa.md"), encoding="utf-8").read()
+    assert "HOLDER REVENUE — WAJIB" in teks and "• Holder revenue TTM" in teks
+    assert "yield_holder_run_rate_persen" in teks and "JANGAN menganggapnya nol" in teks
+
+
+def test_slug_dipilih_dari_total_terbesar_bukan_yang_pertama_berisi(monkeypatch):
+    """PUMP: 'pumpswap' (pertama, holder revenue 0) vs 'pump.fun' ($285 jt buyback)."""
+    data = {"pumpswap": {"totalDataChart": _CHART, "total1y": 0},
+            "pumpkin-dao": None,
+            "pump.fun": {"totalDataChart": _CHART, "total1y": 284606543}}
+    monkeypatch.setattr(fd, "try_json",
+                        lambda url: data[url.split("/summary/fees/")[1].split("?")[0]])
+    d, slug = fd.ambil_fees(["pumpswap", "pumpkin-dao", "pump.fun"], "dailyHoldersRevenue")
+    assert slug == "pump.fun" and d["total1y"] == 284606543
+    # Seri: urutan kandidat (induk dulu) yang menang.
+    data["pump.fun"]["total1y"] = 0
+    assert fd.ambil_fees(["pumpswap", "pump.fun"], "x")[1] == "pumpswap"
