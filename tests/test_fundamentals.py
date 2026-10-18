@@ -150,3 +150,46 @@ def test_slug_dipilih_dari_total_terbesar_bukan_yang_pertama_berisi(monkeypatch)
     # Seri: urutan kandidat (induk dulu) yang menang.
     data["pump.fun"]["total1y"] = 0
     assert fd.ambil_fees(["pumpswap", "pump.fun"], "x")[1] == "pumpswap"
+
+
+def test_protokol_induk_jadi_kandidat_pertama_dan_mcap_dari_induk(monkeypatch, capsys):
+    """Cek bug 18 Okt 2026: COMP terbaca Compound V2 saja, PUMP pump.fun saja; mcap
+    cadangan PUMP diambil dari protokol LAIN bersimbol sama ($37,6 jt vs $2,0 miliar)."""
+    protokol = [
+        {"name": "PumpSwap", "slug": "pumpswap", "symbol": "PUMP", "tvl": 5e8,
+         "parentProtocol": "parent#pump"},
+        {"name": "pump.fun", "slug": "pump.fun", "symbol": "PUMP", "tvl": 1e8,
+         "parentProtocol": "parent#pump"},
+        {"name": "PumpBTC", "slug": "pumpbtc", "symbol": "PUMP", "tvl": 3e7, "mcap": 37.6e6}]
+    induk = {"totalDataChart": _CHART, "total1y": 485e6, "total30d": 30e6}
+    anak = {"totalDataChart": _CHART, "total1y": 314e6, "total30d": 20e6}
+
+    def palsu(url):
+        if url.endswith("/v2/chains"):
+            return []
+        if url.endswith("/protocols"):
+            return protokol
+        if "/summary/fees/pump?" in url:
+            return induk
+        if "/summary/fees/pump.fun?" in url:
+            return anak
+        if url.endswith("/protocol/pump"):
+            return {"tvl": [{"date": 1789689600, "totalLiquidityUSD": 3.4e8}], "mcap": 2.0e9}
+        return None
+    monkeypatch.setattr(fd, "try_json", palsu)
+    monkeypatch.setattr(fd, "http_json", palsu)
+    info, kand = fd.resolve_protocol("PUMP")
+    assert kand[0] == "pump"
+    monkeypatch.setattr(sys, "argv", ["fundamentals.py", "PUMP"])
+    fd.main()
+    h = json.loads(capsys.readouterr().out)
+    assert h["revenue"]["slug"] == "pump" and h["holder_revenue"]["slug"] == "pump"
+    assert h["valuasi"]["mcap_usd"] == 2.0e9
+
+
+def test_porsi_holder_memakai_total_1thn_bila_belum_12_bulan():
+    d = {"totalDataChart": _bulanan([1e6] * 5), "total30d": 1e6, "total1y": 5e6}
+    h = fd.ringkas_holder(d, "x", {"ttm_usd": None, "total_1thn_usd": 20e6}, mcap=None)
+    assert h["porsi_dari_revenue_persen"] == 25.0
+    kosong = fd.ringkas_holder(None, None, {"ttm_usd": None, "total_1thn_usd": 20e6}, None)
+    assert "treasury" in kosong["catatan"]            # revenue ADA, bukan "tidak tercatat"

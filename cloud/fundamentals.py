@@ -108,8 +108,14 @@ def resolve_protocol(ticker, slug_override=None):
 
     # Slug untuk fees sering memakai nama induk ("aave"), bukan versi ("aave-v3").
     # Kumpulkan kandidat: induk dulu, lalu tiap versi.
+    # Protokol INDUK DefiLlama ("parentProtocol": "parent#compound-finance") menjumlahkan
+    # semua produknya — fees, revenue, holder revenue, dan TVL. Cek bug 18 Okt 2026: tanpa
+    # ini COMP terbaca Compound V2 saja, SPK SparkLend saja, LISTA satu produk, dan PUMP
+    # pump.fun saja (revenue $314 jt vs induk "pump" $485 jt).
+    orang_tua = [h["parentProtocol"].split("#", 1)[-1] for h in hits
+                 if (h.get("parentProtocol") or "").startswith("parent#")]
     induk = (top.get("name") or "").split()[0].lower().replace(".", "")
-    kandidat = [induk] + [h.get("slug") for h in hits if h.get("slug")]
+    kandidat = orang_tua + [induk] + [h.get("slug") for h in hits if h.get("slug")]
     seen, urut = set(), []
     for s in kandidat:
         if s and s not in seen:
@@ -274,7 +280,8 @@ def ringkas_holder(d, slug, revenue, mcap, chain=False):
     bagi holder bila semuanya masuk treasury — rasio inilah yang membedakannya.
 
     Ringkas sengaja: blok revenue di atas sudah membawa deret 12 bulan."""
-    rev_ttm = (revenue or {}).get("ttm_usd")
+    # ttm_usd hanya ada bila >= 12 bulan lengkap; protokol muda tetap punya total 1 tahun.
+    rev_ttm = (revenue or {}).get("ttm_usd") or (revenue or {}).get("total_1thn_usd")
     if not d:
         return {"tersedia": False,
                 "catatan": ("DefiLlama tidak mencatat holders revenue untuk protokol ini. "
@@ -393,7 +400,10 @@ def main():
         hasil["volume_dex"] = None
 
     # Rasio valuasi
-    mcap = args.mcap or info.get("mcap")
+    # mcap cadangan (CoinGecko gagal/429): utamakan milik protokol yang TVL-nya dipakai
+    # (induk). info["mcap"] = entri PERTAMA bersimbol sama yang punya mcap — untuk PUMP itu
+    # protokol lain ($37,6 jt vs $2,0 miliar), yang membuat P/S & yield holder ngawur.
+    mcap = args.mcap or (tvl_raw or {}).get("mcap") or info.get("mcap")
     tvl_now = (hasil["tvl"] or {}).get("sekarang_usd") or info.get("tvl_now")
     rev_ttm = (hasil["revenue"] or {}).get("ttm_usd")
     fee_ttm = (hasil["fees"] or {}).get("ttm_usd")

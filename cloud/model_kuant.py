@@ -507,6 +507,13 @@ def main():
                                pe["laju_dasar_naik_persen"], 12, "ETH")
             except Exception as e:
                 print("ETH tidak dicatat:", type(e).__name__, file=sys.stderr)
+        # Nilai SEMUA aset di buku, bukan hanya yang dicatat minggu ini: kalau ETH kelak tak
+        # diadopsi lagi, prediksi lamanya tetap harus dinilai.
+        for aset in {_aset_baris(b) for b in _muat_maju()} - set(harga):
+            try:
+                harga[aset] = jl.harga_yahoo(f"{aset}-USD")
+            except Exception as e:
+                print(f"harga {aset} gagal:", type(e).__name__, file=sys.stderr)
         print("baru dinilai:", nilai_maju(harga), "·",
               json.dumps({k: ringkas_maju(k) for k in harga}, ensure_ascii=False))
         return

@@ -125,3 +125,17 @@ def test_model_yang_gagal_uji_maju_tidak_menampilkan_angka(tmp_path, monkeypatch
     assert "peluang_btc_naik_persen" not in r and "GAGAL" in r["gagal_uji_maju"]
     teks = jl.pesan.__code__.co_consts                    # baris Telegram ada di pesan()
     assert any("GAGAL uji maju" in str(c) for c in teks)
+
+
+def test_maju_menilai_semua_aset_di_buku(tmp_path, monkeypatch):
+    """ETH yang kelak tak diadopsi tetap harus dinilai — harga diambil untuk tiap aset di buku."""
+    import jam_likuiditas as jl
+    monkeypatch.setattr(mk, "MAJU_PATH", str(tmp_path / "maju.jsonl"))
+    mk.catat_maju("2026-01-02", 60, 50, aset="ETH")
+    monkeypatch.setattr(mk, "analisa", lambda: {"sinyal_jumat": "2026-01-02", "per_horizon": []})
+    monkeypatch.setattr(mk, "status_aset", lambda aset, h=12: {})
+    diminta = []
+    monkeypatch.setattr(jl, "harga_yahoo", lambda s: (diminta.append(s), {})[1])
+    monkeypatch.setattr(sys, "argv", ["model_kuant.py", "--maju"])
+    mk.main()
+    assert "ETH-USD" in diminta
