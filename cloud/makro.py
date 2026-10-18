@@ -229,9 +229,8 @@ def _yahoo_terakhir(simbol):
     MOVE tertulis +34,6% padahal hari itu -0,8%. Kini keduanya dipisah dan diberi label.
     """
     try:
-        req = urllib.request.Request(YAHOO + simbol + "?range=1mo&interval=1d", headers=UA)
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
-            hasil = json.loads(r.read().decode())["chart"]["result"][0]
+        import yahoo   # cadangan host query2 + coba ulang saat 429/5xx/timeout
+        hasil = yahoo.chart(simbol, "range=1mo&interval=1d", timeout=TIMEOUT)["chart"]["result"][0]
         meta = hasil.get("meta") or {}
         tutup = [x for x in (((hasil.get("indicators") or {}).get("quote") or [{}])[0]
                              .get("close") or []) if x is not None]

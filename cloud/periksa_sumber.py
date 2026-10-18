@@ -105,7 +105,8 @@ def main():
             nama = re.sub(r"\s+[A-Z0-9=.$-]{2,10}\s+\(", " (", b["blok"])   # buang ticker
             rekap[(nama, b["status"])] += 1
             if b["status"] != "OK":
-                contoh.setdefault(nama, set()).update(b["masalah"][:2])
+                contoh.setdefault(nama, set()).update(f"{h['aset']}: {m}"
+                                                      for m in b["masalah"][:2])
     print("\n== REKAP PER BLOK (status x jumlah aset) ==")
     nama_blok = sorted({n for n, _ in rekap})
     for n in sorted(nama_blok, key=lambda n: -sum(v for (m, s), v in rekap.items()
@@ -113,7 +114,7 @@ def main():
         st = {s: v for (m, s), v in rekap.items() if m == n}
         buruk = sum(v for s, v in st.items() if s != "OK")
         print(f"{buruk:>2} bermasalah | {n} | {st}")
-        for c in sorted(contoh.get(n, []))[:3]:
+        for c in sorted(contoh.get(n, []))[:6]:
             print(f"      - {c}")
     galat = [h for h in hasil if "galat" in h]
     for h in galat:

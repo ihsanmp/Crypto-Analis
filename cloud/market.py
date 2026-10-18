@@ -26,6 +26,7 @@ Pemakaian:
 
 import argparse
 import json
+import re
 import sys
 import urllib.error
 import urllib.parse
@@ -40,13 +41,33 @@ YF = "https://query1.finance.yahoo.com/v8/finance/chart/"
 TIMEOUT = 20
 
 
+_PASANGAN = re.compile(r"^(EUR|GBP|USD|AUD|NZD|CAD|CHF|JPY)(USD|JPY|EUR|GBP|CHF|CAD|AUD|NZD)$")
+_LOGAM = {"XAUUSD": "GC=F", "XAGUSD": "SI=F"}
+
+
+def simbol_yahoo(simbol):
+    """Pasangan mata uang -> akhiran =X; XAU/XAGUSD -> kontrak berjangka.
+
+    Cek sumber di runner 18 Okt 2026: bot merutekan "analisa eurusd" dengan simbol mentah
+    EURUSD. Hanya market.py main yang menambah =X (lewat --forex); backtest, proyeksi,
+    kejutan, dan banding memanggil tarik() langsung -> Yahoo 404 di LIMA blok setiap
+    analisa forex. Dinormalkan di sini supaya semua pemanggil ikut benar. Ticker ambigu
+    (GOLD = Barrick Gold) sengaja TIDAK dipetakan di lapisan ini."""
+    s = (simbol or "").upper()
+    if s in _LOGAM:
+        return _LOGAM[s]
+    m = _PASANGAN.match(s)
+    if m and m.group(1) != m.group(2):
+        return s + "=X"
+    return simbol
+
+
 def tarik(simbol, rentang, interval):
     """Ambil candle dari Yahoo. Return (candles, meta, error)."""
-    url = f"{YF}{urllib.parse.quote(simbol)}?range={rentang}&interval={interval}"
+    simbol = simbol_yahoo(simbol)
     try:
-        req = urllib.request.Request(url, headers=UA)
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
-            d = json.loads(r.read().decode())
+        import yahoo   # cadangan host query2 + coba ulang saat 429/5xx/timeout
+        d = yahoo.chart(simbol, f"range={rentang}&interval={interval}", timeout=TIMEOUT)
     except urllib.error.HTTPError as e:
         return None, None, f"HTTP {e.code}"
     except Exception as e:

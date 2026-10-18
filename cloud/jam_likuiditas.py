@@ -313,13 +313,10 @@ def deret_likuiditas(fred, jumat):
 
 def harga_yahoo(simbol="BTC-USD"):
     """{tanggal ISO: penutupan harian} dari Yahoo (riwayat penuh, gratis)."""
-    import urllib.request
-    import makro
+    import yahoo
     # range=max diam-diam menurunkan resolusi ke BULANAN; period1/period2 tetap harian.
-    url = makro.YAHOO + simbol + f"?period1=0&period2={int(datetime.now().timestamp())}&interval=1d"
-    req = urllib.request.Request(url, headers=makro.UA)
-    with urllib.request.urlopen(req, timeout=40) as r:
-        d = json.loads(r.read().decode())["chart"]["result"][0]
+    d = yahoo.chart(simbol, f"period1=0&period2={int(datetime.now().timestamp())}&interval=1d",
+                    timeout=40)["chart"]["result"][0]
     tutup = d["indicators"]["quote"][0]["close"]
     return {datetime.fromtimestamp(t, timezone.utc).date().isoformat(): c
             for t, c in zip(d["timestamp"], tutup) if c}
