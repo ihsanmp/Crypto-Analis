@@ -221,6 +221,34 @@ def fetch_base(ticker, cg_id, interval):
     return None, None, None, "; ".join(errors)
 
 
+MIN_MINGGUAN = 41      # analyze() butuh 40 sesudah candle berjalan dibuang
+
+
+def mingguan_cadangan(ticker, cg_id, sumber_dipakai, n_sekarang):
+    """Riwayat harian sumber pertama terlalu PENDEK untuk timeframe mingguan.
+
+    Cek sumber di runner 18 Okt 2026: HYPE di Kraken baru ~260 hari -> 37 candle mingguan
+    -> blok weekly "candle tidak cukup" padahal bursa lain / CoinGecko punya riwayat lebih
+    panjang. Coba sumber lain; ambil yang memberi minggu TERBANYAK (>= MIN_MINGGUAN).
+    Return (weekly, sumber, kualitas) atau None."""
+    terbaik = None
+    calon = [(n, lambda f=f: f(ticker, "1d"), "native") for n, f in EXCHANGES
+             if n != sumber_dipakai and n not in _DEAD]
+    if cg_id:
+        calon.append(("coingecko", lambda: src_coingecko_chart(cg_id, "1d"),
+                      "approx_close_only"))
+    for nama, ambil, kual in calon:
+        try:
+            w = aggregate_weekly(ambil() or [])
+        except Exception:
+            continue
+        if len(w) > max(n_sekarang, len(terbaik[0]) if terbaik else 0):
+            terbaik = (w, nama, kual)
+            if len(w) >= MIN_MINGGUAN and kual == "native":
+                break
+    return terbaik if terbaik and len(terbaik[0]) >= MIN_MINGGUAN else None
+
+
 def aggregate_weekly(daily):
     """Gabung candle harian jadi mingguan (pekan mulai Senin UTC).
     Hasilnya identik dengan candle weekly asli."""
@@ -786,11 +814,16 @@ def main():
     if daily:
         result["timeframes"]["1d"] = dict(analyze(daily), source=src_d, quality=qual_d)
         weekly = aggregate_weekly(daily)
+        src_w, qual_w = src_d, qual_d
+        if len(weekly) < MIN_MINGGUAN:
+            alt = mingguan_cadangan(ticker, cg_id, src_d, len(weekly))
+            if alt:
+                weekly, src_w, qual_w = alt
         # agregasi harian->mingguan itu eksak; kualitas mengikuti kualitas data hariannya
         result["timeframes"]["1w"] = dict(
             analyze(weekly),
-            source=f"{src_d} (agregasi harian->mingguan)",
-            quality="exact" if qual_d == "native" else qual_d)
+            source=f"{src_w} (agregasi harian->mingguan)",
+            quality="exact" if qual_w == "native" else qual_w)
     else:
         result["timeframes"]["1d"] = {"error": f"gagal ambil candle harian: {err_d}"}
         result["timeframes"]["1w"] = {"error": "tidak bisa dihitung tanpa candle harian"}

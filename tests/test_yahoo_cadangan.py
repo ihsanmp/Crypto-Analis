@@ -86,3 +86,19 @@ def test_simbol_yang_sudah_terencode_tidak_diencode_ulang(monkeypatch):
     yahoo.chart("%5EVIX3M", "range=1mo")
     yahoo.chart("^VIX", "range=1mo")
     assert "/chart/%5EVIX3M?" in diminta[0] and "/chart/%5EVIX?" in diminta[1]
+
+
+def test_mingguan_pakai_sumber_lain_bila_riwayat_harian_pendek(monkeypatch):
+    """HYPE di Kraken ~260 hari -> 37 minggu; sumber lain dengan riwayat lebih panjang dipakai."""
+    import indicators as ind
+    hari = 86400000
+    pendek = [[i * hari, 1, 1, 1, 1, 0] for i in range(260)]
+    panjang = [[i * hari, 1, 2, 0.5, 1, 0] for i in range(400)]
+    monkeypatch.setattr(ind, "_DEAD", set())
+    monkeypatch.setattr(ind, "EXCHANGES", [("kraken", lambda t, i: pendek),
+                                           ("okx", lambda t, i: panjang)])
+    w, src, kual = ind.mingguan_cadangan("HYPE", None, "kraken", 37)
+    assert src == "okx" and kual == "native" and len(w) >= ind.MIN_MINGGUAN
+    # Tidak ada yang lebih panjang -> None (blok tetap jujur "candle tidak cukup").
+    monkeypatch.setattr(ind, "EXCHANGES", [("kraken", lambda t, i: pendek)])
+    assert ind.mingguan_cadangan("HYPE", None, "kraken", 37) is None
