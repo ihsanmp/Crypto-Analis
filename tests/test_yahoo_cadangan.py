@@ -102,3 +102,24 @@ def test_mingguan_pakai_sumber_lain_bila_riwayat_harian_pendek(monkeypatch):
     # Tidak ada yang lebih panjang -> None (blok tetap jujur "candle tidak cukup").
     monkeypatch.setattr(ind, "EXCHANGES", [("kraken", lambda t, i: pendek)])
     assert ind.mingguan_cadangan("HYPE", None, "kraken", 37) is None
+
+
+def test_timeout_tidak_diulang_supaya_waktu_tunggu_tidak_berlipat(monkeypatch):
+    jam = iter([0.0, 40.0])          # percobaan pertama makan 40 dtk = timeout
+    monkeypatch.setattr(yahoo.time, "time", lambda: next(jam))
+    diminta = []
+    monkeypatch.setattr(yahoo.urllib.request, "urlopen",
+                        _palsu([TimeoutError("lambat"), {"ok": 1}], diminta))
+    with pytest.raises(TimeoutError):
+        yahoo.chart("BTC-USD", "range=1d", timeout=40)
+    assert len(diminta) == 1
+
+
+def test_galat_jaringan_cepat_dicoba_di_host_lain(monkeypatch):
+    jam = iter([0.0, 0.2, 1.0])
+    monkeypatch.setattr(yahoo.time, "time", lambda: next(jam))
+    diminta = []
+    monkeypatch.setattr(yahoo.urllib.request, "urlopen",
+                        _palsu([urllib.error.URLError("dns"), {"ok": 1}], diminta))
+    assert yahoo.chart("BTC-USD", "range=1d", timeout=40) == {"ok": 1}
+    assert "query2" in diminta[1]

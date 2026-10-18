@@ -30,6 +30,7 @@ def chart(simbol, query, timeout=20, jeda=1.5):
     for i, host in enumerate(HOST + HOST[:1]):
         if i == len(HOST):
             time.sleep(jeda)
+        t0 = time.time()
         try:
             req = urllib.request.Request(host + jalur, headers=UA)
             with urllib.request.urlopen(req, timeout=timeout) as r:
@@ -40,4 +41,10 @@ def chart(simbol, query, timeout=20, jeda=1.5):
             galat = e
         except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as e:
             galat = e
+            # Galat yang DATANG CEPAT (DNS, koneksi ditolak) layak dicoba di host lain.
+            # TIMEOUT tidak: kedua host satu backend, dan mengulang melipatgandakan waktu
+            # tunggu — blok JAM memanggil Yahoo 3x; 3 x 3 x 40 dtk melewati batas 300 dtk
+            # per script dan seluruh blok gugur (cek bug 18 Okt 2026).
+            if time.time() - t0 >= min(timeout, 10) * 0.8:
+                raise
     raise galat
