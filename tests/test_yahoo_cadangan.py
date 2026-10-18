@@ -77,3 +77,12 @@ def test_tarik_memakai_simbol_yahoo(monkeypatch):
                                                                   {"chart": {"result": []}})[1])
     market.tarik("EURUSD", "1y", "1d")
     assert dipakai == ["EURUSD=X"]
+
+
+def test_simbol_yang_sudah_terencode_tidak_diencode_ulang(monkeypatch):
+    diminta = []
+    monkeypatch.setattr(yahoo.urllib.request, "urlopen",
+                        _palsu([{"ok": 1}, {"ok": 1}], diminta))
+    yahoo.chart("%5EVIX3M", "range=1mo")
+    yahoo.chart("^VIX", "range=1mo")
+    assert "/chart/%5EVIX3M?" in diminta[0] and "/chart/%5EVIX?" in diminta[1]

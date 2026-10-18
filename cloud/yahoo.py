@@ -23,7 +23,9 @@ def chart(simbol, query, timeout=20, jeda=1.5):
     """GET /v8/finance/chart/<simbol>?<query> -> dict JSON. Mencoba query1, lalu query2,
     lalu query1 sekali lagi sesudah jeda. Galat terakhir dilempar ulang (HTTPError dengan
     kode aslinya), supaya pemanggil tetap bisa membedakan 404 dari gangguan."""
-    jalur = f"/v8/finance/chart/{urllib.parse.quote(simbol)}?{query}"
+    # safe="%": makro.py menulis simbol yang SUDAH ter-encode ("%5EVIX"); meng-encode ulang
+    # jadi "%255EVIX" -> 404 (diagnostik runner 18 Okt 2026: VIX, VIX3M, MOVE hilang).
+    jalur = f"/v8/finance/chart/{urllib.parse.quote(simbol, safe='%')}?{query}"
     galat = None
     for i, host in enumerate(HOST + HOST[:1]):
         if i == len(HOST):

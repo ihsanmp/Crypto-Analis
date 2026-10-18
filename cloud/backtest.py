@@ -77,13 +77,10 @@ COCOK_HARGA = 0.03
 
 def _yahoo_panjang(simbol, harga_acuan):
     import time
-    import urllib.request
     try:
-        import makro
-        url = (makro.YAHOO + f"{simbol}-USD?period1=0&period2={int(time.time())}&interval=1d")
-        req = urllib.request.Request(url, headers=makro.UA)
-        with urllib.request.urlopen(req, timeout=30) as r:
-            d = json.loads(r.read().decode())["chart"]["result"][0]
+        import yahoo   # cadangan host query2 + coba ulang saat 429/5xx/timeout
+        d = yahoo.chart(f"{simbol}-USD", f"period1=0&period2={int(time.time())}&interval=1d",
+                        timeout=30)["chart"]["result"][0]
         q = d["indicators"]["quote"][0]
         c = [[t * 1000, o, h, lo, cl, v or 0] for t, o, h, lo, cl, v in
              zip(d["timestamp"], q["open"], q["high"], q["low"], q["close"], q["volume"])
