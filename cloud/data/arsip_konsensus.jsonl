@@ -101,3 +101,8 @@
 {"waktu": "2026-10-15T08:30:00-04:00", "mata_uang": "USD", "nama": "Retail Sales m/m", "dampak": "tinggi", "konsensus": "0.3%", "sebelumnya": "1.2%", "aktual": null, "dicatat_utc": "2026-10-12 08:43"}
 {"waktu": "2026-10-15T22:00:00-04:00", "mata_uang": "GBP", "nama": "BOE Gov Bailey Speaks", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-10-12 08:43"}
 {"waktu": "2026-10-15T23:30:00-04:00", "mata_uang": "USD", "nama": "Fed Chairman Warsh Speaks", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-10-12 08:43"}
+{"waktu": "2026-10-19T08:30:00-04:00", "mata_uang": "CAD", "nama": "CPI m/m", "dampak": "tinggi", "konsensus": "0.2%", "sebelumnya": "-0.1%", "aktual": null, "dicatat_utc": "2026-10-19 07:23"}
+{"waktu": "2026-10-19T08:30:00-04:00", "mata_uang": "CAD", "nama": "Median CPI y/y", "dampak": "tinggi", "konsensus": "2.0%", "sebelumnya": "2.0%", "aktual": null, "dicatat_utc": "2026-10-19 07:23"}
+{"waktu": "2026-10-19T08:30:00-04:00", "mata_uang": "CAD", "nama": "Trimmed CPI y/y", "dampak": "tinggi", "konsensus": "1.9%", "sebelumnya": "1.9%", "aktual": null, "dicatat_utc": "2026-10-19 07:23"}
+{"waktu": "2026-10-21T02:00:00-04:00", "mata_uang": "GBP", "nama": "CPI y/y", "dampak": "tinggi", "konsensus": "3.4%", "sebelumnya": "3.1%", "aktual": null, "dicatat_utc": "2026-10-19 07:23"}
+{"waktu": "2026-10-21T17:45:00-04:00", "mata_uang": "NZD", "nama": "CPI q/q", "dampak": "tinggi", "konsensus": "0.8%", "sebelumnya": "1.5%", "aktual": null, "dicatat_utc": "2026-10-19 07:23"}
