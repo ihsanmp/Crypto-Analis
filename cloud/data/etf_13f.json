@@ -27,7 +27,7 @@
   "2026-06-30": "ia08032026_1.zip"
  },
  "catatan": "13F-HR asli saja. Jenis pemegang dari Form ADV Item 5.D (jenis klien dengan RAUM terbesar), lewat CRD/nomor berkas SEC di sampul 13F; berkas IA yang dipakai = yang terakhir terbit sebelum batas filing kuartal itu. Filer tanpa CRD dipetakan dari nama hanya untuk bank/institusi yang jelas. HEDGE_FUND_DANA_PRIVAT memuat pelaku basis trade (long ETF + short futures, netral arah) — bandingkan dengan short leveraged funds CFTC.",
- "diperbarui_utc": "2026-10-17T04:52:32+00:00",
+ "diperbarui_utc": "2026-10-24T04:55:47+00:00",
  "kuartal": [
   {
    "akhir_kuartal": "2024-03-31",
