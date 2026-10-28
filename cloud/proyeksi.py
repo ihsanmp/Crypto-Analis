@@ -49,10 +49,16 @@ PERSENTIL = (10, 25, 50, 75, 90)
 # ikut ke setiap jawaban.
 JENDELA_SIGMA = 90
 Z_KUANTIL = {10: -1.2816, 25: -0.6745, 50: 0.0, 75: 0.6745, 90: 1.2816}
+# Horizon 1 hari memakai EWMA (RiskMetrics lambda 0,94), bukan sigma 90 hari: satu-satunya
+# yang lolos uji_garch.py (kriteria dikunci 28 Okt 2026 sebelum dijalankan) — QLIKE lebih
+# baik di 6/6 aset, BTC p 0,0067, unggul di kedua paruh, cakupan tidak memburuk. Untuk 7 &
+# 30 hari tidak ada yang lolos (GARCH lebih tajam tapi kisarannya terlalu lebar, 84-91%).
+LAMBDA_EWMA = 0.94
+HORIZON_EWMA = {1}
 KALIBRASI_PREDIKSI = {
     # horizon: (cakupan p10-p90 semua / 2019-2026, cakupan p25-p75 semua / 2019-2026,
     #           porsi ditutup lebih tinggi)
-    1: ("83,7% / 84,0%", "63,3% / 62,1%", "52,5%"),
+    1: ("83,7% / 83,6%", "62,1% / 61,5%", "52,5%"),     # EWMA (uji_garch.py)
     7: ("79,5% / 82,7%", "57,7% / 60,7%", "55,3%"),
     30: ("75,0% / 76,3%", "51,0% / 51,3%", "58,5%"),
 }
@@ -72,10 +78,16 @@ def prediksi_harga(candles, horizon, simbol=""):
         return {"tidak_tersedia": f"riwayat {len(tutup)} hari, perlu > {JENDELA_SIGMA}"}
     r = [math.log(tutup[j] / tutup[j - 1]) for j in range(len(tutup) - JENDELA_SIGMA, len(tutup))]
     sigma = statistics.pstdev(r)
+    # EWMA atas SELURUH riwayat, dimulai dari varians 90 hari pertama.
+    semua = [math.log(tutup[j] / tutup[j - 1]) for j in range(1, len(tutup))]
+    v = statistics.pvariance(semua[:JENDELA_SIGMA])
+    for x in semua:
+        v = LAMBDA_EWMA * v + (1 - LAMBDA_EWMA) * x * x
+    sigma_ewma = math.sqrt(v)
     harga = tutup[-1]
     baris = []
     for h in horizon:
-        s_h = sigma * math.sqrt(h)
+        s_h = (sigma_ewma if h in HORIZON_EWMA else sigma) * math.sqrt(h)
         q = {p: harga * math.exp(z * s_h) for p, z in Z_KUANTIL.items()}
         naik = [tutup[i + h] > tutup[i] for i in range(len(tutup) - h)]
         item = {
@@ -103,7 +115,8 @@ def prediksi_harga(candles, horizon, simbol=""):
         item["kalibrasi_terukur"] = (
             {"kisaran_80_benar": kal[0], "kisaran_50_benar": kal[1],
              "btc_ditutup_lebih_tinggi_2012_2026": kal[2],
-             "diuji_pada": "BTC harian 2012-2026 (semua / 2019-2026), uji_prediksi.py",
+             "diuji_pada": ("BTC harian 2012-2026 (semua / 2019-2026), "
+                            + ("uji_garch.py (EWMA)" if h in HORIZON_EWMA else "uji_prediksi.py")),
              # Arah pembacaannya sempat terbalik di jawaban produksi ("80-84% berarti
              # lebih sempit dari kenyataan") karena tercampur kalibrasi tabel puncak/dasar.
              "wajib_dibaca": ("benar LEBIH dari 80% = kisaran ini sedikit LEBIH LEBAR dari perlu "
@@ -115,7 +128,9 @@ def prediksi_harga(candles, horizon, simbol=""):
     return {
         "metode": (f"jalan acak: titik tengah = harga terakhir (TANPA arah), lebar dari "
                    f"volatilitas {JENDELA_SIGMA} hari terakhir ({sigma * 100:.2f}% per hari) "
-                   "x akar(horizon)"),
+                   "x akar(horizon); horizon 1 hari memakai volatilitas EWMA 0,94 "
+                   f"({sigma_ewma * 100:.2f}% per hari) — lebih cepat bereaksi, lolos uji "
+                   "uji_garch.py"),
         "per_horizon": baris,
         "wajib_dibaca": (
             "Sajikan sebagai KISARAN per horizon (80% dan 50%), JANGAN satu angka dan JANGAN "

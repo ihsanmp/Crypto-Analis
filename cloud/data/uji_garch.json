@@ -1,0 +1,1087 @@
+{
+ "didaftarkan": "2026-10-28",
+ "aset": {
+  "BTC": {
+   "riwayat": "2012-01-01 s/d 2026-09-01",
+   "tahun_uji_mulai": 2014,
+   "garch_per_tahun": {
+    "2014": {
+     "alfa": 0.29,
+     "persistensi": 0.965
+    },
+    "2015": {
+     "alfa": 0.23,
+     "persistensi": 0.96
+    },
+    "2016": {
+     "alfa": 0.21,
+     "persistensi": 0.96
+    },
+    "2017": {
+     "alfa": 0.19,
+     "persistensi": 0.97
+    },
+    "2018": {
+     "alfa": 0.19,
+     "persistensi": 0.97
+    },
+    "2019": {
+     "alfa": 0.17,
+     "persistensi": 0.97
+    },
+    "2020": {
+     "alfa": 0.18,
+     "persistensi": 0.96
+    },
+    "2021": {
+     "alfa": 0.17,
+     "persistensi": 0.955
+    },
+    "2022": {
+     "alfa": 0.15,
+     "persistensi": 0.96
+    },
+    "2023": {
+     "alfa": 0.15,
+     "persistensi": 0.955
+    },
+    "2024": {
+     "alfa": 0.15,
+     "persistensi": 0.96
+    },
+    "2025": {
+     "alfa": 0.14,
+     "persistensi": 0.96
+    },
+    "2026": {
+     "alfa": 0.15,
+     "persistensi": 0.96
+    }
+   },
+   "horizon": {
+    "1": {
+     "titik": 4627,
+     "lag_hac": 9,
+     "periode": "2014-01-01 s/d 2026-09-01",
+     "model": {
+      "SIGMA90": {
+       "qlike": 2.11,
+       "qlike_paruh": [
+        2.328,
+        1.8921
+       ],
+       "cakupan_80": 84.2,
+       "cakupan_50": 63.0
+      },
+      "EWMA": {
+       "qlike": 2.0309,
+       "qlike_paruh": [
+        2.195,
+        1.8669
+       ],
+       "cakupan_80": 83.8,
+       "cakupan_50": 61.8,
+       "dm": 2.47,
+       "p_dm": 0.00668
+      },
+      "GARCH": {
+       "qlike": 1.9775,
+       "qlike_paruh": [
+        2.1057,
+        1.8494
+       ],
+       "cakupan_80": 86.2,
+       "cakupan_50": 65.7,
+       "dm": 3.4,
+       "p_dm": 0.00033
+      }
+     }
+    },
+    "7": {
+     "titik": 660,
+     "lag_hac": 6,
+     "periode": "2014-01-05 s/d 2026-08-23",
+     "model": {
+      "SIGMA90": {
+       "qlike": 0.6928,
+       "qlike_paruh": [
+        0.8983,
+        0.4872
+       ],
+       "cakupan_80": 80.8,
+       "cakupan_50": 57.9
+      },
+      "EWMA": {
+       "qlike": 0.6707,
+       "qlike_paruh": [
+        0.8206,
+        0.5209
+       ],
+       "cakupan_80": 80.5,
+       "cakupan_50": 56.1,
+       "dm": 0.68,
+       "p_dm": 0.24903
+      },
+      "GARCH": {
+       "qlike": 0.5811,
+       "qlike_paruh": [
+        0.6918,
+        0.4705
+       ],
+       "cakupan_80": 83.9,
+       "cakupan_50": 62.6,
+       "dm": 2.74,
+       "p_dm": 0.00303
+      }
+     }
+    },
+    "30": {
+     "titik": 657,
+     "lag_hac": 6,
+     "periode": "2014-01-05 s/d 2026-08-02",
+     "model": {
+      "SIGMA90": {
+       "qlike": 0.4578,
+       "qlike_paruh": [
+        0.6753,
+        0.2409
+       ],
+       "cakupan_80": 76.7,
+       "cakupan_50": 50.8
+      },
+      "EWMA": {
+       "qlike": 0.5357,
+       "qlike_paruh": [
+        0.7679,
+        0.3042
+       ],
+       "cakupan_80": 73.8,
+       "cakupan_50": 50.1,
+       "dm": -1.48,
+       "p_dm": 0.93009
+      },
+      "GARCH": {
+       "qlike": 0.3943,
+       "qlike_paruh": [
+        0.471,
+        0.3178
+       ],
+       "cakupan_80": 84.9,
+       "cakupan_50": 58.8,
+       "dm": 1.08,
+       "p_dm": 0.13945
+      }
+     }
+    }
+   }
+  },
+  "ETH-USD": {
+   "riwayat": "2017-11-09 s/d 2026-10-28",
+   "tahun_uji_mulai": 2020,
+   "garch_per_tahun": {
+    "2020": {
+     "alfa": 0.07,
+     "persistensi": 0.915
+    },
+    "2021": {
+     "alfa": 0.09,
+     "persistensi": 0.925
+    },
+    "2022": {
+     "alfa": 0.08,
+     "persistensi": 0.94
+    },
+    "2023": {
+     "alfa": 0.09,
+     "persistensi": 0.925
+    },
+    "2024": {
+     "alfa": 0.07,
+     "persistensi": 0.98
+    },
+    "2025": {
+     "alfa": 0.07,
+     "persistensi": 0.98
+    },
+    "2026": {
+     "alfa": 0.06,
+     "persistensi": 0.98
+    }
+   },
+   "horizon": {
+    "1": {
+     "titik": 2492,
+     "lag_hac": 8,
+     "periode": "2020-01-01 s/d 2026-10-28",
+     "model": {
+      "SIGMA90": {
+       "qlike": 1.9089,
+       "qlike_paruh": [
+        1.8792,
+        1.9385
+       ],
+       "cakupan_80": 83.2,
+       "cakupan_50": 60.8
+      },
+      "EWMA": {
+       "qlike": 1.874,
+       "qlike_paruh": [
+        1.741,
+        2.007
+       ],
+       "cakupan_80": 83.0,
+       "cakupan_50": 59.6,
+       "dm": 0.88,
+       "p_dm": 0.18835
+      },
+      "GARCH": {
+       "qlike": 1.8568,
+       "qlike_paruh": [
+        1.7229,
+        1.9907
+       ],
+       "cakupan_80": 87.1,
+       "cakupan_50": 64.2,
+       "dm": 1.43,
+       "p_dm": 0.07658
+      }
+     }
+    },
+    "7": {
+     "titik": 355,
+     "lag_hac": 5,
+     "periode": "2020-01-02 s/d 2026-10-15",
+     "model": {
+      "SIGMA90": {
+       "qlike": 0.5511,
+       "qlike_paruh": [
+        0.6157,
+        0.4869
+       ],
+       "cakupan_80": 81.7,
+       "cakupan_50": 58.0
+      },
+      "EWMA": {
+       "qlike": 0.5281,
+       "qlike_paruh": [
+        0.4944,
+        0.5616
+       ],
+       "cakupan_80": 80.8,
+       "cakupan_50": 56.9,
+       "dm": 0.62,
+       "p_dm": 0.26697
+      },
+      "GARCH": {
+       "qlike": 0.5191,
+       "qlike_paruh": [
+        0.4659,
+        0.572
+       ],
+       "cakupan_80": 85.1,
+       "cakupan_50": 62.8,
+       "dm": 0.72,
+       "p_dm": 0.23608
+      }
+     }
+    },
+    "30": {
+     "titik": 352,
+     "lag_hac": 5,
+     "periode": "2020-01-02 s/d 2026-09-24",
+     "model": {
+      "SIGMA90": {
+       "qlike": 0.3328,
+       "qlike_paruh": [
+        0.4781,
+        0.1874
+       ],
+       "cakupan_80": 75.0,
+       "cakupan_50": 48.9
+      },
+      "EWMA": {
+       "qlike": 0.3195,
+       "qlike_paruh": [
+        0.3691,
+        0.2699
+       ],
+       "cakupan_80": 71.6,
+       "cakupan_50": 48.9,
+       "dm": 0.31,
+       "p_dm": 0.37893
+      },
+      "GARCH": {
+       "qlike": 0.2944,
+       "qlike_paruh": [
+        0.2919,
+        0.2968
+       ],
+       "cakupan_80": 79.5,
+       "cakupan_50": 56.5,
+       "dm": 0.64,
+       "p_dm": 0.26189
+      }
+     }
+    }
+   }
+  },
+  "SOL-USD": {
+   "riwayat": "2020-04-10 s/d 2026-10-28",
+   "tahun_uji_mulai": 2023,
+   "garch_per_tahun": {
+    "2023": {
+     "alfa": 0.21,
+     "persistensi": 0.85
+    },
+    "2024": {
+     "alfa": 0.15,
+     "persistensi": 0.945
+    },
+    "2025": {
+     "alfa": 0.12,
+     "persistensi": 0.97
+    },
+    "2026": {
+     "alfa": 0.12,
+     "persistensi": 0.97
+    }
+   },
+   "horizon": {
+    "1": {
+     "titik": 1396,
+     "lag_hac": 7,
+     "periode": "2023-01-01 s/d 2026-10-28",
+     "model": {
+      "SIGMA90": {
+       "qlike": 1.6317,
+       "qlike_paruh": [
+        1.5988,
+        1.6645
+       ],
+       "cakupan_80": 83.3,
+       "cakupan_50": 56.7
+      },
+      "EWMA": {
+       "qlike": 1.5889,
+       "qlike_paruh": [
+        1.5456,
+        1.6322
+       ],
+       "cakupan_80": 82.3,
+       "cakupan_50": 54.8,
+       "dm": 1.56,
+       "p_dm": 0.0589
+      },
+      "GARCH": {
+       "qlike": 1.6286,
+       "qlike_paruh": [
+        1.6212,
+        1.6359
+       ],
+       "cakupan_80": 89.3,
+       "cakupan_50": 63.8,
+       "dm": 0.1,
+       "p_dm": 0.46163
+      }
+     }
+    },
+    "7": {
+     "titik": 198,
+     "lag_hac": 4,
+     "periode": "2023-01-06 s/d 2026-10-16",
+     "model": {
+      "SIGMA90": {
+       "qlike": 0.3867,
+       "qlike_paruh": [
+        0.3682,
+        0.4052
+       ],
+       "cakupan_80": 83.8,
+       "cakupan_50": 54.0
+      },
+      "EWMA": {
+       "qlike": 0.3566,
+       "qlike_paruh": [
+        0.3268,
+        0.3864
+       ],
+       "cakupan_80": 80.3,
+       "cakupan_50": 50.0,
+       "dm": 1.17,
+       "p_dm": 0.12012
+      },
+      "GARCH": {
+       "qlike": 0.4488,
+       "qlike_paruh": [
+        0.4786,
+        0.419
+       ],
+       "cakupan_80": 88.4,
+       "cakupan_50": 65.7,
+       "dm": -1.37,
+       "p_dm": 0.91443
+      }
+     }
+    },
+    "30": {
+     "titik": 195,
+     "lag_hac": 5,
+     "periode": "2023-01-06 s/d 2026-09-25",
+     "model": {
+      "SIGMA90": {
+       "qlike": 0.2257,
+       "qlike_paruh": [
+        0.2368,
+        0.2148
+       ],
+       "cakupan_80": 76.4,
+       "cakupan_50": 50.8
+      },
+      "EWMA": {
+       "qlike": 0.2353,
+       "qlike_paruh": [
+        0.2039,
+        0.2664
+       ],
+       "cakupan_80": 72.3,
+       "cakupan_50": 50.3,
+       "dm": -0.29,
+       "p_dm": 0.61386
+      },
+      "GARCH": {
+       "qlike": 0.3818,
+       "qlike_paruh": [
+        0.43,
+        0.334
+       ],
+       "cakupan_80": 90.8,
+       "cakupan_50": 68.2,
+       "dm": -2.7,
+       "p_dm": 0.99654
+      }
+     }
+    }
+   }
+  },
+  "^GSPC": {
+   "riwayat": "2010-01-04 s/d 2026-10-27",
+   "tahun_uji_mulai": 2013,
+   "garch_per_tahun": {
+    "2013": {
+     "alfa": 0.11,
+     "persistensi": 0.975
+    },
+    "2014": {
+     "alfa": 0.12,
+     "persistensi": 0.97
+    },
+    "2015": {
+     "alfa": 0.13,
+     "persistensi": 0.965
+    },
+    "2016": {
+     "alfa": 0.14,
+     "persistensi": 0.96
+    },
+    "2017": {
+     "alfa": 0.15,
+     "persistensi": 0.95
+    },
+    "2018": {
+     "alfa": 0.14,
+     "persistensi": 0.965
+    },
+    "2019": {
+     "alfa": 0.15,
+     "persistensi": 0.96
+    },
+    "2020": {
+     "alfa": 0.16,
+     "persistensi": 0.955
+    },
+    "2021": {
+     "alfa": 0.18,
+     "persistensi": 0.97
+    },
+    "2022": {
+     "alfa": 0.18,
+     "persistensi": 0.965
+    },
+    "2023": {
+     "alfa": 0.17,
+     "persistensi": 0.97
+    },
+    "2024": {
+     "alfa": 0.16,
+     "persistensi": 0.97
+    },
+    "2025": {
+     "alfa": 0.16,
+     "persistensi": 0.97
+    },
+    "2026": {
+     "alfa": 0.15,
+     "persistensi": 0.97
+    }
+   },
+   "horizon": {
+    "1": {
+     "titik": 3476,
+     "lag_hac": 8,
+     "periode": "2013-01-02 s/d 2026-10-27",
+     "model": {
+      "SIGMA90": {
+       "qlike": 1.8363,
+       "qlike_paruh": [
+        1.8843,
+        1.7883
+       ],
+       "cakupan_80": 81.6,
+       "cakupan_50": 57.3
+      },
+      "EWMA": {
+       "qlike": 1.6635,
+       "qlike_paruh": [
+        1.7533,
+        1.5738
+       ],
+       "cakupan_80": 80.7,
+       "cakupan_50": 55.5,
+       "dm": 3.44,
+       "p_dm": 0.00029
+      },
+      "GARCH": {
+       "qlike": 1.6077,
+       "qlike_paruh": [
+        1.6838,
+        1.5316
+       ],
+       "cakupan_80": 83.1,
+       "cakupan_50": 56.6,
+       "dm": 3.88,
+       "p_dm": 5e-05
+      }
+     }
+    },
+    "7": {
+     "titik": 496,
+     "lag_hac": 5,
+     "periode": "2013-01-04 s/d 2026-10-15",
+     "model": {
+      "SIGMA90": {
+       "qlike": 0.6725,
+       "qlike_paruh": [
+        0.6242,
+        0.7207
+       ],
+       "cakupan_80": 82.7,
+       "cakupan_50": 56.5
+      },
+      "EWMA": {
+       "qlike": 0.5015,
+       "qlike_paruh": [
+        0.5269,
+        0.476
+       ],
+       "cakupan_80": 83.5,
+       "cakupan_50": 52.8,
+       "dm": 1.9,
+       "p_dm": 0.02845
+      },
+      "GARCH": {
+       "qlike": 0.4432,
+       "qlike_paruh": [
+        0.4534,
+        0.4331
+       ],
+       "cakupan_80": 86.9,
+       "cakupan_50": 54.4,
+       "dm": 2.18,
+       "p_dm": 0.01481
+      }
+     }
+    },
+    "30": {
+     "titik": 493,
+     "lag_hac": 5,
+     "periode": "2013-01-04 s/d 2026-09-16",
+     "model": {
+      "SIGMA90": {
+       "qlike": 0.7973,
+       "qlike_paruh": [
+        0.4986,
+        1.0948
+       ],
+       "cakupan_80": 83.4,
+       "cakupan_50": 51.9
+      },
+      "EWMA": {
+       "qlike": 0.5851,
+       "qlike_paruh": [
+        0.463,
+        0.7068
+       ],
+       "cakupan_80": 84.8,
+       "cakupan_50": 49.1,
+       "dm": 1.34,
+       "p_dm": 0.09009
+      },
+      "GARCH": {
+       "qlike": 0.409,
+       "qlike_paruh": [
+        0.3269,
+        0.4908
+       ],
+       "cakupan_80": 90.5,
+       "cakupan_50": 55.0,
+       "dm": 1.7,
+       "p_dm": 0.04421
+      }
+     }
+    }
+   }
+  },
+  "GC=F": {
+   "riwayat": "2010-01-04 s/d 2026-10-28",
+   "tahun_uji_mulai": 2013,
+   "garch_per_tahun": {
+    "2013": {
+     "alfa": 0.04,
+     "persistensi": 0.98
+    },
+    "2014": {
+     "alfa": 0.08,
+     "persistensi": 0.96
+    },
+    "2015": {
+     "alfa": 0.06,
+     "persistensi": 0.97
+    },
+    "2016": {
+     "alfa": 0.05,
+     "persistensi": 0.975
+    },
+    "2017": {
+     "alfa": 0.04,
+     "persistensi": 0.975
+    },
+    "2018": {
+     "alfa": 0.04,
+     "persistensi": 0.985
+    },
+    "2019": {
+     "alfa": 0.04,
+     "persistensi": 0.99
+    },
+    "2020": {
+     "alfa": 0.04,
+     "persistensi": 0.99
+    },
+    "2021": {
+     "alfa": 0.05,
+     "persistensi": 0.985
+    },
+    "2022": {
+     "alfa": 0.04,
+     "persistensi": 0.985
+    },
+    "2023": {
+     "alfa": 0.04,
+     "persistensi": 0.985
+    },
+    "2024": {
+     "alfa": 0.04,
+     "persistensi": 0.985
+    },
+    "2025": {
+     "alfa": 0.04,
+     "persistensi": 0.985
+    },
+    "2026": {
+     "alfa": 0.05,
+     "persistensi": 0.98
+    }
+   },
+   "horizon": {
+    "1": {
+     "titik": 3477,
+     "lag_hac": 8,
+     "periode": "2013-01-02 s/d 2026-10-28",
+     "model": {
+      "SIGMA90": {
+       "qlike": 1.751,
+       "qlike_paruh": [
+        1.7412,
+        1.7608
+       ],
+       "cakupan_80": 82.3,
+       "cakupan_50": 58.6
+      },
+      "EWMA": {
+       "qlike": 1.7127,
+       "qlike_paruh": [
+        1.7396,
+        1.6857
+       ],
+       "cakupan_80": 81.6,
+       "cakupan_50": 57.7,
+       "dm": 1.39,
+       "p_dm": 0.08256
+      },
+      "GARCH": {
+       "qlike": 1.6972,
+       "qlike_paruh": [
+        1.7229,
+        1.6716
+       ],
+       "cakupan_80": 83.9,
+       "cakupan_50": 60.3,
+       "dm": 2.05,
+       "p_dm": 0.0203
+      }
+     }
+    },
+    "7": {
+     "titik": 496,
+     "lag_hac": 5,
+     "periode": "2013-01-04 s/d 2026-10-15",
+     "model": {
+      "SIGMA90": {
+       "qlike": 0.4061,
+       "qlike_paruh": [
+        0.358,
+        0.4542
+       ],
+       "cakupan_80": 81.0,
+       "cakupan_50": 54.6
+      },
+      "EWMA": {
+       "qlike": 0.3887,
+       "qlike_paruh": [
+        0.3751,
+        0.4023
+       ],
+       "cakupan_80": 80.8,
+       "cakupan_50": 53.2,
+       "dm": 0.73,
+       "p_dm": 0.23228
+      },
+      "GARCH": {
+       "qlike": 0.3634,
+       "qlike_paruh": [
+        0.3483,
+        0.3786
+       ],
+       "cakupan_80": 85.7,
+       "cakupan_50": 55.4,
+       "dm": 1.42,
+       "p_dm": 0.07816
+      }
+     }
+    },
+    "30": {
+     "titik": 493,
+     "lag_hac": 5,
+     "periode": "2013-01-04 s/d 2026-09-16",
+     "model": {
+      "SIGMA90": {
+       "qlike": 0.2548,
+       "qlike_paruh": [
+        0.1795,
+        0.3298
+       ],
+       "cakupan_80": 80.9,
+       "cakupan_50": 50.7
+      },
+      "EWMA": {
+       "qlike": 0.2751,
+       "qlike_paruh": [
+        0.2125,
+        0.3375
+       ],
+       "cakupan_80": 79.1,
+       "cakupan_50": 50.1,
+       "dm": -0.95,
+       "p_dm": 0.82989
+      },
+      "GARCH": {
+       "qlike": 0.22,
+       "qlike_paruh": [
+        0.1829,
+        0.257
+       ],
+       "cakupan_80": 83.2,
+       "cakupan_50": 54.4,
+       "dm": 0.97,
+       "p_dm": 0.16543
+      }
+     }
+    }
+   }
+  },
+  "EURUSD=X": {
+   "riwayat": "2010-01-01 s/d 2026-10-28",
+   "tahun_uji_mulai": 2013,
+   "garch_per_tahun": {
+    "2013": {
+     "alfa": 0.03,
+     "persistensi": 0.995
+    },
+    "2014": {
+     "alfa": 0.03,
+     "persistensi": 0.995
+    },
+    "2015": {
+     "alfa": 0.04,
+     "persistensi": 0.995
+    },
+    "2016": {
+     "alfa": 0.03,
+     "persistensi": 0.995
+    },
+    "2017": {
+     "alfa": 0.03,
+     "persistensi": 0.995
+    },
+    "2018": {
+     "alfa": 0.03,
+     "persistensi": 0.995
+    },
+    "2019": {
+     "alfa": 0.03,
+     "persistensi": 0.995
+    },
+    "2020": {
+     "alfa": 0.03,
+     "persistensi": 0.995
+    },
+    "2021": {
+     "alfa": 0.04,
+     "persistensi": 0.995
+    },
+    "2022": {
+     "alfa": 0.04,
+     "persistensi": 0.995
+    },
+    "2023": {
+     "alfa": 0.04,
+     "persistensi": 0.995
+    },
+    "2024": {
+     "alfa": 0.04,
+     "persistensi": 0.995
+    },
+    "2025": {
+     "alfa": 0.03,
+     "persistensi": 0.995
+    },
+    "2026": {
+     "alfa": 0.04,
+     "persistensi": 0.995
+    }
+   },
+   "horizon": {
+    "1": {
+     "titik": 3598,
+     "lag_hac": 8,
+     "periode": "2013-01-01 s/d 2026-10-28",
+     "model": {
+      "SIGMA90": {
+       "qlike": 1.5298,
+       "qlike_paruh": [
+        1.5217,
+        1.5379
+       ],
+       "cakupan_80": 81.5,
+       "cakupan_50": 54.8
+      },
+      "EWMA": {
+       "qlike": 1.5093,
+       "qlike_paruh": [
+        1.5164,
+        1.5022
+       ],
+       "cakupan_80": 80.7,
+       "cakupan_50": 53.6,
+       "dm": 1.33,
+       "p_dm": 0.09198
+      },
+      "GARCH": {
+       "qlike": 1.4957,
+       "qlike_paruh": [
+        1.5014,
+        1.4901
+       ],
+       "cakupan_80": 83.9,
+       "cakupan_50": 56.5,
+       "dm": 2.25,
+       "p_dm": 0.01237
+      }
+     }
+    },
+    "7": {
+     "titik": 513,
+     "lag_hac": 5,
+     "periode": "2013-01-04 s/d 2026-10-13",
+     "model": {
+      "SIGMA90": {
+       "qlike": 0.3068,
+       "qlike_paruh": [
+        0.2904,
+        0.3232
+       ],
+       "cakupan_80": 79.9,
+       "cakupan_50": 52.0
+      },
+      "EWMA": {
+       "qlike": 0.2861,
+       "qlike_paruh": [
+        0.281,
+        0.2911
+       ],
+       "cakupan_80": 78.8,
+       "cakupan_50": 48.9,
+       "dm": 1.0,
+       "p_dm": 0.15938
+      },
+      "GARCH": {
+       "qlike": 0.2702,
+       "qlike_paruh": [
+        0.2675,
+        0.2729
+       ],
+       "cakupan_80": 81.9,
+       "cakupan_50": 54.4,
+       "dm": 1.64,
+       "p_dm": 0.05007
+      }
+     }
+    },
+    "30": {
+     "titik": 510,
+     "lag_hac": 5,
+     "periode": "2013-01-04 s/d 2026-09-14",
+     "model": {
+      "SIGMA90": {
+       "qlike": 0.2002,
+       "qlike_paruh": [
+        0.1744,
+        0.2259
+       ],
+       "cakupan_80": 80.6,
+       "cakupan_50": 55.3
+      },
+      "EWMA": {
+       "qlike": 0.1771,
+       "qlike_paruh": [
+        0.1525,
+        0.2017
+       ],
+       "cakupan_80": 80.0,
+       "cakupan_50": 52.5,
+       "dm": 1.22,
+       "p_dm": 0.11077
+      },
+      "GARCH": {
+       "qlike": 0.1377,
+       "qlike_paruh": [
+        0.1303,
+        0.145
+       ],
+       "cakupan_80": 84.5,
+       "cakupan_50": 57.3,
+       "dm": 1.7,
+       "p_dm": 0.04481
+      }
+     }
+    }
+   }
+  }
+ },
+ "vonis": {
+  "1": {
+   "EWMA": {
+    "menang_aset": "6/6",
+    "k1": true,
+    "btc_p_dm": 0.00668,
+    "k2": true,
+    "k3_btc_dua_paruh": true,
+    "galat_cakupan80": 2.0,
+    "galat_cakupan80_sigma90": 2.7,
+    "k4": true,
+    "qlike_relatif": 0.965,
+    "lolos": true
+   },
+   "GARCH": {
+    "menang_aset": "6/6",
+    "k1": true,
+    "btc_p_dm": 0.00033,
+    "k2": true,
+    "k3_btc_dua_paruh": true,
+    "galat_cakupan80": 5.6,
+    "galat_cakupan80_sigma90": 2.7,
+    "k4": false,
+    "qlike_relatif": 0.955,
+    "lolos": false
+   },
+   "dipilih": "EWMA",
+   "vonis": "LOLOS: EWMA"
+  },
+  "7": {
+   "EWMA": {
+    "menang_aset": "6/6",
+    "k1": true,
+    "btc_p_dm": 0.24903,
+    "k2": false,
+    "k3_btc_dua_paruh": false,
+    "galat_cakupan80": 1.2,
+    "galat_cakupan80_sigma90": 1.7,
+    "k4": true,
+    "qlike_relatif": 0.914,
+    "lolos": false
+   },
+   "GARCH": {
+    "menang_aset": "5/6",
+    "k1": true,
+    "btc_p_dm": 0.00303,
+    "k2": true,
+    "k3_btc_dua_paruh": true,
+    "galat_cakupan80": 5.3,
+    "galat_cakupan80_sigma90": 1.7,
+    "k4": false,
+    "qlike_relatif": 0.896,
+    "lolos": false
+   },
+   "dipilih": null,
+   "vonis": "TIDAK ADA yang lolos — sigma 90 hari tetap"
+  },
+  "30": {
+   "EWMA": {
+    "menang_aset": "3/6",
+    "k1": false,
+    "btc_p_dm": 0.93009,
+    "k2": false,
+    "k3_btc_dua_paruh": false,
+    "galat_cakupan80": 4.7,
+    "galat_cakupan80_sigma90": 2.8,
+    "k4": true,
+    "qlike_relatif": 0.978,
+    "lolos": false
+   },
+   "GARCH": {
+    "menang_aset": "5/6",
+    "k1": true,
+    "btc_p_dm": 0.13945,
+    "k2": false,
+    "k3_btc_dua_paruh": false,
+    "galat_cakupan80": 5.7,
+    "galat_cakupan80_sigma90": 2.8,
+    "k4": false,
+    "qlike_relatif": 0.917,
+    "lolos": false
+   },
+   "dipilih": null,
+   "vonis": "TIDAK ADA yang lolos — sigma 90 hari tetap"
+  }
+ }
+}

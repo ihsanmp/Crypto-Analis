@@ -130,3 +130,25 @@ def test_audit_outlook_tidak_salah_vonis_jawaban_ngobrol():
     assert bot.audit_outlook(diminta, "Kisaran 80% besok: $79.005-$83.130", "chat") is None
     assert bot.audit_outlook(diminta, "Target $100 -> $120", "chat") == "HILANG"
     assert bot.audit_outlook(bawaan, "Target $100 -> $120", "analisa") == "HILANG"
+
+
+def test_horizon_1_hari_memakai_ewma_7_hari_tetap_sigma90():
+    """uji_garch.py (28 Okt 2026): hanya EWMA 0,94 untuk 1 hari yang lolos. Sesudah lonjakan
+    volatilitas 10 hari terakhir, kisaran 1 hari harus bereaksi; 7 hari tetap sigma 90."""
+    k = _candles(sigma=0.01)
+    rng = random.Random(7)
+    p = k[-1][4]
+    for i in range(10):
+        p *= math.exp(rng.choice((-1, 1)) * 0.08)
+        k.append([(len(k)) * 86400000, p, p, p, p, 0])
+    h = proyeksi.prediksi_harga(k, [1, 7], "BTC")
+    satu, tujuh = h["per_horizon"]
+    lebar = lambda b: math.log(b["kisaran_80_persen"][1] / b["kisaran_80_persen"][0])
+    tutup = [c[4] for c in k]
+    r90 = [math.log(tutup[j] / tutup[j - 1]) for j in range(len(tutup) - 90, len(tutup))]
+    import statistics
+    s90 = statistics.pstdev(r90)
+    assert abs(lebar(tujuh) - 2 * 1.2816 * s90 * math.sqrt(7)) < 1e-9
+    assert lebar(satu) > 2 * 1.2816 * s90 * 1.2           # EWMA bereaksi lebih cepat
+    assert "uji_garch.py" in satu["kalibrasi_terukur"]["diuji_pada"]
+    assert "EWMA" in h["metode"]
