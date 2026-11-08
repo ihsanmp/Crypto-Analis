@@ -1,0 +1,101 @@
+# Uji sekali jalan: apakah Kronos (model fondasi candlestick, MIT) MENGUNGGULI metode
+# prediksi_harga bot. Kriteria dikunci di docstring cloud/uji_kronos.py sebelum dijalankan.
+#
+# Terpisah dari jalur produksi: torch CPU + bobot model hanya dipasang di sini. Tidak
+# memanggil Claude, tidak mengirim ke Telegram, tidak meng-commit apa pun — hasil gabungan
+# diunggah sebagai artefak.
+#
+#   mode=probe : ukur WAKTU per titik asal saja (tanpa akurasi), untuk memilih langkah.
+#   mode=uji   : 3 aset x 2 jalan paralel, lalu gabung & vonis.
+name: Uji Kronos vs metode bot
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "probe | uji"
+        default: "probe"
+      langkah_h24:
+        description: "hari antar titik asal, jalan H24"
+        default: "1"
+      langkah_d:
+        description: "hari antar titik asal, jalan harian (D1 & D7)"
+        default: "1"
+
+permissions:
+  contents: read
+
+env:
+  KRONOS_COMMIT: 67b630e67f6a18c9e9be918d9b4337c960db1e9a
+  KRONOS_SRC: kronos_src
+
+jobs:
+  probe:
+    if: inputs.mode == 'probe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        jalan: [H24, D]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Pasang Kronos (commit terkunci) + torch CPU
+        run: |
+          git clone --quiet https://github.com/shiyu-coder/Kronos.git "$KRONOS_SRC"
+          git -C "$KRONOS_SRC" checkout --quiet "$KRONOS_COMMIT"
+          pip install --quiet torch --index-url https://download.pytorch.org/whl/cpu
+          pip install --quiet einops==0.8.1 huggingface_hub==0.33.1 safetensors==0.6.2 pandas numpy tqdm
+          nproc
+      - run: python cloud/uji_kronos.py --probe --aset BTC --jalan ${{ matrix.jalan }}
+
+  uji:
+    if: inputs.mode == 'uji'
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        aset: [BTC, ETH, SOL]
+        jalan: [H24, D]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Pasang Kronos (commit terkunci) + torch CPU
+        run: |
+          git clone --quiet https://github.com/shiyu-coder/Kronos.git "$KRONOS_SRC"
+          git -C "$KRONOS_SRC" checkout --quiet "$KRONOS_COMMIT"
+          pip install --quiet torch --index-url https://download.pytorch.org/whl/cpu
+          pip install --quiet einops==0.8.1 huggingface_hub==0.33.1 safetensors==0.6.2 pandas numpy tqdm
+      - name: Ramal walk-forward
+        env:
+          LANGKAH: ${{ matrix.jalan == 'H24' && inputs.langkah_h24 || inputs.langkah_d }}
+        run: python cloud/uji_kronos.py --aset ${{ matrix.aset }} --jalan ${{ matrix.jalan }} --langkah "$LANGKAH"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: kronos-${{ matrix.aset }}-${{ matrix.jalan }}
+          path: hasil_*.json
+          retention-days: 14
+
+  gabung:
+    needs: uji
+    if: always() && inputs.mode == 'uji'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v7
+        with:
+          path: semua
+      - run: python cloud/uji_kronos.py --gabung semua
+      - uses: actions/upload-artifact@v7
+        with:
+          name: kronos-vonis
+          path: cloud/data/uji_kronos.json
+          retention-days: 30
