@@ -26,6 +26,12 @@ SETELAN (3 perbandingan, tiap aset):
   Pembanding = persis metode prediksi_harga di proyeksi.py (jalan acak, tanpa arah,
   kuantil lognormal z yang sama).
 
+ADDENDUM 8 Nov 2026 — dari probe WAKTU saja (tanpa akurasi), sebelum uji dijalankan:
+  Runner GitHub 4 vCPU: 197 dtk per titik asal (H24) dan 66 dtk (jalan harian). Maka:
+  H24  utama: tiap 2 hari (~213 titik/aset)   · kedua: tiap 7 hari
+  D1/D7 utama: tiap hari  (~426 titik/aset)   · kedua: tiap 7 hari
+  Periode utama dipecah 3 segmen per aset (job paralel); kriteria tidak berubah.
+
 UKURAN (pada log-return close)
   Kisaran : pinball rata-rata kuantil {0,10; 0,25; 0,50; 0,75; 0,90}; cakupan p10-p90.
   Arah    : IC Spearman median ramalan Kronos vs return nyata (pembanding tidak punya arah).
@@ -40,7 +46,7 @@ KRITERIA, per setelan (Bonferroni 3 setelan -> p < 0,0167)
   Lolos -> boleh diusulkan masuk bot sebagai uji maju dulu; gagal -> tidak dipakai.
 
     python cloud/uji_kronos.py --probe --aset BTC --jalan H24        # waktu saja
-    python cloud/uji_kronos.py --aset BTC --jalan D --langkah 1      # -> hasil_BTC_D1/D7.json
+    python cloud/uji_kronos.py --aset BTC --jalan D --segmen utama:2025-09-01:2026-01-20:1
     python cloud/uji_kronos.py --gabung DIR                        # vonis dari semua JSON
 """
 import argparse
@@ -214,7 +220,7 @@ def ramal_jalur(prediktor, konteks, tf, pred_len):
 
 
 # ------------------------------------------------------------------ satu aset x setelan
-def jalankan(aset, jalan, langkah, cache, batas=None):
+def jalankan(aset, jalan, segmen, cache, batas=None):
     """-> {setelan: [baris]} untuk satu aset. jalan 'H24' atau 'D' (D1 & D7 sekaligus)."""
     tf = SETELAN[JALAN[jalan][0]][0]
     pred_len = max(SETELAN[st][1] for st in JALAN[jalan])
@@ -225,7 +231,7 @@ def jalankan(aset, jalan, langkah, cache, batas=None):
     prediktor = muat_kronos()
     keluar = {st: [] for st in JALAN[jalan]}
     n = 0
-    for periode, (dari, sampai) in (("utama", UTAMA), ("kedua", KEDUA)):
+    for periode, dari, sampai, langkah in segmen:
         for tgl in titik_asal(dari, sampai, langkah):
             t0 = _ts(tgl)
             i = next((k for k, b in enumerate(buka) if b >= t0), None)
@@ -274,9 +280,12 @@ def placebo_ic(x, y, n, rng):
 def gabung(folder):
     rng = random.Random(BENIH)
     data = {}
-    for f in glob.glob(os.path.join(folder, "**", "hasil_*.json"), recursive=True):
+    for f in sorted(glob.glob(os.path.join(folder, "**", "hasil_*.json"), recursive=True)):
         isi = json.load(open(f, encoding="utf-8"))
-        data[(isi["aset"], isi["setelan"])] = isi["baris"]
+        data.setdefault((isi["aset"], isi["setelan"]), []).extend(isi["baris"])
+    for k in data:                               # urut tanggal, buang duplikat antar-segmen
+        unik = {(x["periode"], x["tgl"]): x for x in data[k]}
+        data[k] = [unik[u] for u in sorted(unik)]
     keluar = {"didaftarkan": "2026-11-08", "setelan": {}}
     for st in SETELAN:
         hari = SETELAN[st][2]
@@ -345,7 +354,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--aset", default="BTC")
     ap.add_argument("--jalan", default="H24", choices=list(JALAN))
-    ap.add_argument("--langkah", type=int, default=1, help="hari antar titik asal")
+    ap.add_argument("--segmen", default=None,
+                    help="periode:dari:sampai:langkah (mis. utama:2025-09-01:2026-01-20:2)")
     ap.add_argument("--cache", default="cache_binance")
     ap.add_argument("--probe", action="store_true", help="ukur WAKTU per titik asal saja")
     ap.add_argument("--gabung", default=None)
@@ -358,15 +368,16 @@ def main():
         return
     if a.probe:
         # Hanya WAKTU: tidak ada akurasi yang dicetak, supaya LANGKAH dipilih buta hasil.
-        jalankan(a.aset, a.jalan, 30, a.cache, batas=4)
+        jalankan(a.aset, a.jalan, [("utama",) + UTAMA + (30,)], a.cache, batas=4)
         print(f"PROBE {a.aset} {a.jalan}: {WAKTU_MODEL[0] / max(WAKTU_MODEL[1], 1):.1f} detik "
               f"model per titik asal ({JALUR} jalur, rata-rata {WAKTU_MODEL[1]} titik)")
         return
-    hasil = jalankan(a.aset, a.jalan, a.langkah, a.cache)
+    periode, dari, sampai, langkah = a.segmen.split(":")
+    hasil = jalankan(a.aset, a.jalan, [(periode, dari, sampai, int(langkah))], a.cache)
     for st, baris in hasil.items():
-        with open(f"hasil_{a.aset}_{st}.json", "w", encoding="utf-8") as f:
-            json.dump({"aset": a.aset, "setelan": st, "langkah": a.langkah, "baris": baris}, f)
-        print(f"{a.aset} {st}: {len(baris)} titik", file=sys.stderr)
+        with open(f"hasil_{a.aset}_{st}_{periode}_{dari}.json", "w", encoding="utf-8") as f:
+            json.dump({"aset": a.aset, "setelan": st, "segmen": a.segmen, "baris": baris}, f)
+        print(f"{a.aset} {st} {a.segmen}: {len(baris)} titik", file=sys.stderr)
 
 if __name__ == "__main__":
     main()

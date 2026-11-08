@@ -6,7 +6,7 @@
 # diunggah sebagai artefak.
 #
 #   mode=probe : ukur WAKTU per titik asal saja (tanpa akurasi), untuk memilih langkah.
-#   mode=uji   : 3 aset x 2 jalan paralel, lalu gabung & vonis.
+#   mode=uji   : 3 aset x 8 segmen paralel (24 job), lalu gabung & vonis.
 name: Uji Kronos vs metode bot
 
 on:
@@ -15,12 +15,6 @@ on:
       mode:
         description: "probe | uji"
         default: "probe"
-      langkah_h24:
-        description: "hari antar titik asal, jalan H24"
-        default: "1"
-      langkah_d:
-        description: "hari antar titik asal, jalan harian (D1 & D7)"
-        default: "1"
 
 permissions:
   contents: read
@@ -57,9 +51,19 @@ jobs:
     timeout-minutes: 350
     strategy:
       fail-fast: false
+      max-parallel: 20
       matrix:
         aset: [BTC, ETH, SOL]
-        jalan: [H24, D]
+        # jalan|segmen — jarak titik asal dipilih dari probe WAKTU (lihat addendum docstring)
+        seg:
+          - "H24|utama:2025-09-01:2026-01-20:2"
+          - "H24|utama:2026-01-21:2026-06-11:2"
+          - "H24|utama:2026-06-12:2026-10-31:2"
+          - "H24|kedua:2024-07-01:2025-08-31:7"
+          - "D|utama:2025-09-01:2026-01-20:1"
+          - "D|utama:2026-01-21:2026-06-11:1"
+          - "D|utama:2026-06-12:2026-10-31:1"
+          - "D|kedua:2024-07-01:2025-08-31:7"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -73,11 +77,15 @@ jobs:
           pip install --quiet einops==0.8.1 huggingface_hub==0.33.1 safetensors==0.6.2 pandas numpy tqdm
       - name: Ramal walk-forward
         env:
-          LANGKAH: ${{ matrix.jalan == 'H24' && inputs.langkah_h24 || inputs.langkah_d }}
-        run: python cloud/uji_kronos.py --aset ${{ matrix.aset }} --jalan ${{ matrix.jalan }} --langkah "$LANGKAH"
+          SEG: ${{ matrix.seg }}
+        run: python cloud/uji_kronos.py --aset ${{ matrix.aset }} --jalan "${SEG%%|*}" --segmen "${SEG#*|}"
+      - id: nama
+        env:
+          SEG: ${{ matrix.seg }}
+        run: echo "nama=$(echo "$SEG" | tr '|:' '__')" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v7
         with:
-          name: kronos-${{ matrix.aset }}-${{ matrix.jalan }}
+          name: kronos-${{ matrix.aset }}-${{ steps.nama.outputs.nama }}
           path: hasil_*.json
           retention-days: 14
 
