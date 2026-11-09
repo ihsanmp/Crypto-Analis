@@ -1,0 +1,287 @@
+{
+ "didaftarkan": "2026-11-08",
+ "setelan": {
+  "H24": {
+   "utama": {
+    "aset": {
+     "BTC": {
+      "n": 213,
+      "pinball_kronos": 0.007528,
+      "pinball_bot": 0.005874,
+      "pinball_relatif": 1.282,
+      "cakupan80_kronos": 29.6,
+      "cakupan80_bot": 82.6,
+      "ic_arah": -0.058,
+      "p_ic": 0.8051
+     },
+     "ETH": {
+      "n": 213,
+      "pinball_kronos": 0.010154,
+      "pinball_bot": 0.008139,
+      "pinball_relatif": 1.248,
+      "cakupan80_kronos": 33.8,
+      "cakupan80_bot": 85.0,
+      "ic_arah": -0.02,
+      "p_ic": 0.6442
+     },
+     "SOL": {
+      "n": 213,
+      "pinball_kronos": 0.01287,
+      "pinball_bot": 0.008853,
+      "pinball_relatif": 1.454,
+      "cakupan80_kronos": 31.0,
+      "cakupan80_bot": 84.0,
+      "ic_arah": -0.177,
+      "p_ic": 0.997
+     }
+    },
+    "dm": -6.03,
+    "p_dm": 1.0,
+    "lag_hac": 4,
+    "menang_kisaran": "0/3",
+    "galat_cakupan80": [
+     48.5,
+     3.9
+    ],
+    "ic_gabungan": -0.085,
+    "p_ic_gabungan": 0.9706,
+    "ic_positif": "0/3",
+    "lolos_kisaran": false,
+    "lolos_arah": false
+   },
+   "kedua": {
+    "aset": {
+     "BTC": {
+      "n": 61,
+      "pinball_kronos": 0.010646,
+      "pinball_bot": 0.008041,
+      "pinball_relatif": 1.324,
+      "cakupan80_kronos": 24.6,
+      "cakupan80_bot": 73.8,
+      "ic_arah": -0.065,
+      "p_ic": 0.6882
+     },
+     "ETH": {
+      "n": 61,
+      "pinball_kronos": 0.01641,
+      "pinball_bot": 0.01198,
+      "pinball_relatif": 1.37,
+      "cakupan80_kronos": 29.5,
+      "cakupan80_bot": 77.0,
+      "ic_arah": -0.063,
+      "p_ic": 0.6882
+     },
+     "SOL": {
+      "n": 61,
+      "pinball_kronos": 0.018563,
+      "pinball_bot": 0.01436,
+      "pinball_relatif": 1.293,
+      "cakupan80_kronos": 39.3,
+      "cakupan80_bot": 75.4,
+      "ic_arah": -0.036,
+      "p_ic": 0.6712
+     }
+    },
+    "dm": -4.71,
+    "p_dm": 1.0,
+    "lag_hac": 3,
+    "menang_kisaran": "0/3",
+    "galat_cakupan80": [
+     48.9,
+     4.6
+    ],
+    "ic_gabungan": -0.055,
+    "p_ic_gabungan": 0.891,
+    "ic_positif": "0/3"
+   }
+  },
+  "D1": {
+   "utama": {
+    "aset": {
+     "BTC": {
+      "n": 420,
+      "pinball_kronos": 0.007354,
+      "pinball_bot": 0.005819,
+      "pinball_relatif": 1.264,
+      "cakupan80_kronos": 56.9,
+      "cakupan80_bot": 83.6,
+      "ic_arah": 0.004,
+      "p_ic": 0.4733
+     },
+     "ETH": {
+      "n": 420,
+      "pinball_kronos": 0.011857,
+      "pinball_bot": 0.008361,
+      "pinball_relatif": 1.418,
+      "cakupan80_kronos": 52.9,
+      "cakupan80_bot": 85.0,
+      "ic_arah": 0.064,
+      "p_ic": 0.094
+     },
+     "SOL": {
+      "n": 420,
+      "pinball_kronos": 0.013226,
+      "pinball_bot": 0.009217,
+      "pinball_relatif": 1.435,
+      "cakupan80_kronos": 54.5,
+      "cakupan80_bot": 81.9,
+      "ic_arah": 0.019,
+      "p_ic": 0.3603
+     }
+    },
+    "dm": -10.29,
+    "p_dm": 1.0,
+    "lag_hac": 5,
+    "menang_kisaran": "0/3",
+    "galat_cakupan80": [
+     25.2,
+     3.5
+    ],
+    "ic_gabungan": 0.029,
+    "p_ic_gabungan": 0.2192,
+    "ic_positif": "3/3",
+    "lolos_kisaran": false,
+    "lolos_arah": false
+   },
+   "kedua": {
+    "aset": {
+     "BTC": {
+      "n": 61,
+      "pinball_kronos": 0.008576,
+      "pinball_bot": 0.008041,
+      "pinball_relatif": 1.066,
+      "cakupan80_kronos": 47.5,
+      "cakupan80_bot": 73.8,
+      "ic_arah": 0.259,
+      "p_ic": 0.047
+     },
+     "ETH": {
+      "n": 61,
+      "pinball_kronos": 0.016021,
+      "pinball_bot": 0.01198,
+      "pinball_relatif": 1.337,
+      "cakupan80_kronos": 45.9,
+      "cakupan80_bot": 77.0,
+      "ic_arah": -0.037,
+      "p_ic": 0.6172
+     },
+     "SOL": {
+      "n": 61,
+      "pinball_kronos": 0.017804,
+      "pinball_bot": 0.01436,
+      "pinball_relatif": 1.24,
+      "cakupan80_kronos": 49.2,
+      "cakupan80_bot": 75.4,
+      "ic_arah": -0.072,
+      "p_ic": 0.7296
+     }
+    },
+    "dm": -2.78,
+    "p_dm": 0.99724,
+    "lag_hac": 3,
+    "menang_kisaran": "0/3",
+    "galat_cakupan80": [
+     32.5,
+     4.6
+    ],
+    "ic_gabungan": 0.05,
+    "p_ic_gabungan": 0.2601,
+    "ic_positif": "1/3"
+   }
+  },
+  "D7": {
+   "utama": {
+    "aset": {
+     "BTC": {
+      "n": 420,
+      "pinball_kronos": 0.02807,
+      "pinball_bot": 0.01645,
+      "pinball_relatif": 1.706,
+      "cakupan80_kronos": 39.5,
+      "cakupan80_bot": 82.6,
+      "ic_arah": -0.056,
+      "p_ic": 0.6562
+     },
+     "ETH": {
+      "n": 420,
+      "pinball_kronos": 0.051482,
+      "pinball_bot": 0.02237,
+      "pinball_relatif": 2.301,
+      "cakupan80_kronos": 48.1,
+      "cakupan80_bot": 85.7,
+      "ic_arah": -0.067,
+      "p_ic": 0.6842
+     },
+     "SOL": {
+      "n": 420,
+      "pinball_kronos": 0.053096,
+      "pinball_bot": 0.025746,
+      "pinball_relatif": 2.062,
+      "cakupan80_kronos": 38.6,
+      "cakupan80_bot": 81.0,
+      "ic_arah": -0.035,
+      "p_ic": 0.6267
+     }
+    },
+    "dm": -7.91,
+    "p_dm": 1.0,
+    "lag_hac": 7,
+    "menang_kisaran": "0/3",
+    "galat_cakupan80": [
+     37.9,
+     3.1
+    ],
+    "ic_gabungan": -0.053,
+    "p_ic_gabungan": 0.8644,
+    "ic_positif": "0/3",
+    "lolos_kisaran": false,
+    "lolos_arah": false
+   },
+   "kedua": {
+    "aset": {
+     "BTC": {
+      "n": 61,
+      "pinball_kronos": 0.026087,
+      "pinball_bot": 0.017756,
+      "pinball_relatif": 1.469,
+      "cakupan80_kronos": 42.6,
+      "cakupan80_bot": 77.0,
+      "ic_arah": 0.118,
+      "p_ic": 0.2639
+     },
+     "ETH": {
+      "n": 61,
+      "pinball_kronos": 0.04816,
+      "pinball_bot": 0.029992,
+      "pinball_relatif": 1.606,
+      "cakupan80_kronos": 37.7,
+      "cakupan80_bot": 83.6,
+      "ic_arah": -0.114,
+      "p_ic": 0.7871
+     },
+     "SOL": {
+      "n": 61,
+      "pinball_kronos": 0.046794,
+      "pinball_bot": 0.034211,
+      "pinball_relatif": 1.368,
+      "cakupan80_kronos": 41.0,
+      "cakupan80_bot": 77.0,
+      "ic_arah": 0.266,
+      "p_ic": 0.0005
+     }
+    },
+    "dm": -4.8,
+    "p_dm": 1.0,
+    "lag_hac": 3,
+    "menang_kisaran": "0/3",
+    "galat_cakupan80": [
+     39.6,
+     3.2
+    ],
+    "ic_gabungan": 0.09,
+    "p_ic_gabungan": 0.0054,
+    "ic_positif": "2/3"
+   }
+  }
+ }
+}
