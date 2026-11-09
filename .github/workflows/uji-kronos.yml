@@ -13,8 +13,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "probe | uji"
+        description: "probe | uji | ulang"
         default: "probe"
+      ulang:
+        description: 'mode ulang: JSON daftar "ASET|JALAN|segmen", mis. ["ETH|H24|utama:2025-09-01:2025-11-10:2"]'
+        default: "[]"
 
 permissions:
   contents: read
@@ -87,6 +90,45 @@ jobs:
         with:
           name: kronos-${{ matrix.aset }}-${{ steps.nama.outputs.nama }}
           path: hasil_*.json
+          retention-days: 14
+
+  ulang:
+    if: inputs.mode == 'ulang'
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        item: ${{ fromJSON(inputs.ulang) }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Pasang Kronos (commit terkunci) + torch CPU
+        run: |
+          git clone --quiet https://github.com/shiyu-coder/Kronos.git "$KRONOS_SRC"
+          git -C "$KRONOS_SRC" checkout --quiet "$KRONOS_COMMIT"
+          pip install --quiet torch --index-url https://download.pytorch.org/whl/cpu
+          pip install --quiet einops==0.8.1 huggingface_hub==0.33.1 safetensors==0.6.2 pandas numpy tqdm
+      - name: Ramal walk-forward
+        timeout-minutes: 330
+        env:
+          ITEM: ${{ matrix.item }}
+        run: |
+          IFS='|' read -r ASET JALAN SEG <<< "$ITEM"
+          python cloud/uji_kronos.py --aset "$ASET" --jalan "$JALAN" --segmen "$SEG"
+      - id: nama
+        if: always()
+        env:
+          ITEM: ${{ matrix.item }}
+        run: echo "nama=$(echo "$ITEM" | tr '|:' '__')" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: kronos-${{ steps.nama.outputs.nama }}
+          path: hasil_*.json
+          if-no-files-found: warn
           retention-days: 14
 
   gabung:

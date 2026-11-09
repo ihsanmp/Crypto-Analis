@@ -220,7 +220,7 @@ def ramal_jalur(prediktor, konteks, tf, pred_len):
 
 
 # ------------------------------------------------------------------ satu aset x setelan
-def jalankan(aset, jalan, segmen, cache, batas=None):
+def jalankan(aset, jalan, segmen, cache, batas=None, simpan=None):
     """-> {setelan: [baris]} untuk satu aset. jalan 'H24' atau 'D' (D1 & D7 sekaligus)."""
     tf = SETELAN[JALAN[jalan][0]][0]
     pred_len = max(SETELAN[st][1] for st in JALAN[jalan])
@@ -259,6 +259,8 @@ def jalankan(aset, jalan, segmen, cache, batas=None):
                                    "cak_b": qb[0.10] <= nyata <= qb[0.90],
                                    "median_k": qk[0.50]})
             n += 1
+            if simpan:
+                simpan(keluar)          # bertahap: job yang kena batas waktu tetap menyisakan hasil
             if batas and n >= batas:
                 return keluar
             if n % 25 == 0:
@@ -373,10 +375,18 @@ def main():
               f"model per titik asal ({JALUR} jalur, rata-rata {WAKTU_MODEL[1]} titik)")
         return
     periode, dari, sampai, langkah = a.segmen.split(":")
-    hasil = jalankan(a.aset, a.jalan, [(periode, dari, sampai, int(langkah))], a.cache)
+
+    def simpan(hasil):
+        for st, baris in hasil.items():
+            jalur = f"hasil_{a.aset}_{st}_{periode}_{dari}.json"
+            with open(jalur + ".tmp", "w", encoding="utf-8") as f:
+                json.dump({"aset": a.aset, "setelan": st, "segmen": a.segmen, "baris": baris}, f)
+            os.replace(jalur + ".tmp", jalur)
+
+    hasil = jalankan(a.aset, a.jalan, [(periode, dari, sampai, int(langkah))], a.cache,
+                     simpan=simpan)
+    simpan(hasil)
     for st, baris in hasil.items():
-        with open(f"hasil_{a.aset}_{st}_{periode}_{dari}.json", "w", encoding="utf-8") as f:
-            json.dump({"aset": a.aset, "setelan": st, "segmen": a.segmen, "baris": baris}, f)
         print(f"{a.aset} {st} {a.segmen}: {len(baris)} titik", file=sys.stderr)
 
 if __name__ == "__main__":
