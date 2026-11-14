@@ -6,3 +6,5 @@
 {"jumat": "2026-10-30", "aset": "ETH", "horizon_minggu": 12, "peluang_naik_persen": 45, "laju_dasar_persen": 52, "dicatat_utc": "2026-10-31T06:09:33+00:00"}
 {"jumat": "2026-11-06", "aset": "BTC", "horizon_minggu": 12, "peluang_naik_persen": 54, "laju_dasar_persen": 58, "dicatat_utc": "2026-11-07T06:27:39+00:00"}
 {"jumat": "2026-11-06", "aset": "ETH", "horizon_minggu": 12, "peluang_naik_persen": 49, "laju_dasar_persen": 53, "dicatat_utc": "2026-11-07T06:27:44+00:00"}
+{"jumat": "2026-11-13", "aset": "BTC", "horizon_minggu": 12, "peluang_naik_persen": 42, "laju_dasar_persen": 58, "dicatat_utc": "2026-11-14T06:54:49+00:00"}
+{"jumat": "2026-11-13", "aset": "ETH", "horizon_minggu": 12, "peluang_naik_persen": 41, "laju_dasar_persen": 53, "dicatat_utc": "2026-11-14T06:54:54+00:00"}
