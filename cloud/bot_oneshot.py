@@ -3891,6 +3891,10 @@ def data_mentah_pasar(simbol, jenis, proyeksi=True):
         # Jadwal earnings: padanan aturan "jangan masuk menjelang rilis berdampak kuat"
         # yang sudah lama berlaku untuk emas. Tetap jalan tanpa FINNHUB_API_KEY.
         tugas.append(("EARNINGS & PEER (earnings.py)", ["cloud/earnings.py", simbol]))
+        # Besar gerak historis saat earnings (8-K item 2.02 SEC + harga Yahoo) — mengukur
+        # "seberapa besar" risiko earnings, bukan arahnya.
+        tugas.append(("REAKSI EARNINGS (reaksi_earnings.py)",
+                      ["cloud/reaksi_earnings.py", simbol]))
         # HANYA CPI. FOMC dan NFP dibuang dari jalur saham setelah muatannya diukur: prompt
         # sintesis saham mencapai 110.911 karakter (~27.700 token), 2,5 kali angka yang jadi
         # acuan rencana hemat token. Untuk saham individual, tanggal earnings hampir selalu

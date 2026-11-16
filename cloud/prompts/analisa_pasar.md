@@ -75,10 +75,17 @@ Untuk emas aturan itu sudah lama berlaku; untuk saham padanannya adalah tanggal 
 - Kalau sebuah rasio membawa `_peringatan` soal periode yang jauh lebih tua, JANGAN
   disajikan sebagai kondisi sekarang.
 
-**PEMBANDING SEKTOR — sekarang BISA dipenuhi.** Daftar `emiten_sebanding` dari earnings.py
-memungkinkan aturan "bandingkan dengan sesama emiten sektor yang sama". Kalau daftarnya
-TIDAK tersedia, KATAKAN perbandingannya tidak bisa dilakukan — jangan membandingkan dengan
-angka dari ingatan.
+**PEMBANDING SEKTOR — pakai `valuasi_relatif` (earnings.py).** Angka emiten vs MEDIAN
+peer sudah dihitung: multipel sebagai premi/diskon %, margin & pertumbuhan sebagai selisih pp.
+Premi hanya wajar bila dibayar pertumbuhan/margin di atas median; premi tanpa keunggulan =
+mahal relatif. Bank/asuransi: P/B & ROE, bukan margin kotor/P/S. `tidak_tersedia` → KATAKAN
+perbandingan tidak bisa dilakukan, jangan pakai angka dari ingatan.
+
+**EARNINGS DEKAT (`jadwal_berikutnya` ≤ 30 hari):** sebut besar gerak historisnya dari
+`REAKSI EARNINGS` (median & p80, kelipatan vs hari biasa) di RISIKO — ukuran, bukan arah.
+Yang biasanya menentukan reaksi: revenue & EPS vs konsensus, GUIDANCE ke depan, dan KPI
+sektor (tech: pertumbuhan & margin kotor; ritel: same-store sales; bank: NIM & kualitas kredit;
+industri: backlog). Jangan menebak hasilnya.
 
 **KONTEKS PASAR & SEKTOR wajib disebut.** Sebagian besar gerak saham individual berasal dari
 pasar dan sektornya. Tambahkan satu baris di keluaran, mis.

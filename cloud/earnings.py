@@ -186,6 +186,85 @@ def peers(ticker):
                            "dengan angka dari ingatan.")}
 
 
+# Valuasi RELATIF terhadap emiten sebanding (pola comps, anthropics/financial-services,
+# Apache-2.0: "premi/diskon harus dibenarkan oleh pertumbuhan & margin"). Satu panggilan
+# /stock/metric per emiten — jauh lebih ringan daripada menjalankan stockfund.py (SEC per
+# tag) untuk tiap peer. Nama field Finnhub tidak seragam antar versi, jadi tiap metrik punya
+# beberapa kandidat; yang tidak ada dilaporkan kosong, bukan ditebak.
+METRIK_PEMBANDING = {
+    "pe_ttm": ("peTTM", "peExclExtraTTM", "peBasicExclExtraTTM"),
+    "ps_ttm": ("psTTM", "priceToSalesTTM"),
+    "pb": ("pbQuarterly", "pbAnnual", "pb"),
+    "pertumbuhan_revenue_yoy_persen": ("revenueGrowthTTMYoy", "revenueGrowthQuarterlyYoy"),
+    "margin_kotor_persen": ("grossMarginTTM", "grossMarginAnnual"),
+    "margin_bersih_persen": ("netProfitMarginTTM", "netProfitMarginAnnual"),
+    "roe_persen": ("roeTTM", "roeRfy"),
+}
+MULTIPEL = ("pe_ttm", "ps_ttm", "pb")
+MAKS_PEER = 6
+
+
+def metrik(ticker):
+    data, cache, err = ambil("/stock/metric", {"symbol": ticker.upper(), "metric": "all"},
+                             f"met_{ticker.upper()}")
+    if err:
+        return None, err
+    m = (data or {}).get("metric") or {}
+    keluar = {}
+    for nama, kandidat in METRIK_PEMBANDING.items():
+        v = next((m[k] for k in kandidat if isinstance(m.get(k), (int, float))), None)
+        # Multipel negatif (rugi) tidak bermakna untuk dibandingkan — dibuang dari median.
+        keluar[nama] = (round(v, 2) if v is not None and not (nama in MULTIPEL and v <= 0)
+                        else None)
+    keluar["mcap_juta_usd"] = m.get("marketCapitalization")
+    return keluar, None
+
+
+def _median(x):
+    x = sorted(v for v in x if v is not None)
+    if not x:
+        return None
+    n = len(x)
+    return x[n // 2] if n % 2 else (x[n // 2 - 1] + x[n // 2]) / 2
+
+
+def perbandingan(ticker, daftar_peer):
+    """Emiten vs median peer: multipel dalam premi/diskon %, margin & pertumbuhan dalam pp."""
+    sendiri, err = metrik(ticker)
+    if err:
+        return {"tidak_tersedia": err}
+    peer, gagal = {}, []
+    for p in daftar_peer[:MAKS_PEER]:
+        m, e = metrik(p)
+        if m and any(v is not None for k, v in m.items() if k != "mcap_juta_usd"):
+            peer[p] = m
+        else:
+            gagal.append(p)
+    if len(peer) < 3:
+        return {"tidak_tersedia": f"metrik peer terlalu sedikit ({len(peer)} dari "
+                                  f"{len(daftar_peer[:MAKS_PEER])}) untuk median yang bermakna"}
+    med = {k: _median([m.get(k) for m in peer.values()]) for k in METRIK_PEMBANDING}
+    selisih = {}
+    for k in METRIK_PEMBANDING:
+        a, b = sendiri.get(k), med.get(k)
+        if a is None or b is None:
+            continue
+        if k in MULTIPEL:
+            if b > 0:
+                selisih[f"{k}_premi_vs_median_persen"] = round((a / b - 1) * 100, 1)
+        else:
+            selisih[f"{k}_selisih_pp"] = round(a - b, 1)
+    return {"emiten": sendiri,
+            "median_peer": {k: (round(v, 2) if v is not None else None) for k, v in med.items()},
+            "selisih_vs_median": selisih,
+            "peer_dipakai": list(peer), "peer_tanpa_data": gagal,
+            "cara_pakai": ("Premi valuasi hanya WAJAR bila dibayar pertumbuhan atau margin di "
+                           "atas median; premi tanpa keunggulan itu = mahal relatif. Bank & "
+                           "asuransi: pakai P/B & ROE, abaikan margin kotor & P/S. Peer dari "
+                           "Finnhub bisa tidak sempurna (beda bisnis) — sebut bila janggal. "
+                           "Multipel negatif (rugi) tidak ikut median.")}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("ticker")
@@ -209,6 +288,9 @@ def main():
     if not args.hanya_jadwal:
         hasil["kejutan_eps"] = kejutan(args.ticker)
         hasil["emiten_sebanding"] = peers(args.ticker)
+        daftar = (hasil["emiten_sebanding"] or {}).get("daftar") or []
+        hasil["valuasi_relatif"] = (perbandingan(args.ticker, daftar) if daftar else
+                                    {"tidak_tersedia": "tanpa daftar peer"})
     print(json.dumps(hasil, indent=2, ensure_ascii=False))
 
 
