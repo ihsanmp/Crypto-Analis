@@ -73,8 +73,8 @@ def periksa(nama, fungsi):
     blok = []
     for judul, isi in pecah_blok(brief):
         if CUPLIK and CUPLIK[0].lower() in judul.lower():
-            print(f"--- CUPLIKAN {nama} [{judul}]
-{_RAHASIA.sub('…', isi)[:2500]}")
+            print(f"--- CUPLIKAN {nama} [{judul}]")
+            print(_RAHASIA.sub("…", isi)[:2500])
         st, masalah = nilai_blok(judul, isi)
         blok.append({"blok": judul, "status": st, "masalah": masalah[:4]})
     return {"aset": nama, "detik": round(time.time() - t0, 1), "karakter": len(brief),
