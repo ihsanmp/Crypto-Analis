@@ -45,3 +45,17 @@ def test_reaksi_jendela_dua_hari_mencakup_pra_dan_pasca_pasar():
     r = rk.ringkas([("a", 8.0), ("b", -4.0), ("c", 6.0), ("d", -10.0)], [1.0, 2.0, 3.0])
     assert r["median_gerak_mutlak_persen"] == 7.0 and r["kelipatan_vs_hari_biasa"] == 3.5
     assert r["naik_dari"] == "2 dari 4"
+
+
+def test_arsip_lama_sec_dibaca_bila_recent_kurang(monkeypatch):
+    """JPM: 'recent' SEC hanya ~1 tahun (banyak 8-K/424B) -> 4 rilis saja."""
+    def palsu(url):
+        if url.endswith("CIK0000019617.json"):
+            return {"filings": {"recent": {"form": ["8-K"], "filingDate": ["2026-10-13"],
+                                           "items": ["2.02,9.01"]},
+                                "files": [{"name": "CIK0000019617-submissions-001.json"}]}}
+        return {"form": ["8-K", "424B2", "8-K"], "filingDate": ["2025-10-14", "2025-10-01",
+                                                                "2025-07-15"],
+                "items": ["2.02", "", "7.01"]}
+    monkeypatch.setattr(rk, "_ambil_json", palsu)
+    assert rk.tanggal_rilis(19617) == ["2025-10-14", "2026-10-13"]

@@ -260,7 +260,9 @@ def perbandingan(ticker, daftar_peer):
             "peer_dipakai": list(peer), "peer_tanpa_data": gagal,
             "cara_pakai": ("Premi valuasi hanya WAJAR bila dibayar pertumbuhan atau margin di "
                            "atas median; premi tanpa keunggulan itu = mahal relatif. Bank & "
-                           "asuransi: pakai P/B & ROE, abaikan margin kotor & P/S. Peer dari "
+                           "asuransi: pakai P/B & ROE, abaikan margin kotor, P/S, dan "
+                           "pertumbuhan revenue (definisi revenue bank tidak sebanding; JPM "
+                           "terbaca +109%). Peer dari "
                            "Finnhub bisa tidak sempurna (beda bisnis) — sebut bila janggal. "
                            "Multipel negatif (rugi) tidak ikut median.")}
 

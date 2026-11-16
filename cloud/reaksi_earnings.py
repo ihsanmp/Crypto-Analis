@@ -28,19 +28,35 @@ import seckontak  # noqa: E402
 MAKS_KEJADIAN = 20
 
 
-def tanggal_rilis(cik):
-    """Tanggal 8-K berisi item 2.02 (Results of Operations) dari submissions SEC."""
-    url = f"https://data.sec.gov/submissions/CIK{int(cik):010d}.json"
+def _ambil_json(url):
     req = urllib.request.Request(url, headers=seckontak.header())
     with urllib.request.urlopen(req, timeout=30) as r:
-        d = json.loads(r.read().decode())
-    rec = (d.get("filings") or {}).get("recent") or {}
-    keluar = []
-    for form, tgl, items in zip(rec.get("form", []), rec.get("filingDate", []),
-                                rec.get("items", [])):
-        if form in ("8-K", "8-K/A") and "2.02" in (items or ""):
-            keluar.append(tgl)
-    return sorted(set(keluar))
+        return json.loads(r.read().decode())
+
+
+def _dari_blok(rec):
+    return [tgl for form, tgl, items in zip(rec.get("form", []), rec.get("filingDate", []),
+                                            rec.get("items", []))
+            if form in ("8-K", "8-K/A") and "2.02" in (items or "")]
+
+
+def tanggal_rilis(cik, minimal=MAKS_KEJADIAN, maks_arsip=4):
+    """Tanggal 8-K berisi item 2.02 (Results of Operations) dari submissions SEC.
+
+    'recent' hanya ~1.000 filing terakhir. Emiten yang sangat sering mengajukan (bank: 8-K &
+    424B tiap pekan) cuma tercakup ~1 tahun — JPM hanya 4 rilis (cek runner 16 Nov 2026).
+    Berkas arsip lama (filings.files) dibaca sampai cukup."""
+    d = _ambil_json(f"https://data.sec.gov/submissions/CIK{int(cik):010d}.json")
+    tanggal = set(_dari_blok((d.get("filings") or {}).get("recent") or {}))
+    for berkas in ((d.get("filings") or {}).get("files") or [])[:maks_arsip]:
+        if len(tanggal) >= minimal:
+            break
+        try:
+            tanggal |= set(_dari_blok(_ambil_json(
+                f"https://data.sec.gov/submissions/{berkas['name']}")))
+        except Exception:
+            break
+    return sorted(tanggal)
 
 
 def reaksi(tutup_per_tgl, tgl_rilis):

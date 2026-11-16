@@ -78,7 +78,7 @@ Untuk emas aturan itu sudah lama berlaku; untuk saham padanannya adalah tanggal 
 **PEMBANDING SEKTOR — pakai `valuasi_relatif` (earnings.py).** Angka emiten vs MEDIAN
 peer sudah dihitung: multipel sebagai premi/diskon %, margin & pertumbuhan sebagai selisih pp.
 Premi hanya wajar bila dibayar pertumbuhan/margin di atas median; premi tanpa keunggulan =
-mahal relatif. Bank/asuransi: P/B & ROE, bukan margin kotor/P/S. `tidak_tersedia` → KATAKAN
+mahal relatif. Bank/asuransi: P/B & ROE, bukan margin kotor/P/S/pertumbuhan revenue. `tidak_tersedia` → KATAKAN
 perbandingan tidak bisa dilakukan, jangan pakai angka dari ingatan.
 
 **EARNINGS DEKAT (`jadwal_berikutnya` ≤ 30 hari):** sebut besar gerak historisnya dari
