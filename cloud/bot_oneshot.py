@@ -3932,6 +3932,10 @@ def data_mentah_pasar(simbol, jenis, proyeksi=True):
         tugas.append(("KEJUTAN NFP (kejutan.py, konsensus pasar)",
                       ["cloud/kejutan.py", "--indikator", "NFP", "--sumber", "sosovalue",
                        "--simbol", simbol, "--pasar", "--rezim", "--ringkas"]))
+    # Minyak: status Selat Hormuz (~21% minyak dunia) — data PASOKAN yang tidak ada di sumber
+    # lain. Pihak ketiga; hormuz.py menandainya sendiri.
+    if _minyak(simbol):
+        tugas.append(("STATUS SELAT HORMUZ (hormuz.py, pihak ketiga)", ["cloud/hormuz.py"]))
     # Berlaku untuk saham maupun forex: sebaran historis + level struktural, supaya seed
     # FORECASTER punya angka untuk dikutip pada tahap sintesis yang berjalan tanpa tool.
     if proyeksi:

@@ -333,6 +333,7 @@ untuk riset grup Telegram.
 | [cloud/konteks.py](cloud/konteks.py) | Konteks pasar & sektor: indeks + VIX, peringkat 11 ETF sektor berdasar kinerja RELATIF terhadap S&P, pemetaan emiten ke sektor lewat kode SIC. Kode di luar peta dilaporkan tidak terpetakan |
 | [cloud/earnings.py](cloud/earnings.py) | Jadwal & kejutan earnings + emiten sebanding + **valuasi relatif vs median peer** (P/E, P/S, P/B premi/diskon; margin & pertumbuhan selisih pp — pola comps anthropics/financial-services) (Finnhub, key opsional). Tanpa kunci, bagian ini dilaporkan tidak tersedia dan analisa saham tetap jalan |
 | [cloud/reaksi_earnings.py](cloud/reaksi_earnings.py) | Besar gerak historis saham saat rilis earnings: tanggal rilis RESMI dari SEC 8-K item 2.02, harga Yahoo, jendela 2 hari (pra-buka & pasca-tutup), dibanding gerak 2 hari biasa. Ukuran risiko, bukan arah. Pola earnings-preview dari anthropics/financial-services (Apache-2.0) |
+| [cloud/hormuz.py](cloud/hormuz.py) | Status Selat Hormuz untuk analisa minyak (CL=F): status, kapal vs normal, kapal tertahan, asuransi perang, tarif tanker, diplomasi, berita — Hormuz Strait Monitor (gratis, tanpa kunci; PIHAK KETIGA, ditandai). Pola skill hormuz-strait dari himself65/finance-skills (MIT) |
 | [cloud/sec_tickers.py](cloud/sec_tickers.py) | Cache peta ticker → CIK dari SEC (7 hari, ikut di-commit). Dulu diunduh ulang tiap analisa — terukur 42,9 detik di runner |
 
 ### Sumber berbayar-opsional

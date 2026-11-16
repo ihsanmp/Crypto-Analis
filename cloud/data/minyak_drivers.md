@@ -36,7 +36,11 @@ fisik pasokan-permintaan, dan jalur suku bunga hanya tidak langsung.
    lambat; trennya lebih bermakna daripada satu angka mingguan.
 4. **Permintaan global** — pertumbuhan ekonomi (terutama China & AS), musim berkendara AS,
    dan laporan bulanan IEA, OPEC, serta EIA STEO.
-5. **Geopolitik pasokan** — konflik di produsen besar atau jalur pengiriman (mis. Timur
+5. **Selat Hormuz** — blok `STATUS SELAT HORMUZ` (hormuz.py) membawa status selat, lalu
+   lintas kapal vs normal, kapal tertahan, premi asuransi perang, tarif tanker, dan diplomasi.
+   Sumber PIHAK KETIGA: sebut sumbernya. Yang menggerakkan harga adalah PERUBAHAN status
+   (dibuka/ditutup, hasil perundingan), bukan status yang sudah berlangsung lama.
+6. **Geopolitik pasokan lain** — konflik di produsen besar atau jalur pengiriman (mis. Timur
    Tengah, Selat Hormuz, Rusia). Premi risikonya bisa naik cepat dan HILANG sama cepatnya
    bila pasokan nyata tidak terganggu. Penjelas, bukan penentu target.
 

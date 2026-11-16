@@ -61,6 +61,9 @@ def nilai_blok(judul, isi):
     return "OK", []
 
 
+CUPLIK = []
+
+
 def periksa(nama, fungsi):
     t0 = time.time()
     try:
@@ -69,6 +72,9 @@ def periksa(nama, fungsi):
         return {"aset": nama, "galat": type(e).__name__, "detik": round(time.time() - t0, 1)}
     blok = []
     for judul, isi in pecah_blok(brief):
+        if CUPLIK and CUPLIK[0].lower() in judul.lower():
+            print(f"--- CUPLIKAN {nama} [{judul}]
+{_RAHASIA.sub('…', isi)[:2500]}")
         st, masalah = nilai_blok(judul, isi)
         blok.append({"blok": judul, "status": st, "masalah": masalah[:4]})
     return {"aset": nama, "detik": round(time.time() - t0, 1), "karakter": len(brief),
@@ -80,7 +86,11 @@ def main():
     ap.add_argument("koin", nargs="*")
     ap.add_argument("--pasar", nargs="*", default=None, help="SIMBOL:jenis (saham/forex)")
     ap.add_argument("--json", default=None, help="simpan hasil lengkap ke berkas ini")
+    ap.add_argument("--cuplik", default=None,
+                    help="cetak isi blok yang judulnya memuat teks ini (dibersihkan, maks 2500 kar)")
     a = ap.parse_args()
+    if a.cuplik:
+        CUPLIK.append(a.cuplik)
     import bot_oneshot as bot
     bot._sisipkan_jejak = lambda bagian: None        # tanpa jejak pesan lama
     bot._sisipkan_pantau = lambda bagian, teks: None
