@@ -279,6 +279,19 @@ def arus_etf(jenis="us-btc-spot"):
 RIWAYAT_PATH = os.path.join(BASE_DIR, "data", "sosovalue_riwayat.json")
 
 
+def _muat_lama(jalur, bagian):
+    """Isi berkas sebelumnya (bagian 'acara'/'data') — dipakai saat tarikan baru GAGAL."""
+    try:
+        with open(jalur, encoding="utf-8") as f:
+            return (json.load(f) or {}).get(bagian) or {}
+    except Exception:
+        return {}
+
+
+def _sah(isi):
+    return isinstance(isi, dict) and "tidak_tersedia" not in isi
+
+
 def tarik_riwayat():
     """Tarik riwayat konsensus keempat acara terbukti, simpan sebagai berkas data.
 
@@ -301,7 +314,10 @@ def tarik_riwayat():
             isi, _, err = panggil(f"/openapi/v1/macro/events/{urllib.parse.quote(nama)}"
                                   "/history", "GET", None, params, pakai_cache=False)
             if err:
-                keluar["acara"][label] = {"tidak_tersedia": err, "nama": nama}
+                # Jangan menimpa riwayat yang sudah baik dengan pesan galat (lihat tarik_etf).
+                lama_ = _muat_lama(RIWAYAT_PATH, "acara").get(label)
+                keluar["acara"][label] = (dict(lama_, gagal_terakhir=err) if _sah(lama_)
+                                          else {"tidak_tersedia": err, "nama": nama})
                 break
             baris = (isi or {}).get("data") or []
             if not baris:
@@ -341,13 +357,23 @@ def tarik_etf():
     """
     keluar = {"ditarik_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"), "data": {}}
     ringkas = {}
+    # 15 Nov 2026: keempat endpoint ETF membalas 404 dan berkas berisi 5 rb baris data yang
+    # baik DITIMPA pesan galat — blok ETF bot kosong sampai ada yang sadar. Kini data lama
+    # dipertahankan per kunci; kegagalannya dicatat, dan umur data di etf.py tetap jujur.
+    lama_semua = _muat_lama(ETF_PATH, "data")
     for jenis in ETF_JENIS:
         for nama, jalur in (("metrik", ETF_METRIK), ("historis", ETF_HISTORIS)):
             isi, _, err = panggil(jalur, "POST", {"type": jenis}, None, pakai_cache=False)
             kunci = f"{jenis}/{nama}"
             if err:
-                keluar["data"][kunci] = {"tidak_tersedia": err}
-                ringkas[kunci] = f"GAGAL: {err}"
+                lama_ = lama_semua.get(kunci)
+                if _sah(lama_):
+                    keluar["data"][kunci] = lama_
+                    keluar.setdefault("gagal_terakhir", {})[kunci] = err
+                    ringkas[kunci] = f"GAGAL: {err} — data lama DIPERTAHANKAN"
+                else:
+                    keluar["data"][kunci] = {"tidak_tersedia": err}
+                    ringkas[kunci] = f"GAGAL: {err}"
                 continue
             keluar["data"][kunci] = isi
             badan = isi.get("data") if isinstance(isi, dict) else isi

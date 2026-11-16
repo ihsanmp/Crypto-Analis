@@ -9058,3 +9058,18 @@ def test_arah_emas_tidak_disalin_ke_minyak():
     # dibaca SETIAP analisa saham/forex/emas — jangan bayar token minyak di analisa NVDA.
     assert "OPEC+ terakhir & berikutnya" in acuan and "OPEC+ terakhir" not in pasar
     assert "**Minyak:**" not in pasar
+
+
+def test_tarik_etf_gagal_tidak_menimpa_data_lama(tmp_path, monkeypatch):
+    """15 Nov 2026: endpoint ETF SoSoValue 404 -> 5 rb baris data baik ditimpa pesan galat."""
+    import sosovalue as sv
+    jalur = tmp_path / "etf.json"
+    baik = {"data": {"us-btc-spot/historis": {"data": [{"date": "2026-11-07", "x": 1}]}}}
+    jalur.write_text(json.dumps(baik), encoding="utf-8")
+    monkeypatch.setattr(sv, "ETF_PATH", str(jalur))
+    monkeypatch.setattr(sv, "panggil", lambda *a, **k: (None, False, "HTTP 404"))
+    sv.tarik_etf()
+    isi = json.loads(jalur.read_text(encoding="utf-8"))
+    assert isi["data"]["us-btc-spot/historis"] == baik["data"]["us-btc-spot/historis"]
+    assert "HTTP 404" in isi["gagal_terakhir"]["us-btc-spot/historis"]
+    assert "tidak_tersedia" in isi["data"]["us-eth-spot/historis"]   # tak ada data lama
