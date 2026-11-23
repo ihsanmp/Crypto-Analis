@@ -70,5 +70,22 @@
    "rsi=27,12",
    "rsi=27"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1795429424.652753,
+  "waktu_utc": "2026-11-23 10:23",
+  "pesan": "bagaimana menurutmu?",
+  "balasan": "🕒 Data live per 23 November 2026, 17:22 WIB · BTC $61.279 (CoinMarketCap) · weekly & daily dari TradingView Binance (real-time)\n\nYang kulihat di gambar: broadcast \"Bitcoin Weekly Market Update\" dari Kalimasada (The Students / The Contrarian), isinya\n[...dipangkas...]\nastic sudah crossed jadi momentum buyer\" MELESET untuk weekly — Stoch weekly K 17,16 masih di bawah D 28,99, cross naik itu hanya ada di daily. \"Liquidity grab/seller menyerah\" belum terbukti karena arus ETF terakhir (20 Nov) masih outflow $669 juta.",
+  "angka_kunci": [
+   "harga=73.010",
+   "ema20=73.010",
+   "ema50=76.642",
+   "ema200=69.338",
+   "ema50=73.004",
+   "ema200=75.011",
+   "rsi=26,98",
+   "rsi=35,51"
+  ]
  }
 ]
