@@ -32,5 +32,21 @@
    "ema50=73.394",
    "rsi=26,81"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1795428523.9406903,
+  "waktu_utc": "2026-11-23 10:08",
+  "pesan": "kalo dari timeframe weekly gimana?",
+  "balasan": "📌 Masih tentang BTC — dilanjutkan dari obrolan sebelumnya, karena pesanmu tidak menyebut aset lain.\n\n📊 Weekly BTC (candle tutup 16 Nov 2026, close $61.170,1) jauh lebih lemah dari yang kelihatan di daily. EMA stack-nya BEARISH PENUH — harga 0 dari 5\n[...dipangkas...]\ns://defillama.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/",
+  "angka_kunci": [
+   "harga=73.884",
+   "ema13=73.884",
+   "ema21=74.212",
+   "ema33=75.219",
+   "ema50=77.483",
+   "ema33=75.200",
+   "rsi=35,39"
+  ]
  }
 ]
