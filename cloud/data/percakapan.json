@@ -48,5 +48,15 @@
    "ema33=75.200",
    "rsi=35,39"
   ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1795428773.8927479,
+  "waktu_utc": "2026-11-23 10:12",
+  "pesan": "kalo dari flow etf btc gimana? apakah akumulasinya lebih besar daripada outflownya?",
+  "balasan": "🕒 Data per 20 Nov 2026 (ETF, berumur 3 hari — bursa AS tidak buka tiap hari, ini data terbaru yang tersedia).\n\nJawabannya: TIDAK, saat ini outflow yang dominan, bukan akumulasi.\n\n• Arus harian terakhir (20 Nov): keluar $669,2 juta — hari ke-4 beruntu\n[...dipangkas...]\ns://defillama.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/",
+  "angka_kunci": [
+   "harga=669,2"
+  ]
  }
 ]
