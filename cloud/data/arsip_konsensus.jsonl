@@ -166,3 +166,8 @@
 {"waktu": "2026-11-18T14:00:00-05:00", "mata_uang": "USD", "nama": "FOMC Meeting Minutes", "dampak": "tinggi", "konsensus": null, "sebelumnya": null, "aktual": null, "dicatat_utc": "2026-11-16 09:05"}
 {"waktu": "2026-11-18T19:30:00-05:00", "mata_uang": "AUD", "nama": "Employment Change", "dampak": "tinggi", "konsensus": "25.2K", "sebelumnya": "-39.3K", "aktual": null, "dicatat_utc": "2026-11-16 09:05"}
 {"waktu": "2026-11-18T19:30:00-05:00", "mata_uang": "AUD", "nama": "Unemployment Rate", "dampak": "tinggi", "konsensus": "4.7%", "sebelumnya": "4.7%", "aktual": null, "dicatat_utc": "2026-11-16 09:05"}
+{"waktu": "2026-11-24T19:30:00-05:00", "mata_uang": "AUD", "nama": "CPI m/m", "dampak": "tinggi", "konsensus": "0.4%", "sebelumnya": "0.8%", "aktual": null, "dicatat_utc": "2026-11-23 10:24"}
+{"waktu": "2026-11-24T19:30:00-05:00", "mata_uang": "AUD", "nama": "CPI y/y", "dampak": "tinggi", "konsensus": "4.8%", "sebelumnya": "4.3%", "aktual": null, "dicatat_utc": "2026-11-23 10:24"}
+{"waktu": "2026-11-24T19:30:00-05:00", "mata_uang": "AUD", "nama": "Trimmed Mean CPI m/m", "dampak": "tinggi", "konsensus": "0.3%", "sebelumnya": "0.3%", "aktual": null, "dicatat_utc": "2026-11-23 10:24"}
+{"waktu": "2026-11-25T08:30:00-05:00", "mata_uang": "USD", "nama": "Core PCE Price Index m/m", "dampak": "tinggi", "konsensus": "0.3%", "sebelumnya": "0.3%", "aktual": null, "dicatat_utc": "2026-11-23 10:24"}
+{"waktu": "2026-11-25T08:30:00-05:00", "mata_uang": "USD", "nama": "Prelim GDP q/q", "dampak": "tinggi", "konsensus": "3.5%", "sebelumnya": "3.4%", "aktual": null, "dicatat_utc": "2026-11-23 10:24"}
