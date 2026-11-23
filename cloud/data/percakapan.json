@@ -1,141 +1,6 @@
 [
  {
   "chat": "41df00a8496318d0",
-  "waktu": 1791507380.505352,
-  "waktu_utc": "2026-10-09 00:56",
-  "pesan": "btc berpotensi turun sampai harga berapa?",
-  "balasan": "BTC sekarang $81.788 (9 Okt 2026, 00:55 UTC). Secara struktur, daily lagi bikin lower-high (possible CHoCH) dan 4H downtrend (RSI 30,8, di bawah EMA21 4H), jadi momentum pendek memang condong turun — tapi weekly masih uptrend jauh di atas EMA21-nya,\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+1 lainnya)",
-  "angka_kunci": [
-   "harga=81.788",
-   "ema21=83.205",
-   "rsi=30,8"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1791511629.5336733,
-  "waktu_utc": "2026-10-09 02:07",
-  "pesan": "tapi menurutku support kuat berikutnya ada di $75rb, dan bakal ke area itu lagi. Baru setelah itu bull run dimulai",
-  "balasan": "📌 Masih tentang BTC — dilanjutkan dari obrolan sebelumnya, karena pesanmu tidak menyebut aset lain.\n\nMenjawab hipotesis $75rb sebagai support kuat dan pemicu bull run berikutnya, berdasarkan data yang sudah diambil.\n\nKlaimnya sebagian benar untuk lev\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+1 lainnya)",
-  "angka_kunci": [
-   "harga=81.952",
-   "invalid=74.892",
-   "ema21=83.205"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1791633031.0536013,
-  "waktu_utc": "2026-10-10 11:50",
-  "pesan": "hari ini full moon, kalo market reversal maka akan bullish atau bearish untuk btc?",
-  "balasan": "Koreksi dulu: menurut data astro.py, hari ini 10 Okt 2026 justru BULAN BARU (fase 358°, mendekati 0=baru), bukan purnama. Purnama berikutnya baru 26 Okt 2026. Jadi premisnya keliru dari awal.\n\nSoal \"kalau reversal saat purnama, bullish atau bearish\"\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+1 lainnya)",
-  "angka_kunci": [
-   "harga=83.146",
-   "ema21=83.146",
-   "rsi=50,2"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1791806341.392739,
-  "waktu_utc": "2026-10-12 11:59",
-  "pesan": "apa yang terjadi pada harga btc pada saat cpi bulan september 2026",
-  "balasan": "CPI September 2026 belum dirilis. Jadwalnya baru Rabu 14 Oktober 2026 pukul 08:30 ET — itu 2 hari dari sekarang (hari ini 12 Oktober 2026). Jadi pertanyaan \"apa yang terjadi pada harga BTC saat rilis\" belum bisa dijawab karena peristiwanya memang bel\n[...dipangkas...]\nds.com/bitcoin-price-83000-week-ahead-cpi-bank-earnings-bull-87500-bear-80000/)\n- [BTC price support holds ahead of US CPI data](https://cointelegraph.com/markets/btc-price-support-holds-ahead-of-us-cpi-data-three-things-to-know-in-bitcoin-this-week)",
-  "angka_kunci": [
-   "harga=83.342"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1792058955.4409924,
-  "waktu_utc": "2026-10-15 10:09",
-  "pesan": "prediksi btc daily dan weekly",
-  "balasan": "Prediksi di bawah pakai metode jalan acak dari proyeksi.py (titik tengah = harga sekarang, TANPA menebak arah, lebar dari volatilitas 90 hari) — bukan ramalan arah, tapi rentang kemungkinan. Data per 15 Okt 2026 10:08 UTC, harga $81.041.\n\n• Daily (be\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+1 lainnya)",
-  "angka_kunci": [
-   "harga=81.041",
-   "ema21=82.916",
-   "ema21=75.634",
-   "rsi=46,6"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1792059452.5252793,
-  "waktu_utc": "2026-10-15 10:17",
-  "pesan": "prediksi btc daily dan weekly",
-  "balasan": "Ini praktis pertanyaan yang sama dengan 7 menit lalu — datanya belum banyak berubah (saat itu $81.041, sekarang $81.018, per 15 Okt 2026 10:16 UTC). Proyeksinya tetap dari proyeksi.py: titik tengah = harga sekarang, TANPA menebak arah, lebar dari vol\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+1 lainnya)",
-  "angka_kunci": [
-   "harga=81.018",
-   "ema21=82.915",
-   "ema21=75.634",
-   "rsi=46,6"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1792118600.881051,
-  "waktu_utc": "2026-10-16 02:43",
-  "pesan": "likuiditas fed lagi gimana?",
-  "balasan": "Skor jam likuiditas gabungan Fed per Jumat, 16 Okt 2026 ada di -0,289 — masuk fase KETAT & MAKIN KETAT, dan momentum 4 minggunya masih menurun (sudut -170°, artinya arah mengetat makin dalam, bukan mulai membalik).\n\n• Suku bunga (L1): -0,274 — agak m\n[...dipangkas...]\nLikuiditas Fed komposit sedang ketat dan makin ketat (skor -0,289), terutama ditarik oleh dolar kuat dan kondisi keuangan yang mengetat — bukan oleh pasokan likuiditas Fed sendiri, yang justru masih longgar ($5.868,6 miliar). Belum ada sinyal resesi.",
-  "angka_kunci": [
-   "harga=5.868,6"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1792162205.6879523,
-  "waktu_utc": "2026-10-16 14:50",
-  "pesan": "eth 3 bulan ke depan gimana?",
-  "balasan": "ETH 3 bulan ke depan: belum ada setup arah yang jelas — sinyalnya bentrok antar timeframe dan antar kategori, jadi proyeksi paling jujur adalah rentang statistik lebar, bukan satu angka target. Data per 16 Okt 2026 ~14:49 UTC, harga $2.471.\n\n• Teknik\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+1 lainnya)",
-  "angka_kunci": [
-   "harga=2.471",
-   "ema21=2.551",
-   "ema21=2.310"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1792222115.4570384,
-  "waktu_utc": "2026-10-17 07:28",
-  "pesan": "bagaimana proyeksimu terhadap btc dalam seminggu kedepan?",
-  "balasan": "Proyeksi 1 minggu BTC pakai proyeksi.py (metode jalan acak: titik tengah = harga sekarang, TANPA menebak arah, lebar dari volatilitas 90 hari). Data per 17 Okt 2026 07:27 UTC, harga $81.521.\n\n• Kisaran 80%: $76.221–$87.190 (-6,5% s/d +7,0%). Historis\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+1 lainnya)",
-  "angka_kunci": [
-   "harga=81.521",
-   "ema21=82.722",
-   "ema21=75.634"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1792224173.6718535,
-  "waktu_utc": "2026-10-17 08:02",
-  "pesan": "bila dilihat dari timeframe daily dan H4 bagaimana menurutmu?",
-  "balasan": "📌 Masih tentang BTC — dilanjutkan dari obrolan sebelumnya, karena pesanmu tidak menyebut aset lain.\n\n🕒 Data per 17 Oktober 2026, 15:02 WIB\n\nAmbil data per candle tutup terbaru: daily 16 Okt 00:00 UTC (close $81.500,8), H4 17 Okt 04:00 UTC (close $81.\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+1 lainnya)",
-  "angka_kunci": [
-   "harga=81.625",
-   "ema21=82.722",
-   "ema21=82.004",
-   "rsi=46,5"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
-  "waktu": 1792224597.3450186,
-  "waktu_utc": "2026-10-17 08:09",
-  "pesan": "analisis koin xlm",
-  "balasan": "🕒 Data per 17 Okt 2026, 15:05 WIB · harga Kraken (native) · candle weekly terakhir tutup 5 Okt\n\n📊 PASAR\nBTC $81.638 (24j −0,78% · 7h −1,29% · 30h +6,79%) · Dominasi BTC 59,33%, naik +0,36 pp (10→17 Okt) · Fear & Greed 55 netral (kemarin 63, turun) ·\n[...dipangkas...]\n.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/ (+6 lainnya)",
-  "angka_kunci": [
-   "harga=0,1793",
-   "invalid=0,1340",
-   "invalid=0,2058",
-   "invalid=17.7",
-   "ema21=0,1979",
-   "rsi=38,2",
-   "skor=42"
-  ]
- },
- {
-  "chat": "41df00a8496318d0",
   "waktu": 1793884161.2192683,
   "waktu_utc": "2026-11-05 13:09",
   "pesan": "jika diliat dari perspektif makro, nfp tanggal 6 november diperkirakan memberikan dampak baik atau buruk untuk btc?",
@@ -152,6 +17,20 @@
    "harga=0,00000317",
    "invalid=15",
    "ema21=0,00000306"
+  ]
+ },
+ {
+  "chat": "41df00a8496318d0",
+  "waktu": 1795428218.461824,
+  "waktu_utc": "2026-11-23 10:03",
+  "pesan": "bila dilihat pada daily chart btc, sepertinya akan terjadi reversal, tapi hal itu akan berlaku jika btc berhasil break range berapa?",
+  "balasan": "🕒 Data per 23 November 2026, 17:03 WIB\n\nBelum bisa dibilang reversal yang terkonfirmasi — ini masih dugaan dari oversold bounce. RSI daily 26,81 (22 Nov) dan Stoch yang mulai cross naik (K 41,55 dari 24,91) memang tanda pelemahan momentum turun, tapi\n[...dipangkas...]\ns://defillama.com · SoSoValue https://sosovalue.com · SEC EDGAR https://www.sec.gov/edgar/search/ · Cleveland Fed https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting · Fear & Greed https://alternative.me/crypto/fear-and-greed-index/",
+  "angka_kunci": [
+   "harga=61.340",
+   "ema13=65.108",
+   "ema21=68.118",
+   "ema50=73.394",
+   "rsi=26,81"
   ]
  }
 ]
